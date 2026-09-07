@@ -4,7 +4,7 @@
 
 **Type:** Full PRD
 **Status:** Draft — pre-implementation
-**Version:** 1.1
+**Version:** 1.2
 **Last Updated:** 2026-09-07
 **Source of truth for implementation detail:** `docs/superpowers/specs/2026-09-07-smarttrip-itinerary-recommendation-design.md` (this PRD is a reformatted, audience-oriented view of the same decisions — where they ever conflict, the design spec wins, since it carries finer-grained rationale)
 
@@ -12,6 +12,7 @@
 |---------|------|--------|
 | 1.0 | 2026-09-07 | Initial PRD generated from the design spec via `/prd-draft` |
 | 1.1 | 2026-09-07 | Applied `/prd-analyze` findings: added Metadata, Entity Lifecycles, Glossary, Observability, Competitive Landscape, Decisions Log sections; expanded Acceptance Criteria to cover all 14 user stories; fixed untestable SLA criterion; added data model validation rules |
+| 1.2 | 2026-09-07 | Replaced the unresearched Competitive Landscape placeholder with real research (Wanderlog, TripIt, the LLM-chat AI-planner category, and Atourin as the closest Indonesian comparable) |
 
 ---
 
@@ -34,11 +35,24 @@ Aplikasi mobile yang merekomendasikan tempat wisata/kuliner/hotel sesuai prefere
 
 ## 2. Competitive Landscape
 
-No formal competitive analysis was conducted — reasonable for a college project's scope, but noted explicitly rather than silently skipped. For context:
+*(Researched 2026-09-07, replacing the earlier unresearched placeholder — kept intentionally light, proportionate to a college project, but now backed by actual findings rather than assertion.)*
 
-- **Google Maps / TripAdvisor** — rich place data and reviews, but no personalized multi-day itinerary generation weighted to a user's specific budget/interest/time constraints.
-- **Traveloka / Tiket.com** (Indonesian OTAs) — focused on booking (flights, hotels, tickets), not trip planning or itinerary structure.
-- **SmartTrip's differentiation:** a defensible weighted-scoring algorithm (TOPSIS, not just a filtered list) driving *automatic* day-by-day schedule construction, plus live in-trip visit tracking — not competing on inventory size or booking capability.
+**Global AI/planning trip apps:**
+- **Wanderlog** — the strongest "planning canvas" competitor: users manually save places, arrange them on a map, and get basic route optimization ("stops grouped by location to avoid zig-zagging"). This is drag-and-drop assisted planning, not algorithmic personalization — the user still builds the schedule by hand. Freemium, ~$40/year for premium (offline access, email import).
+- **TripIt** — organizes bookings you've already made (parses confirmation emails into a timeline). Not a recommender or planner at all; solves a different problem (post-booking organization).
+- **Mindtrip, Ribbit, Wonderplan, Layla, GuideGeek, MonkeyTravel** — the broader "AI trip planner" category, and all of them generate itineraries via **LLM chat conversation**, not a weighted multi-criteria algorithm. This means their output quality depends on prompt interpretation and isn't reproducible or explainable the way a scored ranking is.
+- **None of the researched apps support live GPS-based tracking of visited stops during the actual trip.** This was checked specifically since it's one of SmartTrip's features — genuinely unaddressed in this category, not just an assumption.
+
+**Indonesian market — the closest real comparable:**
+- **Atourin** (est. 2019) — covers 200 regions across Indonesia, 3,000+ attractions, 600+ itineraries, with an "Itinerary Creator" that auto-calculates cost and travel time between stops. However, its core value is **browsing/adapting pre-made, community-contributed itineraries** rather than generating a new one from an individual's specific weighted preferences (budget/interest/rating/distance) — no comparable scoring algorithm was found. It's also national in scope, not Batam-specific.
+- **Traveloka / Tiket.com** — Indonesian OTAs, focused on booking (flights, hotels, tickets), not itinerary structure or planning at all.
+
+**SmartTrip's differentiation, now backed by this research rather than just asserted:**
+1. A defensible, explainable weighted-scoring algorithm (TOPSIS over 4 explicit criteria) generating a full schedule automatically — distinct from both Wanderlog's manual canvas and the LLM-chat category's less predictable output.
+2. Live GPS-geofencing visit tracking during the actual trip — not found in any researched competitor, global or Indonesian.
+3. Batam-specific curation (admin-reviewed Google Places data, ~300-500 places) versus Atourin's broad-but-shallow national coverage — a deliberate depth-over-breadth bet for one city.
+
+Sources: [Best AI Trip Planner Apps 2026 (Lindy)](https://www.lindy.ai/blog/trip-planner-app), [Atourin Itinerary Creator](https://blog.atourin.com/news/itinerary-creator-atourin/), [Aplikasi Wisata Atourin](https://blog.atourin.com/news/aplikasi-wisata-atourin/)
 
 ---
 

@@ -79,6 +79,15 @@ Saat user membuka peta untuk hari yang sedang aktif, tampilan menunjukkan progre
 
 **Catatan risiko/scope:** location tracking background butuh permission "Allow all the time" di Android dan "Always" di iOS - keduanya permission sensitif yang direview ketat oleh Play Store/App Store dan wajib ada privacy policy kalau mau publish ke store. Untuk keperluan demo/skripsi (sideload/internal testing) ini bukan blocker, tapi kalau rencananya publish ke Play Store perlu effort tambahan (justifikasi permission, privacy policy) di luar todo teknis biasa. Server tidak (dan tidak perlu) memverifikasi keaslian lokasi device saat menerima `visit` - cukup untuk kebutuhan visualisasi progres, bukan sistem check-in yang butuh anti-fraud.
 
+**Edge cases:**
+
+- **Permission lokasi background ditolak, atau geofence tidak kepicu (GPS drift, radius meleset, user lewat tanpa masuk radius):** tiap stop tetap punya opsi **tandai manual** (long-press pin di peta, atau tombol di kartu itinerary) yang manggil endpoint `visit` yang sama - auto-detection jadi cara utama, bukan satu-satunya cara. Tombol yang sama juga bisa dipakai buat batalkan tanda (toggle, set `visited_at` balik ke null) kalau auto-detection salah trigger.
+- **Stop yang di-skip** (user langsung ke stop 3 tanpa geofence stop 2 kepicu): segmen ke stop 2 tetap **biru selamanya** sampai user tandai manual - tidak ada auto-assume "kalau stop sesudahnya visited berarti ini juga visited", karena skip beneran (bukan cuma GPS meleset) itu valid use-case (misal user memang berubah rencana).
+- **App ditutup penuh (bukan cuma di-background):** geofence didaftarkan di level OS (Android Geofencing API / iOS region monitoring via `geofence_service`), bukan terikat lifecycle layar peta - registrasi terjadi sekali saat user tap "Mulai Hari Ini" di awal hari itu, sehingga tetap bisa trigger & wake app walau app sudah di-kill, selama OS tidak mematikan proses sepenuhnya (lihat catatan battery optimization di bawah).
+- **Tidak ada koneksi internet saat geofence trigger:** event `visit` disimpan dulu di local queue (SQLite/shared prefs), retry otomatis dengan backoff begitu koneksi kembali - bukan langsung gagal silent.
+- **Trip multi-hari:** geofence cuma didaftarkan untuk stop-stop di hari yang lagi aktif (hari yang di-"Mulai"-kan), bukan seluruh hari sekaligus - supaya lewat dekat lokasi hari ke-3 saat masih hari ke-1 tidak salah ke-trigger. Geofence hari sebelumnya di-deregister saat pindah/mulai hari berikutnya.
+- **Battery optimization (Android):** beberapa OEM (MIUI, OnePlus, dll) agresif mematikan background service walau geofence terdaftar di level OS - app perlu minta exemption dari battery optimization saat user pertama kali mulai live tracking, dan ini didokumentasikan sebagai known risk, bukan sesuatu yang bisa 100% dijamin dari sisi app.
+
 ## 8. API Endpoints
 
 ```

@@ -54,7 +54,8 @@ Wisatawan Batam kesulitan menentukan destinasi wisata/kuliner yang cocok dengan 
 - **`place_candidates`** - google_place_id (unique), name, type (dugaan awal dari Google types), lat, lng, search_area (kecamatan/area asal discovery, buat filter di panel review), status (`pending`/`approved`/`rejected`, default `pending`), timestamps. Staging area hasil fase Discovery (Section 3) - cuma field dasar/murah, belum ada rating/jam buka/harga. Baris yang `approved` dipromosikan (fetch Place Details lengkap) jadi baris baru di `places`, lalu row candidate-nya bisa dihapus/diarsipkan.
 - **`place_photos`** - place_id FK, photo_url (path lokal server), sort_order. Diisi dari Google `photos[]` saat sync (cap ~5 foto per tempat, download bytes-nya lewat server bukan disimpan sebagai link Google), dipakai buat carousel di detail screen.
 - **`place_reviews`** - place_id FK, user_id FK, rating (1-5), comment (nullable), itinerary_item_id FK (nullable), timestamps. **Review terbuka** - siapa saja bisa review tempat manapun kapan saja dari halaman detail tempat, tidak perlu bukti kunjungan (Section 6 butuh volume review biar Bayesian blend berguna, bukan cuma dekorasi). `itinerary_item_id` cuma keisi kalau review disubmit dari flow "beri rating" pasca-kunjungan di dalam trip - review umum dari halaman detail tempat null di field ini.
-- **`users`** - standar Laravel auth + role (`user`/`admin`, default `user`)
+- **`users`** - standar Laravel auth + role (`user`/`admin`, default `user`), default_interest_category_ids (json array of `categories.id`, nullable - preferensi minat default, diedit dari layar Profil)
+- **`user_criteria_weights`** - user_id FK, criterion, weight (default bobot 4 kriteria, sama struktur kayak `trip_criteria_weights` tapi di level akun bukan per-trip). Baris ini **cuma dipakai buat pre-fill** langkah "Pilih minat + slider" (Section 10) saat bikin trip baru - trip yang sudah digenerate tetap pakai snapshot `trips.interest_category_ids`/`trip_criteria_weights` sendiri, tidak berubah walau default di profil diedit belakangan. Kosong/nullable sampai user pertama kali isi (baik lewat layar Profil atau otomatis kesimpan dari trip pertama yang dibuat).
 - **`trips`** - user_id (FK, wajib - tidak ada trip guest lagi), title, num_days, budget_total, has_own_hotel (bool), hotel_place_id (FK nullable), hotel_custom_name/hotel_lat/hotel_lng (nullable - fallback kalau hotel user tidak ada di `places`, pola sama kayak custom pin di `trip_wishlist_places`), interest_category_ids (json array of `categories.id` - minat yang dipilih user, dipakai buat hitung Jaccard similarity di Section 7. Field ini yang tadinya kelewat: slider "kesesuaian kategori/minat" cuma nentuin BOBOT kriteria ini, bukan ISI minatnya - butuh langkah pilih minat terpisah, lihat Section 10), start_date, daily_start_time (default 09:00), daily_end_time (default 19:00, berlaku sama buat semua hari dalam 1 trip - bukan per-hari)
 - **`trip_wishlist_places`** - trip_id FK, place_id FK (nullable - kalau custom pin di luar database, simpan name+lat+lng langsung). Input custom pin sama kayak hotel (Section 10): search dulu di katalog, kalau tidak ketemu baru tap/drag pin di `google_maps_flutter` - tidak pakai Geocoding API (produk terpisah, belum ada di budget/scope manapun di spec ini), murni koordinat dari tap posisi di peta.
 - **`trip_criteria_weights`** - trip_id FK, criterion, weight (hasil normalisasi slider, disimpan supaya swap/regenerate pakai bobot yang sama)
@@ -129,6 +130,10 @@ POST   /api/auth/register
 POST   /api/auth/login
 POST   /api/auth/logout
 
+Profil
+GET    /api/profile/preferences                    - default_interest_category_ids + user_criteria_weights
+PUT    /api/profile/preferences                     - update default (dari layar Profil, atau saat "simpan sebagai default" di trip setup)
+
 Trip setup
 POST   /api/trips                                 - create trip (langsung terikat user login)
                                                       body: num_days, budget_total, start_date,
@@ -182,12 +187,13 @@ Tidak ada endpoint notifikasi - reminder mulai hari & notif mendekati stop sepen
 1. Home (browse katalog tempat bisa tanpa login) -> tap "Buat Trip" -> kalau belum login, diarahkan ke Login/Register dulu (wajib, tidak ada opsi "lanjut sebagai guest")
 2. Trip setup: num_days, budget_total, start_date, daily start/end time (opsional, default ditampilkan), toggle "sudah punya hotel?"
 3. Wishlist (opsional): katalog tempat gaya e-commerce (grid/list, filter kategori, infinite scroll) dengan tombol "+ wishlist" per kartu. Tempat yang tidak ada di katalog bisa ditambah manual: cari dulu, kalau tidak ketemu baru tap/drag pin di peta (`google_maps_flutter`) + nama bebas - tanpa Geocoding API.
-4. Pilih minat (multi-select chip kategori) + slider preferensi (4 kriteria, 0-10) - dua langkah beda tujuan, lihat Section 7 langkah 3.
+4. Pilih minat (multi-select chip kategori) + slider preferensi (4 kriteria, 0-10) - dua langkah beda tujuan, lihat Section 7 langkah 3. Kalau `default_interest_category_ids`/`user_criteria_weights` sudah ada (dari Profil atau trip sebelumnya), layar ini pre-filled - user tinggal edit kalau mau beda buat trip ini. Ada toggle "simpan sebagai default" (opsional, tidak auto-overwrite diam-diam) buat update `user_criteria_weights`/`default_interest_category_ids` dari pilihan trip ini.
 5. Kalau sudah punya hotel: cari di katalog (pola sama persis kayak wishlist di atas - search dulu, pin manual kalau tidak ketemu). Kalau belum: tampilkan top-3 pilihan hotel hasil TOPSIS.
 6. Loading -> hasil itinerary (otomatis tersimpan ke akun, tidak ada langkah "simpan" terpisah): kartu per hari, tiap tempat ada badge source (wishlist/recommended). Reminder "mulai hari ini" otomatis terjadwal (local notification) untuk tiap hari di itinerary.
 7. Menu "..." per item -> swap (alternatif ranking atau cari manual)
 8. Tombol "Buka Peta" per hari -> live map (lihat Section 8): marker hotel, lokasi user saat ini, pin bernomor per stop, polyline abu-abu/biru sesuai status kunjungan; geofencing otomatis aktif selama layar ini/trip berjalan. Notif "sudah dekat stop berikutnya" muncul saat geofence entry terpicu.
 9. List trip tersimpan -> buka lagi, edit (regenerate penuh kalau ubah num_days/budget/hotel, partial swap kalau cuma ganti 1 tempat), hapus, tambah review in-app setelah kunjungan
+10. Tab Profil - edit `default_interest_category_ids` + `user_criteria_weights` langsung (di luar alur bikin trip), lewat `GET/PUT /api/profile/preferences`
 
 Alur di atas berlaku buat semua user. Kalau `role = admin`, ada tab/menu tambahan yang muncul di atas alur ini - lihat Section 11.
 

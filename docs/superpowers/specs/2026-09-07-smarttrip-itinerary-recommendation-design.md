@@ -10,7 +10,7 @@ Wisatawan Batam kesulitan menentukan destinasi wisata/kuliner yang cocok dengan 
 
 ## 2. Architecture Overview
 
-**Backend: Laravel, REST API only, JWT auth (Sanctum).**
+**Backend: Laravel, REST API only, auth via Laravel Sanctum (API token mode - opaque bearer token, bukan JWT; dipilih karena first-party, gampang di-revoke, cukup buat skala project ini).**
 
 - `places` sync module - Artisan command (`php artisan places:sync`), dijalankan manual (admin trigger) atau terjadwal ringan (bulanan), menarik data tempat wisata/kuliner/hotel Batam dari Google Places API (New) ke tabel `places` lokal. Upsert idempotent berdasarkan `google_place_id`.
 - `recommendation` module - hitung bobot kriteria dari input slider user, scoring TOPSIS terhadap kandidat tempat, clustering K-Means untuk pembagian hari, nearest-neighbor routing per hari.
@@ -19,8 +19,8 @@ Wisatawan Batam kesulitan menentukan destinasi wisata/kuliner yang cocok dengan 
 
 **Mobile: Flutter.**
 
-- Alur pakai tanpa login (guest) sampai user memilih simpan trip.
-- Semua komunikasi ke backend lewat REST/JWT. Tidak ada panggilan langsung ke Google API dari mobile (API key tetap di server) - kecuali `google_maps_flutter` (render peta) dan `geolocator` (lokasi GPS device), yang keduanya tidak butuh API key berbayar/panggilan server sama sekali.
+- **Login/register wajib sebelum bisa bikin trip** - tidak ada alur guest lagi (diputuskan ulang, disederhanakan dari desain awal). Browse katalog tempat (`GET /api/places`) tetap bisa tanpa login, tapi begitu masuk ke "Buat Trip" langsung diarahkan ke login/register kalau belum. Ini menghilangkan kebutuhan guest trip token, endpoint "save/attach trip", dan logic auth kondisional - trip selalu langsung terikat ke `user_id` sejak dibuat.
+- Semua komunikasi ke backend lewat REST + Sanctum bearer token. Tidak ada panggilan langsung ke Google API dari mobile (API key tetap di server) - kecuali `google_maps_flutter` (render peta) dan `geolocator` (lokasi GPS device), yang keduanya tidak butuh API key berbayar/panggilan server sama sekali.
 - Foto tempat **tidak** di-hotlink langsung ke Google - Google Places Photo (New) butuh API key di URL buat ambil bytes gambar, jadi kalau mobile fetch langsung, key ke-expose ke client. Sync menyimpan foto ke storage lokal server (sesuai konvensi tim: file disimpan lokal, bukan cloud storage), `photo_url`/`place_photos.photo_url` menunjuk ke path server sendiri.
 - UI bilingual (ID/EN) lewat Flutter i18n standar (`easy_localization` atau `intl` bawaan) - murni client-side, tidak ada endpoint tambahan.
 - Notifikasi (reminder mulai hari, notif mendekati stop berikutnya) pakai `flutter_local_notifications` - **dijadwalkan/dipicu murni di device**, bukan push server. Reminder mulai hari dijadwalkan client-side begitu itinerary di-generate (pakai `daily_start_time` + tanggal hari itu); notif mendekati stop numpang di event geofence entry yang sama dengan visit-tracking (Section 8). Tidak butuh Firebase Cloud Messaging atau endpoint backend baru.
@@ -45,7 +45,7 @@ Wisatawan Batam kesulitan menentukan destinasi wisata/kuliner yang cocok dengan 
 - **`place_photos`** - place_id FK, photo_url (path lokal server), sort_order. Diisi dari Google `photos[]` saat sync (cap ~5 foto per tempat, download bytes-nya lewat server bukan disimpan sebagai link Google), dipakai buat carousel di detail screen.
 - **`place_reviews`** - place_id FK, user_id FK, rating (1-5), comment (nullable), itinerary_item_id FK (nullable, pembeda review "setelah kunjungan via app" vs review umum), timestamps
 - **`users`** - standar Laravel auth + role (`user`/`admin`, default `user`)
-- **`trips`** - user_id (nullable sampai disimpan), title, num_days, budget_total, has_own_hotel (bool), hotel_place_id (FK nullable), start_date, daily_start_time (default 09:00), daily_end_time (default 19:00)
+- **`trips`** - user_id (FK, wajib - tidak ada trip guest lagi), title, num_days, budget_total, has_own_hotel (bool), hotel_place_id (FK nullable), start_date, daily_start_time (default 09:00), daily_end_time (default 19:00)
 - **`trip_wishlist_places`** - trip_id FK, place_id FK (nullable - kalau custom pin di luar database, simpan name+lat+lng langsung)
 - **`trip_criteria_weights`** - trip_id FK, criterion, weight (hasil normalisasi slider, disimpan supaya swap/regenerate pakai bobot yang sama)
 - **`itinerary_days`** - trip_id FK, day_number, start_place_id, end_place_id (biasanya = hotel di kedua ujung)
@@ -110,14 +110,16 @@ Saat user membuka peta untuk hari yang sedang aktif, tampilan menunjukkan progre
 
 ## 9. API Endpoints
 
+Semua endpoint di bawah butuh Sanctum bearer token **kecuali** yang eksplisit ditandai (publik) - login wajib sebelum bikin trip, tidak ada alur guest.
+
 ```
-Auth
+Auth (publik)
 POST   /api/auth/register
 POST   /api/auth/login
-POST   /api/auth/logout                          (auth)
+POST   /api/auth/logout
 
 Trip setup
-POST   /api/trips                                 - create trip (guest-allowed)
+POST   /api/trips                                 - create trip (langsung terikat user login)
                                                       body: num_days, budget_total, start_date,
                                                       daily_start_time?, daily_end_time?, has_own_hotel
 GET    /api/trips/{id}                             - trip detail (+ itinerary + polyline_to_here tiap stop setelah generate)
@@ -132,9 +134,8 @@ DELETE /api/trips/{id}/wishlist/{wishlist_id}       - hapus item wishlist
 Bobot & generate
 POST   /api/trips/{id}/weights                     - submit 4 slider rating -> bobot ternormalisasi
 POST   /api/trips/{id}/generate                     - jalankan K-Means + TOPSIS + Nearest-Neighbor -> itinerary
-POST   /api/trips/{id}/save                         - attach guest trip ke user login          (auth)
-GET    /api/trips                                   - list trip tersimpan                       (auth)
-DELETE /api/trips/{id}                               - hapus trip tersimpan                     (auth)
+GET    /api/trips                                   - list trip tersimpan
+DELETE /api/trips/{id}                               - hapus trip tersimpan
 
 Swap
 GET    /api/itinerary-items/{id}/swap-candidates     - alternatif ranking (mode=ranked)
@@ -145,12 +146,12 @@ Live tracking
 POST   /api/itinerary-items/{id}/visit               - tandai visited_at (dipanggil mobile saat geofence entry)
 
 Places & review
-GET    /api/places                                  - browse/search umum (katalog wishlist)
-GET    /api/places/{id}                              - detail tempat
-POST   /api/places/{id}/reviews                      - submit rating/review in-app             (auth)
-PATCH/DELETE /api/reviews/{id}                        - edit/hapus review milik sendiri         (auth)
+GET    /api/places                                  - browse/search umum (katalog tempat)          (publik)
+GET    /api/places/{id}                              - detail tempat                                (publik)
+POST   /api/places/{id}/reviews                      - submit rating/review in-app
+PATCH/DELETE /api/reviews/{id}                        - edit/hapus review milik sendiri
 
-Admin                                                (auth + role admin)
+Admin                                                (role admin)
 GET/POST/PATCH        /api/admin/places
 GET/POST/PATCH        /api/admin/place-attributes
 GET/POST/PATCH/DELETE /api/admin/categories
@@ -161,21 +162,18 @@ GET                   /api/admin/analytics           - tempat terfavorit, rata-r
 
 Tidak ada endpoint notifikasi - reminder mulai hari & notif mendekati stop sepenuhnya dijadwalkan/dipicu di device (lihat Section 2), tidak butuh backend.
 
-Guest trip dilacak lewat signed trip token (bukan session user), supaya guest bisa kembali ke trip yang sama sebelum memutuskan simpan/login.
-
 ## 10. Mobile App Flow (Flutter)
 
 0. Pilihan bahasa (ID/EN) - default ikut bahasa device, bisa diganti kapan saja lewat settings
-1. Home -> "Buat Trip" (tanpa login)
+1. Home (browse katalog tempat bisa tanpa login) -> tap "Buat Trip" -> kalau belum login, diarahkan ke Login/Register dulu (wajib, tidak ada opsi "lanjut sebagai guest")
 2. Trip setup: num_days, budget_total, start_date, daily start/end time (opsional, default ditampilkan), toggle "sudah punya hotel?"
 3. Wishlist (opsional): katalog tempat gaya e-commerce (grid/list, filter kategori, infinite scroll) dengan tombol "+ wishlist" per kartu
 4. Slider preferensi: 4 kriteria, 0-10
 5. Kalau belum punya hotel: tampilkan top-3 pilihan hotel
-6. Loading -> hasil itinerary: kartu per hari, tiap tempat ada badge source (wishlist/recommended). Reminder "mulai hari ini" otomatis terjadwal (local notification) untuk tiap hari di itinerary.
+6. Loading -> hasil itinerary (otomatis tersimpan ke akun, tidak ada langkah "simpan" terpisah): kartu per hari, tiap tempat ada badge source (wishlist/recommended). Reminder "mulai hari ini" otomatis terjadwal (local notification) untuk tiap hari di itinerary.
 7. Menu "..." per item -> swap (alternatif ranking atau cari manual)
 8. Tombol "Buka Peta" per hari -> live map (lihat Section 8): marker hotel, lokasi user saat ini, pin bernomor per stop, polyline abu-abu/biru sesuai status kunjungan; geofencing otomatis aktif selama layar ini/trip berjalan. Notif "sudah dekat stop berikutnya" muncul saat geofence entry terpicu.
-9. "Simpan trip" -> minta login/register kalau masih guest, lalu simpan
-10. List trip tersimpan (auth) -> buka lagi, edit (regenerate penuh kalau ubah num_days/budget/hotel, partial swap kalau cuma ganti 1 tempat), hapus, tambah review in-app setelah kunjungan
+9. List trip tersimpan -> buka lagi, edit (regenerate penuh kalau ubah num_days/budget/hotel, partial swap kalau cuma ganti 1 tempat), hapus, tambah review in-app setelah kunjungan
 
 ## 11. Admin Panel Scope (web, Blade)
 

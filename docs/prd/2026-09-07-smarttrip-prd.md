@@ -4,7 +4,7 @@
 
 **Type:** Full PRD
 **Status:** Draft — pre-implementation
-**Version:** 1.3
+**Version:** 1.4
 **Last Updated:** 2026-09-07
 **Source of truth for implementation detail:** `docs/superpowers/specs/2026-09-07-smarttrip-itinerary-recommendation-design.md` (this PRD is a reformatted, audience-oriented view of the same decisions — where they ever conflict, the design spec wins, since it carries finer-grained rationale)
 
@@ -14,6 +14,7 @@
 | 1.1 | 2026-09-07 | Applied `/prd-analyze` findings: added Metadata, Entity Lifecycles, Glossary, Observability, Competitive Landscape, Decisions Log sections; expanded Acceptance Criteria to cover all 14 user stories; fixed untestable SLA criterion; added data model validation rules |
 | 1.2 | 2026-09-07 | Replaced the unresearched Competitive Landscape placeholder with real research (Wanderlog, TripIt, the LLM-chat AI-planner category, and Atourin as the closest Indonesian comparable) |
 | 1.3 | 2026-09-07 | Resolved hosting open question: Windows Server + PostgreSQL for both dev and deployment (overrides team's usual MySQL default) |
+| 1.4 | 2026-09-07 | Decided Riverpod (team has no prior experience with either option); removed accessibility entirely per explicit instruction - not pursuing it this project |
 
 ---
 
@@ -103,7 +104,6 @@ Sources: [Best AI Trip Planner Apps 2026 (Lindy)](https://www.lindy.ai/blog/trip
 **Technical constraints:**
 - Platform: **Android/iOS via Flutter** (single codebase for end-users and admins)
 - Auth: Laravel Sanctum (opaque bearer tokens), email/password + Google Sign-In, account linking by email
-- Accessibility level: **not yet specified** — flagging as an open question (Section 17) rather than assuming a WCAG target that was never discussed
 - Offline support: **partial only** — visit-tracking events queue locally and retry when connectivity returns; no general offline browsing/generation support was designed
 - Performance: no hard SLA (see Section 16, US4) — Google Routes API is called once per day per generate/swap (not per view) specifically to keep this fast and cheap
 - Data residency/compliance: none specified (not a concern raised for this project)
@@ -171,11 +171,6 @@ Terasa seperti aplikasi e-commerce untuk browsing tempat (grid/list, filter, inf
 - Primary flow: Section 10 of design spec (numbered end-to-end)
 - Long-press pin di peta = tandai/batalkan kunjungan manual
 - Tap "+wishlist" di kartu katalog = tambah tanpa keluar dari browsing (tidak ada modal blocking)
-
-**Accessibility Notes:** *(open question — see Section 17, never formally discussed)*
-- Keyboard navigation: N/A (mobile touch app)
-- Screen reader considerations: not yet specified
-- Color contrast: gray/blue polyline distinction should be checked against color-blind accessibility, not yet validated
 
 **Figma / Design Link:** none — no visual design phase happened, this PRD and the design spec are text-only artifacts
 
@@ -327,12 +322,12 @@ timestamp set --(manual toggle off)--> null [correction path for false-positive 
 
 ## 13. Client-Side State Management
 
-*(Renamed from "State Management Map" for clarity against Section 12's entity lifecycles — this section is specifically about where Flutter app state lives, not backend entity status. Never explicitly decided in the design discussion — proposing a default here, adjust as needed.)*
+*(Renamed from "State Management Map" for clarity against Section 12's entity lifecycles — this section is specifically about where Flutter app state lives, not backend entity status.)*
 
 | State | Location | Persistence | Notes |
 |-------|----------|-------------|-------|
 | Auth token | Local secure storage (`flutter_secure_storage`) | Persistent | Sanctum bearer token |
-| Active trip being built (setup/wishlist/weights before generate) | Local UI state (proposed: **Riverpod**) | Session (survives navigation, not app restart) | Multi-step wizard state |
+| Active trip being built (setup/wishlist/weights before generate) | Local UI state (**Riverpod**) | Session (survives navigation, not app restart) | Multi-step wizard state |
 | Generated itinerary | Server (source of truth) + local cache for offline viewing | Persistent (server), cached locally | Re-fetched via `GET /api/trips/{id}` |
 | Live GPS position | Local UI state (stream) | None | From `geolocator`, not persisted |
 | Geofence registration | OS-level (native, outside Flutter widget tree) | Persistent until deregistered | Survives app kill (Section 8 of design spec) |
@@ -340,7 +335,7 @@ timestamp set --(manual toggle off)--> null [correction path for false-positive 
 | Profile default preferences | Server + local cache | Persistent (server) | `user_criteria_weights` |
 | Language selection | Local (`shared_preferences`) | Persistent | Client-side only, no backend |
 
-**Recommendation:** Riverpod over Provider/Bloc — good fit for this app's async-heavy nature (API calls, geofence streams, live location), reasonable learning curve for a student team, strong testability. Open to Provider instead if the team already has more experience with it — this is a low-stakes choice either way at this scale.
+**Decided: Riverpod** — good fit for this app's async-heavy nature (API calls, geofence streams, live location), strong testability. Team has no prior experience with either Riverpod or Provider, so Provider's usual advantage (existing familiarity) didn't apply here.
 
 ---
 
@@ -350,7 +345,7 @@ timestamp set --(manual toggle off)--> null [correction path for false-positive 
 |-------|--------|-----------|
 | Backend | Laravel 12 (PHP), REST API only | Team's established stack; no Blade views needed (mobile-only) |
 | Mobile | Flutter | Single codebase for iOS/Android, single app for users + role-gated admin |
-| State management | Riverpod (proposed) | See Section 13 |
+| State management | Riverpod | See Section 13 |
 | Database | PostgreSQL | Decided over the team's usual MySQL-with-Laravel default, to stay consistent with Windows Server + PostgreSQL already used across the team's other projects |
 | Auth | Laravel Sanctum (API tokens) + Google Sign-In | First-party, easy revocation, sufficient at this scale (chosen over JWT after explicit comparison) |
 | Maps | Google Maps SDK (`google_maps_flutter`) | Free unlimited rendering |
@@ -483,8 +478,7 @@ SmartTrip-Batam/
 ## 17. Open Questions & Risks
 
 - ~~**Q:** What's the target hosting environment for backend?~~ **Resolved 2026-09-07:** Windows Server + PostgreSQL, for both development and deployment.
-- **Q:** What accessibility level (if any) is expected for the app? — *Owner: Team — never discussed in the design phase*
-- **Q:** Riverpod vs. Provider for Flutter state management — this PRD proposes Riverpod, but the actual mobile team's prior experience should have the final say — *Owner: Mobile team*
+- ~~**Q:** Riverpod vs. Provider for Flutter state management?~~ **Resolved 2026-09-07:** Riverpod - team has no prior experience with either, so no reason to prefer Provider's smaller learning curve over Riverpod's better fit for this app's async-heavy needs.
 - **Risk:** Google Places Enterprise SKU quota (1,000 free calls/month) is the tightest constraint in the whole project — a rushed or careless bootstrap could burn it before the curated pool is complete — *Mitigation: the two-phase Discovery/Enrichment admin-review gate exists specifically to prevent this*
 - **Risk:** Background location permission ("Allow all the time" / "Always") is a sensitive, store-reviewed permission — fine for demo/sideload, but a real blocker if the team later wants to publish to Play Store — *Mitigation: documented explicitly as out of scope for this semester (design spec Section 13)*
 - **Risk:** Batam's island geography (irregular coastline, limited bridges) makes the Haversine-based day-budget travel-time estimate systematically optimistic — *Mitigation: circuity multiplier (~1.3-1.4x) applied, plus a post-hoc "padat" flag once real Routes API data comes back*

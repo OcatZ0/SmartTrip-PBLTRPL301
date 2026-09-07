@@ -10,7 +10,7 @@ Wisatawan Batam kesulitan menentukan destinasi wisata/kuliner yang cocok dengan 
 
 ## 2. Architecture Overview
 
-**Backend: Laravel, REST API only, auth via Laravel Sanctum (API token mode - opaque bearer token, bukan JWT; dipilih karena first-party, gampang di-revoke, cukup buat skala project ini). Dua cara masuk: email/password, atau Google Sign-In - keduanya berakhir dengan Sanctum token yang sama, cuma beda cara verifikasi identitas awal.**
+**Backend: Laravel, REST API only, auth via Laravel Sanctum (API token mode - opaque bearer token, bukan JWT; dipilih karena first-party, gampang di-revoke, cukup buat skala project ini). Dua cara masuk: email/password, atau Google Sign-In - keduanya berakhir dengan Sanctum token yang sama, cuma beda cara verifikasi identitas awal. Database: PostgreSQL (bukan MySQL default Laravel yang biasa dipakai tim - keputusan sadar, konsisten dengan Windows Server + PostgreSQL yang sudah dipakai di project-project lain tim). Hosting: Windows Server, dipakai sama buat development dan deployment.**
 
 - `places` sync module - Artisan command (`php artisan places:sync`), dijalankan manual (admin trigger) atau terjadwal ringan (bulanan), menarik data tempat wisata/kuliner/hotel Batam dari Google Places API (New) ke tabel `places` lokal. Upsert idempotent berdasarkan `google_place_id`.
 - `recommendation` module - hitung bobot kriteria dari input slider user, scoring TOPSIS terhadap kandidat tempat, clustering K-Means untuk pembagian hari, nearest-neighbor routing per hari.

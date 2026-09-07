@@ -4,7 +4,7 @@
 
 **Type:** Full PRD
 **Status:** Draft — pre-implementation
-**Version:** 1.2
+**Version:** 1.3
 **Last Updated:** 2026-09-07
 **Source of truth for implementation detail:** `docs/superpowers/specs/2026-09-07-smarttrip-itinerary-recommendation-design.md` (this PRD is a reformatted, audience-oriented view of the same decisions — where they ever conflict, the design spec wins, since it carries finer-grained rationale)
 
@@ -13,6 +13,7 @@
 | 1.0 | 2026-09-07 | Initial PRD generated from the design spec via `/prd-draft` |
 | 1.1 | 2026-09-07 | Applied `/prd-analyze` findings: added Metadata, Entity Lifecycles, Glossary, Observability, Competitive Landscape, Decisions Log sections; expanded Acceptance Criteria to cover all 14 user stories; fixed untestable SLA criterion; added data model validation rules |
 | 1.2 | 2026-09-07 | Replaced the unresearched Competitive Landscape placeholder with real research (Wanderlog, TripIt, the LLM-chat AI-planner category, and Atourin as the closest Indonesian comparable) |
+| 1.3 | 2026-09-07 | Resolved hosting open question: Windows Server + PostgreSQL for both dev and deployment (overrides team's usual MySQL default) |
 
 ---
 
@@ -350,7 +351,7 @@ timestamp set --(manual toggle off)--> null [correction path for false-positive 
 | Backend | Laravel 12 (PHP), REST API only | Team's established stack; no Blade views needed (mobile-only) |
 | Mobile | Flutter | Single codebase for iOS/Android, single app for users + role-gated admin |
 | State management | Riverpod (proposed) | See Section 13 |
-| Database | MySQL | Standard Laravel pairing per team convention |
+| Database | PostgreSQL | Decided over the team's usual MySQL-with-Laravel default, to stay consistent with Windows Server + PostgreSQL already used across the team's other projects |
 | Auth | Laravel Sanctum (API tokens) + Google Sign-In | First-party, easy revocation, sufficient at this scale (chosen over JWT after explicit comparison) |
 | Maps | Google Maps SDK (`google_maps_flutter`) | Free unlimited rendering |
 | Routing | Google Routes API | Real road-following polylines, generous free tier for this call volume |
@@ -358,7 +359,7 @@ timestamp set --(manual toggle off)--> null [correction path for false-positive 
 | AI enrichment | Gemini API (Flash/Flash-Lite) | Genuinely free ongoing tier vs. OpenAI/Claude's one-time trial credits |
 | Notifications | `flutter_local_notifications` | Fully client-side, no Firebase needed |
 | Geofencing | `geofence_service` (or equivalent native wrapper) | OS-level, survives app kill, battery-efficient |
-| Hosting | Not yet decided | Open question — see Section 17 |
+| Hosting | Windows Server | Same environment for both development and deployment, decided 2026-09-07 |
 
 ---
 
@@ -481,7 +482,7 @@ SmartTrip-Batam/
 
 ## 17. Open Questions & Risks
 
-- **Q:** What's the target hosting environment for backend + how does the team demo this (local, shared server, cloud)? — *Owner: Team, not yet decided*
+- ~~**Q:** What's the target hosting environment for backend?~~ **Resolved 2026-09-07:** Windows Server + PostgreSQL, for both development and deployment.
 - **Q:** What accessibility level (if any) is expected for the app? — *Owner: Team — never discussed in the design phase*
 - **Q:** Riverpod vs. Provider for Flutter state management — this PRD proposes Riverpod, but the actual mobile team's prior experience should have the final say — *Owner: Mobile team*
 - **Risk:** Google Places Enterprise SKU quota (1,000 free calls/month) is the tightest constraint in the whole project — a rushed or careless bootstrap could burn it before the curated pool is complete — *Mitigation: the two-phase Discovery/Enrichment admin-review gate exists specifically to prevent this*

@@ -23,7 +23,7 @@ Wisatawan Batam kesulitan menentukan destinasi wisata/kuliner yang cocok dengan 
 - Semua komunikasi ke backend lewat REST/JWT. Tidak ada panggilan langsung ke Google API dari mobile (API key tetap di server) - kecuali `google_maps_flutter` (render peta) dan `geolocator` (lokasi GPS device), yang keduanya tidak butuh API key berbayar/panggilan server sama sekali.
 - Foto tempat **tidak** di-hotlink langsung ke Google - Google Places Photo (New) butuh API key di URL buat ambil bytes gambar, jadi kalau mobile fetch langsung, key ke-expose ke client. Sync menyimpan foto ke storage lokal server (sesuai konvensi tim: file disimpan lokal, bukan cloud storage), `photo_url`/`place_photos.photo_url` menunjuk ke path server sendiri.
 - UI bilingual (ID/EN) lewat Flutter i18n standar (`easy_localization` atau `intl` bawaan) - murni client-side, tidak ada endpoint tambahan.
-- Notifikasi (reminder mulai hari, notif mendekati stop berikutnya) pakai `flutter_local_notifications` - **dijadwalkan/dipicu murni di device**, bukan push server. Reminder mulai hari dijadwalkan client-side begitu itinerary di-generate (pakai `daily_start_time` + tanggal hari itu); notif mendekati stop numpang di event geofence entry yang sama dengan visit-tracking (Section 7). Tidak butuh Firebase Cloud Messaging atau endpoint backend baru.
+- Notifikasi (reminder mulai hari, notif mendekati stop berikutnya) pakai `flutter_local_notifications` - **dijadwalkan/dipicu murni di device**, bukan push server. Reminder mulai hari dijadwalkan client-side begitu itinerary di-generate (pakai `daily_start_time` + tanggal hari itu); notif mendekati stop numpang di event geofence entry yang sama dengan visit-tracking (Section 8). Tidak butuh Firebase Cloud Messaging atau endpoint backend baru.
 
 **Kenapa split begini:** panggilan Google Places (yang berbayar/quota-limited) selalu lewat server dan batched, bukan per user mobile. Scoring TOPSIS juga selalu terhadap data lokal, jadi cepat dan tidak bergantung latency API eksternal.
 
@@ -34,12 +34,12 @@ Wisatawan Batam kesulitan menentukan destinasi wisata/kuliner yang cocok dengan 
 - **Implikasi:** batasi jumlah tempat awal (~300-500 tempat lintas kategori attraction/culinary/lodging di Batam) supaya full sync awal tetap dalam kuota gratis. Sync tetap manual/admin-triggered (tombol "sync now"), bukan cron agresif harian, supaya tidak boros kuota Enterprise. Akun Google Cloud baru juga dapat trial credit $300 sekali pakai yang cukup menutupi testing satu semester.
 - **Peta & rute jalan (kenapa Google, bukan TomTom):** Maps SDK for Android/iOS (dipakai lewat `google_maps_flutter`) gratis tanpa batas untuk render peta - jadi tidak ada biaya tambahan buat nampilin peta itu sendiri. Rute jalan asli (turn-by-turn, ngikutin jalan) pakai Google Routes API (`computeRoutes`), masuk tier Essentials dengan 10.000 panggilan gratis/bulan - jauh lebih dari cukup karena API ini cuma dipanggil sekali per hari-itinerary saat generate atau swap (bukan per view). TomTom punya free tier lebih besar (2.500 req/hari) tapi tidak ada Flutter SDK resmi, jadi butuh effort tambahan buat integrasi tile peta sendiri tanpa manfaat jelas dibanding Google yang sudah gratis. Lokasi user saat ini tidak butuh API sama sekali - cukup `geolocator` (akses GPS device langsung).
 - **Catatan operasional:** Google Maps Platform tetap butuh billing account (kartu kredit) aktif walau memakai kuota gratis - perlu disiapkan salah satu anggota tim.
-- **Bilingual & kuota:** sync dari Google cuma sekali per tempat dalam satu bahasa (Indonesia) - fetch ulang dalam Bahasa Inggris buat tiap tempat akan menggandakan pemakaian kuota Enterprise (sudah ketat di 1.000/bulan). Konten Inggris (`description_en`) diisi manual/bertahap oleh admin, bukan dari Google.
+- **Bilingual & kuota:** sync dari Google cuma sekali per tempat dalam satu bahasa (Indonesia) - fetch ulang dalam Bahasa Inggris buat tiap tempat akan menggandakan pemakaian kuota Enterprise (sudah ketat di 1.000/bulan). Konten Inggris (`description_en`) **bukan** ditulis manual oleh admin - begitu `description` (ID) tersedia (dari Google atau admin override), backend auto-translate ke Inggris pakai Google Cloud Translation API (500.000 karakter gratis/bulan, jauh lebih dari cukup buat ~300-500 deskripsi tempat) atau DeepL free tier. Hasil auto-translate tetap disimpan sebagai field yang bisa di-override admin kalau hasilnya kurang pas, bukan dikunci permanen.
 
 ## 4. Data Model
 
-- **`places`** - id, google_place_id (nullable, unique), name, type (`attraction`/`culinary`/`lodging`), lat, lng, address, price_level (raw Google tier, nullable - lihat catatan anggaran di Section 6), rating (dari Google), review_count, opening_hours (json), photo_url (thumbnail utama, path lokal server - lihat Section 2), description (nullable, dari Google `editorialSummary`, Bahasa Indonesia - tidak semua tempat punya), phone (nullable), website (nullable), google_maps_uri (nullable - buat tombol "Buka di Google Maps" navigasi asli, terpisah dari route view in-app), business_status (`operational`/`closed_temporarily`/`closed_permanently`, default `operational` - sync mengecualikan yang `closed_permanently` dari rekomendasi), types (json, raw Google types array buat label kategori lebih detail di layar), source (`google`/`manual`), timestamps
-- **`place_attributes`** - place_id FK, category_tags (json array of `categories.id`), estimated_visit_minutes, estimated_cost_idr (nullable, admin manual - prioritas utama buat kriteria anggaran, lihat Section 6), description_override (nullable, Bahasa Indonesia), description_en (nullable, terjemahan manual admin - fallback ke `description`/`description_override` kalau kosong saat UI dalam mode EN). Dipisah dari `places` supaya re-sync dari Google tidak menimpa data custom admin.
+- **`places`** - id, google_place_id (nullable, unique), name, type (`attraction`/`culinary`/`lodging`), lat, lng, address, price_level (raw Google tier, nullable - lihat catatan anggaran di Section 7), rating (dari Google), review_count, opening_hours (json), photo_url (thumbnail utama, path lokal server - lihat Section 2), description (nullable, dari Google `editorialSummary`, Bahasa Indonesia - tidak semua tempat punya), phone (nullable), website (nullable), google_maps_uri (nullable - buat tombol "Buka di Google Maps" navigasi asli, terpisah dari route view in-app), business_status (`operational`/`closed_temporarily`/`closed_permanently`, default `operational` - sync mengecualikan yang `closed_permanently` dari rekomendasi), types (json, raw Google types array buat label kategori lebih detail di layar), source (`google`/`manual`), timestamps
+- **`place_attributes`** - place_id FK, category_tags (json array of `categories.id`), estimated_visit_minutes, estimated_cost_idr (nullable, admin manual - prioritas utama buat kriteria anggaran, lihat Section 6), description_override (nullable, Bahasa Indonesia), description_en (nullable, auto-translate dari `description`/`description_override` via Google Cloud Translation API saat data ID tersimpan, admin bisa override hasilnya - fallback ke `description`/`description_override` kalau tetap kosong saat UI dalam mode EN). Dipisah dari `places` supaya re-sync dari Google tidak menimpa data custom admin.
 - **`categories`** - id, name_id, name_en, slug (unique - jaga konsistensi, cegah duplikat mirip kayak "kuliner" vs "wisata kuliner"), timestamps. Admin-manageable lewat panel (CRUD), bukan hardcode.
 - **`place_photos`** - place_id FK, photo_url (path lokal server), sort_order. Diisi dari Google `photos[]` saat sync (cap ~5 foto per tempat, download bytes-nya lewat server bukan disimpan sebagai link Google), dipakai buat carousel di detail screen.
 - **`place_reviews`** - place_id FK, user_id FK, rating (1-5), comment (nullable), itinerary_item_id FK (nullable, pembeda review "setelah kunjungan via app" vs review umum), timestamps
@@ -50,11 +50,19 @@ Wisatawan Batam kesulitan menentukan destinasi wisata/kuliner yang cocok dengan 
 - **`itinerary_days`** - trip_id FK, day_number, start_place_id, end_place_id (biasanya = hotel di kedua ujung)
 - **`itinerary_items`** - itinerary_day_id FK, place_id FK, visit_order, topsis_score (snapshot saat generate), source (`wishlist`/`recommended`), polyline_to_here (text, encoded polyline segmen jalan dari stop sebelumnya/hotel ke stop ini - diambil dari `legs[]` Google Routes API, per-leg bukan satu polyline gabungan per hari, supaya tiap segmen bisa diwarnai independen), visited_at (nullable timestamp, diisi otomatis lewat geofence trigger dari mobile)
 
-## 5. Rating Blend (Google + In-App)
+## 5. AI-Assisted Data Enrichment (bukan scraping)
+
+AI dipakai buat memproses data yang sudah legal kita punya, bukan buat mengambil data baru dari situs pihak ketiga (lihat Section 13 - scraping tetap di luar scope, ganti "scraper" jadi "AI agent" tidak menghilangkan masalah ToS-nya):
+
+- **Deskripsi:** Google Place Details punya field `generativeSummary`/`reviewSummary` (AI-generated summary dari review Google sendiri) - diminta langsung saat sync, jadi deskripsi berkualitas tanpa kerja tambahan, sudah termasuk dalam field yang dibayar/di-request dari Places API.
+- **Translasi EN:** lihat Section 3 - auto-translate, bukan manual.
+- **Bantuan tagging kategori admin (opsional, percepat kurasi 300-500 tempat):** LLM baca name+types+description tiap tempat, sarankan `category_tags` yang cocok dari daftar `categories` yang ada - admin tinggal approve/koreksi, bukan tag manual dari nol. Biaya API buat sekali proses ~300-500 tempat sangat kecil (jauh di bawah biaya Google Places).
+
+## 6. Rating Blend (Google + In-App)
 
 Rating in-app dipakai buat blend dengan rating Google di kriteria TOPSIS, bukan cuma data analitik pasif. Supaya tempat baru dengan 1 review 5 bintang tidak mengalahkan tempat dengan 2.000 review asli, dipakai Bayesian-average blend (mirip formula rating IMDB): rata-rata in-app menarik bobot makin besar seiring bertambahnya jumlah review in-app, tapi hampir sepenuhnya mengikuti rating Google kalau review in-app masih sedikit/nol (menghindari cold-start problem).
 
-## 6. Recommendation Engine Flow
+## 7. Recommendation Engine Flow
 
 1. **Trip setup (mobile):** num_days, budget_total, start_date, daily_start_time/daily_end_time (optional, default 09:00-19:00), toggle "sudah punya hotel?".
 2. **Wishlist (mobile, opsional):** user browse/scroll katalog tempat (seperti e-commerce - grid/list, filter kategori, infinite scroll via pagination) dan tambah ke wishlist. Ini terjadi sebelum tahap generate.
@@ -64,7 +72,7 @@ Rating in-app dipakai buat blend dengan rating Google di kriteria TOPSIS, bukan 
    - **Kesesuaian kategori/minat** (benefit, maksimalkan) - Jaccard similarity antara tag minat yang dipilih user dan `place_attributes.category_tags` tempat tsb.
    - **Jarak/lokasi** (cost, minimalkan) - Haversine dari hotel/titik awal.
    - **Kesesuaian anggaran** (cost, minimalkan) - nilai diambil berjenjang: (1) `place_attributes.estimated_cost_idr` kalau admin sudah isi, (2) kalau kosong, `places.price_level` dipetakan ke rentang IDR kasar, (3) kalau keduanya kosong, median harga tempat lain di kategori `type` yang sama yang datanya ada (imputasi netral - tempat tidak dihukum atau diuntungkan, cuma jadi rata-rata di kriteria ini, tetap dibedakan penuh oleh 3 kriteria lain).
-   - **Rating/popularitas** (benefit, maksimalkan) - blend Bayesian rating Google + in-app (Section 5).
+   - **Rating/popularitas** (benefit, maksimalkan) - blend Bayesian rating Google + in-app (Section 6).
 6. **Pembagian hari (backend):**
    a. K-Means clustering (k = num_days) atas koordinat tempat wishlist, supaya wishlist yang lokasinya berjauhan tidak masuk hari yang sama.
    b. Kalau total estimated_visit_minutes wishlist di satu cluster hari melebihi budget waktu hari itu, item overflow (prioritas terendah - terjauh dari centroid cluster) otomatis didorong (push) ke hari berikutnya, cascading kalau perlu. Kalau tetap tidak muat sampai hari terakhir, hari itu dikembalikan dengan flag "tidak muat".
@@ -75,7 +83,7 @@ Rating in-app dipakai buat blend dengan rating Google di kriteria TOPSIS, bukan 
 
 Pipeline: **K-Means (pembagian hari)** -> **Weighted-TOPSIS (ranking kandidat)** -> **Nearest-Neighbor (urutan rute)** -> **Routes API (polyline jalan asli per segmen)**.
 
-## 7. Live Trip Map & Visit Tracking
+## 8. Live Trip Map & Visit Tracking
 
 Saat user membuka peta untuk hari yang sedang aktif, tampilan menunjukkan progres perjalanan hari itu, bukan cuma rute statis:
 
@@ -98,7 +106,7 @@ Saat user membuka peta untuk hari yang sedang aktif, tampilan menunjukkan progre
 - **Trip multi-hari:** geofence cuma didaftarkan untuk stop-stop di hari yang lagi aktif (hari yang di-"Mulai"-kan), bukan seluruh hari sekaligus - supaya lewat dekat lokasi hari ke-3 saat masih hari ke-1 tidak salah ke-trigger. Geofence hari sebelumnya di-deregister saat pindah/mulai hari berikutnya.
 - **Battery optimization (Android):** beberapa OEM (MIUI, OnePlus, dll) agresif mematikan background service walau geofence terdaftar di level OS - app perlu minta exemption dari battery optimization saat user pertama kali mulai live tracking, dan ini didokumentasikan sebagai known risk, bukan sesuatu yang bisa 100% dijamin dari sisi app.
 
-## 8. API Endpoints
+## 9. API Endpoints
 
 ```
 Auth
@@ -110,7 +118,7 @@ Trip setup
 POST   /api/trips                                 - create trip (guest-allowed)
                                                       body: num_days, budget_total, start_date,
                                                       daily_start_time?, daily_end_time?, has_own_hotel
-GET    /api/trips/{id}                             - trip detail (+ itinerary + route_polyline per hari setelah generate)
+GET    /api/trips/{id}                             - trip detail (+ itinerary + polyline_to_here tiap stop setelah generate)
 POST   /api/trips/{id}/hotel                       - set hotel pilihan/sendiri sebagai titik awal/akhir
 GET    /api/trips/{id}/hotel-options                - top-3 hotel ranking TOPSIS (skip kalau has_own_hotel)
 
@@ -153,7 +161,7 @@ Tidak ada endpoint notifikasi - reminder mulai hari & notif mendekati stop sepen
 
 Guest trip dilacak lewat signed trip token (bukan session user), supaya guest bisa kembali ke trip yang sama sebelum memutuskan simpan/login.
 
-## 9. Mobile App Flow (Flutter)
+## 10. Mobile App Flow (Flutter)
 
 0. Pilihan bahasa (ID/EN) - default ikut bahasa device, bisa diganti kapan saja lewat settings
 1. Home -> "Buat Trip" (tanpa login)
@@ -163,24 +171,24 @@ Guest trip dilacak lewat signed trip token (bukan session user), supaya guest bi
 5. Kalau belum punya hotel: tampilkan top-3 pilihan hotel
 6. Loading -> hasil itinerary: kartu per hari, tiap tempat ada badge source (wishlist/recommended). Reminder "mulai hari ini" otomatis terjadwal (local notification) untuk tiap hari di itinerary.
 7. Menu "..." per item -> swap (alternatif ranking atau cari manual)
-8. Tombol "Buka Peta" per hari -> live map (lihat Section 7): marker hotel, lokasi user saat ini, pin bernomor per stop, polyline abu-abu/biru sesuai status kunjungan; geofencing otomatis aktif selama layar ini/trip berjalan. Notif "sudah dekat stop berikutnya" muncul saat geofence entry terpicu.
+8. Tombol "Buka Peta" per hari -> live map (lihat Section 8): marker hotel, lokasi user saat ini, pin bernomor per stop, polyline abu-abu/biru sesuai status kunjungan; geofencing otomatis aktif selama layar ini/trip berjalan. Notif "sudah dekat stop berikutnya" muncul saat geofence entry terpicu.
 9. "Simpan trip" -> minta login/register kalau masih guest, lalu simpan
 10. List trip tersimpan (auth) -> buka lagi, edit (regenerate penuh kalau ubah num_days/budget/hotel, partial swap kalau cuma ganti 1 tempat), hapus, tambah review in-app setelah kunjungan
 
-## 10. Admin Panel Scope (web, Blade)
+## 11. Admin Panel Scope (web, Blade)
 
 - CRUD Places (lihat data hasil sync Google, edit atribut custom termasuk estimated_cost_idr dan description_en, tambah manual tempat yang tidak ada di Google)
 - CRUD Categories (tag minat/kategori tempat - `slug` unik dijaga biar tidak ada duplikat mirip kayak "kuliner" vs "wisata kuliner")
 - Trigger "sync now" manual + status sync terakhir
 - Dashboard analitik dasar (tempat paling di-wishlist, rata-rata rating in-app, volume trip, **daftar tempat yang belum ada estimated_cost_idr** - biar tim tahu prioritas data yang masih perlu dilengkapi) - di sinilah data review in-app dipakai
 
-## 11. Testing Approach
+## 12. Testing Approach
 
 - Backend: unit test untuk bagian matematis murni (normalisasi bobot, scoring TOPSIS, Haversine, K-Means clustering, blend rating Bayesian) karena deterministik dan gampang diverifikasi terhadap input yang sudah diketahui hasilnya - bagian ini juga paling penting untuk dipertanggungjawabkan metodenya.
 - Feature test untuk endpoint API (alur create trip -> generate -> swap -> visit).
 - Flutter: widget test untuk layar input slider/wishlist, QA manual untuk alur penuh termasuk geofencing (auto-generate output & lokasi GPS tidak praktis diasersi persis lewat widget test).
 
-## 12. Out of Scope (semester ini)
+## 13. Out of Scope (semester ini)
 
 - Laporan akademik (di luar dokumen ini per instruksi user)
 - Scraping platform lain (TripAdvisor/Traveloka/Tiket.com) - hanya Google Places sebagai sumber data eksternal

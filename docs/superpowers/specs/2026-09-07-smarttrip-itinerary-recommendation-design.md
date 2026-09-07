@@ -34,8 +34,9 @@ Wisatawan Batam kesulitan menentukan destinasi wisata/kuliner yang cocok dengan 
 
 ## 4. Data Model
 
-- **`places`** - id, google_place_id (nullable, unique), name, type (`attraction`/`culinary`/`lodging`), lat, lng, address, price_level, rating (dari Google), review_count, opening_hours (json), photo_url, source (`google`/`manual`), timestamps
-- **`place_attributes`** - place_id FK, category_tags (json), estimated_visit_minutes, budget_tier override admin. Dipisah dari `places` supaya re-sync dari Google tidak menimpa data custom admin.
+- **`places`** - id, google_place_id (nullable, unique), name, type (`attraction`/`culinary`/`lodging`), lat, lng, address, price_level, rating (dari Google), review_count, opening_hours (json), photo_url (thumbnail utama), description (nullable, dari Google `editorialSummary` - tidak semua tempat punya), phone (nullable), website (nullable), google_maps_uri (nullable - buat tombol "Buka di Google Maps" navigasi asli, terpisah dari route view in-app), business_status (`operational`/`closed_temporarily`/`closed_permanently`, default `operational` - sync mengecualikan yang `closed_permanently` dari rekomendasi), types (json, raw Google types array buat label kategori lebih detail di layar), source (`google`/`manual`), timestamps
+- **`place_attributes`** - place_id FK, category_tags (json), estimated_visit_minutes, budget_tier override admin, description_override (nullable - dipakai kalau Google tidak punya editorial summary, atau admin mau tulis deskripsi Bahasa Indonesia yang lebih baik). Dipisah dari `places` supaya re-sync dari Google tidak menimpa data custom admin.
+- **`place_photos`** - place_id FK, photo_url, sort_order. Diisi dari Google `photos[]` saat sync (cap ~5 foto per tempat), dipakai buat carousel di detail screen.
 - **`place_reviews`** - place_id FK, user_id FK, rating (1-5), comment (nullable), itinerary_item_id FK (nullable, pembeda review "setelah kunjungan via app" vs review umum), timestamps
 - **`users`** - standar Laravel auth
 - **`trips`** - user_id (nullable sampai disimpan), title, num_days, budget_total, has_own_hotel (bool), hotel_place_id (FK nullable), start_date, daily_start_time (default 09:00), daily_end_time (default 19:00)

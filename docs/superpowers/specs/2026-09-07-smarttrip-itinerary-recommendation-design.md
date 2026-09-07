@@ -41,8 +41,8 @@ Wisatawan Batam kesulitan menentukan destinasi wisata/kuliner yang cocok dengan 
 - **`trips`** - user_id (nullable sampai disimpan), title, num_days, budget_total, has_own_hotel (bool), hotel_place_id (FK nullable), start_date, daily_start_time (default 09:00), daily_end_time (default 19:00)
 - **`trip_wishlist_places`** - trip_id FK, place_id FK (nullable - kalau custom pin di luar database, simpan name+lat+lng langsung)
 - **`trip_criteria_weights`** - trip_id FK, criterion, weight (hasil normalisasi slider, disimpan supaya swap/regenerate pakai bobot yang sama)
-- **`itinerary_days`** - trip_id FK, day_number, start_place_id, end_place_id (biasanya = hotel di kedua ujung), route_polyline (text, encoded polyline dari Google Routes API - dihitung sekali saat generate/swap, bukan tiap kali itinerary dibuka)
-- **`itinerary_items`** - itinerary_day_id FK, place_id FK, visit_order, topsis_score (snapshot saat generate), source (`wishlist`/`recommended`)
+- **`itinerary_days`** - trip_id FK, day_number, start_place_id, end_place_id (biasanya = hotel di kedua ujung)
+- **`itinerary_items`** - itinerary_day_id FK, place_id FK, visit_order, topsis_score (snapshot saat generate), source (`wishlist`/`recommended`), polyline_to_here (text, encoded polyline segmen jalan dari stop sebelumnya/hotel ke stop ini - diambil dari `legs[]` Google Routes API, per-leg bukan satu polyline gabungan per hari, supaya tiap segmen bisa diwarnai independen), visited_at (nullable timestamp, diisi otomatis lewat geofence trigger dari mobile)
 
 ## 5. Rating Blend (Google + In-App)
 
@@ -60,12 +60,26 @@ Rating in-app dipakai buat blend dengan rating Google di kriteria TOPSIS, bukan 
    b. Kalau total estimated_visit_minutes wishlist di satu cluster hari melebihi budget waktu hari itu, item overflow (prioritas terendah - terjauh dari centroid cluster) otomatis didorong (push) ke hari berikutnya, cascading kalau perlu. Kalau tetap tidak muat sampai hari terakhir, hari itu dikembalikan dengan flag "tidak muat".
    c. Slot kosong tiap hari diisi tempat rekomendasi TOPSIS terdekat dari centroid cluster hari itu (atau dari hotel kalau hari itu tidak ada wishlist).
    d. Nearest-neighbor (Haversine) dijalankan per hari (wishlist + recommended digabung) mulai dan berakhir di hotel/titik awal, untuk menentukan urutan kunjungan.
-   e. Setelah urutan per hari fix, backend panggil Google Routes API (`computeRoutes`) sekali per hari dengan urutan stop tsb, simpan encoded polyline hasilnya ke `itinerary_days.route_polyline`.
-7. **Swap (backend):** ganti satu item - ambil alternatif TOPSIS peringkat berikutnya yang belum dipakai (kategori & radius hari yang sama), atau user cari manual lewat browse/search penuh. Setelah swap, urutan NN dihitung ulang untuk hari itu (langkah 6d) dan `route_polyline` di-refresh (langkah 6e) - hari lain tidak terpengaruh.
+   e. Setelah urutan per hari fix, backend panggil Google Routes API (`computeRoutes`) sekali per hari dengan seluruh waypoint (hotel -> stop 1 -> stop 2 -> ... -> hotel), lalu simpan tiap segmen dari `legs[]` response ke `polyline_to_here` milik stop tujuan masing-masing (bukan satu polyline gabungan) - satu API call tetap cukup buat seluruh hari karena Routes API mendukung multi-waypoint dalam satu request.
+7. **Swap (backend):** ganti satu item - ambil alternatif TOPSIS peringkat berikutnya yang belum dipakai (kategori & radius hari yang sama), atau user cari manual lewat browse/search penuh. Setelah swap, urutan NN dihitung ulang untuk hari itu (langkah 6d) dan `polyline_to_here` di-refresh buat stop yang urutannya berubah (langkah 6e) - hari lain tidak terpengaruh.
 
-Pipeline: **K-Means (pembagian hari)** -> **Weighted-TOPSIS (ranking kandidat)** -> **Nearest-Neighbor (urutan rute)** -> **Routes API (polyline jalan asli)**.
+Pipeline: **K-Means (pembagian hari)** -> **Weighted-TOPSIS (ranking kandidat)** -> **Nearest-Neighbor (urutan rute)** -> **Routes API (polyline jalan asli per segmen)**.
 
-## 7. API Endpoints
+## 7. Live Trip Map & Visit Tracking
+
+Saat user membuka peta untuk hari yang sedang aktif, tampilan menunjukkan progres perjalanan hari itu, bukan cuma rute statis:
+
+- **Marker hotel/titik awal** - dari `itinerary_days.start_place_id`
+- **Marker lokasi user saat ini** - live, dari `geolocator` position stream selama layar peta terbuka
+- **Pin bernomor tiap stop** sesuai `visit_order`
+- **Polyline per segmen** (`itinerary_items.polyline_to_here`) diwarnai **abu-abu** kalau stop tujuan segmen itu sudah `visited_at` terisi, **biru** kalau belum - persis pola warna rute yang sudah/belum dilalui di Google Maps navigasi
+- **Titik akhir** - `itinerary_days.end_place_id` (biasanya hotel yang sama)
+
+**Deteksi kunjungan (otomatis, geofencing):** selama trip berlangsung, mobile app mendaftarkan geofence radius 100m (default, bisa disesuaikan) untuk tiap stop yang belum `visited_at` di hari aktif, pakai plugin geofencing native (misal `geofence_service`) - bukan polling GPS manual, supaya lebih hemat baterai dan tetap jalan walau app di-background. Begitu geofence entry event terpicu, app memanggil `POST /api/itinerary-items/{id}/visit` untuk set `visited_at`, lalu peta refresh warna segmen terkait.
+
+**Catatan risiko/scope:** location tracking background butuh permission "Allow all the time" di Android dan "Always" di iOS - keduanya permission sensitif yang direview ketat oleh Play Store/App Store dan wajib ada privacy policy kalau mau publish ke store. Untuk keperluan demo/skripsi (sideload/internal testing) ini bukan blocker, tapi kalau rencananya publish ke Play Store perlu effort tambahan (justifikasi permission, privacy policy) di luar todo teknis biasa. Server tidak (dan tidak perlu) memverifikasi keaslian lokasi device saat menerima `visit` - cukup untuk kebutuhan visualisasi progres, bukan sistem check-in yang butuh anti-fraud.
+
+## 8. API Endpoints
 
 ```
 Auth
@@ -97,6 +111,9 @@ GET    /api/itinerary-items/{id}/swap-candidates     - alternatif ranking (mode=
 GET    /api/places?search=&category=&near_itinerary_day={day_id}   - "cari lainnya" manual
 PATCH  /api/itinerary-items/{id}                     - commit swap {place_id}, re-run NN hari itu
 
+Live tracking
+POST   /api/itinerary-items/{id}/visit               - tandai visited_at (dipanggil mobile saat geofence entry)
+
 Places & review
 GET    /api/places                                  - browse/search umum (katalog wishlist)
 GET    /api/places/{id}                              - detail tempat
@@ -113,34 +130,37 @@ GET             /api/admin/analytics                 - tempat terfavorit, rata-r
 
 Guest trip dilacak lewat signed trip token (bukan session user), supaya guest bisa kembali ke trip yang sama sebelum memutuskan simpan/login.
 
-## 8. Mobile App Flow (Flutter)
+## 9. Mobile App Flow (Flutter)
 
 1. Home -> "Buat Trip" (tanpa login)
 2. Trip setup: num_days, budget_total, start_date, daily start/end time (opsional, default ditampilkan), toggle "sudah punya hotel?"
 3. Wishlist (opsional): katalog tempat gaya e-commerce (grid/list, filter kategori, infinite scroll) dengan tombol "+ wishlist" per kartu
 4. Slider preferensi: 4 kriteria, 0-10
 5. Kalau belum punya hotel: tampilkan top-3 pilihan hotel
-6. Loading -> hasil itinerary: kartu per hari, tiap tempat ada badge source (wishlist/recommended), peta per hari (`google_maps_flutter`) menampilkan pin bernomor sesuai urutan kunjungan + polyline rute jalan asli (decode dari `route_polyline`) + marker lokasi user saat ini (dari `geolocator`, kalau permission diizinkan)
+6. Loading -> hasil itinerary: kartu per hari, tiap tempat ada badge source (wishlist/recommended)
 7. Menu "..." per item -> swap (alternatif ranking atau cari manual)
-8. "Simpan trip" -> minta login/register kalau masih guest, lalu simpan
-9. List trip tersimpan (auth) -> buka lagi, edit, generate ulang, tambah review in-app setelah kunjungan
+8. Tombol "Buka Peta" per hari -> live map (lihat Section 7): marker hotel, lokasi user saat ini, pin bernomor per stop, polyline abu-abu/biru sesuai status kunjungan; geofencing otomatis aktif selama layar ini/trip berjalan
+9. "Simpan trip" -> minta login/register kalau masih guest, lalu simpan
+10. List trip tersimpan (auth) -> buka lagi, edit, generate ulang, tambah review in-app setelah kunjungan
 
-## 9. Admin Panel Scope (web, Blade)
+## 10. Admin Panel Scope (web, Blade)
 
 - CRUD Places (lihat data hasil sync Google, edit atribut custom, tambah manual tempat yang tidak ada di Google)
 - Trigger "sync now" manual + status sync terakhir
 - Manajemen tag kategori/kriteria
 - Dashboard analitik dasar (tempat paling di-wishlist, rata-rata rating in-app, volume trip) - di sinilah data review in-app dipakai
 
-## 10. Testing Approach
+## 11. Testing Approach
 
 - Backend: unit test untuk bagian matematis murni (normalisasi bobot, scoring TOPSIS, Haversine, K-Means clustering, blend rating Bayesian) karena deterministik dan gampang diverifikasi terhadap input yang sudah diketahui hasilnya - bagian ini juga paling penting untuk dipertanggungjawabkan metodenya.
-- Feature test untuk endpoint API (alur create trip -> generate -> swap).
-- Flutter: widget test untuk layar input slider/wishlist, QA manual untuk alur penuh (output auto-generate tidak praktis untuk diasersi persis lewat widget test).
+- Feature test untuk endpoint API (alur create trip -> generate -> swap -> visit).
+- Flutter: widget test untuk layar input slider/wishlist, QA manual untuk alur penuh termasuk geofencing (auto-generate output & lokasi GPS tidak praktis diasersi persis lewat widget test).
 
-## 11. Out of Scope (semester ini)
+## 12. Out of Scope (semester ini)
 
 - Laporan akademik (di luar dokumen ini per instruksi user)
 - Scraping platform lain (TripAdvisor/Traveloka/Tiket.com) - hanya Google Places sebagai sumber data eksternal
 - True AHP pairwise comparison - dipakai direct-rating slider yang lebih simpel untuk UX mobile
 - Kolaborasi/sharing itinerary antar user
+- Re-routing otomatis kalau user menyimpang dari rute (out of order visit tetap dicatat per-stop, tapi tidak ada logika "hitung ulang rute optimal dari posisi user sekarang")
+- Publish ke Play Store/App Store (kalau nanti perlu, siapkan privacy policy + justifikasi background location permission dulu)

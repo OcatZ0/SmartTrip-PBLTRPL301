@@ -15,10 +15,11 @@ Wisatawan Batam kesulitan menentukan destinasi wisata/kuliner yang cocok dengan 
 - `places` sync module - Artisan command (`php artisan places:sync`), dijalankan manual (admin trigger) atau terjadwal ringan (bulanan), menarik data tempat wisata/kuliner/hotel Batam dari Google Places API (New) ke tabel `places` lokal. Upsert idempotent berdasarkan `google_place_id`.
 - `recommendation` module - hitung bobot kriteria dari input slider user, scoring TOPSIS terhadap kandidat tempat, clustering K-Means untuk pembagian hari, nearest-neighbor routing per hari.
 - `itinerary` module - simpan itinerary (hanya untuk user yang login), swap item, tracking source (wishlist vs recommended).
-- `admin` module - CRUD atribut custom tempat, manajemen kriteria, trigger sync manual, dashboard analitik dari data review in-app.
+- `admin` module - CRUD places/place_attributes, CRUD categories, review place_candidates (discovery/approve/reject), dashboard analitik - semua lewat endpoint `/api/admin/*` yang sama, dikonsumsi Flutter role-gated (Section 11), bukan Blade.
 
-**Mobile: Flutter.**
+**Mobile: Flutter - satu app buat semua (user biasa & admin), tidak ada web admin panel sama sekali.**
 
+- **Role-gated, bukan app terpisah:** admin login di app Flutter yang sama persis. Begitu `users.role = admin` kedeteksi setelah login, muncul tab/menu tambahan (review candidate tempat, CRUD places/categories, dashboard analitik - lihat Section 11) di atas alur user biasa yang tetap sama. Satu codebase, satu app di HP siapapun - bukan dua project Flutter terpisah.
 - **Login/register wajib sebelum bisa bikin trip** - tidak ada alur guest lagi (diputuskan ulang, disederhanakan dari desain awal). Browse katalog tempat (`GET /api/places`) tetap bisa tanpa login, tapi begitu masuk ke "Buat Trip" langsung diarahkan ke login/register kalau belum. Ini menghilangkan kebutuhan guest trip token, endpoint "save/attach trip", dan logic auth kondisional - trip selalu langsung terikat ke `user_id` sejak dibuat.
 - Semua komunikasi ke backend lewat REST + Sanctum bearer token. Tidak ada panggilan langsung ke Google API dari mobile (API key tetap di server) - kecuali `google_maps_flutter` (render peta) dan `geolocator` (lokasi GPS device), yang keduanya tidak butuh API key berbayar/panggilan server sama sekali.
 - Foto tempat **tidak** di-hotlink langsung ke Google - Google Places Photo (New) butuh API key di URL buat ambil bytes gambar, jadi kalau mobile fetch langsung, key ke-expose ke client. Sync menyimpan foto ke storage lokal server (sesuai konvensi tim: file disimpan lokal, bukan cloud storage), `photo_url`/`place_photos.photo_url` menunjuk ke path server sendiri.
@@ -186,19 +187,25 @@ Tidak ada endpoint notifikasi - reminder mulai hari & notif mendekati stop sepen
 8. Tombol "Buka Peta" per hari -> live map (lihat Section 8): marker hotel, lokasi user saat ini, pin bernomor per stop, polyline abu-abu/biru sesuai status kunjungan; geofencing otomatis aktif selama layar ini/trip berjalan. Notif "sudah dekat stop berikutnya" muncul saat geofence entry terpicu.
 9. List trip tersimpan -> buka lagi, edit (regenerate penuh kalau ubah num_days/budget/hotel, partial swap kalau cuma ganti 1 tempat), hapus, tambah review in-app setelah kunjungan
 
-## 11. Admin Panel Scope (web, Blade)
+Alur di atas berlaku buat semua user. Kalau `role = admin`, ada tab/menu tambahan yang muncul di atas alur ini - lihat Section 11.
 
-- CRUD Places (lihat data hasil sync Google, edit atribut custom termasuk estimated_cost_idr dan description_en, tambah manual tempat yang tidak ada di Google)
-- CRUD Categories (tag minat/kategori tempat - `slug` unik dijaga biar tidak ada duplikat mirip kayak "kuliner" vs "wisata kuliner")
-- **Review candidate tempat** (Section 3) - trigger discovery per area/kategori, lihat daftar `place_candidates` (bisa difilter per search_area), approve (promosikan + fetch detail lengkap) atau reject satu-satu atau bulk
-- Trigger "sync now" manual + status sync terakhir
-- Dashboard analitik dasar (tempat paling di-wishlist, rata-rata rating in-app, volume trip, **daftar tempat yang belum ada estimated_cost_idr**, **daftar tempat yang category_tags-nya belum direview** - biar tim tahu prioritas data yang masih perlu dilengkapi/dicek) - di sinilah data review in-app dipakai
+## 11. Admin Screens (Flutter, role-gated - bukan web panel terpisah)
+
+Semua ini adalah layar tambahan di app Flutter yang sama, cuma muncul kalau `users.role = admin` (Section 2) - dikonsumsi lewat endpoint `/api/admin/*` yang sama seperti kalau backend-nya dipakai web panel, cuma UI-nya native Flutter:
+
+- **CRUD Places** - list/search places (data hasil Google + manual), form edit atribut custom (estimated_cost_idr, description_override, description_en, estimated_visit_minutes), tambah manual tempat yang tidak ada di Google
+- **CRUD Categories** - list/tambah/edit/hapus tag kategori, jaga `slug` unik biar tidak ada duplikat mirip kayak "kuliner" vs "wisata kuliner"
+- **Review candidate tempat** (Section 3) - tombol trigger discovery per area/kategori, list `place_candidates` (filter per search_area/status), approve (promosikan + fetch detail lengkap + AI enrichment) atau reject - bisa satu-satu atau bulk-select
+- Status sync terakhir (kapan discovery/enrichment terakhir jalan, berapa candidate pending)
+- Dashboard analitik (chart/kartu ringkas) - tempat paling di-wishlist, rata-rata rating in-app, volume trip, **daftar tempat yang belum ada estimated_cost_idr**, **daftar tempat yang category_tags-nya belum direview**
+
+**Catatan effort:** layar-layar ini (terutama list+filter place_candidates dan dashboard chart) secara teknis lebih banyak kerjaan buat dibangun native di Flutter dibanding kalau pakai admin panel web siap pakai (Blade+DataTables/Filament) - trade-off yang disadari demi satu codebase mobile-only, bukan oversight.
 
 ## 12. Testing Approach
 
 - Backend: unit test untuk bagian matematis murni (normalisasi bobot, scoring TOPSIS, Haversine, K-Means clustering, blend rating Bayesian) karena deterministik dan gampang diverifikasi terhadap input yang sudah diketahui hasilnya - bagian ini juga paling penting untuk dipertanggungjawabkan metodenya.
 - Feature test untuk endpoint API (alur create trip -> generate -> swap -> visit).
-- Flutter: widget test untuk layar input slider/wishlist, QA manual untuk alur penuh termasuk geofencing (auto-generate output & lokasi GPS tidak praktis diasersi persis lewat widget test).
+- Flutter: widget test untuk layar input slider/wishlist dan layar admin (form CRUD, list place_candidates), QA manual untuk alur penuh termasuk geofencing (auto-generate output & lokasi GPS tidak praktis diasersi persis lewat widget test).
 
 ## 13. Out of Scope (semester ini)
 

@@ -4,8 +4,8 @@
 
 **Type:** Full PRD
 **Status:** Draft — pre-implementation
-**Version:** 1.4
-**Last Updated:** 2026-09-07
+**Version:** 1.5
+**Last Updated:** 2026-09-11
 **Source of truth for implementation detail:** `docs/superpowers/specs/2026-09-07-smarttrip-itinerary-recommendation-design.md` (this PRD is a reformatted, audience-oriented view of the same decisions — where they ever conflict, the design spec wins, since it carries finer-grained rationale)
 
 | Version | Date | Change |
@@ -15,6 +15,7 @@
 | 1.2 | 2026-09-07 | Replaced the unresearched Competitive Landscape placeholder with real research (Wanderlog, TripIt, the LLM-chat AI-planner category, and Atourin as the closest Indonesian comparable) |
 | 1.3 | 2026-09-07 | Resolved hosting open question: Windows Server + PostgreSQL for both dev and deployment (overrides team's usual MySQL default) |
 | 1.4 | 2026-09-07 | Decided Riverpod (team has no prior experience with either option); removed accessibility entirely per explicit instruction - not pursuing it this project |
+| 1.5 | 2026-09-11 | Added weather forecast + swap suggestion feature (US15), sourced real ToS text for the scraping-avoidance rationale (TripAdvisor, Traveloka confirmed with exact quotes; Tiket.com could not be independently verified) |
 
 ---
 
@@ -87,7 +88,7 @@ Sources: [Best AI Trip Planner Apps 2026 (Lindy)](https://www.lindy.ai/blog/trip
 
 ## 5. Scope & Constraints
 
-**In scope:** everything in the accompanying design spec — trip creation, wishlist, preference sliders + minat selection, hotel resolution (search or custom pin), TOPSIS/K-Means/NN/Routes generation pipeline, swap, live map with geofencing, in-app reviews, profile preference defaults, mandatory onboarding, Google Sign-In, and the full admin data-curation loop (Discovery → review → Enrichment → AI tagging/translation → ongoing curation).
+**In scope:** everything in the accompanying design spec — trip creation, wishlist, preference sliders + minat selection, hotel resolution (search or custom pin), TOPSIS/K-Means/NN/Routes generation pipeline, swap, live map with geofencing, weather forecast + swap suggestion, in-app reviews, profile preference defaults, mandatory onboarding, Google Sign-In, and the full admin data-curation loop (Discovery → review → Enrichment → AI tagging/translation → ongoing curation).
 
 **Out of scope** (see design spec Section 13 for full detail):
 - Booking/reservation/payment of any kind
@@ -119,6 +120,7 @@ Sources: [Best AI Trip Planner Apps 2026 (Lindy)](https://www.lindy.ai/blog/trip
 | 2 | When I'm actually out on my trip, I want to see my planned route and know what I've already visited, so I don't get lost or lose track of my schedule. |
 | 3 | When I already have specific places I want to visit (that I found elsewhere), I want to add them to my plan and have the system build the rest of the schedule around them, so I don't lose the personal research I already did. |
 | 4 | When I'm the team managing the app's place data, I want a controlled way to bring new places into the system without blowing our API budget, so the recommendation quality stays high without unsustainable cost. |
+| 5 | When my trip is coming up soon and rain is forecast, I want to know before I'm standing at an outdoor spot in a downpour, so I can swap to an indoor alternative ahead of time instead of during. |
 
 ---
 
@@ -140,6 +142,7 @@ Sources: [Best AI Trip Planner Apps 2026 (Lindy)](https://www.lindy.ai/blog/trip
 | US12 | Admin | review dan approve/reject kandidat tempat | kontrol kualitas data sebelum masuk sistem rekomendasi | J4 |
 | US13 | Admin | lengkapi estimasi harga/kategori yang belum lengkap | kriteria TOPSIS makin akurat seiring waktu | J4 |
 | US14 | Admin | lihat dashboard tempat yang butuh perhatian (harga kosong, tag belum direview) | tahu prioritas kerja tanpa harus cek manual satu-satu | J4 |
+| US15 | Wisatawan | lihat forecast cuaca per hari, dapat saran swap kalau hari itu ada stop outdoor + prediksi hujan | tidak kaget kehujanan di tempat outdoor, bisa antisipasi dari awal | J5 |
 
 ---
 
@@ -201,6 +204,8 @@ Terasa seperti aplikasi e-commerce untuk browsing tempat (grid/list, filter, inf
 | AdminDashboard | Display | Charts/cards for wishlist popularity, missing data lists | US14 |
 | CategoryAdminForm | Form | CRUD for `categories` taxonomy | (admin) |
 | LanguageToggle | Action | ID/EN switch, settings | - |
+| WeatherForecastCard | Display | Per-day forecast summary, shown once trip is within ~7 days | US15 |
+| WeatherSwapBadge | Action | Rain-warning badge on a day with outdoor stops, opens SwapModal on tap | US15 |
 
 ---
 
@@ -215,7 +220,7 @@ places(id, google_place_id?, name, type[attraction|culinary|lodging], lat, lng, 
   types[json], source[google|manual], timestamps)
 
 place_attributes(place_id FK, category_tags[json:categories.id], category_tags_reviewed[bool],
-  estimated_visit_minutes, estimated_cost_idr?, description_override?, description_en?, timestamps)
+  estimated_visit_minutes, is_outdoor[bool], estimated_cost_idr?, description_override?, description_en?, timestamps)
 
 categories(id, name_id, name_en, slug[unique], timestamps)
 
@@ -284,7 +289,8 @@ Full endpoint list is design spec Section 9 — summarized by group:
 - Google Places API (New) — Nearby/Text Search (Pro SKU) + Place Details (Enterprise SKU) for place data
 - Google Routes API (`computeRoutes`) — real road polylines, Essentials SKU
 - Google Maps SDK via `google_maps_flutter` — map rendering, free
-- Gemini API — bilingual content + AI category tagging + visit-duration estimation, one combined call per place (Gemini chosen for its genuine free tier)
+- Gemini API — bilingual content + AI category tagging + visit-duration estimation + is_outdoor inference, one combined call per place (Gemini chosen for its genuine free tier)
+- Open-Meteo — day-level weather forecast, called directly client-side (no API key needed, so nothing to protect server-side), only once a trip's `start_date` is within ~7 days
 - `geolocator` — device GPS, no API
 - `geofence_service` (or equivalent) — OS-level geofencing for visit detection
 - `flutter_local_notifications` — day-start and proximity reminders, fully local
@@ -354,6 +360,7 @@ timestamp set --(manual toggle off)--> null [correction path for false-positive 
 | AI enrichment | Gemini API (Flash/Flash-Lite) | Genuinely free ongoing tier vs. OpenAI/Claude's one-time trial credits |
 | Notifications | `flutter_local_notifications` | Fully client-side, no Firebase needed |
 | Geofencing | `geofence_service` (or equivalent native wrapper) | OS-level, survives app kill, battery-efficient |
+| Weather | Open-Meteo | No API key needed, called client-side; 16-day forecast far exceeds the ~7-day window where it's actually shown |
 | Hosting | Windows Server | Same environment for both development and deployment, decided 2026-09-07 |
 
 ---
@@ -471,7 +478,15 @@ SmartTrip-Batam/
 - [ ] Dashboard shows most-wishlisted places, average in-app rating, and trip volume
 - [ ] Edge case handled: an empty dataset (before the first bootstrap) renders an empty state, not an error
 
-> Full edge-case catalogue (beyond what's listed per-story above) lives in design spec Sections 3, 7, and 8.
+**US15 — Weather forecast & swap suggestion**
+- [ ] Forecast card appears on a day only once `trip.start_date` is within ~7 days of today — not shown before that (no reliable forecast exists yet)
+- [ ] Forecast is fetched client-side directly from Open-Meteo using the hotel/start-location coordinate, no backend call involved
+- [ ] A day with ≥1 stop where `place_attributes.is_outdoor = true` AND significant rain in that day's forecast shows the rain-warning badge
+- [ ] Tapping the badge opens the existing swap modal (US5) for the outdoor stop(s) on that day — no new swap mechanism, no automatic regenerate
+- [ ] Edge case handled: a day with only indoor stops never shows the badge regardless of forecast
+- [ ] Edge case handled: forecast fetch failure (offline, Open-Meteo unavailable) degrades to no forecast shown, not an error blocking the rest of the itinerary screen
+
+> Full edge-case catalogue (beyond what's listed per-story above) lives in design spec Sections 3, 7, 8, and 9.
 
 ---
 

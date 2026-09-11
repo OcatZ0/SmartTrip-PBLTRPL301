@@ -4,7 +4,7 @@
 
 **Type:** Full PRD
 **Status:** Draft — pre-implementation
-**Version:** 1.6
+**Version:** 1.7
 **Last Updated:** 2026-09-11
 **Source of truth for implementation detail:** `docs/superpowers/specs/2026-09-07-smarttrip-itinerary-recommendation-design.md` (this PRD is a reformatted, audience-oriented view of the same decisions — where they ever conflict, the design spec wins, since it carries finer-grained rationale)
 
@@ -17,6 +17,7 @@
 | 1.4 | 2026-09-07 | Decided Riverpod (team has no prior experience with either option); removed accessibility entirely per explicit instruction - not pursuing it this project |
 | 1.5 | 2026-09-11 | Added weather forecast + swap suggestion feature (US15), sourced real ToS text for the scraping-avoidance rationale (TripAdvisor, Traveloka confirmed with exact quotes; Tiket.com could not be independently verified) |
 | 1.6 | 2026-09-11 | Confirmed Open-Meteo over Google Weather API after cost/architecture comparison; fixed stale design-spec section cross-references left over from the weather-section renumbering |
+| 1.7 | 2026-09-11 | Reverted admin from Flutter role-gated screens back to a separate web panel (Blade + Bootstrap) - removed /api/admin/* from the API surface, removed Flutter admin components, updated tech stack/file structure/personas/rollout accordingly |
 
 ---
 
@@ -73,7 +74,6 @@ Sources: [Best AI Trip Planner Apps 2026 (Lindy)](https://www.lindy.ai/blog/trip
 **Anti-goals** *(explicitly NOT trying to do — see Section 5 for the full list)*:
 - Not trying to support booking/payment/reservation
 - Not trying to support more than one city this semester
-- Not trying to build a web admin panel (mobile-only, role-gated)
 - Not trying to achieve Play Store publish-readiness (background location permission justification/privacy policy work is out of scope)
 
 ---
@@ -83,7 +83,7 @@ Sources: [Best AI Trip Planner Apps 2026 (Lindy)](https://www.lindy.ai/blog/trip
 *(Kept intentionally light — proportionate to a college project scope, not a market-research-backed persona set.)*
 
 - **Wisatawan (primary user)** — a tourist visiting Batam who wants a personalized, low-effort trip plan. May be domestic or, given Batam's proximity to Singapore/Malaysia, international (hence the bilingual ID/EN UI). No account required to browse; account required to plan.
-- **Admin (secondary user, same app)** — a team member (or eventually, someone maintaining the app) responsible for curating place data quality: reviewing Discovery candidates, filling in missing price/category data, monitoring the dashboard.
+- **Admin (secondary user, separate web panel, not the mobile app)** — a team member (or eventually, someone maintaining the app) responsible for curating place data quality: reviewing Discovery candidates, filling in missing price/category data, monitoring the dashboard. Never opens the Flutter app at all — works entirely through the web panel.
 
 ---
 
@@ -166,17 +166,20 @@ Terasa seperti aplikasi e-commerce untuk browsing tempat (grid/list, filter, inf
 - Swap modal (ranked alternatives / manual search)
 - Profil (default preferensi, bahasa)
 - List trip tersimpan
-- Admin: review candidates, CRUD places/categories, dashboard analitik
 - Empty state: katalog kosong (belum ada data tersinkron), wishlist kosong, trip list kosong
 - Error state: generate gagal (pool kandidat tidak cukup → flag "tidak muat"/"padat"), geofence permission ditolak (fallback manual), offline saat visit-tracking (antri lokal)
 - Loading state: skeleton/spinner saat generate (proses multi-tahap: TOPSIS → K-Means → NN → Routes API)
 
 **Interaction Model:**
-- Primary flow: Section 10 of design spec (numbered end-to-end)
+- Primary flow: Section 11 of design spec (numbered end-to-end)
 - Long-press pin di peta = tandai/batalkan kunjungan manual
 - Tap "+wishlist" di kartu katalog = tambah tanpa keluar dari browsing (tidak ada modal blocking)
 
 **Figma / Design Link:** none — no visual design phase happened, this PRD and the design spec are text-only artifacts
+
+**Admin Panel (separate web app, not part of the Flutter screens above):**
+*(Reversed 2026-09-11 — admin was briefly role-gated inside the Flutter app, moved back to a standalone web panel.)*
+Laravel Blade + Bootstrap, its own login (`/admin/login`, session-based, not the Sanctum tokens the Flutter app uses), controllers hit Eloquent models directly rather than calling the mobile REST API. Pages: Dashboard (stats + "needs attention" lists — missing price data, unreviewed category tags, last sync status), Candidate Review (trigger Discovery, filter/approve/reject `place_candidates`, bulk actions), Places list + edit form (admin-owned fields: estimated cost, description overrides, is_outdoor, category tags, manual add), Categories list + edit form, Sync Status (quota usage, last run stats). Admin never installs or opens the mobile app.
 
 ---
 
@@ -200,11 +203,9 @@ Terasa seperti aplikasi e-commerce untuk browsing tempat (grid/list, filter, inf
 | ReviewForm | Form | Rating + comment, optionally linked to visited itinerary_item | US10 |
 | GoogleSignInButton | Action | Triggers `google_sign_in` package flow | US9 |
 | ProfilePreferencesScreen | Form | Edit default minat + weights | US8 |
-| CandidateReviewList | Display + Action | Admin candidate list with filter, approve/reject | US11, US12 |
-| PlaceAdminForm | Form | Admin CRUD for place_attributes overrides | US13 |
-| AdminDashboard | Display | Charts/cards for wishlist popularity, missing data lists | US14 |
-| CategoryAdminForm | Form | CRUD for `categories` taxonomy | (admin) |
 | LanguageToggle | Action | ID/EN switch, settings | - |
+
+**Admin (US11-US14) is not built as Flutter components at all** — it's a separate web panel (Blade views + Bootstrap, standard HTML forms/tables, not part of this Flutter component tree). See Section 12 (Admin Panel) for its page list instead of this table.
 | WeatherForecastCard | Display | Per-day forecast summary, shown once trip is within ~7 days | US15 |
 | WeatherSwapBadge | Action | Rain-warning badge on a day with outdoor stops, opens SwapModal on tap | US15 |
 
@@ -284,7 +285,8 @@ Full endpoint list is design spec Section 10 — summarized by group:
 | Swap | `/api/itinerary-items/{id}/swap-candidates`, `/api/places?...`, `PATCH /api/itinerary-items/{id}` | Token |
 | Live tracking | `POST /api/itinerary-items/{id}/visit` | Token |
 | Places/review | `GET /api/places`, `GET /api/places/{id}` (public), `/api/places/{id}/reviews`, `/api/reviews/{id}` | Mixed |
-| Admin | `/api/admin/places`, `/api/admin/place-attributes`, `/api/admin/categories`, `/api/admin/places/discover`, `/api/admin/place-candidates`, `/api/admin/analytics` | Admin role |
+
+**No `/api/admin/*` group anymore** — admin runs on the separate web panel (see Section 8), whose Blade controllers talk to Eloquent directly instead of consuming this REST API. Its routes live in `routes/web.php` under `/admin/*` with session auth, entirely separate from the `routes/api.php` table above.
 
 **External integrations:**
 - Google Places API (New) — Nearby/Text Search (Pro SKU) + Place Details (Enterprise SKU) for place data
@@ -350,8 +352,9 @@ timestamp set --(manual toggle off)--> null [correction path for false-positive 
 
 | Layer | Choice | Rationale |
 |-------|--------|-----------|
-| Backend | Laravel 12 (PHP), REST API only | Team's established stack; no Blade views needed (mobile-only) |
-| Mobile | Flutter | Single codebase for iOS/Android, single app for users + role-gated admin |
+| Backend | Laravel 12 (PHP), REST API (for Flutter) + Blade web routes (for admin) | Team's established stack; API and admin panel are two separate route groups in one Laravel app |
+| Mobile | Flutter | Single codebase for iOS/Android, end-user only (not admin) |
+| Admin panel | Laravel Blade + Bootstrap | Separate web app for admin - session auth, controllers hit Eloquent directly, no REST API in between |
 | State management | Riverpod | See Section 13 |
 | Database | PostgreSQL | Decided over the team's usual MySQL-with-Laravel default, to stay consistent with Windows Server + PostgreSQL already used across the team's other projects |
 | Auth | Laravel Sanctum (API tokens) + Google Sign-In | First-party, easy revocation, sufficient at this scale (chosen over JWT after explicit comparison) |
@@ -376,13 +379,15 @@ SmartTrip-Batam/
 │   └── prd/
 │       └── 2026-09-07-smarttrip-prd.md                                # this document
 ├── smarttrip-api/                     # Laravel backend (not yet scaffolded)
-│   ├── app/Http/Controllers/          # Trip, Place, Admin, Auth controllers
+│   ├── app/Http/Controllers/Api/      # Trip, Place, Auth controllers - for Flutter (routes/api.php)
+│   ├── app/Http/Controllers/Admin/    # Places, Candidates, Categories controllers - for web panel (routes/web.php)
 │   ├── app/Models/                    # Place, Trip, ItineraryDay, ItineraryItem, ...
 │   ├── app/Services/                  # TOPSIS scoring, K-Means clustering, route assembly
 │   ├── app/Console/Commands/          # places:discover, places:enrich
+│   ├── resources/views/admin/         # Blade views - dashboard, places, candidates, categories
 │   ├── database/migrations/
 │   └── database/seeders/              # categories seeder (must run before places bootstrap)
-└── smarttrip-mobile/                  # Flutter app (not yet scaffolded)
+└── smarttrip-mobile/                  # Flutter app (not yet scaffolded) - end-users only, no admin code here
     ├── lib/
     │   ├── features/
     │   │   ├── onboarding/            # Pilih Minat gate
@@ -390,8 +395,7 @@ SmartTrip-Batam/
     │   │   ├── wishlist/
     │   │   ├── itinerary/
     │   │   ├── live_map/
-    │   │   ├── profile/
-    │   │   └── admin/                 # role-gated screens
+    │   │   └── profile/
     │   ├── core/                      # API client, auth, i18n
     │   └── main.dart
     └── ...
@@ -498,7 +502,6 @@ SmartTrip-Batam/
 - **Risk:** Google Places Enterprise SKU quota (1,000 free calls/month) is the tightest constraint in the whole project — a rushed or careless bootstrap could burn it before the curated pool is complete — *Mitigation: the two-phase Discovery/Enrichment admin-review gate exists specifically to prevent this*
 - **Risk:** Background location permission ("Allow all the time" / "Always") is a sensitive, store-reviewed permission — fine for demo/sideload, but a real blocker if the team later wants to publish to Play Store — *Mitigation: documented explicitly as out of scope for this semester (design spec Section 14)*
 - **Risk:** Batam's island geography (irregular coastline, limited bridges) makes the Haversine-based day-budget travel-time estimate systematically optimistic — *Mitigation: circuity multiplier (~1.3-1.4x) applied, plus a post-hoc "padat" flag once real Routes API data comes back*
-- **Tradeoff:** Choosing a fully mobile admin experience (no web panel) means admin screens like candidate review and analytics dashboards are more Flutter engineering work than a ready-made web admin tool would have been — accepted deliberately for a single mobile-only codebase
 - **Tradeoff:** Open (unverified) in-app reviews vs. verified-visit-only — chosen open specifically because the Bayesian rating blend needs review volume to be useful, accepting lower per-review trust as the cost
 
 ---
@@ -512,7 +515,7 @@ Key pivots made during the design process (all 2026-09-07, in one extended desig
 | True pairwise AHP → direct-rating sliders + TOPSIS | Simpler mobile UX; same personalized-weight outcome without the pairwise-comparison UI overhead |
 | Guest trips → login required from the start | Deliberate simplification — removed the guest-trip-token mechanism and its conditional auth logic entirely |
 | JWT → Laravel Sanctum (API tokens) | Easier revocation, first-party Laravel support, sufficient at this project's scale |
-| Web/Blade admin panel → role-gated Flutter screens | Committed to a fully mobile-only architecture, one codebase for users and admins |
+| Web/Blade admin panel → role-gated Flutter screens (2026-09-07) → **back to web/Blade admin panel (2026-09-11)** | First moved to mobile-only for one codebase; reversed once it was clear admin work (data tables, bulk review) fits a web panel much better, and admin never needs a phone for it anyway |
 | Single-shot Google sync → two-phase Discovery/Enrichment | The Enterprise SKU's 1,000/month quota is too tight for a naive one-shot sync; needed an admin-reviewed gate before spending it |
 | Manual admin translation → Gemini auto-translation | Once the quota concern was correctly isolated to Place *Details* fetches (not text translation), there was no reason to hand-translate |
 | Auto-assume skipped stops as "visited" → explicit manual-only resolution | A real skip is a valid user scenario, not just GPS error — false inference would hide genuine plan changes |
@@ -526,7 +529,7 @@ Key pivots made during the design process (all 2026-09-07, in one extended desig
 **Rough phase breakdown** *(illustrative, relative to semester start — no actual semester calendar was provided, so no real dates are given; replace with real milestones once the team has one)*:
 - **Phase 1:** Backend scaffolding, data model migrations, Google Places bootstrap (categories seed → Discovery → first Enrichment batch)
 - **Phase 2:** Core algorithm implementation (TOPSIS/K-Means/NN) + unit tests, Flutter trip-setup/wishlist/generate flow
-- **Phase 3:** Live map + geofencing, swap, admin screens, AI enrichment pipeline
+- **Phase 3:** Live map + geofencing, swap, admin web panel (Blade views), AI enrichment pipeline
 - **Phase 4:** Profile preferences, Google Sign-In, bilingual support, reviews, polish + testing, demo prep
 
 **Phase 2+ ideas** *(explicitly out of scope this semester, per design spec Section 14)*:

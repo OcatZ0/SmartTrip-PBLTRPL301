@@ -2,7 +2,7 @@
 
 Panduan buat tim UI/UX - isinya murni soal apa yang dilihat dan dilakukan user di tiap layar (input, tombol, konten). Tidak ada istilah teknis/backend, jadi bisa langsung dipakai buat bikin wireframe.
 
-26 layar total: 19 buat user biasa, 7 buat admin (satu layar "pilih lokasi di peta" dipakai ulang di dua tempat, jadi cuma perlu didesain sekali).
+26 layar total: **19 buat app mobile** (Bagian A-F, user biasa) dan **7 buat panel admin berbasis web** (Bagian G - bukan bagian dari app mobile, dibuka lewat browser komputer, bukan HP). Satu layar "pilih lokasi di peta" di bagian mobile dipakai ulang di dua tempat, jadi cuma perlu didesain sekali.
 
 ---
 
@@ -146,7 +146,9 @@ Cuma bisa diakses kalau sudah login.
 
 ---
 
-## G. Admin (tab tambahan, cuma muncul buat akun admin)
+## G. Admin (panel web terpisah, dibuka lewat browser - bukan bagian dari app mobile)
+
+Layar-layar di bawah ini **bukan** layar mobile - didesain buat browser komputer (layout lebar, tabel data, sidebar navigasi), diakses lewat halaman login sendiri (terpisah dari akun user mobile).
 
 ### G1. Dashboard Admin
 **Tujuan:** Halaman ringkasan buat admin.
@@ -219,5 +221,5 @@ Cuma bisa diakses kalau sudah login.
 | G6 | Form Edit Kategori | Admin |
 | G7 | Status Sinkronisasi | Admin |
 
-**19 layar user biasa (A1-F1) + 7 layar admin (G1-G7) = 26 layar berbeda.** Layar "Pilih Lokasi di Peta" (C2a) cukup didesain sekali, dipakai ulang di dua alur berbeda. Layar Detail Cuaca (D4) opsional - kalau waktu terbatas, isinya bisa cukup jadi tooltip kecil di layar Hasil Itinerary saja.
+**19 layar mobile (A1-F1) + 7 layar web admin (G1-G7) = 26 layar berbeda, dua platform beda.** Layar "Pilih Lokasi di Peta" (C2a) cukup didesain sekali, dipakai ulang di dua alur berbeda. Layar Detail Cuaca (D4) opsional - kalau waktu terbatas, isinya bisa cukup jadi tooltip kecil di layar Hasil Itinerary saja.
 </content>

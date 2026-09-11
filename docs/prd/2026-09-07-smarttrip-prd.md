@@ -4,7 +4,7 @@
 
 **Type:** Full PRD
 **Status:** Draft — pre-implementation
-**Version:** 1.5
+**Version:** 1.6
 **Last Updated:** 2026-09-11
 **Source of truth for implementation detail:** `docs/superpowers/specs/2026-09-07-smarttrip-itinerary-recommendation-design.md` (this PRD is a reformatted, audience-oriented view of the same decisions — where they ever conflict, the design spec wins, since it carries finer-grained rationale)
 
@@ -16,6 +16,7 @@
 | 1.3 | 2026-09-07 | Resolved hosting open question: Windows Server + PostgreSQL for both dev and deployment (overrides team's usual MySQL default) |
 | 1.4 | 2026-09-07 | Decided Riverpod (team has no prior experience with either option); removed accessibility entirely per explicit instruction - not pursuing it this project |
 | 1.5 | 2026-09-11 | Added weather forecast + swap suggestion feature (US15), sourced real ToS text for the scraping-avoidance rationale (TripAdvisor, Traveloka confirmed with exact quotes; Tiket.com could not be independently verified) |
+| 1.6 | 2026-09-11 | Confirmed Open-Meteo over Google Weather API after cost/architecture comparison; fixed stale design-spec section cross-references left over from the weather-section renumbering |
 
 ---
 
@@ -90,7 +91,7 @@ Sources: [Best AI Trip Planner Apps 2026 (Lindy)](https://www.lindy.ai/blog/trip
 
 **In scope:** everything in the accompanying design spec — trip creation, wishlist, preference sliders + minat selection, hotel resolution (search or custom pin), TOPSIS/K-Means/NN/Routes generation pipeline, swap, live map with geofencing, weather forecast + swap suggestion, in-app reviews, profile preference defaults, mandatory onboarding, Google Sign-In, and the full admin data-curation loop (Discovery → review → Enrichment → AI tagging/translation → ongoing curation).
 
-**Out of scope** (see design spec Section 13 for full detail):
+**Out of scope** (see design spec Section 14 for full detail):
 - Booking/reservation/payment of any kind
 - Multi-city support (no `city` field anywhere; Batam-only, hardcoded area list)
 - Web admin panel (all admin functionality is role-gated inside the same Flutter app)
@@ -270,7 +271,7 @@ itinerary_items(itinerary_day_id FK, place_id FK, visit_order, topsis_score, sou
 
 ## 11. API / Integration Surface
 
-Full endpoint list is design spec Section 9 — summarized by group:
+Full endpoint list is design spec Section 10 — summarized by group:
 
 | Group | Example | Auth |
 |-------|---------|------|
@@ -495,7 +496,7 @@ SmartTrip-Batam/
 - ~~**Q:** What's the target hosting environment for backend?~~ **Resolved 2026-09-07:** Windows Server + PostgreSQL, for both development and deployment.
 - ~~**Q:** Riverpod vs. Provider for Flutter state management?~~ **Resolved 2026-09-07:** Riverpod - team has no prior experience with either, so no reason to prefer Provider's smaller learning curve over Riverpod's better fit for this app's async-heavy needs.
 - **Risk:** Google Places Enterprise SKU quota (1,000 free calls/month) is the tightest constraint in the whole project — a rushed or careless bootstrap could burn it before the curated pool is complete — *Mitigation: the two-phase Discovery/Enrichment admin-review gate exists specifically to prevent this*
-- **Risk:** Background location permission ("Allow all the time" / "Always") is a sensitive, store-reviewed permission — fine for demo/sideload, but a real blocker if the team later wants to publish to Play Store — *Mitigation: documented explicitly as out of scope for this semester (design spec Section 13)*
+- **Risk:** Background location permission ("Allow all the time" / "Always") is a sensitive, store-reviewed permission — fine for demo/sideload, but a real blocker if the team later wants to publish to Play Store — *Mitigation: documented explicitly as out of scope for this semester (design spec Section 14)*
 - **Risk:** Batam's island geography (irregular coastline, limited bridges) makes the Haversine-based day-budget travel-time estimate systematically optimistic — *Mitigation: circuity multiplier (~1.3-1.4x) applied, plus a post-hoc "padat" flag once real Routes API data comes back*
 - **Tradeoff:** Choosing a fully mobile admin experience (no web panel) means admin screens like candidate review and analytics dashboards are more Flutter engineering work than a ready-made web admin tool would have been — accepted deliberately for a single mobile-only codebase
 - **Tradeoff:** Open (unverified) in-app reviews vs. verified-visit-only — chosen open specifically because the Bayesian rating blend needs review volume to be useful, accepting lower per-review trust as the cost
@@ -528,7 +529,7 @@ Key pivots made during the design process (all 2026-09-07, in one extended desig
 - **Phase 3:** Live map + geofencing, swap, admin screens, AI enrichment pipeline
 - **Phase 4:** Profile preferences, Google Sign-In, bilingual support, reviews, polish + testing, demo prep
 
-**Phase 2+ ideas** *(explicitly out of scope this semester, per design spec Section 13)*:
+**Phase 2+ ideas** *(explicitly out of scope this semester, per design spec Section 14)*:
 - Multi-city expansion
 - Booking/payment integration
 - Itinerary sharing/collaboration

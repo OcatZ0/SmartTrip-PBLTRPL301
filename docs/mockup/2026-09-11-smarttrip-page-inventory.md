@@ -1,229 +1,229 @@
-# SmartTrip Batam - Page Inventory for Mockup
+# SmartTrip Batam - Daftar Halaman untuk Mockup
 
-Source: `docs/superpowers/specs/2026-09-07-smarttrip-itinerary-recommendation-design.md` + `docs/prd/2026-09-07-smarttrip-prd.md` (v1.6). One Flutter app, role-gated - the Admin section (G) is the same app, not a separate build.
+Sumber: `docs/superpowers/specs/2026-09-07-smarttrip-itinerary-recommendation-design.md` + `docs/prd/2026-09-07-smarttrip-prd.md` (v1.6). Satu app Flutter, role-gated - bagian Admin (G) adalah app yang sama, bukan build terpisah.
 
-26 screens total: 19 end-user, 7 admin (C2a is one shared reusable screen, used by both the wishlist and hotel flows).
+26 layar total: 19 buat user biasa, 7 buat admin (C2a adalah satu layar reusable yang dipakai bareng di alur wishlist dan hotel).
 
 ---
 
 ## A. Onboarding & Auth
 
-### A1. Splash / Language Selection
-**Purpose:** First screen on cold start. Sets language before anything else renders.
-**Info shown:** App logo/name, brief tagline.
-**Buttons:** Bahasa Indonesia / English (2 options, large tap targets). Auto-selects device language as default, this screen may auto-skip if already set previously (`shared_preferences`).
-**Navigates to:** Home (A2 in flow terms, but see B1 below).
+### A1. Splash / Pilihan Bahasa
+**Tujuan:** Layar pertama saat cold start. Nentuin bahasa sebelum apapun lain dirender.
+**Info yang ditampilkan:** Logo/nama app, tagline singkat.
+**Tombol:** Bahasa Indonesia / English (2 pilihan, tap target besar). Default ngikut bahasa device, layar ini bisa auto-skip kalau sudah pernah diset sebelumnya (`shared_preferences`).
+**Lanjut ke:** Home (lihat B1 di bawah).
 
 ### A2. Login
-**Purpose:** Email/password or Google sign-in. Reached from Home when tapping "Buat Trip" while logged out.
-**Info shown:** App logo, "Masuk" header.
-**Fields:** Email, Password.
-**Buttons:** "Masuk" (primary), "Masuk pakai Google" (secondary, `google_sign_in` flow), "Belum punya akun? Daftar" (link to A3). No "continue as guest" option anywhere on this screen - that path was deliberately removed from scope.
-**Error states:** Invalid credentials, invalid/expired Google token (US9 AC).
+**Tujuan:** Masuk pakai email/password atau Google. Dicapai dari Home saat tap "Buat Trip" dalam keadaan belum login.
+**Info yang ditampilkan:** Logo app, header "Masuk".
+**Field:** Email, Password.
+**Tombol:** "Masuk" (utama), "Masuk pakai Google" (sekunder, alur `google_sign_in`), "Belum punya akun? Daftar" (link ke A3). Tidak ada opsi "lanjut sebagai guest" di layar manapun - jalur itu sudah sengaja dihapus dari scope.
+**Error state:** Kredensial salah, token Google tidak valid/expired (US9 AC).
 
-### A3. Register
-**Purpose:** New account creation.
-**Fields:** Name, Email, Password, Confirm Password.
-**Buttons:** "Daftar" (primary), "Daftar pakai Google" (secondary), "Sudah punya akun? Masuk" (link back to A2).
-**Behavior:** On success, always routes through A4 next (see below) - registration never lands directly on Home.
+### A3. Daftar (Register)
+**Tujuan:** Bikin akun baru.
+**Field:** Nama, Email, Password, Konfirmasi Password.
+**Tombol:** "Daftar" (utama), "Daftar pakai Google" (sekunder), "Sudah punya akun? Masuk" (link balik ke A2).
+**Perilaku:** Setelah berhasil, selalu lanjut ke A4 dulu (lihat di bawah) - registrasi tidak pernah langsung mendarat di Home.
 
-### A4. Pilih Minat (Onboarding Gate)
-**Purpose:** Mandatory first-time interest selection. **Condition-gated, not event-gated** - shown on every app launch/login while `default_interest_category_ids` is empty, not just once right after registering (this is what makes it survive a user closing the app mid-onboarding).
-**Info shown:** Short instruction text ("Pilih minimal 1 kategori yang kamu suka").
-**Content:** Grid/wrap of category chips, pulled from `categories` (alam, kuliner seafood, belanja, sejarah, etc.) - multi-select.
-**Buttons:** "Lanjut" (primary, disabled/greyed until ≥1 chip selected - this screen has no skip option).
-**Blocking:** Cannot navigate away (no back button that escapes it) until submitted.
-**On submit:** `PUT /api/profile/preferences`, then continues to wherever the user was headed (Home, or straight into Trip Setup if they'd tapped "Buat Trip" pre-login).
+### A4. Pilih Minat (Gerbang Onboarding)
+**Tujuan:** Pemilihan minat wajib pertama kali. **Gate berdasarkan kondisi, bukan event** - muncul tiap kali app dibuka/login selama `default_interest_category_ids` masih kosong, bukan cuma sekali persis setelah register (ini yang bikin gate-nya tetap jalan walau user nutup app di tengah onboarding).
+**Info yang ditampilkan:** Teks instruksi singkat ("Pilih minimal 1 kategori yang kamu suka").
+**Konten:** Grid/wrap chip kategori, diambil dari `categories` (alam, kuliner seafood, belanja, sejarah, dst) - bisa pilih lebih dari satu.
+**Tombol:** "Lanjut" (utama, disabled/abu-abu sampai minimal 1 chip dipilih - layar ini tidak ada opsi lewati).
+**Blocking:** Tidak bisa pindah layar (tidak ada tombol back yang bisa kabur) sampai disubmit.
+**Setelah submit:** `PUT /api/profile/preferences`, lalu lanjut ke tujuan awal (Home, atau langsung ke Trip Setup kalau tadinya tap "Buat Trip" sebelum login).
 
 ---
 
-## B. Browse & Discovery
+## B. Jelajah & Penemuan Tempat
 
 ### B1. Home
-**Purpose:** Landing screen, works fully without login.
-**Info shown:** Featured/recent places, category filter chips.
-**Content:** `PlaceCatalogGrid` - infinite-scroll grid/list of place cards (`PlaceCard`: thumbnail, name, category badge, rating, price tier).
-**Buttons:** Category filter chips (multi-select), search bar, "+ wishlist" quick-add on each card (only meaningful once inside an active trip - see note below), tap card → C2 Place Detail. Bottom nav: Home / Trips / Profile (+ Admin tab if `role=admin`).
-**Primary CTA:** "Buat Trip" (floating action button or prominent header button) → gated by A2 login if not authenticated.
-**Empty state:** Katalog kosong (before first admin bootstrap) - "Belum ada data tempat, coba lagi nanti."
+**Tujuan:** Layar pendaratan, sepenuhnya bisa dipakai tanpa login.
+**Info yang ditampilkan:** Tempat unggulan/terbaru, chip filter kategori.
+**Konten:** `PlaceCatalogGrid` - grid/list infinite-scroll kartu tempat (`PlaceCard`: thumbnail, nama, badge kategori, rating, tingkat harga).
+**Tombol:** Chip filter kategori (bisa pilih lebih dari satu), search bar, "+ wishlist" quick-add di tiap kartu (baru berarti kalau lagi di dalam alur bikin trip aktif - lihat catatan di bawah), tap kartu → C2 Detail Tempat. Bottom nav: Home / Trip / Profil (+ tab Admin kalau `role=admin`).
+**CTA utama:** "Buat Trip" (floating action button atau tombol header menonjol) → di-gate login (A2) kalau belum masuk.
+**Empty state:** Katalog kosong (sebelum bootstrap admin pertama) - "Belum ada data tempat, coba lagi nanti."
 
-### B2. Place Detail
-**Purpose:** Full info on one place. Reachable from Home, Wishlist browsing, Swap search, or a stop inside an itinerary.
-**Info shown:** Photo carousel (`place_photos`), name, category tags, address, phone, website, opening hours, blended rating (Google + in-app, Bayesian), price tier/estimated cost, description (bilingual, falls back ID→shown if EN empty), "Buka di Google Maps" link (`google_maps_uri`).
-**Buttons:** "+ Wishlist" (if inside an active trip-building flow), "Tulis Review" (opens D5), "Buka di Google Maps" (external), back.
-**Reviews section:** List of existing `place_reviews` (rating + comment), average shown at top.
-**Empty state:** No reviews yet - "Jadi yang pertama kasih review."
+### B2. Detail Tempat
+**Tujuan:** Info lengkap satu tempat. Bisa dicapai dari Home, browsing Wishlist, search Swap, atau salah satu stop di dalam itinerary.
+**Info yang ditampilkan:** Carousel foto (`place_photos`), nama, tag kategori, alamat, telepon, website, jam buka, rating gabungan (Google + in-app, Bayesian), tingkat harga/estimasi biaya, deskripsi (dwibahasa, fallback ke ID kalau EN kosong), link "Buka di Google Maps" (`google_maps_uri`).
+**Tombol:** "+ Wishlist" (kalau lagi di dalam alur bikin trip aktif), "Tulis Review" (buka D5), "Buka di Google Maps" (eksternal), back.
+**Bagian review:** List `place_reviews` yang sudah ada (rating + komentar), rata-rata ditampilkan di atas.
+**Empty state:** Belum ada review - "Jadi yang pertama kasih review."
 
 ---
 
-## C. Trip Creation Wizard
+## C. Wizard Bikin Trip
 
-Reached only when authenticated (A2 gate applies before C1).
+Cuma bisa dicapai kalau sudah login (gate A2 berlaku sebelum C1).
 
 ### C1. Trip Setup
-**Purpose:** Step 1 of wizard - trip-level basics.
-**Fields:** Jumlah hari (`num_days`, stepper, soft warning above 7), Anggaran total (`budget_total`, IDR input), Tanggal mulai (`start_date`, date picker), Jam mulai/selesai harian (`daily_start_time`/`daily_end_time`, optional, defaults 09:00/19:00 shown pre-filled), toggle "Sudah punya hotel?".
-**Buttons:** "Lanjut" (primary, validates `budget_total` > 0 client-side before proceeding), back (discards wizard progress with a confirm dialog).
-**Progress indicator:** Step 1 of ~4 (Trip Setup → Wishlist → Minat & Preferensi → Hotel → generate).
+**Tujuan:** Langkah 1 wizard - dasar-dasar level trip.
+**Field:** Jumlah hari (`num_days`, stepper, peringatan lembut di atas 7), Anggaran total (`budget_total`, input IDR), Tanggal mulai (`start_date`, date picker), Jam mulai/selesai harian (`daily_start_time`/`daily_end_time`, opsional, default 09:00/19:00 sudah keisi), toggle "Sudah punya hotel?".
+**Tombol:** "Lanjut" (utama, validasi `budget_total` > 0 di client sebelum lanjut), back (batalkan progress wizard dengan dialog konfirmasi).
+**Indikator progress:** Langkah 1 dari ~4 (Trip Setup → Wishlist → Minat & Preferensi → Hotel → generate).
 
-### C2. Wishlist Builder
-**Purpose:** Optional - add must-visit places before generating.
-**Content:** Same `PlaceCatalogGrid` pattern as B1, but with a persistent "+ wishlist" button per card and a running count ("3 tempat ditambahkan").
-**Buttons:** "Tambah manual" (opens C2a map picker for places not in the catalog), "Lanjut" (proceeds even with 0 wishlist items - fully optional), "Lewati" (skip straight past), back.
-**List view:** Toggle or separate tab showing currently-added wishlist items with a remove (×) button each.
+### C2. Susun Wishlist
+**Tujuan:** Opsional - tambah tempat wajib-dikunjungi sebelum generate.
+**Konten:** Pola `PlaceCatalogGrid` sama seperti B1, tapi ada tombol "+ wishlist" persisten di tiap kartu dan hitungan berjalan ("3 tempat ditambahkan").
+**Tombol:** "Tambah manual" (buka C2a pemilih peta buat tempat yang tidak ada di katalog), "Lanjut" (tetap bisa lanjut walau 0 item wishlist - sepenuhnya opsional), "Lewati" (langsung lompat), back.
+**Tampilan list:** Toggle atau tab terpisah nampilin item wishlist yang sudah ditambah dengan tombol hapus (×) di tiap item.
 
-### C2a. Custom Pin Picker (modal/full-screen)
-**Purpose:** Add a place not in the catalog - reused identically for wishlist custom-add and for hotel custom-add (C4a).
-**Content:** `google_maps_flutter` map, tap/drag to drop a pin, free-text name field below the map.
-**Buttons:** "Simpan" (commits name + lat/lng), "Batal".
-**Note:** No address-typing/autocomplete (would need Geocoding API, deliberately out of scope) - map tap only.
+### C2a. Pemilih Pin Manual (modal/full-screen)
+**Tujuan:** Tambah tempat yang tidak ada di katalog - dipakai persis sama buat tambah manual wishlist dan tambah manual hotel (C4a).
+**Konten:** Peta `google_maps_flutter`, tap/drag buat naruh pin, field nama bebas di bawah peta.
+**Tombol:** "Simpan" (commit nama + lat/lng), "Batal".
+**Catatan:** Tidak ada ketik-alamat/autocomplete (butuh Geocoding API, sengaja di luar scope) - cuma tap di peta.
 
-### C3. Pilih Minat + Slider Preferensi (trip-level)
-**Purpose:** Two distinct things on one screen - which categories matter for this specific trip, and how much each of the 4 scoring criteria should weigh.
-**Content, part 1 (minat):** Same chip-select as A4, **pre-filled** from `default_interest_category_ids` if set - editable for this trip without changing the saved default.
-**Content, part 2 (bobot):** 4 sliders, 0-10 each: Kesesuaian kategori/minat, Jarak/lokasi, Kesesuaian anggaran, Rating/popularitas. Pre-filled from `user_criteria_weights` if set.
-**Buttons:** Toggle "Simpan sebagai default" (off by default, opt-in - writing back to profile only happens if explicitly checked), "Lanjut", back.
+### C3. Pilih Minat + Slider Preferensi (level trip)
+**Tujuan:** Dua hal berbeda di satu layar - kategori mana yang penting buat trip spesifik ini, dan seberapa besar bobot tiap 4 kriteria skoring.
+**Konten bagian 1 (minat):** Chip-select sama seperti A4, **pre-filled** dari `default_interest_category_ids` kalau sudah diset - bisa diedit khusus buat trip ini tanpa mengubah default tersimpan.
+**Konten bagian 2 (bobot):** 4 slider, 0-10 masing-masing: Kesesuaian kategori/minat, Jarak/lokasi, Kesesuaian anggaran, Rating/popularitas. Pre-filled dari `user_criteria_weights` kalau sudah diset.
+**Tombol:** Toggle "Simpan sebagai default" (mati secara default, opt-in - baru nulis balik ke profil kalau dicentang eksplisit), "Lanjut", back.
 
-### C4. Hotel Selection
-**Purpose:** Resolve the trip's fixed start/end point.
-**Branch A - "Sudah punya hotel" was toggled on (C1):** Search field (typeahead against `places` where `type=lodging`) → tap result to select, OR "Tidak ketemu?" → opens C2a-style map picker.
-**Branch B - no hotel yet:** System runs the lighter 3-criteria TOPSIS pass, shows **top-3 hotel cards** (name, photo, price tier, rating, distance from area) with a select button on each.
-**Buttons:** "Lanjut" (only enabled once a hotel is resolved either way), back.
+### C4. Pilih Hotel
+**Tujuan:** Tentukan titik awal/akhir trip.
+**Cabang A - toggle "Sudah punya hotel" aktif (dari C1):** Field search (typeahead ke `places` yang `type=lodging`) → tap hasil buat pilih, ATAU "Tidak ketemu?" → buka pemilih peta gaya C2a.
+**Cabang B - belum punya hotel:** Sistem jalankan TOPSIS 3-kriteria yang lebih ringan, tampilkan **top-3 kartu hotel** (nama, foto, tingkat harga, rating, jarak dari area) dengan tombol pilih di tiap kartu.
+**Tombol:** "Lanjut" (baru aktif setelah hotel terpilih lewat cara manapun), back.
 
-### C5. Generating (Loading)
-**Purpose:** Transitional screen while `POST /api/trips/{id}/generate` runs the full pipeline (TOPSIS → K-Means → NN → Routes API).
-**Content:** Skeleton/spinner, short rotating status text is optional polish ("Menyusun rute...", "Menghitung skor tempat...").
-**No buttons** - not cancellable in v1 (not specified as a requirement; keep simple).
-**Error state:** If generation fails or returns a "tidak muat" flag, route to D1 anyway with that flag surfaced there rather than blocking here.
-
----
-
-## D. Itinerary & Trip Management
-
-### D1. Itinerary Result
-**Purpose:** The main payoff screen - the generated (or reopened) trip.
-**Info shown:** Trip title/dates header, day tabs or a vertically scrollable list of day cards.
-**Per-day card content:** Day number/date, list of stops in visit order, each stop showing thumbnail, name, source badge (Wishlist / Recommended), estimated visit time. `WeatherForecastCard` appears on a day's header once `start_date` is within ~7 days. "Padat"/"tidak muat" flag banner if that day hit either condition during generation.
-**Per-stop buttons:** Tap → B2 Place Detail, "..." menu → Swap (opens D2).
-**Per-day buttons:** "Buka Peta" (opens E1 Live Map for that day), `WeatherSwapBadge` (only shown if outdoor stop + rain forecast - tapping jumps straight into D2 pre-scoped to that stop).
-**Screen-level buttons:** "Edit Trip" (routes back into C1 with fields pre-filled - changing num_days/budget/hotel triggers a full regenerate, confirmed via dialog before submitting), "Hapus Trip" (confirm dialog), back to D3.
-
-### D2. Swap Modal
-**Purpose:** Replace one stop without touching the rest of the day.
-**Content:** Two tabs/sections - "Rekomendasi" (ranked TOPSIS alternatives, same category/area radius) and "Cari Manual" (full `PlaceCatalogGrid`-style search).
-**Buttons:** Tap a candidate card to select it as the replacement, "Batal".
-**On commit:** Re-runs Nearest-Neighbor for just that day, refreshes only the affected leg's polyline - modal closes back to D1 with that day's card updated.
-
-### D3. Saved Trips List
-**Purpose:** All of the logged-in user's trips.
-**Content:** List of trip cards - title, date range, day count, small thumbnail/preview.
-**Buttons:** Tap card → D1 (that trip), "Buat Trip" (starts a new C1 flow), swipe-to-delete or a "..." menu per card with "Hapus" (confirm dialog).
-**Empty state:** No trips yet - "Trip pertamamu tinggal 1 tap lagi" + prominent "Buat Trip" CTA.
-
-### D4. Weather Forecast Detail (optional expanded view)
-**Purpose:** Tapping `WeatherForecastCard` on D1 can either just show a tooltip inline, or expand to this small detail sheet - team's call on fidelity, listed here for completeness.
-**Content:** Fuller per-day breakdown (temp range, rain probability, short description) sourced directly from Open-Meteo client-side.
-**Buttons:** Close/dismiss.
-
-### D5. Review Form
-**Purpose:** Rate/review a place. Reachable from B2 (general review, `itinerary_item_id` stays null) or from a post-visit prompt on D1/E1 for a stop with `visited_at` set (`itinerary_item_id` populated).
-**Fields:** Star rating (1-5, required), comment (optional, multi-line).
-**Buttons:** "Kirim", "Batal".
+### C5. Sedang Generate (Loading)
+**Tujuan:** Layar transisi selama `POST /api/trips/{id}/generate` menjalankan pipeline lengkap (TOPSIS → K-Means → NN → Routes API).
+**Konten:** Skeleton/spinner, teks status berputar itu polish opsional ("Menyusun rute...", "Menghitung skor tempat...").
+**Tanpa tombol** - belum bisa dibatalkan di v1 (tidak jadi requirement; biar tetap simpel).
+**Error state:** Kalau generate gagal atau balikin flag "tidak muat", tetap arahkan ke D1 dan flag-nya ditampilkan di sana, bukan diblokir di sini.
 
 ---
 
-## E. Live Trip Experience
+## D. Itinerary & Manajemen Trip
 
-### E1. Live Map (per active day)
-**Purpose:** The GMaps-nav-style live tracking screen, opened from D1's "Buka Peta".
-**Content:** `google_maps_flutter` map - hotel/start marker, numbered pins for every stop (all visible at once, not progressively revealed), per-leg polylines colored **gray** (visited) / **blue** (not yet), live user-location dot, `GeofenceStatusIndicator` (small badge confirming tracking is active), `WeatherForecastCard` if within the 7-day window.
-**Buttons:** "Mulai Hari Ini" (first tap of the day - registers OS-level geofences for this day's unvisited stops, starts the whole tracking flow), long-press any pin → `ManualVisitToggle` (mark/unmark visited, works regardless of geofence state), tap a pin → mini info card with "..." → Swap (D2), back to D1.
-**Notifications triggered from here (not a screen, but relevant):** proximity "sudah dekat stop berikutnya" local notification when a geofence fires, `WeatherSwapBadge` prompt if applicable.
-**Permission flow:** First "Mulai Hari Ini" tap triggers the OS background-location permission prompt; if denied, map still works, just falls back to manual-only visit marking (no silent failure).
+### D1. Hasil Itinerary
+**Tujuan:** Layar utama hasil akhir - trip yang baru digenerate (atau dibuka lagi).
+**Info yang ditampilkan:** Header judul/tanggal trip, tab per hari atau list scroll vertikal kartu hari.
+**Konten tiap kartu hari:** Nomor/tanggal hari, list stop sesuai urutan kunjungan, tiap stop nampilin thumbnail, nama, badge sumber (Wishlist / Rekomendasi), estimasi waktu kunjungan. `WeatherForecastCard` muncul di header hari begitu `start_date` sudah dalam window ~7 hari. Banner flag "padat"/"tidak muat" kalau hari itu kena salah satunya saat generate.
+**Tombol per stop:** Tap → B2 Detail Tempat, menu "..." → Swap (buka D2).
+**Tombol per hari:** "Buka Peta" (buka E1 Live Map buat hari itu), `WeatherSwapBadge` (cuma muncul kalau ada stop outdoor + prediksi hujan - tap langsung lompat ke D2 yang sudah di-scope ke stop tsb).
+**Tombol level layar:** "Edit Trip" (balik ke C1 dengan field pre-filled - ubah num_days/budget/hotel memicu regenerate penuh, dikonfirmasi lewat dialog sebelum disubmit), "Hapus Trip" (dialog konfirmasi), back ke D3.
 
----
+### D2. Modal Swap
+**Tujuan:** Ganti satu stop tanpa mengubah yang lain di hari itu.
+**Konten:** Dua tab/bagian - "Rekomendasi" (alternatif ranking TOPSIS, kategori/radius area yang sama) dan "Cari Manual" (search gaya `PlaceCatalogGrid` penuh).
+**Tombol:** Tap kartu kandidat buat pilih jadi pengganti, "Batal".
+**Setelah commit:** Nearest-Neighbor dihitung ulang cuma buat hari itu, cuma polyline segmen yang terpengaruh yang di-refresh - modal ketutup balik ke D1 dengan kartu hari itu terupdate.
 
-## F. Account
+### D3. List Trip Tersimpan
+**Tujuan:** Semua trip milik user yang sedang login.
+**Konten:** List kartu trip - judul, rentang tanggal, jumlah hari, thumbnail/preview kecil.
+**Tombol:** Tap kartu → D1 (trip tsb), "Buat Trip" (mulai alur C1 baru), swipe-to-delete atau menu "..." per kartu dengan "Hapus" (dialog konfirmasi).
+**Empty state:** Belum ada trip - "Trip pertamamu tinggal 1 tap lagi" + CTA "Buat Trip" yang menonjol.
 
-### F1. Profile
-**Purpose:** Account-level settings, independent of any specific trip.
-**Info shown:** Name, email, account type (password / Google-linked).
-**Content:** `ProfilePreferencesScreen` - same chip-select + 4-slider UI as C3, but editing `default_interest_category_ids`/`user_criteria_weights` directly (`GET/PUT /api/profile/preferences`).
-**Buttons:** "Simpan", `LanguageToggle` (ID/EN), "Keluar" (logout, confirm dialog).
+### D4. Detail Prediksi Cuaca (opsional, tampilan lebih lengkap)
+**Tujuan:** Tap `WeatherForecastCard` di D1 bisa langsung nampilin tooltip inline, atau expand ke sheet detail kecil ini - keputusan tim soal fidelity, dimasukin di sini biar lengkap.
+**Konten:** Breakdown per hari lebih detail (rentang suhu, probabilitas hujan, deskripsi singkat) sumbernya langsung dari Open-Meteo client-side.
+**Tombol:** Tutup/dismiss.
 
----
-
-## G. Admin (role-gated, same app - extra tab appears only when `role=admin`)
-
-### G1. Admin Home / Dashboard
-**Purpose:** Landing screen for the Admin tab.
-**Content (`AdminDashboard`):** Cards/charts - tempat paling di-wishlist, rata-rata rating in-app, volume trip, **daftar tempat belum ada `estimated_cost_idr`** (actionable list, tap → G4 edit form), **daftar tempat `category_tags_reviewed=false`** (actionable list, tap → G4), last sync status (when Discovery/Enrichment last ran, how many candidates pending).
-**Buttons:** Quick links into G2 (Candidates), G3 (Places list), G5 (Categories).
-**Empty state:** Before first bootstrap - "Belum ada data, mulai dari Discovery" + button straight into G2's trigger action.
-
-### G2. Place Candidates Review
-**Purpose:** The Discovery → Enrichment gate (US11/US12).
-**Buttons (top):** "Cari Tempat Baru" (triggers `POST /api/admin/places/discover` - runs across all area × category combos, shows a progress/toast when done).
-**Content:** Filterable list (`CandidateReviewList`) by `search_area` and `status` (pending/approved/rejected). Each row: name, rough type, area, google_place_id.
-**Per-row buttons:** "Approve" (triggers the full Place Details + photo + Gemini enrichment chain, then the row disappears from pending), "Reject" (sets `rejected`, excluded from future Discovery re-inserts).
-**Bulk actions:** Multi-select checkboxes + bulk Approve/Reject.
-
-### G3. Places List (Admin)
-**Purpose:** Browse/search all live `places`, entry point to edit any of them.
-**Content:** Searchable/filterable list (by type, business_status, missing-data flags).
-**Buttons:** Tap row → G4, "+ Tambah Manual" (place not from Google - opens G4 in create mode).
-
-### G4. Place Edit Form (Admin)
-**Purpose:** CRUD for a single place's admin-owned fields.
-**Fields:** `estimated_cost_idr`, `estimated_visit_minutes`, `is_outdoor` (toggle), `category_tags` (multi-select from `categories`, editing this sets `category_tags_reviewed=true`), `description_override`, `description_en`. Read-only display of Google-sourced fields (name, rating, address, etc.) for context.
-**Buttons:** "Simpan", "Hapus" (only for `source=manual` places), back.
-
-### G5. Categories List (Admin)
-**Purpose:** Manage the `categories` taxonomy.
-**Content:** List of categories (name_id, name_en, slug).
-**Buttons:** "+ Tambah Kategori" (opens G6), tap row → G6 (edit), delete icon per row (confirm dialog, warns if in use).
-
-### G6. Category Edit Form (Admin)
-**Fields:** name_id, name_en, slug (auto-suggested from name_id, editable, uniqueness validated).
-**Buttons:** "Simpan", "Batal".
-
-### G7. Sync Status (Admin)
-**Purpose:** Operational visibility - when Discovery/Enrichment last ran, quota usage awareness.
-**Content:** Last Discovery run timestamp + area/category coverage, last Enrichment batch stats (approved count, failures), Google API quota usage indicator (rough count against the 1,000/month Enterprise cap) - ties to the Observability section of the PRD.
-**Buttons:** Link back to G2 to act on pending candidates.
+### D5. Form Review
+**Tujuan:** Kasih rating/review tempat. Bisa dicapai dari B2 (review umum, `itinerary_item_id` tetap null) atau dari prompt pasca-kunjungan di D1/E1 buat stop yang `visited_at`-nya sudah keisi (`itinerary_item_id` keisi).
+**Field:** Rating bintang (1-5, wajib), komentar (opsional, multi-baris).
+**Tombol:** "Kirim", "Batal".
 
 ---
 
-## Summary Table
+## E. Pengalaman Trip Live
 
-| # | Screen | Section |
+### E1. Peta Live (per hari aktif)
+**Tujuan:** Layar tracking live gaya navigasi GMaps, dibuka dari tombol "Buka Peta" di D1.
+**Konten:** Peta `google_maps_flutter` - marker hotel/titik awal, pin bernomor buat tiap stop (semua langsung kelihatan sekaligus, tidak progresif), polyline per segmen diwarnai **abu-abu** (sudah dikunjungi) / **biru** (belum), titik lokasi user live, `GeofenceStatusIndicator` (badge kecil konfirmasi tracking aktif), `WeatherForecastCard` kalau sudah dalam window 7 hari.
+**Tombol:** "Mulai Hari Ini" (tap pertama di hari itu - daftarin geofence level OS buat stop-stop yang belum dikunjungi hari itu, mulai seluruh alur tracking), long-press pin manapun → `ManualVisitToggle` (tandai/batalkan kunjungan, jalan terlepas dari status geofence), tap pin → kartu info mini dengan "..." → Swap (D2), back ke D1.
+**Notifikasi yang dipicu dari sini (bukan layar, tapi relevan):** notif lokal "sudah dekat stop berikutnya" saat geofence terpicu, prompt `WeatherSwapBadge` kalau berlaku.
+**Alur permission:** Tap "Mulai Hari Ini" pertama kali memicu prompt permission lokasi background OS; kalau ditolak, peta tetap jalan, cuma fallback ke tandai-manual-saja (tidak gagal diam-diam).
+
+---
+
+## F. Akun
+
+### F1. Profil
+**Tujuan:** Pengaturan level akun, terpisah dari trip manapun.
+**Info yang ditampilkan:** Nama, email, tipe akun (password / terhubung Google).
+**Konten:** `ProfilePreferencesScreen` - UI chip-select + 4-slider sama seperti C3, tapi langsung ngedit `default_interest_category_ids`/`user_criteria_weights` (`GET/PUT /api/profile/preferences`).
+**Tombol:** "Simpan", `LanguageToggle` (ID/EN), "Keluar" (logout, dialog konfirmasi).
+
+---
+
+## G. Admin (role-gated, app yang sama - tab tambahan cuma muncul kalau `role=admin`)
+
+### G1. Dashboard Admin
+**Tujuan:** Layar pendaratan tab Admin.
+**Konten (`AdminDashboard`):** Kartu/chart - tempat paling di-wishlist, rata-rata rating in-app, volume trip, **daftar tempat belum ada `estimated_cost_idr`** (list actionable, tap → G4 form edit), **daftar tempat `category_tags_reviewed=false`** (list actionable, tap → G4), status sync terakhir (kapan Discovery/Enrichment terakhir jalan, berapa candidate pending).
+**Tombol:** Quick link ke G2 (Candidates), G3 (List Places), G5 (Categories).
+**Empty state:** Sebelum bootstrap pertama - "Belum ada data, mulai dari Discovery" + tombol langsung ke aksi trigger di G2.
+
+### G2. Review Candidate Tempat
+**Tujuan:** Gerbang Discovery → Enrichment (US11/US12).
+**Tombol (atas):** "Cari Tempat Baru" (trigger `POST /api/admin/places/discover` - jalan di semua kombinasi area × kategori, tampilkan progress/toast begitu selesai).
+**Konten:** List filterable (`CandidateReviewList`) berdasarkan `search_area` dan `status` (pending/approved/rejected). Tiap baris: nama, tipe dugaan, area, google_place_id.
+**Tombol per baris:** "Approve" (memicu rangkaian lengkap Place Details + foto + enrichment Gemini, baris hilang dari pending), "Reject" (set `rejected`, dikecualikan dari re-insert Discovery selanjutnya).
+**Aksi bulk:** Checkbox multi-select + Approve/Reject massal.
+
+### G3. List Places (Admin)
+**Tujuan:** Browse/search semua `places` yang live, titik masuk buat edit tempat manapun.
+**Konten:** List searchable/filterable (per type, business_status, flag data yang kurang).
+**Tombol:** Tap baris → G4, "+ Tambah Manual" (tempat bukan dari Google - buka G4 mode buat baru).
+
+### G4. Form Edit Tempat (Admin)
+**Tujuan:** CRUD buat field-field yang dimiliki admin di satu tempat.
+**Field:** `estimated_cost_idr`, `estimated_visit_minutes`, `is_outdoor` (toggle), `category_tags` (multi-select dari `categories`, edit ini set `category_tags_reviewed=true`), `description_override`, `description_en`. Tampilan read-only field bersumber Google (nama, rating, alamat, dst) buat konteks.
+**Tombol:** "Simpan", "Hapus" (cuma buat tempat `source=manual`), back.
+
+### G5. List Categories (Admin)
+**Tujuan:** Kelola taksonomi `categories`.
+**Konten:** List kategori (name_id, name_en, slug).
+**Tombol:** "+ Tambah Kategori" (buka G6), tap baris → G6 (edit), ikon hapus per baris (dialog konfirmasi, warning kalau masih dipakai).
+
+### G6. Form Edit Category (Admin)
+**Field:** name_id, name_en, slug (auto-suggest dari name_id, bisa diedit, validasi keunikan).
+**Tombol:** "Simpan", "Batal".
+
+### G7. Status Sync (Admin)
+**Tujuan:** Visibilitas operasional - kapan Discovery/Enrichment terakhir jalan, kesadaran pemakaian kuota Google.
+**Konten:** Timestamp Discovery terakhir + cakupan area/kategori, statistik batch Enrichment terakhir (jumlah approved, kegagalan), indikator pemakaian kuota API Google (perkiraan hitungan terhadap cap 1.000/bulan Enterprise) - nyambung ke bagian Observability di PRD.
+**Tombol:** Link balik ke G2 buat aksi terhadap candidate pending.
+
+---
+
+## Tabel Ringkasan
+
+| # | Layar | Bagian |
 |---|--------|---------|
-| A1 | Splash / Language | Onboarding |
+| A1 | Splash / Bahasa | Onboarding |
 | A2 | Login | Onboarding |
-| A3 | Register | Onboarding |
+| A3 | Daftar | Onboarding |
 | A4 | Pilih Minat (gate) | Onboarding |
-| B1 | Home | Browse |
-| B2 | Place Detail | Browse |
+| B1 | Home | Jelajah |
+| B2 | Detail Tempat | Jelajah |
 | C1 | Trip Setup | Wizard |
-| C2 | Wishlist Builder | Wizard |
-| C2a | Custom Pin Picker | Wizard (shared w/ C4) |
+| C2 | Susun Wishlist | Wizard |
+| C2a | Pemilih Pin Manual | Wizard (dipakai bareng C4) |
 | C3 | Minat + Slider (trip) | Wizard |
-| C4 | Hotel Selection | Wizard |
-| C5 | Generating (loading) | Wizard |
-| D1 | Itinerary Result | Trip Mgmt |
-| D2 | Swap Modal | Trip Mgmt |
-| D3 | Saved Trips List | Trip Mgmt |
-| D4 | Weather Detail (optional) | Trip Mgmt |
-| D5 | Review Form | Trip Mgmt |
-| E1 | Live Map | Live Trip |
-| F1 | Profile | Account |
-| G1 | Admin Dashboard | Admin |
-| G2 | Candidate Review | Admin |
-| G3 | Places List | Admin |
-| G4 | Place Edit Form | Admin |
-| G5 | Categories List | Admin |
-| G6 | Category Edit Form | Admin |
-| G7 | Sync Status | Admin |
+| C4 | Pilih Hotel | Wizard |
+| C5 | Sedang Generate (loading) | Wizard |
+| D1 | Hasil Itinerary | Manajemen Trip |
+| D2 | Modal Swap | Manajemen Trip |
+| D3 | List Trip Tersimpan | Manajemen Trip |
+| D4 | Detail Cuaca (opsional) | Manajemen Trip |
+| D5 | Form Review | Manajemen Trip |
+| E1 | Peta Live | Trip Live |
+| F1 | Profil | Akun |
+| G1 | Dashboard Admin | Admin |
+| G2 | Review Candidate | Admin |
+| G3 | List Places | Admin |
+| G4 | Form Edit Tempat | Admin |
+| G5 | List Categories | Admin |
+| G6 | Form Edit Category | Admin |
+| G7 | Status Sync | Admin |
 
-**19 end-user screens (A1-F1) + 7 admin screens (G1-G7) = 26 distinct screens.** C2a is one reusable screen shared by both the wishlist custom-add and hotel custom-add flows, not two separate builds. D4 is optional polish - a team pressed for time could fold its content into a D1 tooltip instead of a full screen.
+**19 layar user biasa (A1-F1) + 7 layar admin (G1-G7) = 26 layar berbeda.** C2a adalah satu layar reusable yang dipakai bareng buat alur tambah manual wishlist dan tambah manual hotel, bukan dibangun dua kali. D4 itu polish opsional - kalau tim kepepet waktu, kontennya bisa dilebur jadi tooltip di D1 saja tanpa layar penuh.
 </content>

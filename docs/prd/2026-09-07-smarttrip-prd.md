@@ -4,7 +4,7 @@
 
 **Type:** Full PRD
 **Status:** Draft — pre-implementation
-**Version:** 1.9
+**Version:** 1.10
 **Last Updated:** 2026-09-22
 **Source of truth for implementation detail:** `docs/superpowers/specs/2026-09-07-smarttrip-itinerary-recommendation-design.md` (this PRD is a reformatted, audience-oriented view of the same decisions — where they ever conflict, the design spec wins, since it carries finer-grained rationale)
 
@@ -21,6 +21,7 @@
 | 1.7 | 2026-09-11 | Reverted admin from Flutter role-gated screens back to a separate web panel (Blade + Bootstrap) - removed /api/admin/* from the API surface, removed Flutter admin components, updated tech stack/file structure/personas/rollout accordingly |
 | 1.8 | 2026-09-22 | Merged `place_attributes` back into `places` (one table); overwrite protection on Google re-sync moved from schema separation to a code-level whitelist-update discipline in the sync job |
 | 1.9 | 2026-09-22 | Data model audit findings applied: JSON-array category tags replaced with pivot tables (`place_category`, `trip_interest_category`, `user_default_interest_category`) with FK RESTRICT; EAV-style `*_criteria_weights` tables replaced with fixed `weight_*` columns on `users`/`trips`; added `deleted_at` soft delete to `places`/`users`/`trips`/`place_reviews`/`categories`; added `UNIQUE(user_id, place_id)` on `place_reviews`; added CHECK constraint requiring at least one auth method on `users`; clarified `topsis_score` is NULL (not fabricated) for manually-swapped-in items |
+| 1.10 | 2026-09-22 | Added admin audit trail: `activity_log` table via `spatie/laravel-activitylog`, `LogsActivity` trait on `Place`/`Category` models, "Riwayat Perubahan" change-history tab in admin panel - answers "who changed this place's price/category, and when" (previously an explicitly-deferred known gap) |
 
 ---
 
@@ -182,7 +183,7 @@ Terasa seperti aplikasi e-commerce untuk browsing tempat (grid/list, filter, inf
 
 **Admin Panel (separate web app, not part of the Flutter screens above):**
 *(Reversed 2026-09-11 — admin was briefly role-gated inside the Flutter app, moved back to a standalone web panel.)*
-Laravel Blade + Bootstrap, its own login (`/admin/login`, session-based, not the Sanctum tokens the Flutter app uses), controllers hit Eloquent models directly rather than calling the mobile REST API. Pages: Dashboard (stats + "needs attention" lists — missing price data, unreviewed category tags, last sync status), Candidate Review (trigger Discovery, filter/approve/reject `place_candidates`, bulk actions), Places list + edit form (admin-owned fields: estimated cost, description overrides, is_outdoor, category tags, manual add), Categories list + edit form, Sync Status (quota usage, last run stats). Admin never installs or opens the mobile app.
+Laravel Blade + Bootstrap, its own login (`/admin/login`, session-based, not the Sanctum tokens the Flutter app uses), controllers hit Eloquent models directly rather than calling the mobile REST API. Pages: Dashboard (stats + "needs attention" lists — missing price data, unreviewed category tags, last sync status), Candidate Review (trigger Discovery, filter/approve/reject `place_candidates`, bulk actions), Places list + edit form (admin-owned fields: estimated cost, description overrides, is_outdoor, category tags, manual add) with a "Riwayat Perubahan" change-history tab (reads `activity_log`, added 2026-09-22), Categories list + edit form (same change-history tab), Sync Status (quota usage, last run stats). Admin never installs or opens the mobile app.
 
 ---
 
@@ -271,11 +272,18 @@ itinerary_days(trip_id FK, day_number, start_place_id, end_place_id)
 
 itinerary_items(itinerary_day_id FK, place_id FK, visit_order, topsis_score, source[wishlist|recommended],
   polyline_to_here, visited_at?)
+
+activity_log(log_name, description, subject_type, subject_id, causer_type, causer_id,
+  properties[json - old/attributes], event[created|updated|deleted], timestamps)
+  -- added 2026-09-22, provided by spatie/laravel-activitylog package (stock migration, not hand-written)
+  -- Place and Category models use the LogsActivity trait -- admin edit audit trail (who changed what, when)
 ```
 
 > Full field-level rationale for every table lives in the design spec Section 4 — this is a cross-reference summary, not the source of truth.
 
 **Soft delete policy (added 2026-09-22):** `deleted_at` only on tables with an independent delete feature worth preserving history for — `places`, `users`, `trips`, `place_reviews`, `categories`. Deliberately excluded from pure pivot tables (`place_category`, `trip_interest_category`, `user_default_interest_category`, `trip_wishlist_places` — Eloquent's `sync()`/`detach()` expect hard delete), pure child/detail rows with no independent delete feature (`place_photos`, `itinerary_days`, `itinerary_items`), and `place_candidates` (its `status` column already serves this purpose via `rejected`).
+
+**Admin audit trail (added 2026-09-22):** `Place` and `Category` (the two admin-curated models that feed directly into recommendation scoring — price, category tags, description) get the `spatie/laravel-activitylog` package's `LogsActivity` trait, so every create/update/delete through the admin panel is automatically recorded to `activity_log` with no custom controller code. Scoped to just these two models rather than every table — `place_candidates` approve/reject already has an equivalent history via its `status` column, and a 6-person team with full DB access doesn't need a blanket audit trail for a one-semester project. Surfaced in the admin panel as a "Riwayat Perubahan" (change history) tab on each place/category's edit screen.
 
 **Key Validation Rules** *(the ones that matter most for correctness — not an exhaustive re-derivation of every field; defer the rest to implementation)*:
 
@@ -392,6 +400,7 @@ timestamp set --(manual toggle off)--> null [correction path for false-positive 
 | Geofencing | `geofence_service` (or equivalent native wrapper) | OS-level, survives app kill, battery-efficient |
 | Weather | Open-Meteo | No API key needed, called client-side; 16-day forecast far exceeds the ~7-day window where it's actually shown |
 | Hosting | Linux server | Same environment for both development and deployment, updated 2026-09-17 per client decision (was Windows Server) |
+| Audit trail | `spatie/laravel-activitylog` | Package-provided `activity_log` table + `LogsActivity` trait on `Place`/`Category` - who changed what, when, zero custom controller code (added 2026-09-22) |
 
 ---
 

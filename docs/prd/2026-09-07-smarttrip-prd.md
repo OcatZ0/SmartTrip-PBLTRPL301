@@ -4,7 +4,7 @@
 
 **Type:** Full PRD
 **Status:** Draft — pre-implementation
-**Version:** 1.10
+**Version:** 1.11
 **Last Updated:** 2026-09-22
 **Source of truth for implementation detail:** `docs/superpowers/specs/2026-09-07-smarttrip-itinerary-recommendation-design.md` (this PRD is a reformatted, audience-oriented view of the same decisions — where they ever conflict, the design spec wins, since it carries finer-grained rationale)
 
@@ -22,6 +22,7 @@
 | 1.8 | 2026-09-22 | Merged `place_attributes` back into `places` (one table); overwrite protection on Google re-sync moved from schema separation to a code-level whitelist-update discipline in the sync job |
 | 1.9 | 2026-09-22 | Data model audit findings applied: JSON-array category tags replaced with pivot tables (`place_category`, `trip_interest_category`, `user_default_interest_category`) with FK RESTRICT; EAV-style `*_criteria_weights` tables replaced with fixed `weight_*` columns on `users`/`trips`; added `deleted_at` soft delete to `places`/`users`/`trips`/`place_reviews`/`categories`; added `UNIQUE(user_id, place_id)` on `place_reviews`; added CHECK constraint requiring at least one auth method on `users`; clarified `topsis_score` is NULL (not fabricated) for manually-swapped-in items |
 | 1.10 | 2026-09-22 | Added admin audit trail: `activity_log` table via `spatie/laravel-activitylog`, `LogsActivity` trait on `Place`/`Category` models, "Riwayat Perubahan" change-history tab in admin panel - answers "who changed this place's price/category, and when" (previously an explicitly-deferred known gap) |
+| 1.11 | 2026-09-22 | Renamed every primary key from generic `id` to explicit `{table_name}_id` (`places_id`, `users_id`, etc.) and updated all foreign keys to match, so a column name is self-describing outside JOIN context; `google_place_id`/`google_id` (external Google IDs) and `activity_log`'s package-owned `id`/`subject_id`/`causer_id` deliberately excluded |
 
 ---
 
@@ -220,7 +221,7 @@ Laravel Blade + Bootstrap, its own login (`/admin/login`, session-based, not the
 Backend is Laravel/Eloquent (not TypeScript) — schema shown as field lists per the design spec's Data Model section (full authoritative version there; summarized here for cross-reference):
 
 ```
-places(id, google_place_id?, name, type[attraction|culinary|lodging], lat, lng, address,
+places(places_id, google_place_id?, name, type[attraction|culinary|lodging], lat, lng, address,
   price_level?, rating, review_count, opening_hours[json], photo_url, description?,
   phone?, website?, google_maps_uri?, business_status[operational|closed_temporarily|closed_permanently],
   types[json], source[google|manual],
@@ -231,55 +232,62 @@ places(id, google_place_id?, name, type[attraction|culinary|lodging], lat, lng, 
   -- (category_tags_reviewed..description_en) WAJIB diproteksi lewat whitelist-update di kode saat
   -- re-sync dari Google, bukan lewat pemisahan tabel lagi -- lihat design spec Section 4
   -- kategori sekarang lewat pivot place_category (lihat bawah), bukan kolom json lagi
+  -- PK/FK renamed to {table}_id convention (revisi 2026-09-22, see note below) -- google_place_id
+  -- is Google's own external ID, not a reference to our places_id, so it kept its name
 
-categories(id, name_id, name_en, slug[unique], timestamps, deleted_at?[soft delete])
+categories(categories_id, name_id, name_en, slug[unique], timestamps, deleted_at?[soft delete])
   -- delete diproteksi ON DELETE RESTRICT dari 3 tabel pivot di bawah
+  -- name_id/name_en are language-code suffixes (Indonesian/English label), unrelated to the id/FK convention
 
-place_category(place_id FK, category_id FK[ON DELETE RESTRICT], unique[place_id, category_id])
+place_category(places_id FK, categories_id FK[ON DELETE RESTRICT], unique[places_id, categories_id])
   -- revisi 2026-09-22, ganti places.category_tags json array - pivot standar, FK beneran
 
-trip_interest_category(trip_id FK, category_id FK[ON DELETE RESTRICT], unique[trip_id, category_id])
+trip_interest_category(trips_id FK, categories_id FK[ON DELETE RESTRICT], unique[trips_id, categories_id])
   -- revisi 2026-09-22, ganti trips.interest_category_ids json array
 
-user_default_interest_category(user_id FK, category_id FK[ON DELETE RESTRICT], unique[user_id, category_id])
+user_default_interest_category(users_id FK, categories_id FK[ON DELETE RESTRICT], unique[users_id, categories_id])
   -- revisi 2026-09-22, ganti users.default_interest_category_ids json array
 
-place_candidates(google_place_id[unique], name, type, lat, lng, search_area,
+place_candidates(place_candidates_id, google_place_id[unique], name, type, lat, lng, search_area,
   status[pending|approved|rejected], timestamps)
 
-place_photos(place_id FK, photo_url, sort_order)
+place_photos(place_photos_id, places_id FK, photo_url, sort_order)
 
-place_reviews(place_id FK, user_id FK, rating[1-5], comment?, itinerary_item_id? FK,
-  unique[user_id, place_id], timestamps, deleted_at?[soft delete])
+place_reviews(place_reviews_id, places_id FK, users_id FK, rating[1-5], comment?, itinerary_items_id? FK,
+  unique[users_id, places_id], timestamps, deleted_at?[soft delete])
   -- unique constraint revisi 2026-09-22: 1 user cuma boleh 1 review per tempat,
   -- review ulang = edit yang sudah ada, bukan baris baru (jaga integritas Bayesian blend)
 
-users(..., password?, google_id?[unique], role[user|admin], timestamps, deleted_at?[soft delete])
+users(users_id, ..., password?, google_id?[unique], role[user|admin], timestamps, deleted_at?[soft delete])
   -- CHECK constraint revisi 2026-09-22: password IS NOT NULL OR google_id IS NOT NULL
   -- default_weight_kategori/jarak/anggaran/rating[decimal, nullable] - revisi 2026-09-22,
   -- ganti tabel EAV user_criteria_weights (4 kriteria fixed, tidak butuh bentuk EAV)
+  -- google_id is Google's own external ID, not a reference to our users_id, so it kept its name
 
-trips(id, user_id FK, title, num_days, budget_total, has_own_hotel[bool], hotel_place_id? FK,
+trips(trips_id, users_id FK, title, num_days, budget_total, has_own_hotel[bool], hotel_places_id? FK,
   hotel_custom_name?, hotel_lat?, hotel_lng?, start_date,
   daily_start_time, daily_end_time, timestamps, deleted_at?[soft delete])
   -- weight_kategori/jarak/anggaran/rating[decimal] - revisi 2026-09-22, ganti tabel EAV
   -- trip_criteria_weights (snapshot bobot 4 kriteria buat trip ini)
   -- minat trip ini lewat pivot trip_interest_category, bukan kolom json lagi
 
-trip_wishlist_places(trip_id FK, place_id? FK, custom name/lat/lng if not in places)
+trip_wishlist_places(trip_wishlist_places_id, trips_id FK, places_id? FK, custom name/lat/lng if not in places)
 
-itinerary_days(trip_id FK, day_number, start_place_id, end_place_id)
+itinerary_days(itinerary_days_id, trips_id FK, day_number, start_places_id, end_places_id)
 
-itinerary_items(itinerary_day_id FK, place_id FK, visit_order, topsis_score, source[wishlist|recommended],
+itinerary_items(itinerary_items_id, itinerary_days_id FK, places_id FK, visit_order, topsis_score, source[wishlist|recommended],
   polyline_to_here, visited_at?)
 
-activity_log(log_name, description, subject_type, subject_id, causer_type, causer_id,
+activity_log(id, log_name, description, subject_type, subject_id, causer_type, causer_id,
   properties[json - old/attributes], event[created|updated|deleted], timestamps)
   -- added 2026-09-22, provided by spatie/laravel-activitylog package (stock migration, not hand-written)
   -- Place and Category models use the LogsActivity trait -- admin edit audit trail (who changed what, when)
+  -- id/subject_id/causer_id kept as-is -- package-owned migration, out of scope for the PK/FK rename below
 ```
 
 > Full field-level rationale for every table lives in the design spec Section 4 — this is a cross-reference summary, not the source of truth.
+
+**PK/FK naming convention (added 2026-09-22):** every primary key is now explicit `{table_name}_id` instead of a generic `id` (`places_id`, `categories_id`, `users_id`, `trips_id`, etc.), so a column name is self-describing even outside JOIN context (`trips.users_id` reads as "this trip references a `users` row" on its own). Foreign keys follow the same target name (`place_id`→`places_id`, `category_id`→`categories_id`, `user_id`→`users_id`, `trip_id`→`trips_id`, `itinerary_day_id`→`itinerary_days_id`, `itinerary_item_id`→`itinerary_items_id`); role-prefixed FKs keep their prefix (`hotel_place_id`→`hotel_places_id`, `start_place_id`/`end_place_id`→`start_places_id`/`end_places_id`). **3 deliberate exceptions:** `google_place_id`/`google_id` (Google's own external IDs, not references to our tables — coincidentally similar-looking names only), `activity_log`'s `id`/`subject_id`/`causer_id` (owned by the `spatie/laravel-activitylog` package's stock migration), and the `{id}` path parameter in API routes (Section 11 — a REST resource-identifier convention, not a database column name).
 
 **Soft delete policy (added 2026-09-22):** `deleted_at` only on tables with an independent delete feature worth preserving history for — `places`, `users`, `trips`, `place_reviews`, `categories`. Deliberately excluded from pure pivot tables (`place_category`, `trip_interest_category`, `user_default_interest_category`, `trip_wishlist_places` — Eloquent's `sync()`/`detach()` expect hard delete), pure child/detail rows with no independent delete feature (`place_photos`, `itinerary_days`, `itinerary_items`), and `place_candidates` (its `status` column already serves this purpose via `rejected`).
 
@@ -295,7 +303,7 @@ activity_log(log_name, description, subject_type, subject_id, causer_type, cause
 | `trip_interest_category` | at least one row per trip on submit (empty only transiently allowed pre-onboarding-completion) |
 | `places.estimated_cost_idr` | integer, IDR, ≥ 0, nullable |
 | `place_reviews.rating` | integer, 1–5 inclusive |
-| `place_reviews` | unique(user_id, place_id) - one review per user per place |
+| `place_reviews` | unique(users_id, places_id) - one review per user per place |
 | `categories.slug` | string, unique, lowercase-slug format (enforced to prevent near-duplicate tags like "kuliner" vs "wisata-kuliner") |
 | `users.email` | unique, valid email format |
 | `users.google_id` | unique when present; nullable |
@@ -497,7 +505,7 @@ SmartTrip-Batam/
 
 **US10 — Beri rating/review**
 - [ ] Any authenticated user can submit a rating (1-5) plus an optional comment on any place, at any time (open review policy — no visit proof required)
-- [ ] `itinerary_item_id` is populated only when the review is submitted from a post-visit "rate your trip" flow; otherwise it's null
+- [ ] `itinerary_items_id` is populated only when the review is submitted from a post-visit "rate your trip" flow; otherwise it's null
 - [ ] A submitted review is reflected in that place's Bayesian-blended rating on the next TOPSIS scoring run
 
 **US11 — Trigger discovery (Admin)**

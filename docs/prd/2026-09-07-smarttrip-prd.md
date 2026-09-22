@@ -4,8 +4,8 @@
 
 **Type:** Full PRD
 **Status:** Draft — pre-implementation
-**Version:** 1.7
-**Last Updated:** 2026-09-11
+**Version:** 1.8
+**Last Updated:** 2026-09-22
 **Source of truth for implementation detail:** `docs/superpowers/specs/2026-09-07-smarttrip-itinerary-recommendation-design.md` (this PRD is a reformatted, audience-oriented view of the same decisions — where they ever conflict, the design spec wins, since it carries finer-grained rationale)
 
 | Version | Date | Change |
@@ -19,6 +19,7 @@
 | 1.5 | 2026-09-11 | Added weather forecast + swap suggestion feature (US15), sourced real ToS text for the scraping-avoidance rationale (TripAdvisor, Traveloka confirmed with exact quotes; Tiket.com could not be independently verified) |
 | 1.6 | 2026-09-11 | Confirmed Open-Meteo over Google Weather API after cost/architecture comparison; fixed stale design-spec section cross-references left over from the weather-section renumbering |
 | 1.7 | 2026-09-11 | Reverted admin from Flutter role-gated screens back to a separate web panel (Blade + Bootstrap) - removed /api/admin/* from the API surface, removed Flutter admin components, updated tech stack/file structure/personas/rollout accordingly |
+| 1.8 | 2026-09-22 | Merged `place_attributes` back into `places` (one table); overwrite protection on Google re-sync moved from schema separation to a code-level whitelist-update discipline in the sync job |
 
 ---
 
@@ -220,10 +221,12 @@ Backend is Laravel/Eloquent (not TypeScript) — schema shown as field lists per
 places(id, google_place_id?, name, type[attraction|culinary|lodging], lat, lng, address,
   price_level?, rating, review_count, opening_hours[json], photo_url, description?,
   phone?, website?, google_maps_uri?, business_status[operational|closed_temporarily|closed_permanently],
-  types[json], source[google|manual], timestamps)
-
-place_attributes(place_id FK, category_tags[json:categories.id], category_tags_reviewed[bool],
-  estimated_visit_minutes, is_outdoor[bool], estimated_cost_idr?, description_override?, description_en?, timestamps)
+  types[json], source[google|manual],
+  category_tags[json:categories.id], category_tags_reviewed[bool], estimated_visit_minutes,
+  is_outdoor[bool], estimated_cost_idr?, description_override?, description_en?, timestamps)
+  -- digabung dari places + place_attributes (revisi 2026-09-22); kolom kurasi admin
+  -- (category_tags..description_en) WAJIB diproteksi lewat whitelist-update di kode saat
+  -- re-sync dari Google, bukan lewat pemisahan tabel lagi -- lihat design spec Section 4
 
 categories(id, name_id, name_en, slug[unique], timestamps)
 
@@ -262,7 +265,7 @@ itinerary_items(itinerary_day_id FK, place_id FK, visit_order, topsis_score, sou
 | `trips.budget_total` | integer, IDR, > 0 - **per orang**, bukan total rombongan; tidak ada field jumlah orang di skema, jadi `estimated_cost_idr` per tempat juga diasumsikan basis per-kepala |
 | `trips.daily_start_time` / `daily_end_time` | time; `daily_end_time` must be after `daily_start_time` |
 | `trips.interest_category_ids` | non-empty array on submit (empty only transiently allowed pre-onboarding-completion) |
-| `place_attributes.estimated_cost_idr` | integer, IDR, ≥ 0, nullable |
+| `places.estimated_cost_idr` | integer, IDR, ≥ 0, nullable |
 | `place_reviews.rating` | integer, 1–5 inclusive |
 | `categories.slug` | string, unique, lowercase-slug format (enforced to prevent near-duplicate tags like "kuliner" vs "wisata-kuliner") |
 | `users.email` | unique, valid email format |
@@ -489,7 +492,7 @@ SmartTrip-Batam/
 - [ ] Forecast is fetched client-side directly from Open-Meteo using the hotel/start-location coordinate, no backend call involved
 - [ ] A local notification (`flutter_local_notifications`, no backend/Firebase) is scheduled on the device as soon as the itinerary is generated, firing at `start_date - 7 days`, prompting the user to open the app and check the forecast; tapping it opens the itinerary screen. If `start_date` is already less than 7 days out at generate time, the notification is scheduled for the next morning instead of a past time
 - [ ] Editing a trip's `num_days`/`start_date` (full regenerate) cancels the previously scheduled forecast-window notification and reschedules it against the new `start_date`, the same way the existing day-start reminders are rescheduled
-- [ ] A day with ≥1 stop where `place_attributes.is_outdoor = true` AND significant rain in that day's forecast shows the rain-warning badge
+- [ ] A day with ≥1 stop where `places.is_outdoor = true` AND significant rain in that day's forecast shows the rain-warning badge
 - [ ] Tapping the badge opens the existing swap modal (US5) for the outdoor stop(s) on that day — no new swap mechanism, no automatic regenerate
 - [ ] Edge case handled: a day with only indoor stops never shows the badge regardless of forecast
 - [ ] Edge case handled: forecast fetch failure (offline, Open-Meteo unavailable) degrades to no forecast shown, not an error blocking the rest of the itinerary screen
@@ -522,6 +525,7 @@ Key pivots made during the design process (all 2026-09-07, in one extended desig
 | Single-shot Google sync → two-phase Discovery/Enrichment | The Enterprise SKU's 1,000/month quota is too tight for a naive one-shot sync; needed an admin-reviewed gate before spending it |
 | Manual admin translation → Gemini auto-translation | Once the quota concern was correctly isolated to Place *Details* fetches (not text translation), there was no reason to hand-translate |
 | Auto-assume skipped stops as "visited" → explicit manual-only resolution | A real skip is a valid user scenario, not just GPS error — false inference would hide genuine plan changes |
+| `places` + `place_attributes` (two tables) → merged into one `places` table (2026-09-22) | Team preferred one table over the schema-level split; overwrite risk on re-sync is now handled purely in code — the sync/enrichment job must `update()` an explicit whitelist of Google-sourced columns only, never mass-assign the full Google payload onto an existing row, or it would wipe out admin-curated fields (`category_tags`, `estimated_cost_idr`, `is_outdoor`, etc.) |
 
 ---
 

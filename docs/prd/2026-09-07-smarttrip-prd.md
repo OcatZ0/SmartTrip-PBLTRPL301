@@ -4,7 +4,7 @@
 
 **Type:** Full PRD
 **Status:** Draft — pre-implementation
-**Version:** 1.12
+**Version:** 1.13
 **Last Updated:** 2026-09-22
 **Source of truth for implementation detail:** `docs/superpowers/specs/2026-09-07-smarttrip-itinerary-recommendation-design.md` (this PRD is a reformatted, audience-oriented view of the same decisions — where they ever conflict, the design spec wins, since it carries finer-grained rationale)
 
@@ -24,6 +24,7 @@
 | 1.10 | 2026-09-22 | Added admin audit trail: `activity_log` table via `spatie/laravel-activitylog`, `LogsActivity` trait on `Place`/`Category` models, "Riwayat Perubahan" change-history tab in admin panel - answers "who changed this place's price/category, and when" (previously an explicitly-deferred known gap) |
 | 1.11 | 2026-09-22 | Renamed every primary key from generic `id` to explicit `{table_name}_id` (`places_id`, `users_id`, etc.) and updated all foreign keys to match, so a column name is self-describing outside JOIN context; `google_place_id`/`google_id` (external Google IDs) and `activity_log`'s package-owned `id`/`subject_id`/`causer_id` deliberately excluded |
 | 1.12 | 2026-09-22 | Removed `places.google_maps_uri` (built on the fly from lat/lng instead, avoids staleness after coordinate corrections); added `places.kecamatan` (copied from `place_candidates.search_area` at promotion, admin-editable, powers a new browse filter); added `trip_wishlist_places.custom_visit_minutes` (fixes a real gap - custom map-pin wishlist items had no `places` row to source `estimated_visit_minutes` from for the day time-budget calculation, so the user now enters it manually) |
+| 1.13 | 2026-09-22 | Fixed stale admin-architecture references left over from the 2026-09-11 reversal (web panel, not Flutter role-gated): corrected the Section 1 AI Build Summary and the Section 5 Out of Scope bullet, both of which still described the old Flutter-role-gated admin design |
 
 ---
 
@@ -40,7 +41,7 @@ Wisatawan Batam kesulitan menentukan destinasi wisata dan kuliner yang sesuai de
 Aplikasi mobile yang merekomendasikan tempat wisata/kuliner/hotel sesuai preferensi pengguna (minat, jarak, anggaran, rating) memakai Weighted-TOPSIS, lalu otomatis menyusun jadwal perjalanan multi-hari dengan pengelompokan lokasi (K-Means) dan urutan rute (Nearest-Neighbor + Google Routes API), termasuk pelacakan progres kunjungan secara live.
 
 **AI Build Summary:**
-> Build a Laravel 12 REST API backend + single Flutter mobile app (role-gated for both end-users and admins, no separate web panel) for a Batam trip-itinerary recommender. Auth via Laravel Sanctum (opaque tokens) with email/password and Google Sign-In. Core algorithm pipeline: user-weighted TOPSIS scoring (4 criteria: category-fit via Jaccard similarity, distance via Haversine, budget via a 4-tier fallback chain, rating via a Bayesian Google+in-app blend) → K-Means day clustering → Nearest-Neighbor route ordering → Google Routes API for real road polylines. Place data sourced exclusively from Google Places API (New) via an admin-reviewed two-phase Discovery/Enrichment pipeline (never scraped from other platforms), enriched by Gemini (free tier) for translation, category tagging, and visit-duration estimation. Live trip map with GPS-geofencing-based visit tracking. No booking/payment, no multi-city, no web admin panel, one-semester scope for a 6-person student team.
+> Build a Laravel 12 REST API backend + Flutter mobile app for end users, plus a separate Laravel Blade/Bootstrap web admin panel (session-based auth, not part of the Flutter app) for a Batam trip-itinerary recommender. Mobile auth via Laravel Sanctum (opaque tokens) with email/password and Google Sign-In. Core algorithm pipeline: user-weighted TOPSIS scoring (4 criteria: category-fit via Jaccard similarity, distance via Haversine, budget via a 4-tier fallback chain, rating via a Bayesian Google+in-app blend) → K-Means day clustering → Nearest-Neighbor route ordering → Google Routes API for real road polylines. Place data sourced exclusively from Google Places API (New) via an admin-reviewed two-phase Discovery/Enrichment pipeline (never scraped from other platforms), enriched by Gemini (free tier) for translation, category tagging, and visit-duration estimation. Live trip map with GPS-geofencing-based visit tracking. No booking/payment, no multi-city, one-semester scope for a 6-person student team.
 
 ---
 
@@ -100,7 +101,7 @@ Sources: [Best AI Trip Planner Apps 2026 (Lindy)](https://www.lindy.ai/blog/trip
 **Out of scope** (see design spec Section 14 for full detail):
 - Booking/reservation/payment of any kind
 - Multi-city support (no `city` field anywhere; Batam-only, hardcoded area list)
-- Web admin panel (all admin functionality is role-gated inside the same Flutter app)
+- Admin functionality inside the Flutter mobile app (admin is a separate web panel — see Section 8/12)
 - Scraping any platform besides Google Places (TripAdvisor/Traveloka/Tiket.com explicitly rejected — ToS/legal risk)
 - True pairwise AHP (replaced with simpler direct-rating sliders feeding the same TOPSIS scoring)
 - Itinerary sharing/collaboration between users

@@ -4,7 +4,7 @@
 
 **Type:** Full PRD
 **Status:** Draft — pre-implementation
-**Version:** 1.8
+**Version:** 1.9
 **Last Updated:** 2026-09-22
 **Source of truth for implementation detail:** `docs/superpowers/specs/2026-09-07-smarttrip-itinerary-recommendation-design.md` (this PRD is a reformatted, audience-oriented view of the same decisions — where they ever conflict, the design spec wins, since it carries finer-grained rationale)
 
@@ -20,6 +20,7 @@
 | 1.6 | 2026-09-11 | Confirmed Open-Meteo over Google Weather API after cost/architecture comparison; fixed stale design-spec section cross-references left over from the weather-section renumbering |
 | 1.7 | 2026-09-11 | Reverted admin from Flutter role-gated screens back to a separate web panel (Blade + Bootstrap) - removed /api/admin/* from the API surface, removed Flutter admin components, updated tech stack/file structure/personas/rollout accordingly |
 | 1.8 | 2026-09-22 | Merged `place_attributes` back into `places` (one table); overwrite protection on Google re-sync moved from schema separation to a code-level whitelist-update discipline in the sync job |
+| 1.9 | 2026-09-22 | Data model audit findings applied: JSON-array category tags replaced with pivot tables (`place_category`, `trip_interest_category`, `user_default_interest_category`) with FK RESTRICT; EAV-style `*_criteria_weights` tables replaced with fixed `weight_*` columns on `users`/`trips`; added `deleted_at` soft delete to `places`/`users`/`trips`/`place_reviews`/`categories`; added `UNIQUE(user_id, place_id)` on `place_reviews`; added CHECK constraint requiring at least one auth method on `users`; clarified `topsis_score` is NULL (not fabricated) for manually-swapped-in items |
 
 ---
 
@@ -222,32 +223,49 @@ places(id, google_place_id?, name, type[attraction|culinary|lodging], lat, lng, 
   price_level?, rating, review_count, opening_hours[json], photo_url, description?,
   phone?, website?, google_maps_uri?, business_status[operational|closed_temporarily|closed_permanently],
   types[json], source[google|manual],
-  category_tags[json:categories.id], category_tags_reviewed[bool], estimated_visit_minutes,
-  is_outdoor[bool], estimated_cost_idr?, description_override?, description_en?, timestamps)
+  category_tags_reviewed[bool], estimated_visit_minutes,
+  is_outdoor[bool], estimated_cost_idr?, description_override?, description_en?,
+  timestamps, deleted_at?[soft delete])
   -- digabung dari places + place_attributes (revisi 2026-09-22); kolom kurasi admin
-  -- (category_tags..description_en) WAJIB diproteksi lewat whitelist-update di kode saat
+  -- (category_tags_reviewed..description_en) WAJIB diproteksi lewat whitelist-update di kode saat
   -- re-sync dari Google, bukan lewat pemisahan tabel lagi -- lihat design spec Section 4
+  -- kategori sekarang lewat pivot place_category (lihat bawah), bukan kolom json lagi
 
-categories(id, name_id, name_en, slug[unique], timestamps)
+categories(id, name_id, name_en, slug[unique], timestamps, deleted_at?[soft delete])
+  -- delete diproteksi ON DELETE RESTRICT dari 3 tabel pivot di bawah
+
+place_category(place_id FK, category_id FK[ON DELETE RESTRICT], unique[place_id, category_id])
+  -- revisi 2026-09-22, ganti places.category_tags json array - pivot standar, FK beneran
+
+trip_interest_category(trip_id FK, category_id FK[ON DELETE RESTRICT], unique[trip_id, category_id])
+  -- revisi 2026-09-22, ganti trips.interest_category_ids json array
+
+user_default_interest_category(user_id FK, category_id FK[ON DELETE RESTRICT], unique[user_id, category_id])
+  -- revisi 2026-09-22, ganti users.default_interest_category_ids json array
 
 place_candidates(google_place_id[unique], name, type, lat, lng, search_area,
   status[pending|approved|rejected], timestamps)
 
 place_photos(place_id FK, photo_url, sort_order)
 
-place_reviews(place_id FK, user_id FK, rating[1-5], comment?, itinerary_item_id? FK, timestamps)
+place_reviews(place_id FK, user_id FK, rating[1-5], comment?, itinerary_item_id? FK,
+  unique[user_id, place_id], timestamps, deleted_at?[soft delete])
+  -- unique constraint revisi 2026-09-22: 1 user cuma boleh 1 review per tempat,
+  -- review ulang = edit yang sudah ada, bukan baris baru (jaga integritas Bayesian blend)
 
-users(..., password?, google_id?[unique], role[user|admin], default_interest_category_ids[json], timestamps)
-
-user_criteria_weights(user_id FK, criterion, weight)
+users(..., password?, google_id?[unique], role[user|admin], timestamps, deleted_at?[soft delete])
+  -- CHECK constraint revisi 2026-09-22: password IS NOT NULL OR google_id IS NOT NULL
+  -- default_weight_kategori/jarak/anggaran/rating[decimal, nullable] - revisi 2026-09-22,
+  -- ganti tabel EAV user_criteria_weights (4 kriteria fixed, tidak butuh bentuk EAV)
 
 trips(id, user_id FK, title, num_days, budget_total, has_own_hotel[bool], hotel_place_id? FK,
-  hotel_custom_name?, hotel_lat?, hotel_lng?, interest_category_ids[json], start_date,
-  daily_start_time, daily_end_time, timestamps)
+  hotel_custom_name?, hotel_lat?, hotel_lng?, start_date,
+  daily_start_time, daily_end_time, timestamps, deleted_at?[soft delete])
+  -- weight_kategori/jarak/anggaran/rating[decimal] - revisi 2026-09-22, ganti tabel EAV
+  -- trip_criteria_weights (snapshot bobot 4 kriteria buat trip ini)
+  -- minat trip ini lewat pivot trip_interest_category, bukan kolom json lagi
 
 trip_wishlist_places(trip_id FK, place_id? FK, custom name/lat/lng if not in places)
-
-trip_criteria_weights(trip_id FK, criterion, weight)
 
 itinerary_days(trip_id FK, day_number, start_place_id, end_place_id)
 
@@ -257,6 +275,8 @@ itinerary_items(itinerary_day_id FK, place_id FK, visit_order, topsis_score, sou
 
 > Full field-level rationale for every table lives in the design spec Section 4 — this is a cross-reference summary, not the source of truth.
 
+**Soft delete policy (added 2026-09-22):** `deleted_at` only on tables with an independent delete feature worth preserving history for — `places`, `users`, `trips`, `place_reviews`, `categories`. Deliberately excluded from pure pivot tables (`place_category`, `trip_interest_category`, `user_default_interest_category`, `trip_wishlist_places` — Eloquent's `sync()`/`detach()` expect hard delete), pure child/detail rows with no independent delete feature (`place_photos`, `itinerary_days`, `itinerary_items`), and `place_candidates` (its `status` column already serves this purpose via `rejected`).
+
 **Key Validation Rules** *(the ones that matter most for correctness — not an exhaustive re-derivation of every field; defer the rest to implementation)*:
 
 | Field | Rule |
@@ -264,12 +284,14 @@ itinerary_items(itinerary_day_id FK, place_id FK, visit_order, topsis_score, sou
 | `trips.num_days` | integer, ≥ 1; soft cap of 7 (design spec — a recommendation, not a hard technical block) |
 | `trips.budget_total` | integer, IDR, > 0 - **per orang**, bukan total rombongan; tidak ada field jumlah orang di skema, jadi `estimated_cost_idr` per tempat juga diasumsikan basis per-kepala |
 | `trips.daily_start_time` / `daily_end_time` | time; `daily_end_time` must be after `daily_start_time` |
-| `trips.interest_category_ids` | non-empty array on submit (empty only transiently allowed pre-onboarding-completion) |
+| `trip_interest_category` | at least one row per trip on submit (empty only transiently allowed pre-onboarding-completion) |
 | `places.estimated_cost_idr` | integer, IDR, ≥ 0, nullable |
 | `place_reviews.rating` | integer, 1–5 inclusive |
+| `place_reviews` | unique(user_id, place_id) - one review per user per place |
 | `categories.slug` | string, unique, lowercase-slug format (enforced to prevent near-duplicate tags like "kuliner" vs "wisata-kuliner") |
 | `users.email` | unique, valid email format |
 | `users.google_id` | unique when present; nullable |
+| `users` | CHECK: `password IS NOT NULL OR google_id IS NOT NULL` |
 | `place_candidates.google_place_id` | unique — this is the idempotency key preventing duplicate Discovery inserts (design spec Section 3) |
 
 ---
@@ -345,7 +367,7 @@ timestamp set --(manual toggle off)--> null [correction path for false-positive 
 | Live GPS position | Local UI state (stream) | None | From `geolocator`, not persisted |
 | Geofence registration | OS-level (native, outside Flutter widget tree) | Persistent until deregistered | Survives app kill (Section 8 of design spec) |
 | Pending offline visit events | Local SQLite/shared prefs queue | Persistent until synced | Section 8 edge case handling |
-| Profile default preferences | Server + local cache | Persistent (server) | `user_criteria_weights` |
+| Profile default preferences | Server + local cache | Persistent (server) | `user_default_interest_category` + `users.default_weight_*` columns |
 | Language selection | Local (`shared_preferences`) | Persistent | Client-side only, no backend |
 
 **Decided: Riverpod** — good fit for this app's async-heavy nature (API calls, geofence streams, live location), strong testability. Team has no prior experience with either Riverpod or Provider, so Provider's usual advantage (existing familiarity) didn't apply here.
@@ -412,7 +434,7 @@ SmartTrip-Batam/
 **US1 — Pilih minat & atur bobot preferensi**
 - [ ] User can select 1 or more category chips from the seeded `categories` list
 - [ ] User can set 4 sliders (0-10), backend normalizes to weights summing to 1
-- [ ] Selections persist to `trips.interest_category_ids` / `trip_criteria_weights` on submit
+- [ ] Selections persist to `trip_interest_category` rows / `trips.weight_*` columns on submit
 - [ ] Edge case handled: 0 sliders touched still submits with equal weights (all defaulted, not blocked)
 - [ ] Error state: attempting to proceed with 0 categories selected during **onboarding** is blocked (min 1 required); during regular trip setup with an existing profile default, this can't happen since it's pre-filled
 
@@ -441,6 +463,7 @@ SmartTrip-Batam/
 - [ ] Committing a swap re-runs Nearest-Neighbor only for the affected day and refreshes only that leg's road polyline
 - [ ] Other days and stops in the same trip are unaffected
 - [ ] Edge case handled: zero ranked alternatives available still allows manual search to proceed without error
+- [ ] Swapping in a ranked alternative persists its already-known `topsis_score`; swapping in a manual-search result leaves `topsis_score` NULL (never fabricated) since it was never scored against this trip's weights
 
 **US6 — Live map**
 - [ ] All stops for the active day render as numbered pins immediately, not progressively revealed
@@ -452,7 +475,7 @@ SmartTrip-Batam/
 - [ ] Works when location permission was denied (feature isn't fully broken, just not automatic)
 
 **US8 — Simpan preferensi default**
-- [ ] A "simpan sebagai default" toggle during trip setup writes to `default_interest_category_ids`/`user_criteria_weights` via `PUT /api/profile/preferences`
+- [ ] A "simpan sebagai default" toggle during trip setup writes to `user_default_interest_category`/`users.default_weight_*` via `PUT /api/profile/preferences`
 - [ ] Leaving the toggle off means the trip's selections stay trip-specific; profile defaults are untouched
 - [ ] The next new trip created pre-fills from the saved default
 - [ ] Editing directly from the Profile screen produces the same stored result as the toggle
@@ -477,8 +500,8 @@ SmartTrip-Batam/
 - [ ] Rejecting a candidate sets `status = rejected` and it is excluded from future Discovery re-inserts (see US11)
 
 **US13 — Admin lengkapi data**
-- [ ] Admin can edit `estimated_cost_idr`, `description_override`, `description_en`, `estimated_visit_minutes`, and `category_tags` per place
-- [ ] Manually editing `category_tags` sets `category_tags_reviewed = true`
+- [ ] Admin can edit `estimated_cost_idr`, `description_override`, `description_en`, `estimated_visit_minutes`, and the place's `place_category` rows
+- [ ] Manually editing a place's categories sets `category_tags_reviewed = true`
 - [ ] Edits take effect on the next TOPSIS scoring run without requiring a re-sync
 
 **US14 — Dashboard admin**

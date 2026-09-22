@@ -14,6 +14,7 @@
 | 1.1 | 2026-09-07 | Applied `/prd-analyze` findings: added Metadata, Entity Lifecycles, Glossary, Observability, Competitive Landscape, Decisions Log sections; expanded Acceptance Criteria to cover all 14 user stories; fixed untestable SLA criterion; added data model validation rules |
 | 1.2 | 2026-09-07 | Replaced the unresearched Competitive Landscape placeholder with real research (Wanderlog, TripIt, the LLM-chat AI-planner category, and Atourin as the closest Indonesian comparable) |
 | 1.3 | 2026-09-07 | Resolved hosting open question: Windows Server + PostgreSQL for both dev and deployment (overrides team's usual MySQL default) |
+| 1.7 | 2026-09-17 | Hosting changed to Linux + PostgreSQL (client decision, overrides 1.3); added automatic push/local notification when the weather forecast window opens (US15), on top of the existing per-screen-open check |
 | 1.4 | 2026-09-07 | Decided Riverpod (team has no prior experience with either option); removed accessibility entirely per explicit instruction - not pursuing it this project |
 | 1.5 | 2026-09-11 | Added weather forecast + swap suggestion feature (US15), sourced real ToS text for the scraping-avoidance rationale (TripAdvisor, Traveloka confirmed with exact quotes; Tiket.com could not be independently verified) |
 | 1.6 | 2026-09-11 | Confirmed Open-Meteo over Google Weather API after cost/architecture comparison; fixed stale design-spec section cross-references left over from the weather-section renumbering |
@@ -356,16 +357,16 @@ timestamp set --(manual toggle off)--> null [correction path for false-positive 
 | Mobile | Flutter | Single codebase for iOS/Android, end-user only (not admin) |
 | Admin panel | Laravel Blade + Bootstrap | Separate web app for admin - session auth, controllers hit Eloquent directly, no REST API in between |
 | State management | Riverpod | See Section 13 |
-| Database | PostgreSQL | Decided over the team's usual MySQL-with-Laravel default, to stay consistent with Windows Server + PostgreSQL already used across the team's other projects |
+| Database | PostgreSQL | Decided over the team's usual MySQL-with-Laravel default (client's own hosting decision) |
 | Auth | Laravel Sanctum (API tokens) + Google Sign-In | First-party, easy revocation, sufficient at this scale (chosen over JWT after explicit comparison) |
 | Maps | Google Maps SDK (`google_maps_flutter`) | Free unlimited rendering |
 | Routing | Google Routes API | Real road-following polylines, generous free tier for this call volume |
 | Place data | Google Places API (New) | Only source; no scraping (ToS/legal risk explicitly rejected) |
 | AI enrichment | Gemini API (Flash/Flash-Lite) | Genuinely free ongoing tier vs. OpenAI/Claude's one-time trial credits |
-| Notifications | `flutter_local_notifications` | Fully client-side, no Firebase needed |
+| Notifications | `flutter_local_notifications` | Fully client-side, no Firebase needed - covers day-start reminders, next-stop-approaching alerts, and the weather-window-opened alert (US15) |
 | Geofencing | `geofence_service` (or equivalent native wrapper) | OS-level, survives app kill, battery-efficient |
 | Weather | Open-Meteo | No API key needed, called client-side; 16-day forecast far exceeds the ~7-day window where it's actually shown |
-| Hosting | Windows Server | Same environment for both development and deployment, decided 2026-09-07 |
+| Hosting | Linux server | Same environment for both development and deployment, updated 2026-09-17 per client decision (was Windows Server) |
 
 ---
 
@@ -486,6 +487,8 @@ SmartTrip-Batam/
 **US15 — Weather forecast & swap suggestion**
 - [ ] Forecast card appears on a day only once `trip.start_date` is within ~7 days of today — not shown before that (no reliable forecast exists yet)
 - [ ] Forecast is fetched client-side directly from Open-Meteo using the hotel/start-location coordinate, no backend call involved
+- [ ] A local notification (`flutter_local_notifications`, no backend/Firebase) is scheduled on the device as soon as the itinerary is generated, firing at `start_date - 7 days`, prompting the user to open the app and check the forecast; tapping it opens the itinerary screen. If `start_date` is already less than 7 days out at generate time, the notification is scheduled for the next morning instead of a past time
+- [ ] Editing a trip's `num_days`/`start_date` (full regenerate) cancels the previously scheduled forecast-window notification and reschedules it against the new `start_date`, the same way the existing day-start reminders are rescheduled
 - [ ] A day with ≥1 stop where `place_attributes.is_outdoor = true` AND significant rain in that day's forecast shows the rain-warning badge
 - [ ] Tapping the badge opens the existing swap modal (US5) for the outdoor stop(s) on that day — no new swap mechanism, no automatic regenerate
 - [ ] Edge case handled: a day with only indoor stops never shows the badge regardless of forecast
@@ -497,7 +500,7 @@ SmartTrip-Batam/
 
 ## 17. Open Questions & Risks
 
-- ~~**Q:** What's the target hosting environment for backend?~~ **Resolved 2026-09-07:** Windows Server + PostgreSQL, for both development and deployment.
+- ~~**Q:** What's the target hosting environment for backend?~~ **Resolved 2026-09-17 (updated from 2026-09-07):** Linux server + PostgreSQL, for both development and deployment — client decision, overrides the earlier Windows Server pick.
 - ~~**Q:** Riverpod vs. Provider for Flutter state management?~~ **Resolved 2026-09-07:** Riverpod - team has no prior experience with either, so no reason to prefer Provider's smaller learning curve over Riverpod's better fit for this app's async-heavy needs.
 - **Risk:** Google Places Enterprise SKU quota (1,000 free calls/month) is the tightest constraint in the whole project — a rushed or careless bootstrap could burn it before the curated pool is complete — *Mitigation: the two-phase Discovery/Enrichment admin-review gate exists specifically to prevent this*
 - **Risk:** Background location permission ("Allow all the time" / "Always") is a sensitive, store-reviewed permission — fine for demo/sideload, but a real blocker if the team later wants to publish to Play Store — *Mitigation: documented explicitly as out of scope for this semester (design spec Section 14)*

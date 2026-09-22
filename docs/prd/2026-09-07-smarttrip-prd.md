@@ -4,7 +4,7 @@
 
 **Type:** Full PRD
 **Status:** Draft — pre-implementation
-**Version:** 1.11
+**Version:** 1.12
 **Last Updated:** 2026-09-22
 **Source of truth for implementation detail:** `docs/superpowers/specs/2026-09-07-smarttrip-itinerary-recommendation-design.md` (this PRD is a reformatted, audience-oriented view of the same decisions — where they ever conflict, the design spec wins, since it carries finer-grained rationale)
 
@@ -23,6 +23,7 @@
 | 1.9 | 2026-09-22 | Data model audit findings applied: JSON-array category tags replaced with pivot tables (`place_category`, `trip_interest_category`, `user_default_interest_category`) with FK RESTRICT; EAV-style `*_criteria_weights` tables replaced with fixed `weight_*` columns on `users`/`trips`; added `deleted_at` soft delete to `places`/`users`/`trips`/`place_reviews`/`categories`; added `UNIQUE(user_id, place_id)` on `place_reviews`; added CHECK constraint requiring at least one auth method on `users`; clarified `topsis_score` is NULL (not fabricated) for manually-swapped-in items |
 | 1.10 | 2026-09-22 | Added admin audit trail: `activity_log` table via `spatie/laravel-activitylog`, `LogsActivity` trait on `Place`/`Category` models, "Riwayat Perubahan" change-history tab in admin panel - answers "who changed this place's price/category, and when" (previously an explicitly-deferred known gap) |
 | 1.11 | 2026-09-22 | Renamed every primary key from generic `id` to explicit `{table_name}_id` (`places_id`, `users_id`, etc.) and updated all foreign keys to match, so a column name is self-describing outside JOIN context; `google_place_id`/`google_id` (external Google IDs) and `activity_log`'s package-owned `id`/`subject_id`/`causer_id` deliberately excluded |
+| 1.12 | 2026-09-22 | Removed `places.google_maps_uri` (built on the fly from lat/lng instead, avoids staleness after coordinate corrections); added `places.kecamatan` (copied from `place_candidates.search_area` at promotion, admin-editable, powers a new browse filter); added `trip_wishlist_places.custom_visit_minutes` (fixes a real gap - custom map-pin wishlist items had no `places` row to source `estimated_visit_minutes` from for the day time-budget calculation, so the user now enters it manually) |
 
 ---
 
@@ -184,7 +185,7 @@ Terasa seperti aplikasi e-commerce untuk browsing tempat (grid/list, filter, inf
 
 **Admin Panel (separate web app, not part of the Flutter screens above):**
 *(Reversed 2026-09-11 — admin was briefly role-gated inside the Flutter app, moved back to a standalone web panel.)*
-Laravel Blade + Bootstrap, its own login (`/admin/login`, session-based, not the Sanctum tokens the Flutter app uses), controllers hit Eloquent models directly rather than calling the mobile REST API. Pages: Dashboard (stats + "needs attention" lists — missing price data, unreviewed category tags, last sync status), Candidate Review (trigger Discovery, filter/approve/reject `place_candidates`, bulk actions), Places list + edit form (admin-owned fields: estimated cost, description overrides, is_outdoor, category tags, manual add) with a "Riwayat Perubahan" change-history tab (reads `activity_log`, added 2026-09-22), Categories list + edit form (same change-history tab), Sync Status (quota usage, last run stats). Admin never installs or opens the mobile app.
+Laravel Blade + Bootstrap, its own login (`/admin/login`, session-based, not the Sanctum tokens the Flutter app uses), controllers hit Eloquent models directly rather than calling the mobile REST API. Pages: Dashboard (stats + "needs attention" lists — missing price data, unreviewed category tags, last sync status), Candidate Review (trigger Discovery, filter/approve/reject `place_candidates`, bulk actions), Places list (filterable by kecamatan, added 2026-09-22) + edit form (admin-owned fields: estimated cost, description overrides, is_outdoor, category tags, kecamatan, manual add) with a "Riwayat Perubahan" change-history tab (reads `activity_log`, added 2026-09-22), Categories list + edit form (same change-history tab), Sync Status (quota usage, last run stats). Admin never installs or opens the mobile app.
 
 ---
 
@@ -197,7 +198,7 @@ Laravel Blade + Bootstrap, its own login (`/admin/login`, session-based, not the
 | PlaceCatalogGrid | Display | Infinite-scroll place browsing with category filter | US3 |
 | PlaceCard | Display | Thumbnail, name, rating, badge (wishlist/recommended) | US3, US4 |
 | WishlistButton | Action | Toggle add/remove place to trip wishlist | US3 |
-| MapPinPicker | Form | Tap/drag pin on `google_maps_flutter` for custom locations | US3 (hotel/wishlist custom pin) |
+| MapPinPicker | Form | Tap/drag pin on `google_maps_flutter` for custom locations + name; wishlist custom pins also require a manual estimated-visit-duration input (added 2026-09-22 — see US3) | US3 (hotel/wishlist custom pin) |
 | HotelSearchOrPin | Form | Search catalog or fallback to map pin | US2 |
 | TripSetupForm | Form | num_days, budget, dates, time window, hotel toggle | US2 |
 | ItineraryDayCard | Display | One day's stops with source badges | US4 |
@@ -222,18 +223,22 @@ Backend is Laravel/Eloquent (not TypeScript) — schema shown as field lists per
 
 ```
 places(places_id, google_place_id?, name, type[attraction|culinary|lodging], lat, lng, address,
-  price_level?, rating, review_count, opening_hours[json], photo_url, description?,
-  phone?, website?, google_maps_uri?, business_status[operational|closed_temporarily|closed_permanently],
+  kecamatan?, price_level?, rating, review_count, opening_hours[json], photo_url, description?,
+  phone?, website?, business_status[operational|closed_temporarily|closed_permanently],
   types[json], source[google|manual],
   category_tags_reviewed[bool], estimated_visit_minutes,
   is_outdoor[bool], estimated_cost_idr?, description_override?, description_en?,
   timestamps, deleted_at?[soft delete])
   -- digabung dari places + place_attributes (revisi 2026-09-22); kolom kurasi admin
-  -- (category_tags_reviewed..description_en) WAJIB diproteksi lewat whitelist-update di kode saat
+  -- (category_tags_reviewed..description_en, kecamatan) WAJIB diproteksi lewat whitelist-update di kode saat
   -- re-sync dari Google, bukan lewat pemisahan tabel lagi -- lihat design spec Section 4
   -- kategori sekarang lewat pivot place_category (lihat bawah), bukan kolom json lagi
   -- PK/FK renamed to {table}_id convention (revisi 2026-09-22, see note below) -- google_place_id
   -- is Google's own external ID, not a reference to our places_id, so it kept its name
+  -- kecamatan added 2026-09-22: copied from place_candidates.search_area at promotion, admin-editable,
+  -- powers GET /api/places?kecamatan= filter -- zero extra API cost, data already collected by Discovery
+  -- google_maps_uri REMOVED 2026-09-22: not stored -- built on the fly from lat/lng (or google_place_id)
+  -- instead, so it never goes stale if an admin later corrects the coordinates
 
 categories(categories_id, name_id, name_en, slug[unique], timestamps, deleted_at?[soft delete])
   -- delete diproteksi ON DELETE RESTRICT dari 3 tabel pivot di bawah
@@ -271,7 +276,12 @@ trips(trips_id, users_id FK, title, num_days, budget_total, has_own_hotel[bool],
   -- trip_criteria_weights (snapshot bobot 4 kriteria buat trip ini)
   -- minat trip ini lewat pivot trip_interest_category, bukan kolom json lagi
 
-trip_wishlist_places(trip_wishlist_places_id, trips_id FK, places_id? FK, custom name/lat/lng if not in places)
+trip_wishlist_places(trip_wishlist_places_id, trips_id FK, places_id? FK,
+  custom_name?, custom_lat?, custom_lng?, custom_visit_minutes?[integer])
+  -- custom_* only populated when places_id is null (map-pin addition not in the catalog)
+  -- custom_visit_minutes added 2026-09-22: a custom pin has no places row, so no estimated_visit_minutes
+  -- to draw from for the day time-budget math (Section 7 step 6b) -- user enters it manually when pinning,
+  -- required on this path specifically (catalog picks use places.estimated_visit_minutes instead)
 
 itinerary_days(itinerary_days_id, trips_id FK, day_number, start_places_id, end_places_id)
 
@@ -302,6 +312,7 @@ activity_log(id, log_name, description, subject_type, subject_id, causer_type, c
 | `trips.daily_start_time` / `daily_end_time` | time; `daily_end_time` must be after `daily_start_time` |
 | `trip_interest_category` | at least one row per trip on submit (empty only transiently allowed pre-onboarding-completion) |
 | `places.estimated_cost_idr` | integer, IDR, ≥ 0, nullable |
+| `trip_wishlist_places.custom_visit_minutes` | integer, > 0, required when `places_id` is null (custom pin) - no `places` row to fall back on for the day time-budget calculation |
 | `place_reviews.rating` | integer, 1–5 inclusive |
 | `place_reviews` | unique(users_id, places_id) - one review per user per place |
 | `categories.slug` | string, unique, lowercase-slug format (enforced to prevent near-duplicate tags like "kuliner" vs "wisata-kuliner") |
@@ -464,7 +475,7 @@ SmartTrip-Batam/
 
 **US3 — Tambah tempat ke wishlist**
 - [ ] User can search the catalog and add a place to `trip_wishlist_places`
-- [ ] User can add a custom pin (free-text name + lat/lng from a map tap) if the place isn't in the catalog
+- [ ] User can add a custom pin (free-text name + lat/lng from a map tap + a required estimated-visit-duration input, added 2026-09-22) if the place isn't in the catalog
 - [ ] Wishlist items appear tagged `source=wishlist` in the generated itinerary
 - [ ] Edge case handled: adding the same place twice to one trip's wishlist is a no-op (no duplicate row), not an error
 

@@ -258,7 +258,7 @@ itinerary_items(itinerary_day_id FK, place_id FK, visit_order, topsis_score, sou
 | Field | Rule |
 |-------|------|
 | `trips.num_days` | integer, ≥ 1; soft cap of 7 (design spec — a recommendation, not a hard technical block) |
-| `trips.budget_total` | integer, IDR, > 0 |
+| `trips.budget_total` | integer, IDR, > 0 - **per orang**, bukan total rombongan; tidak ada field jumlah orang di skema, jadi `estimated_cost_idr` per tempat juga diasumsikan basis per-kepala |
 | `trips.daily_start_time` / `daily_end_time` | time; `daily_end_time` must be after `daily_start_time` |
 | `trips.interest_category_ids` | non-empty array on submit (empty only transiently allowed pre-onboarding-completion) |
 | `place_attributes.estimated_cost_idr` | integer, IDR, ≥ 0, nullable |
@@ -413,7 +413,7 @@ SmartTrip-Batam/
 - [ ] Error state: attempting to proceed with 0 categories selected during **onboarding** is blocked (min 1 required); during regular trip setup with an existing profile default, this can't happen since it's pre-filled
 
 **US2 — Atur jumlah hari, anggaran, tanggal trip**
-- [ ] User can set `num_days` (integer ≥ 1), `budget_total` (IDR, positive integer), `start_date`
+- [ ] User can set `num_days` (integer ≥ 1), `budget_total` (IDR, positive integer, **per orang** - UI label harus eksplisit "per orang"/"per person", tidak ada input jumlah orang di form ini), `start_date`
 - [ ] `daily_start_time`/`daily_end_time` default to 09:00/19:00 if left unset, editable
 - [ ] Values persist to `trips` on submit
 - [ ] Edge case handled: `num_days` > 7 is allowed but shown a soft warning, not hard-blocked (design spec: soft cap, not a technical rule)

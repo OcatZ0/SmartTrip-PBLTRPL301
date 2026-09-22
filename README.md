@@ -75,4 +75,12 @@ Pre-implementation - design spec and PRD are finalized, application code has not
 
 ## Team
 
-6-person team, 1-semester project for course TRPL 301.
+1-semester project for course TRPL 301.
+
+| NIM | Name | Role |
+|---|---|---|
+| 4342501028 | Muhamad Nurfadli | Team Leader |
+| 4342501003 | Fathia Zahra Salsabila | Member |
+| 4342501014 | Atma Fauzilla | Member |
+| 4342501010 | Zahrah Faradila | Member |
+| 4342501025 | Muhammad Rangga | Member |

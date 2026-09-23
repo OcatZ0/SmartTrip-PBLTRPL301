@@ -4,7 +4,7 @@
 
 **Type:** Full PRD
 **Status:** Draft — pre-implementation
-**Version:** 1.14
+**Version:** 1.15
 **Last Updated:** 2026-09-23
 **Source of truth for implementation detail:** `docs/superpowers/specs/2026-09-07-smarttrip-itinerary-recommendation-design.md` (this PRD is a reformatted, audience-oriented view of the same decisions — where they ever conflict, the design spec wins, since it carries finer-grained rationale)
 
@@ -26,6 +26,7 @@
 | 1.12 | 2026-09-22 | Removed `places.google_maps_uri` (built on the fly from lat/lng instead, avoids staleness after coordinate corrections); added `places.kecamatan` (copied from `place_candidates.search_area` at promotion, admin-editable, powers a new browse filter); added `trip_wishlist_places.custom_visit_minutes` (fixes a real gap - custom map-pin wishlist items had no `places` row to source `estimated_visit_minutes` from for the day time-budget calculation, so the user now enters it manually) |
 | 1.13 | 2026-09-22 | Fixed stale admin-architecture references left over from the 2026-09-11 reversal (web panel, not Flutter role-gated): corrected the Section 1 AI Build Summary and the Section 5 Out of Scope bullet, both of which still described the old Flutter-role-gated admin design |
 | 1.14 | 2026-09-23 | Added US16, read-only trip sharing (`trip_viewers` table, invite/revoke by email, "Dibagikan ke Saya" tab) - a rework of the earlier out-of-scope call, not deferred future work; new design spec Section 9 pushed Weather/API/Mobile Flow/Admin Panel/Testing/Out of Scope sections down by 1 (all cross-references updated in both documents) |
+| 1.15 | 2026-09-23 | Added US17, anonymous public "Share Itinerary" link (`trips.share_token`, `GET /api/shared-itinerary/{share_token}`) - a standalone mechanism unrelated to US16's Trip Viewer, explicitly no login/account; strict response whitelist excludes `visited_at`/owner identity/`budget_total` per explicit "no privacy leak" requirement; also added link-based invite (`viewer_invite_token`) as a second way into US16's `trip_viewers`, alongside the existing email search; new design spec Section 10 pushed Weather/API/Mobile Flow/Admin Panel/Testing/Out of Scope sections down by 1 again (all cross-references updated in both documents) |
 
 ---
 
@@ -97,12 +98,12 @@ Sources: [Best AI Trip Planner Apps 2026 (Lindy)](https://www.lindy.ai/blog/trip
 
 ## 5. Scope & Constraints
 
-**In scope:** everything in the accompanying design spec — trip creation, wishlist, preference sliders + minat selection, hotel resolution (search or custom pin), TOPSIS/K-Means/NN/Routes generation pipeline, swap, live map with geofencing, read-only trip sharing to other users (added 2026-09-23), weather forecast + swap suggestion, in-app reviews, profile preference defaults, mandatory onboarding, Google Sign-In, and the full admin data-curation loop (Discovery → review → Enrichment → AI tagging/translation → ongoing curation).
+**In scope:** everything in the accompanying design spec — trip creation, wishlist, preference sliders + minat selection, hotel resolution (search or custom pin), TOPSIS/K-Means/NN/Routes generation pipeline, swap, live map with geofencing, read-only trip sharing to other users (added 2026-09-23), anonymous public itinerary share links (added 2026-09-23), weather forecast + swap suggestion, in-app reviews, profile preference defaults, mandatory onboarding, Google Sign-In, and the full admin data-curation loop (Discovery → review → Enrichment → AI tagging/translation → ongoing curation).
 
-**Out of scope** (see design spec Section 15 for full detail):
+**Out of scope** (see design spec Section 16 for full detail):
 - Booking/reservation/payment of any kind
 - Multi-city support (no `city` field anywhere; Batam-only, hardcoded area list)
-- Admin functionality inside the Flutter mobile app (admin is a separate web panel — see Section 8/13)
+- Admin functionality inside the Flutter mobile app (admin is a separate web panel — see Section 8/14)
 - Scraping any platform besides Google Places (TripAdvisor/Traveloka/Tiket.com explicitly rejected — ToS/legal risk)
 - True pairwise AHP (replaced with simpler direct-rating sliders feeding the same TOPSIS scoring)
 - Multi-editor trip collaboration, in-app comments/discussion, real-time conflict resolution — **read-only trip sharing IS in scope** (single owner + read-only viewers, added 2026-09-23, see US16/Section 9); true co-editing is not, since TOPSIS scoring is designed around one owner's preference weights, not a merged multi-user preference
@@ -131,6 +132,7 @@ Sources: [Best AI Trip Planner Apps 2026 (Lindy)](https://www.lindy.ai/blog/trip
 | 4 | When I'm the team managing the app's place data, I want a controlled way to bring new places into the system without blowing our API budget, so the recommendation quality stays high without unsustainable cost. |
 | 5 | When my trip is coming up soon and rain is forecast, I want to know before I'm standing at an outdoor spot in a downpour, so I can swap to an indoor alternative ahead of time instead of during. |
 | 6 | When I've planned a trip, I want family or friends to see my itinerary and live progress without being able to change anything, so they can follow along without me worrying they'll accidentally edit my plan. |
+| 7 | When I'm proud of a trip plan I built, I want to send it to anyone — even someone who doesn't use this app — so they can see what I've planned without needing to sign up for anything. |
 
 ---
 
@@ -153,7 +155,8 @@ Sources: [Best AI Trip Planner Apps 2026 (Lindy)](https://www.lindy.ai/blog/trip
 | US13 | Admin | lengkapi estimasi harga/kategori yang belum lengkap | kriteria TOPSIS makin akurat seiring waktu | J4 |
 | US14 | Admin | lihat dashboard tempat yang butuh perhatian (harga kosong, tag belum direview) | tahu prioritas kerja tanpa harus cek manual satu-satu | J4 |
 | US15 | Wisatawan | lihat forecast cuaca per hari, dapat saran swap kalau hari itu ada stop outdoor + prediksi hujan | tidak kaget kehujanan di tempat outdoor, bisa antisipasi dari awal | J5 |
-| US16 | Wisatawan | bagikan trip ke user lain sebagai viewer read-only | keluarga/teman bisa lihat itinerary dan progres saya tanpa bisa mengubah apapun | J6 |
+| US16 | Wisatawan | bagikan trip ke user lain sebagai viewer read-only, by email atau link undangan | keluarga/teman bisa lihat itinerary dan progres saya tanpa bisa mengubah apapun | J6 |
+| US17 | Wisatawan | bagikan link publik itinerary yang sudah digenerate ke siapa saja | orang yang belum tentu pakai SmartTrip tetap bisa lihat rencana trip saya | J7 |
 
 ---
 
@@ -218,10 +221,13 @@ Laravel Blade + Bootstrap, its own login (`/admin/login`, session-based, not the
 **Admin (US11-US14) is not built as Flutter components at all** — it's a separate web panel (Blade views + Bootstrap, standard HTML forms/tables, not part of this Flutter component tree). See Section 13 (Admin Panel) for its page list instead of this table.
 | WeatherForecastCard | Display | Per-day forecast summary, shown once trip is within ~7 days | US15 |
 | WeatherSwapBadge | Action | Rain-warning badge on a day with outdoor stops, opens SwapModal on tap | US15 |
-| ShareTripButton | Action | Opens the invite-viewer screen from a trip's detail page (owner only, added 2026-09-23) | US16 |
-| ViewerList | Display | List of invited viewers on a trip, with a revoke-access action per row (owner only) | US16 |
+| ShareTripButton | Action | Opens the "Bagikan Trip" screen from a trip's detail page (owner only, added 2026-09-23) | US16, US17 |
+| ViewerList | Display | List of invited viewers on a trip (by email or link), with a revoke-access action per row (owner only) | US16 |
+| ViewerInviteLinkTile | Action | Generate/reset `viewer_invite_token`, share via OS share sheet — the link-based alternative to email search (added 2026-09-23) | US16 |
 | SharedTripsTab | Display | Separate tab listing trips shared to the current user (`GET /api/trips/shared`), distinct from "Trip Saya" | US16 |
 | ReadOnlyModeBanner | Display | Persistent indicator when viewing someone else's trip; action buttons (swap/generate/delete/visit) hidden in this mode | US16 |
+| ShareItineraryTile | Action | Generate/reset `share_token` and hand the public link to the OS share sheet — a distinct, unrelated section of the same "Bagikan Trip" screen (anonymous, no account, added 2026-09-23) | US17 |
+| SharedItineraryReadOnlyScreen | Display | Renders the anonymous public itinerary from `GET /api/shared-itinerary/{share_token}` — no login, nothing saved locally about the viewer | US17 |
 
 ---
 
@@ -279,10 +285,14 @@ users(users_id, ..., password?, google_id?[unique], role[user|admin], timestamps
 
 trips(trips_id, users_id FK, title, num_days, budget_total, has_own_hotel[bool], hotel_places_id? FK,
   hotel_custom_name?, hotel_lat?, hotel_lng?, start_date,
-  daily_start_time, daily_end_time, timestamps, deleted_at?[soft delete])
+  daily_start_time, daily_end_time, viewer_invite_token?[unique], share_token?[unique],
+  timestamps, deleted_at?[soft delete])
   -- weight_kategori/jarak/anggaran/rating[decimal] - revisi 2026-09-22, ganti tabel EAV
   -- trip_criteria_weights (snapshot bobot 4 kriteria buat trip ini)
   -- minat trip ini lewat pivot trip_interest_category, bukan kolom json lagi
+  -- viewer_invite_token added 2026-09-23 -- link-based alternative to email search for trip_viewers (US16)
+  -- share_token added 2026-09-23 -- UNRELATED to viewer_invite_token, powers the anonymous public
+  -- itinerary link (US17, design spec Section 10) -- do not conflate the two, different auth models
 
 trip_wishlist_places(trip_wishlist_places_id, trips_id FK, places_id? FK,
   custom_name?, custom_lat?, custom_lng?, custom_visit_minutes?[integer])
@@ -316,6 +326,8 @@ activity_log(id, log_name, description, subject_type, subject_id, causer_type, c
 
 **Admin audit trail (added 2026-09-22):** `Place` and `Category` (the two admin-curated models that feed directly into recommendation scoring — price, category tags, description) get the `spatie/laravel-activitylog` package's `LogsActivity` trait, so every create/update/delete through the admin panel is automatically recorded to `activity_log` with no custom controller code. Scoped to just these two models rather than every table — `place_candidates` approve/reject already has an equivalent history via its `status` column, and a 6-person team with full DB access doesn't need a blanket audit trail for a one-semester project. Surfaced in the admin panel as a "Riwayat Perubahan" (change history) tab on each place/category's edit screen.
 
+**Share Itinerary privacy boundary (added 2026-09-23, non-negotiable per explicit requirement):** `GET /api/shared-itinerary/{share_token}` is the one truly public, unauthenticated endpoint in the whole API — no Sanctum token, no account, no way to verify who's asking. The response is built from a **strict field whitelist**, not a blacklist, so a future field added to `trips`/`itinerary_items` is excluded by default unless deliberately added to the whitelist. Always excluded, no exceptions: `visited_at` (live/status data, not plan data), anything from the `users` relation (owner's name/email/photo), `budget_total`, and precise coordinates for a custom-pin hotel (shown as a generic "Hotel" label instead — catalog-sourced hotels are fine to show as-is, since that location is already public). This is a genuinely different trust boundary from Trip Viewer (`trip_viewers`, US16) — that feature requires login and grants live-progress access to a specific named person who can be individually revoked; this one is anonymous, snapshot-only, and all-or-nothing (resetting `share_token` kills the link for everyone, there's no per-person revoke because no per-person identity is ever recorded).
+
 **Key Validation Rules** *(the ones that matter most for correctness — not an exhaustive re-derivation of every field; defer the rest to implementation)*:
 
 | Field | Rule |
@@ -334,12 +346,13 @@ activity_log(id, log_name, description, subject_type, subject_id, causer_type, c
 | `users` | CHECK: `password IS NOT NULL OR google_id IS NOT NULL` |
 | `place_candidates.google_place_id` | unique — this is the idempotency key preventing duplicate Discovery inserts (design spec Section 3) |
 | `trip_viewers` | unique(trips_id, users_id) - no duplicate invites; invited email must belong to an existing registered user, no invite-by-email-for-non-users flow |
+| `trips.viewer_invite_token` / `share_token` | both nullable, unique, high-entropy random strings; regenerating either invalidates the OLD link for new joins only, does not affect anyone who already joined/has the old link cached — genuinely two separate tokens for two separate purposes, never reused across each other |
 
 ---
 
 ## 11. API / Integration Surface
 
-Full endpoint list is design spec Section 11 — summarized by group:
+Full endpoint list is design spec Section 12 — summarized by group:
 
 | Group | Example | Auth |
 |-------|---------|------|
@@ -349,14 +362,17 @@ Full endpoint list is design spec Section 11 — summarized by group:
 | Trip setup | `/api/trips` (POST/GET/DELETE), `/api/trips/{id}/hotel`, `/api/trips/{id}/hotel-options` | Token (GET `/api/trips/{id}` also allows an invited viewer, added 2026-09-23) |
 | Wishlist | `/api/trips/{id}/wishlist` (POST/GET/DELETE) | Token |
 | Generate | `/api/trips/{id}/weights`, `/api/trips/{id}/generate` | Token |
-| Trip Sharing | `POST/GET /api/trips/{id}/viewers`, `DELETE /api/trips/{id}/viewers/{viewer_id}`, `GET /api/trips/shared` (added 2026-09-23) | Token, invite/revoke owner-only |
+| Trip Viewer | `POST/GET /api/trips/{id}/viewers`, `DELETE /api/trips/{id}/viewers/{viewer_id}`, `POST/DELETE /api/trips/{id}/viewer-invite-link`, `POST /api/trips/join-viewer/{viewer_invite_token}`, `GET /api/trips/shared` (added 2026-09-23) | Token — invite/revoke owner-only, joining via link still requires login |
+| Share Itinerary | `POST/DELETE /api/trips/{id}/share-link` (owner only), `GET /api/shared-itinerary/{share_token}` (added 2026-09-23) | Owner actions need a token; the view itself is fully public, no Sanctum at all — deliberately a different path than `/api/trips/shared` above so the two don't get confused |
 | Swap | `/api/itinerary-items/{id}/swap-candidates`, `/api/places?...`, `PATCH /api/itinerary-items/{id}` | Token |
 | Live tracking | `POST /api/itinerary-items/{id}/visit` | Token |
 | Places/review | `GET /api/places`, `GET /api/places/{id}` (public), `/api/places/{id}/reviews`, `/api/reviews/{id}` | Mixed |
 
 **No `/api/admin/*` group anymore** — admin runs on the separate web panel (see Section 8), whose Blade controllers talk to Eloquent directly instead of consuming this REST API. Its routes live in `routes/web.php` under `/admin/*` with session auth, entirely separate from the `routes/api.php` table above.
 
-**Trip viewer authorization (added 2026-09-23):** every trip-scoped read endpoint (trip detail, wishlist, itinerary) now allows the trip's owner OR any user with a `trip_viewers` row for that trip. Every write endpoint that touches a trip (generate, swap, delete, weights, visit, wishlist mutation) stays owner-only, unchanged — see design spec Section 9.
+**Trip viewer authorization (added 2026-09-23):** every trip-scoped read endpoint (trip detail, wishlist, itinerary) now allows the trip's owner OR any user with a `trip_viewers` row for that trip. Every write endpoint that touches a trip (generate, swap, delete, weights, visit, wishlist mutation) stays owner-only, unchanged — see design spec Section 9. `POST /api/trips/join-viewer/{viewer_invite_token}` is the one exception that *creates* a `trip_viewers` row via a non-owner action — it still requires a valid Sanctum token (the joining user must be logged in), it just doesn't require the owner to have looked up that specific person by email first.
+
+**Share Itinerary is a fully separate, unrelated mechanism (added 2026-09-23):** `GET /api/shared-itinerary/{share_token}` has no authorization check at all — it's not "owner or viewer," it's genuinely public. See design spec Section 10 for the strict response field whitelist that keeps this safe (no `visited_at`, no owner identity, no `budget_total`).
 
 **External integrations:**
 - Google Places API (New) — Nearby/Text Search (Pro SKU) + Place Details (Enterprise SKU) for place data
@@ -574,10 +590,23 @@ SmartTrip-Batam/
 - [ ] Viewer can see the same trip detail, itinerary, and live-progress state (`visited_at` per stop) the owner sees, via the same `GET /api/trips/{id}` and derived endpoints
 - [ ] Viewer sees the owner's stored progress state (`visited_at`, day status flags), NOT the owner's live-moving GPS position — the owner's raw location is never sent to the server, this feature doesn't change that
 - [ ] Every write action (swap, regenerate, delete, mark visited, edit weights/wishlist/hotel) is rejected with 403 for a viewer, enforced server-side regardless of what the UI hides
-- [ ] Owner can revoke a viewer's access at any time from the same "Bagikan" screen; access is removed immediately (hard delete of the `trip_viewers` row)
+- [ ] Owner can revoke a viewer's access at any time from the same "Bagikan" screen; access is removed immediately (hard delete of the `trip_viewers` row), regardless of whether that viewer joined by email or by link
 - [ ] Edge case handled: a user can be a viewer on a trip while also being the owner of their own separate trips — no conflict between the two roles
+- [ ] Owner can also generate a `viewer_invite_token` link (added 2026-09-23) and share it via the OS share sheet, as an alternative to searching by email — this works even for people who don't have an account yet
+- [ ] Opening a viewer-invite link while logged out routes through Login/Register first, then automatically creates the `trip_viewers` row and opens the trip — no separate "accept" screen after auth
+- [ ] Opening a viewer-invite link while already logged in joins immediately, no extra step
+- [ ] Regenerating or clearing `viewer_invite_token` stops new people from joining via the old link, but does NOT remove anyone who already joined through it — their `trip_viewers` row is untouched
 
-> Full edge-case catalogue (beyond what's listed per-story above) lives in design spec Sections 3, 7, 8, 9, and 10.
+**US17 — Share itinerary via anonymous public link** *(added 2026-09-23)*
+- [ ] Trip owner can generate a `share_token` from the "Bagikan Trip" screen's separate "Share Itinerary" section (distinct UI from US16's viewer invite, not the same flow)
+- [ ] The resulting link works for **anyone**, with no login and no SmartTrip account required at all
+- [ ] `GET /api/shared-itinerary/{share_token}` is a fully public endpoint — no Sanctum token, no `trip_viewers` check, nothing recorded about who opened it
+- [ ] Response strictly excludes: `visited_at` / any live-progress data, the owner's name/email/any `users` field, `budget_total`, and precise coordinates for a custom-pin hotel (shown as a generic "Hotel" label instead)
+- [ ] Owner can reset/clear `share_token` at any time, which immediately invalidates the link for everyone who has it — since no per-viewer identity is tracked, this is all-or-nothing, there is no way to revoke one specific person while leaving the link live for others (this is a known, accepted limitation, not a bug)
+- [ ] Edge case handled: requesting a `share_token` that's null, invalid, or already reset returns a generic 404, not a response that distinguishes "never existed" from "was reset" (avoids leaking trip existence)
+- [ ] Edge case handled: this feature and US16 (Trip Viewer) are completely independent — a trip can have an active `share_token`, an active `viewer_invite_token`, specific named viewers, all three, or none, in any combination, with no interaction between them
+
+> Full edge-case catalogue (beyond what's listed per-story above) lives in design spec Sections 3, 7, 8, 9, 10, and 11.
 
 ---
 
@@ -586,7 +615,7 @@ SmartTrip-Batam/
 - ~~**Q:** What's the target hosting environment for backend?~~ **Resolved 2026-09-17 (updated from 2026-09-07):** Linux server + PostgreSQL, for both development and deployment — client decision, overrides the earlier Windows Server pick.
 - ~~**Q:** Riverpod vs. Provider for Flutter state management?~~ **Resolved 2026-09-07:** Riverpod - team has no prior experience with either, so no reason to prefer Provider's smaller learning curve over Riverpod's better fit for this app's async-heavy needs.
 - **Risk:** Google Places Enterprise SKU quota (1,000 free calls/month) is the tightest constraint in the whole project — a rushed or careless bootstrap could burn it before the curated pool is complete — *Mitigation: the two-phase Discovery/Enrichment admin-review gate exists specifically to prevent this*
-- **Risk:** Background location permission ("Allow all the time" / "Always") is a sensitive, store-reviewed permission — fine for demo/sideload, but a real blocker if the team later wants to publish to Play Store — *Mitigation: documented explicitly as out of scope for this semester (design spec Section 15)*
+- **Risk:** Background location permission ("Allow all the time" / "Always") is a sensitive, store-reviewed permission — fine for demo/sideload, but a real blocker if the team later wants to publish to Play Store — *Mitigation: documented explicitly as out of scope for this semester (design spec Section 16)*
 - **Risk:** Batam's island geography (irregular coastline, limited bridges) makes the Haversine-based day-budget travel-time estimate systematically optimistic — *Mitigation: circuity multiplier (~1.3-1.4x) applied, plus a post-hoc "padat" flag once real Routes API data comes back*
 - **Tradeoff:** Open (unverified) in-app reviews vs. verified-visit-only — chosen open specifically because the Bayesian rating blend needs review volume to be useful, accepting lower per-review trust as the cost
 
@@ -608,6 +637,9 @@ Key pivots made during the design process (all 2026-09-07, in one extended desig
 | `places` + `place_attributes` (two tables) → merged into one `places` table (2026-09-22) | Team preferred one table over the schema-level split; overwrite risk on re-sync is now handled purely in code — the sync/enrichment job must `update()` an explicit whitelist of Google-sourced columns only, never mass-assign the full Google payload onto an existing row, or it would wipe out admin-curated fields (`category_tags`, `estimated_cost_idr`, `is_outdoor`, etc.) |
 | "Trip collaboration is out of scope" → **read-only trip sharing is in scope** (2026-09-23) — this is a rework, not a deferred future-work idea | User explicitly reversed the earlier out-of-scope call for a narrower version: single owner keeps full control (generate/swap/delete/weights all stay owner-only), invited viewers get read access only, enforced server-side. Chosen over full co-editing because TOPSIS scoring is built around one owner's preference weights — merging multiple people's preferences into one score has no clean answer, so it was deliberately kept out |
 | Viewer "live tracking" → polling stored `visited_at` state, NOT live GPS broadcast | Two interpretations existed: (a) viewer sees the same visited/not-visited state the owner already sees (cheap, no new plumbing), or (b) viewer sees the owner's GPS dot moving in real time (requires the owner's location to reach the server for the first time ever — a genuine privacy/architecture change from the existing design). Chose (a) explicitly, preserving the existing "owner's GPS never leaves their device" decision from Section 8 |
+| Trip Viewer invites → email search AND link-based invite (2026-09-23) | Email-search-only had a real gap: it could only invite someone who *already* had a registered account. Added `viewer_invite_token` as a second on-ramp into the same `trip_viewers` table — link requires login/register but not a pre-existing account, closing that gap without building a second authorization system |
+| Share Itinerary (US17) → a standalone mechanism, NOT built on top of Trip Viewer | User explicitly rejected reusing `trip_viewers`/login for this feature ("it's not related to the prev feature... this one genuinely just for sharing a trip") — Share Itinerary needed to work with zero account/login at all, which `trip_viewers` structurally can't do (its `users_id` FK requires a real user row). Built as one nullable `trips.share_token` column + one public endpoint instead, deliberately simpler and fully independent |
+| Share Itinerary payload → whitelist, not blacklist, with `visited_at`/owner identity/`budget_total` excluded by design | Explicit "no privacy leak" requirement from the user. A blacklist risks forgetting to exclude a newly-added sensitive field later; a whitelist means new fields are invisible to the public endpoint by default until someone deliberately opts them in |
 
 ---
 
@@ -619,9 +651,9 @@ Key pivots made during the design process (all 2026-09-07, in one extended desig
 - **Phase 1:** Backend scaffolding, data model migrations, Google Places bootstrap (categories seed → Discovery → first Enrichment batch)
 - **Phase 2:** Core algorithm implementation (TOPSIS/K-Means/NN) + unit tests, Flutter trip-setup/wishlist/generate flow
 - **Phase 3:** Live map + geofencing, swap, admin web panel (Blade views), AI enrichment pipeline
-- **Phase 4:** Profile preferences, Google Sign-In, bilingual support, reviews, read-only trip sharing (US16, added 2026-09-23), polish + testing, demo prep
+- **Phase 4:** Profile preferences, Google Sign-In, bilingual support, reviews, read-only trip sharing (US16) + anonymous itinerary share links (US17, both added 2026-09-23), polish + testing, demo prep
 
-**Phase 2+ ideas** *(explicitly out of scope this semester, per design spec Section 15)*:
+**Phase 2+ ideas** *(explicitly out of scope this semester, per design spec Section 16)*:
 - Multi-city expansion
 - Booking/payment integration
 - Multi-editor trip collaboration (real-time co-editing, comments) — read-only sharing itself is in scope, see US16
@@ -662,7 +694,8 @@ Key pivots made during the design process (all 2026-09-07, in one extended desig
 | **Bayesian rating blend** | A weighted-average technique (same principle as IMDB's rating formula) blending a place's Google rating with its in-app review average, weighted by how many in-app reviews exist |
 | **Geofencing** | OS-level detection of a device entering/exiting a defined radius around a coordinate — used here to auto-detect a visited stop |
 | **Enterprise / Pro SKU** | Google Places API pricing tiers — Enterprise (rating, hours, price fields) has a much tighter free quota (1,000/mo) than Pro (Nearby/Text Search, 5,000/mo), which shaped the two-phase Discovery/Enrichment design |
-| **Trip viewer** | A user invited by a trip's owner to see that trip read-only — itinerary, live progress, status — with no ability to modify it (added 2026-09-23, US16) |
+| **Trip viewer** | A user invited by a trip's owner (by email or link) to see that trip read-only — itinerary, live progress, status — with no ability to modify it. Requires an account and login (added 2026-09-23, US16) |
+| **Share Itinerary link** | An anonymous, no-account public link to a trip's static generated plan. Unrelated to Trip Viewer — no login, no live progress, no per-person tracking, all-or-nothing revoke (added 2026-09-23, US17) |
 
 ---
 

@@ -4,8 +4,8 @@
 
 **Type:** Full PRD
 **Status:** Draft — pre-implementation
-**Version:** 1.13
-**Last Updated:** 2026-09-22
+**Version:** 1.14
+**Last Updated:** 2026-09-23
 **Source of truth for implementation detail:** `docs/superpowers/specs/2026-09-07-smarttrip-itinerary-recommendation-design.md` (this PRD is a reformatted, audience-oriented view of the same decisions — where they ever conflict, the design spec wins, since it carries finer-grained rationale)
 
 | Version | Date | Change |
@@ -25,6 +25,7 @@
 | 1.11 | 2026-09-22 | Renamed every primary key from generic `id` to explicit `{table_name}_id` (`places_id`, `users_id`, etc.) and updated all foreign keys to match, so a column name is self-describing outside JOIN context; `google_place_id`/`google_id` (external Google IDs) and `activity_log`'s package-owned `id`/`subject_id`/`causer_id` deliberately excluded |
 | 1.12 | 2026-09-22 | Removed `places.google_maps_uri` (built on the fly from lat/lng instead, avoids staleness after coordinate corrections); added `places.kecamatan` (copied from `place_candidates.search_area` at promotion, admin-editable, powers a new browse filter); added `trip_wishlist_places.custom_visit_minutes` (fixes a real gap - custom map-pin wishlist items had no `places` row to source `estimated_visit_minutes` from for the day time-budget calculation, so the user now enters it manually) |
 | 1.13 | 2026-09-22 | Fixed stale admin-architecture references left over from the 2026-09-11 reversal (web panel, not Flutter role-gated): corrected the Section 1 AI Build Summary and the Section 5 Out of Scope bullet, both of which still described the old Flutter-role-gated admin design |
+| 1.14 | 2026-09-23 | Added US16, read-only trip sharing (`trip_viewers` table, invite/revoke by email, "Dibagikan ke Saya" tab) - a rework of the earlier out-of-scope call, not deferred future work; new design spec Section 9 pushed Weather/API/Mobile Flow/Admin Panel/Testing/Out of Scope sections down by 1 (all cross-references updated in both documents) |
 
 ---
 
@@ -41,7 +42,7 @@ Wisatawan Batam kesulitan menentukan destinasi wisata dan kuliner yang sesuai de
 Aplikasi mobile yang merekomendasikan tempat wisata/kuliner/hotel sesuai preferensi pengguna (minat, jarak, anggaran, rating) memakai Weighted-TOPSIS, lalu otomatis menyusun jadwal perjalanan multi-hari dengan pengelompokan lokasi (K-Means) dan urutan rute (Nearest-Neighbor + Google Routes API), termasuk pelacakan progres kunjungan secara live.
 
 **AI Build Summary:**
-> Build a Laravel 12 REST API backend + Flutter mobile app for end users, plus a separate Laravel Blade/Bootstrap web admin panel (session-based auth, not part of the Flutter app) for a Batam trip-itinerary recommender. Mobile auth via Laravel Sanctum (opaque tokens) with email/password and Google Sign-In. Core algorithm pipeline: user-weighted TOPSIS scoring (4 criteria: category-fit via Jaccard similarity, distance via Haversine, budget via a 4-tier fallback chain, rating via a Bayesian Google+in-app blend) → K-Means day clustering → Nearest-Neighbor route ordering → Google Routes API for real road polylines. Place data sourced exclusively from Google Places API (New) via an admin-reviewed two-phase Discovery/Enrichment pipeline (never scraped from other platforms), enriched by Gemini (free tier) for translation, category tagging, and visit-duration estimation. Live trip map with GPS-geofencing-based visit tracking. No booking/payment, no multi-city, one-semester scope for a 6-person student team.
+> Build a Laravel 12 REST API backend + Flutter mobile app for end users, plus a separate Laravel Blade/Bootstrap web admin panel (session-based auth, not part of the Flutter app) for a Batam trip-itinerary recommender. Mobile auth via Laravel Sanctum (opaque tokens) with email/password and Google Sign-In. Core algorithm pipeline: user-weighted TOPSIS scoring (4 criteria: category-fit via Jaccard similarity, distance via Haversine, budget via a 4-tier fallback chain, rating via a Bayesian Google+in-app blend) → K-Means day clustering → Nearest-Neighbor route ordering → Google Routes API for real road polylines. Place data sourced exclusively from Google Places API (New) via an admin-reviewed two-phase Discovery/Enrichment pipeline (never scraped from other platforms), enriched by Gemini (free tier) for translation, category tagging, and visit-duration estimation. Live trip map with GPS-geofencing-based visit tracking, plus read-only trip sharing so an invited user can view (never edit) someone else's trip. No booking/payment, no multi-city, no multi-editor collaboration, one-semester scope for a 6-person student team.
 
 ---
 
@@ -96,15 +97,15 @@ Sources: [Best AI Trip Planner Apps 2026 (Lindy)](https://www.lindy.ai/blog/trip
 
 ## 5. Scope & Constraints
 
-**In scope:** everything in the accompanying design spec — trip creation, wishlist, preference sliders + minat selection, hotel resolution (search or custom pin), TOPSIS/K-Means/NN/Routes generation pipeline, swap, live map with geofencing, weather forecast + swap suggestion, in-app reviews, profile preference defaults, mandatory onboarding, Google Sign-In, and the full admin data-curation loop (Discovery → review → Enrichment → AI tagging/translation → ongoing curation).
+**In scope:** everything in the accompanying design spec — trip creation, wishlist, preference sliders + minat selection, hotel resolution (search or custom pin), TOPSIS/K-Means/NN/Routes generation pipeline, swap, live map with geofencing, read-only trip sharing to other users (added 2026-09-23), weather forecast + swap suggestion, in-app reviews, profile preference defaults, mandatory onboarding, Google Sign-In, and the full admin data-curation loop (Discovery → review → Enrichment → AI tagging/translation → ongoing curation).
 
-**Out of scope** (see design spec Section 14 for full detail):
+**Out of scope** (see design spec Section 15 for full detail):
 - Booking/reservation/payment of any kind
 - Multi-city support (no `city` field anywhere; Batam-only, hardcoded area list)
-- Admin functionality inside the Flutter mobile app (admin is a separate web panel — see Section 8/12)
+- Admin functionality inside the Flutter mobile app (admin is a separate web panel — see Section 8/13)
 - Scraping any platform besides Google Places (TripAdvisor/Traveloka/Tiket.com explicitly rejected — ToS/legal risk)
 - True pairwise AHP (replaced with simpler direct-rating sliders feeding the same TOPSIS scoring)
-- Itinerary sharing/collaboration between users
+- Multi-editor trip collaboration, in-app comments/discussion, real-time conflict resolution — **read-only trip sharing IS in scope** (single owner + read-only viewers, added 2026-09-23, see US16/Section 9); true co-editing is not, since TOPSIS scoring is designed around one owner's preference weights, not a merged multi-user preference
 - Automatic re-routing when a user deviates from the planned route
 - Play Store/App Store publish readiness
 - Per-day time windows (single trip-wide `daily_start_time`/`daily_end_time` only)
@@ -129,6 +130,7 @@ Sources: [Best AI Trip Planner Apps 2026 (Lindy)](https://www.lindy.ai/blog/trip
 | 3 | When I already have specific places I want to visit (that I found elsewhere), I want to add them to my plan and have the system build the rest of the schedule around them, so I don't lose the personal research I already did. |
 | 4 | When I'm the team managing the app's place data, I want a controlled way to bring new places into the system without blowing our API budget, so the recommendation quality stays high without unsustainable cost. |
 | 5 | When my trip is coming up soon and rain is forecast, I want to know before I'm standing at an outdoor spot in a downpour, so I can swap to an indoor alternative ahead of time instead of during. |
+| 6 | When I've planned a trip, I want family or friends to see my itinerary and live progress without being able to change anything, so they can follow along without me worrying they'll accidentally edit my plan. |
 
 ---
 
@@ -151,6 +153,7 @@ Sources: [Best AI Trip Planner Apps 2026 (Lindy)](https://www.lindy.ai/blog/trip
 | US13 | Admin | lengkapi estimasi harga/kategori yang belum lengkap | kriteria TOPSIS makin akurat seiring waktu | J4 |
 | US14 | Admin | lihat dashboard tempat yang butuh perhatian (harga kosong, tag belum direview) | tahu prioritas kerja tanpa harus cek manual satu-satu | J4 |
 | US15 | Wisatawan | lihat forecast cuaca per hari, dapat saran swap kalau hari itu ada stop outdoor + prediksi hujan | tidak kaget kehujanan di tempat outdoor, bisa antisipasi dari awal | J5 |
+| US16 | Wisatawan | bagikan trip ke user lain sebagai viewer read-only | keluarga/teman bisa lihat itinerary dan progres saya tanpa bisa mengubah apapun | J6 |
 
 ---
 
@@ -178,7 +181,7 @@ Terasa seperti aplikasi e-commerce untuk browsing tempat (grid/list, filter, inf
 - Loading state: skeleton/spinner saat generate (proses multi-tahap: TOPSIS → K-Means → NN → Routes API)
 
 **Interaction Model:**
-- Primary flow: Section 11 of design spec (numbered end-to-end)
+- Primary flow: Section 12 of design spec (numbered end-to-end)
 - Long-press pin di peta = tandai/batalkan kunjungan manual
 - Tap "+wishlist" di kartu katalog = tambah tanpa keluar dari browsing (tidak ada modal blocking)
 
@@ -212,9 +215,13 @@ Laravel Blade + Bootstrap, its own login (`/admin/login`, session-based, not the
 | ProfilePreferencesScreen | Form | Edit default minat + weights | US8 |
 | LanguageToggle | Action | ID/EN switch, settings | - |
 
-**Admin (US11-US14) is not built as Flutter components at all** — it's a separate web panel (Blade views + Bootstrap, standard HTML forms/tables, not part of this Flutter component tree). See Section 12 (Admin Panel) for its page list instead of this table.
+**Admin (US11-US14) is not built as Flutter components at all** — it's a separate web panel (Blade views + Bootstrap, standard HTML forms/tables, not part of this Flutter component tree). See Section 13 (Admin Panel) for its page list instead of this table.
 | WeatherForecastCard | Display | Per-day forecast summary, shown once trip is within ~7 days | US15 |
 | WeatherSwapBadge | Action | Rain-warning badge on a day with outdoor stops, opens SwapModal on tap | US15 |
+| ShareTripButton | Action | Opens the invite-viewer screen from a trip's detail page (owner only, added 2026-09-23) | US16 |
+| ViewerList | Display | List of invited viewers on a trip, with a revoke-access action per row (owner only) | US16 |
+| SharedTripsTab | Display | Separate tab listing trips shared to the current user (`GET /api/trips/shared`), distinct from "Trip Saya" | US16 |
+| ReadOnlyModeBanner | Display | Persistent indicator when viewing someone else's trip; action buttons (swap/generate/delete/visit) hidden in this mode | US16 |
 
 ---
 
@@ -289,6 +296,11 @@ itinerary_days(itinerary_days_id, trips_id FK, day_number, start_places_id, end_
 itinerary_items(itinerary_items_id, itinerary_days_id FK, places_id FK, visit_order, topsis_score, source[wishlist|recommended],
   polyline_to_here, visited_at?)
 
+trip_viewers(trip_viewers_id, trips_id FK, users_id FK, added_at, unique[trips_id, users_id])
+  -- added 2026-09-23, read-only trip sharing (US16) -- pure invite pivot, trips.users_id (owner) untouched
+  -- no role column -- only one access level (read-only viewer) exists right now
+  -- read endpoints check owner OR trip_viewers row; every write endpoint stays owner-only, unchanged
+
 activity_log(id, log_name, description, subject_type, subject_id, causer_type, causer_id,
   properties[json - old/attributes], event[created|updated|deleted], timestamps)
   -- added 2026-09-22, provided by spatie/laravel-activitylog package (stock migration, not hand-written)
@@ -298,9 +310,9 @@ activity_log(id, log_name, description, subject_type, subject_id, causer_type, c
 
 > Full field-level rationale for every table lives in the design spec Section 4 — this is a cross-reference summary, not the source of truth.
 
-**PK/FK naming convention (added 2026-09-22):** every primary key is now explicit `{table_name}_id` instead of a generic `id` (`places_id`, `categories_id`, `users_id`, `trips_id`, etc.), so a column name is self-describing even outside JOIN context (`trips.users_id` reads as "this trip references a `users` row" on its own). Foreign keys follow the same target name (`place_id`→`places_id`, `category_id`→`categories_id`, `user_id`→`users_id`, `trip_id`→`trips_id`, `itinerary_day_id`→`itinerary_days_id`, `itinerary_item_id`→`itinerary_items_id`); role-prefixed FKs keep their prefix (`hotel_place_id`→`hotel_places_id`, `start_place_id`/`end_place_id`→`start_places_id`/`end_places_id`). **3 deliberate exceptions:** `google_place_id`/`google_id` (Google's own external IDs, not references to our tables — coincidentally similar-looking names only), `activity_log`'s `id`/`subject_id`/`causer_id` (owned by the `spatie/laravel-activitylog` package's stock migration), and the `{id}` path parameter in API routes (Section 11 — a REST resource-identifier convention, not a database column name).
+**PK/FK naming convention (added 2026-09-22):** every primary key is now explicit `{table_name}_id` instead of a generic `id` (`places_id`, `categories_id`, `users_id`, `trips_id`, etc.), so a column name is self-describing even outside JOIN context (`trips.users_id` reads as "this trip references a `users` row" on its own). Foreign keys follow the same target name (`place_id`→`places_id`, `category_id`→`categories_id`, `user_id`→`users_id`, `trip_id`→`trips_id`, `itinerary_day_id`→`itinerary_days_id`, `itinerary_item_id`→`itinerary_items_id`); role-prefixed FKs keep their prefix (`hotel_place_id`→`hotel_places_id`, `start_place_id`/`end_place_id`→`start_places_id`/`end_places_id`). **3 deliberate exceptions:** `google_place_id`/`google_id` (Google's own external IDs, not references to our tables — coincidentally similar-looking names only), `activity_log`'s `id`/`subject_id`/`causer_id` (owned by the `spatie/laravel-activitylog` package's stock migration), and the `{id}` path parameter in API routes (Section 11 — a REST resource-identifier convention, not a database column name; `trip_viewers_id` follows the standard convention, added 2026-09-23).
 
-**Soft delete policy (added 2026-09-22):** `deleted_at` only on tables with an independent delete feature worth preserving history for — `places`, `users`, `trips`, `place_reviews`, `categories`. Deliberately excluded from pure pivot tables (`place_category`, `trip_interest_category`, `user_default_interest_category`, `trip_wishlist_places` — Eloquent's `sync()`/`detach()` expect hard delete), pure child/detail rows with no independent delete feature (`place_photos`, `itinerary_days`, `itinerary_items`), and `place_candidates` (its `status` column already serves this purpose via `rejected`).
+**Soft delete policy (added 2026-09-22, extended 2026-09-23):** `deleted_at` only on tables with an independent delete feature worth preserving history for — `places`, `users`, `trips`, `place_reviews`, `categories`. Deliberately excluded from pure pivot tables (`place_category`, `trip_interest_category`, `user_default_interest_category`, `trip_wishlist_places`, `trip_viewers` — Eloquent's `sync()`/`detach()` expect hard delete; revoking viewer access is a hard delete of that `trip_viewers` row), pure child/detail rows with no independent delete feature (`place_photos`, `itinerary_days`, `itinerary_items`), and `place_candidates` (its `status` column already serves this purpose via `rejected`).
 
 **Admin audit trail (added 2026-09-22):** `Place` and `Category` (the two admin-curated models that feed directly into recommendation scoring — price, category tags, description) get the `spatie/laravel-activitylog` package's `LogsActivity` trait, so every create/update/delete through the admin panel is automatically recorded to `activity_log` with no custom controller code. Scoped to just these two models rather than every table — `place_candidates` approve/reject already has an equivalent history via its `status` column, and a 6-person team with full DB access doesn't need a blanket audit trail for a one-semester project. Surfaced in the admin panel as a "Riwayat Perubahan" (change history) tab on each place/category's edit screen.
 
@@ -321,26 +333,30 @@ activity_log(id, log_name, description, subject_type, subject_id, causer_type, c
 | `users.google_id` | unique when present; nullable |
 | `users` | CHECK: `password IS NOT NULL OR google_id IS NOT NULL` |
 | `place_candidates.google_place_id` | unique — this is the idempotency key preventing duplicate Discovery inserts (design spec Section 3) |
+| `trip_viewers` | unique(trips_id, users_id) - no duplicate invites; invited email must belong to an existing registered user, no invite-by-email-for-non-users flow |
 
 ---
 
 ## 11. API / Integration Surface
 
-Full endpoint list is design spec Section 10 — summarized by group:
+Full endpoint list is design spec Section 11 — summarized by group:
 
 | Group | Example | Auth |
 |-------|---------|------|
 | Auth | `/api/auth/register`, `/api/auth/login`, `/api/auth/google` | Public |
 | Auth | `/api/auth/logout` | Token required |
 | Profile | `/api/profile/preferences` (GET/PUT) | Token |
-| Trip setup | `/api/trips` (POST/GET/DELETE), `/api/trips/{id}/hotel`, `/api/trips/{id}/hotel-options` | Token |
+| Trip setup | `/api/trips` (POST/GET/DELETE), `/api/trips/{id}/hotel`, `/api/trips/{id}/hotel-options` | Token (GET `/api/trips/{id}` also allows an invited viewer, added 2026-09-23) |
 | Wishlist | `/api/trips/{id}/wishlist` (POST/GET/DELETE) | Token |
 | Generate | `/api/trips/{id}/weights`, `/api/trips/{id}/generate` | Token |
+| Trip Sharing | `POST/GET /api/trips/{id}/viewers`, `DELETE /api/trips/{id}/viewers/{viewer_id}`, `GET /api/trips/shared` (added 2026-09-23) | Token, invite/revoke owner-only |
 | Swap | `/api/itinerary-items/{id}/swap-candidates`, `/api/places?...`, `PATCH /api/itinerary-items/{id}` | Token |
 | Live tracking | `POST /api/itinerary-items/{id}/visit` | Token |
 | Places/review | `GET /api/places`, `GET /api/places/{id}` (public), `/api/places/{id}/reviews`, `/api/reviews/{id}` | Mixed |
 
 **No `/api/admin/*` group anymore** — admin runs on the separate web panel (see Section 8), whose Blade controllers talk to Eloquent directly instead of consuming this REST API. Its routes live in `routes/web.php` under `/admin/*` with session auth, entirely separate from the `routes/api.php` table above.
+
+**Trip viewer authorization (added 2026-09-23):** every trip-scoped read endpoint (trip detail, wishlist, itinerary) now allows the trip's owner OR any user with a `trip_viewers` row for that trip. Every write endpoint that touches a trip (generate, swap, delete, weights, visit, wishlist mutation) stays owner-only, unchanged — see design spec Section 9.
 
 **External integrations:**
 - Google Places API (New) — Nearby/Text Search (Pro SKU) + Place Details (Enterprise SKU) for place data
@@ -396,6 +412,7 @@ timestamp set --(manual toggle off)--> null [correction path for false-positive 
 | Geofence registration | OS-level (native, outside Flutter widget tree) | Persistent until deregistered | Survives app kill (Section 8 of design spec) |
 | Pending offline visit events | Local SQLite/shared prefs queue | Persistent until synced | Section 8 edge case handling |
 | Profile default preferences | Server + local cache | Persistent (server) | `user_default_interest_category` + `users.default_weight_*` columns |
+| Read-only viewer mode flag | Local UI state, derived from `GET /api/trips/{id}` response | Session | Determines which action buttons render (added 2026-09-23); enforced server-side regardless, this is UI convenience only |
 | Language selection | Local (`shared_preferences`) | Persistent | Client-side only, no backend |
 
 **Decided: Riverpod** — good fit for this app's async-heavy nature (API calls, geofence streams, live location), strong testability. Team has no prior experience with either Riverpod or Provider, so Provider's usual advantage (existing familiarity) didn't apply here.
@@ -549,7 +566,18 @@ SmartTrip-Batam/
 - [ ] Edge case handled: a day with only indoor stops never shows the badge regardless of forecast
 - [ ] Edge case handled: forecast fetch failure (offline, Open-Meteo unavailable) degrades to no forecast shown, not an error blocking the rest of the itinerary screen
 
-> Full edge-case catalogue (beyond what's listed per-story above) lives in design spec Sections 3, 7, 8, and 9.
+**US16 — Share trip as read-only viewer** *(added 2026-09-23)*
+- [ ] Trip owner can search a registered user by email from the trip's "Bagikan" screen and add them as a viewer, creating a `trip_viewers` row
+- [ ] No accept/reject step — the invited user gets access immediately, no notification is pushed to them (consistent with this app's no-Firebase/no-backend-push design elsewhere)
+- [ ] Inviting an email that doesn't belong to a registered account is rejected with a clear error, not silently ignored
+- [ ] Invited viewer sees the trip under a separate "Dibagikan ke Saya" tab, distinct from their own "Trip Saya" list
+- [ ] Viewer can see the same trip detail, itinerary, and live-progress state (`visited_at` per stop) the owner sees, via the same `GET /api/trips/{id}` and derived endpoints
+- [ ] Viewer sees the owner's stored progress state (`visited_at`, day status flags), NOT the owner's live-moving GPS position — the owner's raw location is never sent to the server, this feature doesn't change that
+- [ ] Every write action (swap, regenerate, delete, mark visited, edit weights/wishlist/hotel) is rejected with 403 for a viewer, enforced server-side regardless of what the UI hides
+- [ ] Owner can revoke a viewer's access at any time from the same "Bagikan" screen; access is removed immediately (hard delete of the `trip_viewers` row)
+- [ ] Edge case handled: a user can be a viewer on a trip while also being the owner of their own separate trips — no conflict between the two roles
+
+> Full edge-case catalogue (beyond what's listed per-story above) lives in design spec Sections 3, 7, 8, 9, and 10.
 
 ---
 
@@ -558,7 +586,7 @@ SmartTrip-Batam/
 - ~~**Q:** What's the target hosting environment for backend?~~ **Resolved 2026-09-17 (updated from 2026-09-07):** Linux server + PostgreSQL, for both development and deployment — client decision, overrides the earlier Windows Server pick.
 - ~~**Q:** Riverpod vs. Provider for Flutter state management?~~ **Resolved 2026-09-07:** Riverpod - team has no prior experience with either, so no reason to prefer Provider's smaller learning curve over Riverpod's better fit for this app's async-heavy needs.
 - **Risk:** Google Places Enterprise SKU quota (1,000 free calls/month) is the tightest constraint in the whole project — a rushed or careless bootstrap could burn it before the curated pool is complete — *Mitigation: the two-phase Discovery/Enrichment admin-review gate exists specifically to prevent this*
-- **Risk:** Background location permission ("Allow all the time" / "Always") is a sensitive, store-reviewed permission — fine for demo/sideload, but a real blocker if the team later wants to publish to Play Store — *Mitigation: documented explicitly as out of scope for this semester (design spec Section 14)*
+- **Risk:** Background location permission ("Allow all the time" / "Always") is a sensitive, store-reviewed permission — fine for demo/sideload, but a real blocker if the team later wants to publish to Play Store — *Mitigation: documented explicitly as out of scope for this semester (design spec Section 15)*
 - **Risk:** Batam's island geography (irregular coastline, limited bridges) makes the Haversine-based day-budget travel-time estimate systematically optimistic — *Mitigation: circuity multiplier (~1.3-1.4x) applied, plus a post-hoc "padat" flag once real Routes API data comes back*
 - **Tradeoff:** Open (unverified) in-app reviews vs. verified-visit-only — chosen open specifically because the Bayesian rating blend needs review volume to be useful, accepting lower per-review trust as the cost
 
@@ -578,6 +606,8 @@ Key pivots made during the design process (all 2026-09-07, in one extended desig
 | Manual admin translation → Gemini auto-translation | Once the quota concern was correctly isolated to Place *Details* fetches (not text translation), there was no reason to hand-translate |
 | Auto-assume skipped stops as "visited" → explicit manual-only resolution | A real skip is a valid user scenario, not just GPS error — false inference would hide genuine plan changes |
 | `places` + `place_attributes` (two tables) → merged into one `places` table (2026-09-22) | Team preferred one table over the schema-level split; overwrite risk on re-sync is now handled purely in code — the sync/enrichment job must `update()` an explicit whitelist of Google-sourced columns only, never mass-assign the full Google payload onto an existing row, or it would wipe out admin-curated fields (`category_tags`, `estimated_cost_idr`, `is_outdoor`, etc.) |
+| "Trip collaboration is out of scope" → **read-only trip sharing is in scope** (2026-09-23) — this is a rework, not a deferred future-work idea | User explicitly reversed the earlier out-of-scope call for a narrower version: single owner keeps full control (generate/swap/delete/weights all stay owner-only), invited viewers get read access only, enforced server-side. Chosen over full co-editing because TOPSIS scoring is built around one owner's preference weights — merging multiple people's preferences into one score has no clean answer, so it was deliberately kept out |
+| Viewer "live tracking" → polling stored `visited_at` state, NOT live GPS broadcast | Two interpretations existed: (a) viewer sees the same visited/not-visited state the owner already sees (cheap, no new plumbing), or (b) viewer sees the owner's GPS dot moving in real time (requires the owner's location to reach the server for the first time ever — a genuine privacy/architecture change from the existing design). Chose (a) explicitly, preserving the existing "owner's GPS never leaves their device" decision from Section 8 |
 
 ---
 
@@ -589,12 +619,12 @@ Key pivots made during the design process (all 2026-09-07, in one extended desig
 - **Phase 1:** Backend scaffolding, data model migrations, Google Places bootstrap (categories seed → Discovery → first Enrichment batch)
 - **Phase 2:** Core algorithm implementation (TOPSIS/K-Means/NN) + unit tests, Flutter trip-setup/wishlist/generate flow
 - **Phase 3:** Live map + geofencing, swap, admin web panel (Blade views), AI enrichment pipeline
-- **Phase 4:** Profile preferences, Google Sign-In, bilingual support, reviews, polish + testing, demo prep
+- **Phase 4:** Profile preferences, Google Sign-In, bilingual support, reviews, read-only trip sharing (US16, added 2026-09-23), polish + testing, demo prep
 
-**Phase 2+ ideas** *(explicitly out of scope this semester, per design spec Section 14)*:
+**Phase 2+ ideas** *(explicitly out of scope this semester, per design spec Section 15)*:
 - Multi-city expansion
 - Booking/payment integration
-- Itinerary sharing/collaboration
+- Multi-editor trip collaboration (real-time co-editing, comments) — read-only sharing itself is in scope, see US16
 - Play Store publish readiness
 
 **Sign-off needed from:**
@@ -632,6 +662,7 @@ Key pivots made during the design process (all 2026-09-07, in one extended desig
 | **Bayesian rating blend** | A weighted-average technique (same principle as IMDB's rating formula) blending a place's Google rating with its in-app review average, weighted by how many in-app reviews exist |
 | **Geofencing** | OS-level detection of a device entering/exiting a defined radius around a coordinate — used here to auto-detect a visited stop |
 | **Enterprise / Pro SKU** | Google Places API pricing tiers — Enterprise (rating, hours, price fields) has a much tighter free quota (1,000/mo) than Pro (Nearby/Text Search, 5,000/mo), which shaped the two-phase Discovery/Enrichment design |
+| **Trip viewer** | A user invited by a trip's owner to see that trip read-only — itinerary, live progress, status — with no ability to modify it (added 2026-09-23, US16) |
 
 ---
 

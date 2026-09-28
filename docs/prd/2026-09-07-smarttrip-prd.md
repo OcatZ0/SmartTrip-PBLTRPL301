@@ -27,6 +27,7 @@
 | 1.13 | 2026-09-22 | Fixed stale admin-architecture references left over from the 2026-09-11 reversal (web panel, not Flutter role-gated): corrected the Section 1 AI Build Summary and the Section 5 Out of Scope bullet, both of which still described the old Flutter-role-gated admin design |
 | 1.14 | 2026-09-23 | Added US16, read-only trip sharing (`trip_viewers` table, invite/revoke by email, "Dibagikan ke Saya" tab) - a rework of the earlier out-of-scope call, not deferred future work; new design spec Section 9 pushed Weather/API/Mobile Flow/Admin Panel/Testing/Out of Scope sections down by 1 (all cross-references updated in both documents) |
 | 1.15 | 2026-09-23 | Added US17, anonymous public "Share Itinerary" link (`trips.share_token`, `GET /api/shared-itinerary/{share_token}`) - a standalone mechanism unrelated to US16's Trip Viewer, explicitly no login/account; strict response whitelist excludes `visited_at`/owner identity/`budget_total` per explicit "no privacy leak" requirement; also added link-based invite (`viewer_invite_token`) as a second way into US16's `trip_viewers`, alongside the existing email search; new design spec Section 10 pushed Weather/API/Mobile Flow/Admin Panel/Testing/Out of Scope sections down by 1 again (all cross-references updated in both documents) |
+| 1.16 | 2026-09-28 | Added Section 7.1 Kebutuhan Fungsional (F001-F024), a flat functional-requirement checklist cross-referenced to the existing User Stories (Section 7) - requested as a standalone functional-requirements view for documentation/reporting purposes, no scope change |
 
 ---
 
@@ -157,6 +158,39 @@ Sources: [Best AI Trip Planner Apps 2026 (Lindy)](https://www.lindy.ai/blog/trip
 | US15 | Wisatawan | lihat forecast cuaca per hari, dapat saran swap kalau hari itu ada stop outdoor + prediksi hujan | tidak kaget kehujanan di tempat outdoor, bisa antisipasi dari awal | J5 |
 | US16 | Wisatawan | bagikan trip ke user lain sebagai viewer read-only, by email atau link undangan | keluarga/teman bisa lihat itinerary dan progres saya tanpa bisa mengubah apapun | J6 |
 | US17 | Wisatawan | bagikan link publik itinerary yang sudah digenerate ke siapa saja | orang yang belum tentu pakai SmartTrip tetap bisa lihat rencana trip saya | J7 |
+
+---
+
+### 7.1 Kebutuhan Fungsional
+
+Daftar flat kebutuhan fungsional (functional requirements), disilangrujuk ke User Story terkait di atas. Ini adalah reformat dari Section 7 untuk kebutuhan pelaporan/dokumentasi, bukan penambahan scope baru.
+
+| ID | Kebutuhan Fungsional | US Ref |
+|-----|------------------------|--------|
+| F001 | Wisatawan dapat melakukan registrasi akun | - |
+| F002 | Pengguna dapat melakukan autentikasi menggunakan akun Google maupun akun sistem | US9 |
+| F003 | Pengguna dapat logout dari sistem | - |
+| F004 | Wisatawan dapat mengubah kata sandi | - |
+| F005 | Wisatawan dapat melihat katalog tempat wisata | US3 |
+| F006 | Wisatawan dapat melihat detail tempat wisata | US3 |
+| F007 | Wisatawan dapat mengatur wishlist tempat wisata | US3 |
+| F008 | Sistem dapat membuat itinerary otomatis sesuai dengan masukan dan preferensi wisatawan | US1, US2, US4 |
+| F009 | Wisatawan dapat mengelola preferensi wisata | US1, US8 |
+| F010 | Wisatawan dapat mengganti satu tempat dengan tempat lainnya setelah itinerary dibuat | US5 |
+| F011 | Wisatawan dapat mengelola trip yang pernah dibuat | US2 |
+| F012 | Sistem dapat mengirim notifikasi saat pengguna mendekati lokasi tempat wisata | US6 |
+| F013 | Wisatawan dapat melihat peta live dan melacak progres kunjungan tempat wisata secara real-time | US6, US7 |
+| F014 | Wisatawan dapat mengelola ulasan tempat wisata | US10 |
+| F015 | Wisatawan dapat membagikan trip ke pengguna lain sebagai viewer read-only melalui tautan undangan | US16 |
+| F016 | Wisatawan dapat melihat trip yang dibagikan pengguna lain kepadanya | US16 |
+| F017 | Wisatawan dapat membagikan itinerary trip melalui tautan publik tanpa memerlukan akun | US17 |
+| F018 | Sistem dapat mengambil data tempat wisata melalui Google Places API | US11 |
+| F019 | Admin dapat meninjau kandidat tempat wisata baru sebelum masuk ke sistem rekomendasi | US12 |
+| F020 | Sistem dapat melakukan pengisian data otomatis pada tempat wisata menggunakan Gemini AI | US13 |
+| F021 | Admin dapat mengelola data tempat wisata | US13 |
+| F022 | Admin dapat mengelola kategori tempat wisata | US13 |
+| F023 | Admin dapat melihat riwayat perubahan pada data tempat dan kategori | - |
+| F024 | Sistem dapat menampilkan status sinkronisasi dan pemakaian kuota Google API | US14 |
 
 ---
 

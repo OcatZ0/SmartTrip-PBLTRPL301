@@ -8,6 +8,7 @@ use App\Models\Place;
 use App\Services\Itinerary\ItineraryGenerator;
 use App\Services\Itinerary\SwapCandidateFinder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -104,6 +105,34 @@ class ItineraryItemController extends Controller
                 'polyline_to_here' => $item->polyline_to_here,
                 'visited_at' => $item->visited_at,
             ])->values(),
+        ]);
+    }
+
+    /**
+     * F013 (docs/prd design spec Section 8 & 12) - tandai kunjungan sebuah
+     * stop. Dipanggil otomatis dari mobile saat geofence entry terpicu, atau
+     * manual (tombol/long-press di peta) kalau geofence tidak kepicu.
+     * Toggle: server tidak percaya body request untuk menentukan status -
+     * kalau sudah visited maka request ini membatalkannya (set null),
+     * kalau belum maka menandainya visited (set now()). Tidak ada
+     * verifikasi lokasi device di sisi server (bukan sistem anti-fraud,
+     * cuma buat visualisasi progres - lihat Section 8).
+     */
+    public function visit(Request $request, ItineraryItem $itineraryItem)
+    {
+        $trip = $itineraryItem->day->trip;
+
+        if (! $trip->isOwnedBy($request->user())) {
+            abort(403);
+        }
+
+        $itineraryItem->update([
+            'visited_at' => $itineraryItem->visited_at ? null : Carbon::now(),
+        ]);
+
+        return response()->json([
+            'itinerary_items_id' => $itineraryItem->itinerary_items_id,
+            'visited_at' => $itineraryItem->visited_at,
         ]);
     }
 }

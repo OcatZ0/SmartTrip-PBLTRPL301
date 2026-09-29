@@ -31,6 +31,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/itinerary-items/{itineraryItem}/swap-candidates', [ItineraryItemController::class, 'swapCandidates']);
     Route::patch('/itinerary-items/{itineraryItem}', [ItineraryItemController::class, 'update']);
+    Route::post('/itinerary-items/{itineraryItem}/visit', [ItineraryItemController::class, 'visit']);
 });
 
 Route::prefix('auth')->group(function () {

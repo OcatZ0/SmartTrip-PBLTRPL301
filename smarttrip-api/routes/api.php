@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\ItineraryItemController;
 use App\Http\Controllers\Api\PlaceController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\TripController;
@@ -25,6 +26,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/trips/{trip}/wishlist', [WishlistController::class, 'index']);
     Route::post('/trips/{trip}/wishlist', [WishlistController::class, 'store']);
     Route::delete('/trips/{trip}/wishlist/{wishlist}', [WishlistController::class, 'destroy']);
+
+    Route::get('/itinerary-items/{itineraryItem}/swap-candidates', [ItineraryItemController::class, 'swapCandidates']);
+    Route::patch('/itinerary-items/{itineraryItem}', [ItineraryItemController::class, 'update']);
 });
 
 Route::prefix('auth')->group(function () {

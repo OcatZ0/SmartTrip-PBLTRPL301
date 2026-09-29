@@ -334,6 +334,49 @@ class ItineraryGenerator
         return Haversine::estimatedTravelMinutes($a['lat'], $a['lng'], $b['lat'], $b['lng'], self::DETOUR_FACTOR, self::AVERAGE_SPEED_KMH);
     }
 
+    /**
+     * F0010 (Swap, docs/prd design spec Section 7 langkah 7): urutan NN
+     * dihitung ulang untuk SATU hari itu saja, polyline_to_here di-refresh
+     * buat stop yang urutannya berubah - hari lain sama sekali tidak
+     * disentuh. Tidak membuat/menghapus baris itinerary_items - places_id/
+     * topsis_score/source item yang di-swap sudah diset oleh caller
+     * sebelum method ini dipanggil, di sini cuma urutan + polyline.
+     *
+     * @return array{padat: bool}
+     */
+    public function resequenceDay(Trip $trip, ItineraryDay $day): array
+    {
+        $start = $trip->hotelCoordinates();
+        $items = $day->items()->with('place')->get();
+
+        $keyed = $items->mapWithKeys(fn (ItineraryItem $item) => [
+            $item->itinerary_items_id => ['lat' => (float) $item->place->lat, 'lng' => (float) $item->place->lng],
+        ])->all();
+
+        $order = $keyed === [] ? [] : NearestNeighborRoute::order($start, $keyed);
+
+        $waypoints = array_merge([$start], array_map(fn ($key) => $keyed[$key], $order), [$start]);
+        $legs = $order === [] ? [] : $this->routesClient->computeRoute($waypoints);
+
+        $visitMinutesByItem = $items->keyBy('itinerary_items_id');
+
+        foreach ($order as $i => $itemId) {
+            $visitMinutesByItem[$itemId]->update([
+                'visit_order' => $i + 1,
+                'polyline_to_here' => $legs[$i]['polyline'] ?? null,
+            ]);
+        }
+
+        $padat = false;
+        if ($legs !== []) {
+            $visitMinutes = $items->sum(fn (ItineraryItem $item) => $item->place->estimated_visit_minutes ?? 60);
+            $realMinutes = array_sum(array_column($legs, 'duration_seconds')) / 60 + $visitMinutes;
+            $padat = $realMinutes > $this->windowMinutes($trip) * self::OVERBUDGET_THRESHOLD;
+        }
+
+        return ['padat' => $padat];
+    }
+
     private function persistDay(Trip $trip, int $dayNumber, array $day, array $start): array
     {
         $stops = $day['stops'];

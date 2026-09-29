@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AuthController as AdminAuthController;
 use App\Http\Controllers\Admin\CandidateController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\PlaceController as AdminPlaceController;
 use App\Http\Controllers\Api\AuthController;
 use Illuminate\Support\Facades\Route;
 
@@ -39,5 +40,12 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('/candidates/{candidate}/reject', [CandidateController::class, 'reject'])->name('candidates.reject');
         Route::post('/candidates/bulk-approve', [CandidateController::class, 'bulkApprove'])->name('candidates.bulk-approve');
         Route::post('/candidates/bulk-reject', [CandidateController::class, 'bulkReject'])->name('candidates.bulk-reject');
+
+        Route::get('/places', [AdminPlaceController::class, 'index'])->name('places.index');
+        Route::get('/places/create', [AdminPlaceController::class, 'create'])->name('places.create');
+        Route::post('/places', [AdminPlaceController::class, 'store'])->name('places.store');
+        Route::get('/places/{place}/edit', [AdminPlaceController::class, 'edit'])->name('places.edit');
+        Route::put('/places/{place}', [AdminPlaceController::class, 'update'])->name('places.update');
+        Route::delete('/places/{place}', [AdminPlaceController::class, 'destroy'])->name('places.destroy');
     });
 });

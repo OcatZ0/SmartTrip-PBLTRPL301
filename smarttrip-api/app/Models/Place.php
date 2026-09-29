@@ -7,10 +7,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 
 class Place extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, LogsActivity, SoftDeletes;
 
     protected $primaryKey = 'places_id';
 
@@ -58,6 +60,23 @@ class Place extends Model
             'category_tags_reviewed' => 'boolean',
             'is_outdoor' => 'boolean',
         ];
+    }
+
+    /**
+     * F023 (Riwayat Perubahan) - cuma catat kolom yang memang bisa diedit
+     * admin (docs/prd design spec Section 14), bukan kolom hasil sync
+     * Google - supaya log tidak banjir tiap places:sync jalan.
+     */
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly([
+                'name', 'type', 'address', 'kecamatan',
+                'estimated_cost_idr', 'description_override', 'description_en',
+                'estimated_visit_minutes', 'is_outdoor', 'category_tags_reviewed',
+            ])
+            ->logOnlyDirty()
+            ->dontLogEmptyChanges();
     }
 
     public function categories(): BelongsToMany

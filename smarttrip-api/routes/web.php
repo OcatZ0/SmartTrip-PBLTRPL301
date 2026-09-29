@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AuthController as AdminAuthController;
 use App\Http\Controllers\Admin\CandidateController;
+use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\PlaceController as AdminPlaceController;
 use App\Http\Controllers\Api\AuthController;
@@ -47,5 +48,12 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/places/{place}/edit', [AdminPlaceController::class, 'edit'])->name('places.edit');
         Route::put('/places/{place}', [AdminPlaceController::class, 'update'])->name('places.update');
         Route::delete('/places/{place}', [AdminPlaceController::class, 'destroy'])->name('places.destroy');
+
+        Route::get('/categories', [AdminCategoryController::class, 'index'])->name('categories.index');
+        Route::get('/categories/create', [AdminCategoryController::class, 'create'])->name('categories.create');
+        Route::post('/categories', [AdminCategoryController::class, 'store'])->name('categories.store');
+        Route::get('/categories/{category}/edit', [AdminCategoryController::class, 'edit'])->name('categories.edit');
+        Route::put('/categories/{category}', [AdminCategoryController::class, 'update'])->name('categories.update');
+        Route::delete('/categories/{category}', [AdminCategoryController::class, 'destroy'])->name('categories.destroy');
     });
 });

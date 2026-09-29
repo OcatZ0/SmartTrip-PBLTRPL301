@@ -15,6 +15,7 @@
                 <li class="nav-item"><a class="nav-link" href="{{ route('admin.dashboard') }}">Dashboard</a></li>
                 <li class="nav-item"><a class="nav-link" href="{{ route('admin.candidates.index') }}">Kandidat Tempat</a></li>
                 <li class="nav-item"><a class="nav-link" href="{{ route('admin.places.index') }}">Tempat</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ route('admin.categories.index') }}">Kategori</a></li>
             </ul>
             <form method="POST" action="{{ route('admin.logout') }}" class="d-flex">
                 @csrf

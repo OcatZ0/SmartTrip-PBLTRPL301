@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\PlaceController;
+use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\TripController;
 use App\Http\Controllers\Api\WishlistController;
 use Illuminate\Http\Request;
@@ -11,6 +12,9 @@ Route::get('/places', [PlaceController::class, 'index']);
 Route::get('/places/{place}', [PlaceController::class, 'show']);
 
 Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/profile/preferences', [ProfileController::class, 'show']);
+    Route::put('/profile/preferences', [ProfileController::class, 'update']);
+
     Route::post('/trips', [TripController::class, 'store']);
     Route::get('/trips/{trip}', [TripController::class, 'show']);
     Route::post('/trips/{trip}/weights', [TripController::class, 'weights']);

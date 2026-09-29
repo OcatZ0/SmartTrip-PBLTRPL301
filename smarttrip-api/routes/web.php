@@ -15,6 +15,13 @@ Route::get('/auth/verify-registration', [AuthController::class, 'verifyRegistrat
     ->middleware('signed')
     ->name('auth.verify-registration');
 
+// F004 - lupa password: form web sederhana yang dibuka dari link email
+// (Password::reset() sendiri yang verifikasi token, bukan signed URL).
+Route::get('/auth/reset-password', [AuthController::class, 'showResetPasswordForm'])
+    ->name('auth.reset-password.form');
+Route::post('/auth/reset-password', [AuthController::class, 'submitResetPasswordForm'])
+    ->name('auth.reset-password.submit');
+
 // Admin web panel (Blade + Bootstrap, session auth) - docs/prd Section 8.
 // Entirely separate from routes/api.php, which the Flutter app consumes.
 Route::prefix('admin')->name('admin.')->group(function () {

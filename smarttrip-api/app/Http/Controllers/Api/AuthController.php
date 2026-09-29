@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -130,7 +131,10 @@ class AuthController extends Controller
             'password' => ['required', 'string'],
         ]);
 
-        if (! Auth::attempt($credentials)) {
+        // Guard explicit di sini (bukan default guard ambient) - middleware
+        // auth:sanctum di request lain bisa mengubah default guard lewat
+        // Auth::shouldUse(), jadi jangan bergantung padanya.
+        if (! Auth::guard('web')->attempt($credentials)) {
             throw ValidationException::withMessages([
                 'email' => ['Email atau kata sandi salah.'],
             ]);
@@ -200,6 +204,112 @@ class AuthController extends Controller
             'user' => $user,
             'token' => $user->createToken('mobile')->plainTextToken,
         ]);
+    }
+
+    /**
+     * F004 - ubah password saat sudah login. Kalau user belum pernah punya
+     * password (akun Google-only), current_password tidak diwajibkan -
+     * token Sanctum yang dipakai untuk sampai ke sini sudah membuktikan
+     * identitasnya.
+     */
+    public function changePassword(Request $request)
+    {
+        $user = $request->user();
+
+        $rules = [
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ];
+
+        if ($user->password !== null) {
+            $rules['current_password'] = ['required', 'string'];
+        }
+
+        $data = $request->validate($rules);
+
+        if ($user->password !== null && ! Hash::check($data['current_password'], $user->password)) {
+            throw ValidationException::withMessages([
+                'current_password' => ['Kata sandi saat ini salah.'],
+            ]);
+        }
+
+        $user->forceFill(['password' => $data['password']])->save();
+
+        return response()->json(['message' => 'Kata sandi berhasil diubah.']);
+    }
+
+    /**
+     * F004 - lupa password (juga jadi jalur alternatif "atur password
+     * pertama kali" untuk akun Google-only, karena email link membuktikan
+     * kepemilikan inbox sama seperti alur registrasi). Selalu balas pesan
+     * yang sama supaya endpoint ini tidak bisa dipakai mengecek email mana
+     * yang terdaftar.
+     */
+    public function forgotPassword(Request $request)
+    {
+        $request->validate(['email' => ['required', 'string', 'email']]);
+
+        Password::sendResetLink($request->only('email'));
+
+        return response()->json([
+            'message' => 'Jika email terdaftar, tautan atur ulang kata sandi telah dikirim.',
+        ]);
+    }
+
+    public function resetPassword(Request $request)
+    {
+        $data = $request->validate([
+            'email' => ['required', 'string', 'email'],
+            'token' => ['required', 'string'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        $status = Password::reset($data, function (User $user, string $password) {
+            $user->forceFill(['password' => $password])->save();
+        });
+
+        if ($status !== Password::PASSWORD_RESET) {
+            throw ValidationException::withMessages([
+                'email' => [$this->passwordStatusMessage($status)],
+            ]);
+        }
+
+        return response()->json(['message' => 'Kata sandi berhasil diubah.']);
+    }
+
+    public function showResetPasswordForm(Request $request)
+    {
+        return view('auth.reset-password-form', [
+            'email' => $request->query('email'),
+            'token' => $request->query('token'),
+        ]);
+    }
+
+    public function submitResetPasswordForm(Request $request)
+    {
+        $data = $request->validate([
+            'email' => ['required', 'string', 'email'],
+            'token' => ['required', 'string'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        $status = Password::reset($data, function (User $user, string $password) {
+            $user->forceFill(['password' => $password])->save();
+        });
+
+        return view('auth.reset-password-result', [
+            'success' => $status === Password::PASSWORD_RESET,
+            'message' => $this->passwordStatusMessage($status),
+        ]);
+    }
+
+    private function passwordStatusMessage(string $status): string
+    {
+        return match ($status) {
+            Password::PASSWORD_RESET => 'Kata sandi berhasil diubah. Silakan login di aplikasi.',
+            Password::INVALID_TOKEN => 'Tautan atur ulang kata sandi tidak valid atau sudah kedaluwarsa.',
+            Password::INVALID_USER => 'Email tidak terdaftar.',
+            default => 'Gagal mengatur ulang kata sandi.',
+        };
     }
 
     public function logout(Request $request)

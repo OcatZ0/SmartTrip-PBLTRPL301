@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\PlaceController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\ReviewController;
 use App\Http\Controllers\Api\TripController;
+use App\Http\Controllers\Api\TripViewerController;
 use App\Http\Controllers\Api\WishlistController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -25,6 +26,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/trips/{trip}/hotel', [TripController::class, 'hotel']);
     Route::get('/trips/{trip}/hotel-options', [TripController::class, 'hotelOptions']);
     Route::post('/trips/{trip}/generate', [TripController::class, 'generate']);
+
+    Route::get('/trips/{trip}/viewers', [TripViewerController::class, 'index']);
+    Route::post('/trips/{trip}/viewers', [TripViewerController::class, 'store']);
+    Route::delete('/trips/{trip}/viewers/{viewer}', [TripViewerController::class, 'destroy']);
+    Route::post('/trips/{trip}/viewer-invite-link', [TripViewerController::class, 'storeInviteLink']);
+    Route::delete('/trips/{trip}/viewer-invite-link', [TripViewerController::class, 'destroyInviteLink']);
 
     Route::get('/trips/{trip}/wishlist', [WishlistController::class, 'index']);
     Route::post('/trips/{trip}/wishlist', [WishlistController::class, 'store']);

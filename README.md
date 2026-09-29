@@ -59,7 +59,12 @@ Wisatawan Batam sering kesulitan menentukan destinasi wisata dan kuliner yang se
 ```
 SmartTrip-PBLTRPL301/
 ├── docs/                   # Design spec, PRD, mockup inventory, assets
-├── smarttrip-api/          # Laravel REST API backend (not yet scaffolded)
+├── smarttrip-api/          # Laravel 12 backend - REST API (mobile) + admin web panel
+│   ├── app/Http/Controllers/Api/     # Auth, Trip, Place controllers - routes/api.php
+│   ├── app/Http/Controllers/Admin/   # Dashboard, auth - routes/web.php, session guard
+│   ├── app/Services/                 # TOPSIS/K-Means/route assembly (not yet implemented)
+│   ├── resources/views/admin/        # Blade + Bootstrap admin panel
+│   └── database/migrations/          # users.role/google_id, personal_access_tokens, activity_log
 └── smarttrip-mobile/       # Flutter mobile app (scaffolded, org com.smarttrip.batam)
     ├── lib/
     │   ├── core/           # api client, auth token storage, config, router, theme
@@ -70,7 +75,18 @@ SmartTrip-PBLTRPL301/
     └── test/
 ```
 
-Run it with:
+Run the backend:
+```
+cd smarttrip-api
+composer install
+cp .env.example .env   # fill in DB credentials + Google/Gemini API keys
+php artisan key:generate
+php artisan migrate --seed
+php artisan serve
+```
+Seeded accounts: `admin@smarttrip.test` (role `admin`, admin panel at `/admin/login`) and `test@example.com` (regular user) - both created by `Database\Factories\UserFactory` with a random password, so set one via `php artisan tinker` or re-seed with a known password before relying on them.
+
+Run the mobile app:
 ```
 cd smarttrip-mobile
 flutter pub get
@@ -79,7 +95,7 @@ flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000/api
 
 ## Status
 
-Pre-implementation for the backend - design spec and PRD are finalized. Flutter mobile app has been scaffolded (project structure, Riverpod + go_router wiring, dependencies per Section 14 tech stack) but feature screens are not yet implemented.
+Design spec and PRD are finalized. Both `smarttrip-api` (Laravel 12 + PostgreSQL, Sanctum auth, register/login/logout wired to F001-F003, admin session-auth scaffold) and `smarttrip-mobile` (Flutter, Riverpod + go_router wiring) have been scaffolded, but most feature screens/endpoints (trip generation, TOPSIS/K-Means pipeline, wishlist, live map, admin curation) are not yet implemented - see Section 10 of the PRD for the full data model still to be migrated.
 
 **Planned phases** *(illustrative, not yet tied to real semester dates)*:
 1. Backend scaffolding, data model migrations, Google Places bootstrap

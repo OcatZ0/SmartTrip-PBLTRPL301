@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\ItineraryItemController;
 use App\Http\Controllers\Api\PlaceController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\ReviewController;
+use App\Http\Controllers\Api\SharedItineraryController;
 use App\Http\Controllers\Api\TripController;
 use App\Http\Controllers\Api\TripViewerController;
 use App\Http\Controllers\Api\WishlistController;
@@ -13,6 +14,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/places', [PlaceController::class, 'index']);
 Route::get('/places/{place}', [PlaceController::class, 'show']);
+Route::get('/shared-itinerary/{shareToken}', [SharedItineraryController::class, 'show']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/profile/preferences', [ProfileController::class, 'show']);
@@ -34,6 +36,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/trips/{trip}/viewers/{viewer}', [TripViewerController::class, 'destroy']);
     Route::post('/trips/{trip}/viewer-invite-link', [TripViewerController::class, 'storeInviteLink']);
     Route::delete('/trips/{trip}/viewer-invite-link', [TripViewerController::class, 'destroyInviteLink']);
+    Route::post('/trips/{trip}/share-link', [TripController::class, 'storeShareLink']);
+    Route::delete('/trips/{trip}/share-link', [TripController::class, 'destroyShareLink']);
 
     Route::get('/trips/{trip}/wishlist', [WishlistController::class, 'index']);
     Route::post('/trips/{trip}/wishlist', [WishlistController::class, 'store']);

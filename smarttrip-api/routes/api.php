@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ItineraryItemController;
 use App\Http\Controllers\Api\PlaceController;
 use App\Http\Controllers\Api\ProfileController;
+use App\Http\Controllers\Api\ReviewController;
 use App\Http\Controllers\Api\TripController;
 use App\Http\Controllers\Api\WishlistController;
 use Illuminate\Http\Request;
@@ -32,6 +33,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/itinerary-items/{itineraryItem}/swap-candidates', [ItineraryItemController::class, 'swapCandidates']);
     Route::patch('/itinerary-items/{itineraryItem}', [ItineraryItemController::class, 'update']);
     Route::post('/itinerary-items/{itineraryItem}/visit', [ItineraryItemController::class, 'visit']);
+
+    Route::post('/places/{place}/reviews', [ReviewController::class, 'store']);
+    Route::patch('/reviews/{review}', [ReviewController::class, 'update']);
+    Route::delete('/reviews/{review}', [ReviewController::class, 'destroy']);
 });
 
 Route::prefix('auth')->group(function () {

@@ -47,6 +47,14 @@ class PlaceDetailResource extends JsonResource
                 'name_en' => $category->name_en,
                 'slug' => $category->slug,
             ])),
+            'reviews' => $this->whenLoaded('reviews', fn () => $this->reviews->map(fn ($review) => [
+                'place_reviews_id' => $review->place_reviews_id,
+                'users_id' => $review->users_id,
+                'user_name' => $review->user?->name,
+                'rating' => $review->rating,
+                'comment' => $review->comment,
+                'created_at' => $review->created_at,
+            ])),
         ];
     }
 }

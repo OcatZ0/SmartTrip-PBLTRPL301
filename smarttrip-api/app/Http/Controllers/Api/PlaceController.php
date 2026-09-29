@@ -97,7 +97,7 @@ class PlaceController extends Controller
     {
         $place->loadAvg('reviews', 'rating')
             ->loadCount('reviews')
-            ->load(['categories', 'photos']);
+            ->load(['categories', 'photos', 'reviews' => fn ($q) => $q->with('user:users_id,name')->latest()]);
 
         return new PlaceDetailResource($place);
     }

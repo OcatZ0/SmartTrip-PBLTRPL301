@@ -156,6 +156,16 @@ class AuthTest extends TestCase
         $response->assertOk();
     }
 
+    public function test_deleting_a_user_is_a_soft_delete(): void
+    {
+        $user = User::factory()->create();
+
+        $user->delete();
+
+        $this->assertSoftDeleted($user);
+        $this->assertDatabaseHas('users', ['users_id' => $user->users_id]);
+    }
+
     // --- Google Sign-In + account linking scenarios ---
 
     public function test_google_login_creates_a_new_user_when_email_is_unregistered(): void

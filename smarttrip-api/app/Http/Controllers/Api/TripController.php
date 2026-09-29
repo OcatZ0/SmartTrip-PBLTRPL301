@@ -18,6 +18,23 @@ use RuntimeException;
  */
 class TripController extends Controller
 {
+    /**
+     * F011: daftar trip yang pernah dibuat user login - punya sendiri saja
+     * (bukan yang dibagikan ke dia - itu GET /api/trips/shared, US16,
+     * belum dibangun). Terurut trip terbaru dulu.
+     */
+    public function index(Request $request)
+    {
+        $perPage = min(max((int) $request->integer('per_page', 20), 1), 50);
+
+        $trips = $request->user()->trips()
+            ->withCount('days')
+            ->orderByDesc('created_at')
+            ->paginate($perPage);
+
+        return response()->json($trips);
+    }
+
     public function store(Request $request)
     {
         $data = $request->validate([
@@ -202,5 +219,21 @@ class TripController extends Controller
             ])->values(),
             'dropped_wishlist_places' => $result['dropped_wishlist_places'],
         ]);
+    }
+
+    /**
+     * F011: hapus trip tersimpan - soft delete (trips.deleted_at),
+     * riwayat kunjungan yang sudah pernah dilihat viewer dkk tetap utuh
+     * di database, cuma hilang dari daftar/pencarian aktif.
+     */
+    public function destroy(Request $request, Trip $trip)
+    {
+        if (! $trip->isOwnedBy($request->user())) {
+            abort(403);
+        }
+
+        $trip->delete();
+
+        return response()->json(['message' => 'Trip dihapus.']);
     }
 }

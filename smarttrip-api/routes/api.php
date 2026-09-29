@@ -16,8 +16,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/profile/preferences', [ProfileController::class, 'show']);
     Route::put('/profile/preferences', [ProfileController::class, 'update']);
 
+    Route::get('/trips', [TripController::class, 'index']);
     Route::post('/trips', [TripController::class, 'store']);
     Route::get('/trips/{trip}', [TripController::class, 'show']);
+    Route::delete('/trips/{trip}', [TripController::class, 'destroy']);
     Route::post('/trips/{trip}/weights', [TripController::class, 'weights']);
     Route::post('/trips/{trip}/hotel', [TripController::class, 'hotel']);
     Route::get('/trips/{trip}/hotel-options', [TripController::class, 'hotelOptions']);

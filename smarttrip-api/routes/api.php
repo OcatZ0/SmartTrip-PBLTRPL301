@@ -2,11 +2,22 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\PlaceController;
+use App\Http\Controllers\Api\TripController;
+use App\Http\Controllers\Api\WishlistController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/places', [PlaceController::class, 'index']);
 Route::get('/places/{place}', [PlaceController::class, 'show']);
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/trips', [TripController::class, 'store']);
+    Route::get('/trips/{trip}', [TripController::class, 'show']);
+
+    Route::get('/trips/{trip}/wishlist', [WishlistController::class, 'index']);
+    Route::post('/trips/{trip}/wishlist', [WishlistController::class, 'store']);
+    Route::delete('/trips/{trip}/wishlist/{wishlist}', [WishlistController::class, 'destroy']);
+});
 
 Route::prefix('auth')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);

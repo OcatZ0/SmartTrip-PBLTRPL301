@@ -80,4 +80,19 @@ class Trip extends Model
         return $this->belongsToMany(User::class, 'trip_viewers', 'trips_id', 'users_id')
             ->withPivot('added_at');
     }
+
+    public function isOwnedBy(User $user): bool
+    {
+        return $this->users_id === $user->users_id;
+    }
+
+    /**
+     * docs/prd design spec Section 9: endpoint baca trip-scoped (wishlist,
+     * itinerary, dst) dibuka untuk pemilik ATAU user dengan baris
+     * trip_viewers - endpoint tulis tetap owner-only, tidak berubah.
+     */
+    public function isReadableBy(User $user): bool
+    {
+        return $this->isOwnedBy($user) || $this->viewers()->where('users.users_id', $user->users_id)->exists();
+    }
 }

@@ -5,6 +5,8 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -32,6 +34,10 @@ class User extends Authenticatable
         'role',
         'google_id',
         'email_verified_at',
+        'default_weight_kategori',
+        'default_weight_jarak',
+        'default_weight_anggaran',
+        'default_weight_rating',
     ];
 
     /**
@@ -55,11 +61,41 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'deleted_at' => 'datetime',
             'password' => 'hashed',
+            'default_weight_kategori' => 'decimal:3',
+            'default_weight_jarak' => 'decimal:3',
+            'default_weight_anggaran' => 'decimal:3',
+            'default_weight_rating' => 'decimal:3',
         ];
     }
 
     public function isAdmin(): bool
     {
         return $this->role === 'admin';
+    }
+
+    public function defaultInterestCategories(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Category::class,
+            'user_default_interest_category',
+            'users_id',
+            'categories_id'
+        );
+    }
+
+    public function trips(): HasMany
+    {
+        return $this->hasMany(Trip::class, 'users_id');
+    }
+
+    public function placeReviews(): HasMany
+    {
+        return $this->hasMany(PlaceReview::class, 'users_id');
+    }
+
+    public function sharedTrips(): BelongsToMany
+    {
+        return $this->belongsToMany(Trip::class, 'trip_viewers', 'users_id', 'trips_id')
+            ->withPivot('added_at');
     }
 }

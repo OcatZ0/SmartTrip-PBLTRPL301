@@ -50,7 +50,10 @@ class CategoryController extends Controller
 
     public function edit(Category $category)
     {
-        return view('admin.categories.edit', ['category' => $category]);
+        return view('admin.categories.edit', [
+            'category' => $category,
+            'activities' => $category->activitiesAsSubject()->with('causer')->latest()->get(),
+        ]);
     }
 
     public function update(Request $request, Category $category)

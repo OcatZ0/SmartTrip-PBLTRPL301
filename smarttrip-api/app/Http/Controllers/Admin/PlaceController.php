@@ -74,6 +74,9 @@ class PlaceController extends Controller
         return view('admin.places.edit', [
             'place' => $place,
             'categories' => Category::orderBy('name_id')->get(),
+            // F023: tab Riwayat Perubahan - baca dari activity_log yang
+            // sudah mulai kecatat sejak F021.
+            'activities' => $place->activitiesAsSubject()->with('causer')->latest()->get(),
         ]);
     }
 

@@ -32,4 +32,6 @@
     </div>
     <button type="submit" class="btn btn-primary">Simpan</button>
 </form>
+
+@include('admin.partials.activity-log', ['activities' => $activities])
 @endsection

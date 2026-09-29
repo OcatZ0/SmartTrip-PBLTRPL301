@@ -13,6 +13,10 @@ Route::get('/places/{place}', [PlaceController::class, 'show']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/trips', [TripController::class, 'store']);
     Route::get('/trips/{trip}', [TripController::class, 'show']);
+    Route::post('/trips/{trip}/weights', [TripController::class, 'weights']);
+    Route::post('/trips/{trip}/hotel', [TripController::class, 'hotel']);
+    Route::get('/trips/{trip}/hotel-options', [TripController::class, 'hotelOptions']);
+    Route::post('/trips/{trip}/generate', [TripController::class, 'generate']);
 
     Route::get('/trips/{trip}/wishlist', [WishlistController::class, 'index']);
     Route::post('/trips/{trip}/wishlist', [WishlistController::class, 'store']);

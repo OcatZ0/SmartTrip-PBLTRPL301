@@ -95,4 +95,27 @@ class Trip extends Model
     {
         return $this->isOwnedBy($user) || $this->viewers()->where('users.users_id', $user->users_id)->exists();
     }
+
+    public function hasResolvedHotel(): bool
+    {
+        return $this->hotel_places_id !== null || ($this->hotel_lat !== null && $this->hotel_lng !== null);
+    }
+
+    /**
+     * @return array{lat: float, lng: float}|null
+     */
+    public function hotelCoordinates(): ?array
+    {
+        if ($this->hotel_places_id !== null) {
+            $place = $this->hotelPlace()->first();
+
+            return $place ? ['lat' => (float) $place->lat, 'lng' => (float) $place->lng] : null;
+        }
+
+        if ($this->hotel_lat !== null && $this->hotel_lng !== null) {
+            return ['lat' => (float) $this->hotel_lat, 'lng' => (float) $this->hotel_lng];
+        }
+
+        return null;
+    }
 }

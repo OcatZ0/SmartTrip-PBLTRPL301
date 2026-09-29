@@ -60,12 +60,26 @@ Wisatawan Batam sering kesulitan menentukan destinasi wisata dan kuliner yang se
 SmartTrip-PBLTRPL301/
 ├── docs/                   # Design spec, PRD, mockup inventory, assets
 ├── smarttrip-api/          # Laravel REST API backend (not yet scaffolded)
-└── smarttrip-mobile/       # Flutter mobile app (not yet scaffolded)
+└── smarttrip-mobile/       # Flutter mobile app (scaffolded, org com.smarttrip.batam)
+    ├── lib/
+    │   ├── core/           # api client, auth token storage, config, router, theme
+    │   ├── features/       # onboarding, catalog, trip_setup, wishlist, itinerary,
+    │   │                   # live_map, reviews, profile, trip_sharing, auth
+    │   ├── app.dart
+    │   └── main.dart
+    └── test/
+```
+
+Run it with:
+```
+cd smarttrip-mobile
+flutter pub get
+flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000/api
 ```
 
 ## Status
 
-Pre-implementation - design spec and PRD are finalized, application code has not started yet.
+Pre-implementation for the backend - design spec and PRD are finalized. Flutter mobile app has been scaffolded (project structure, Riverpod + go_router wiring, dependencies per Section 14 tech stack) but feature screens are not yet implemented.
 
 **Planned phases** *(illustrative, not yet tied to real semester dates)*:
 1. Backend scaffolding, data model migrations, Google Places bootstrap

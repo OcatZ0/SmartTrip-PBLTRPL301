@@ -10,7 +10,7 @@
         <div class="card">
             <div class="card-body">
                 <h2 class="h6 text-muted">Kandidat Menunggu Review</h2>
-                <p class="display-6 mb-0">-</p>
+                <p class="display-6 mb-0">{{ $pendingCandidates }}</p>
             </div>
         </div>
     </div>

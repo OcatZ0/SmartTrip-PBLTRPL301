@@ -13,6 +13,7 @@
             <a class="navbar-brand" href="{{ route('admin.dashboard') }}">SmartTrip Admin</a>
             <ul class="navbar-nav me-auto">
                 <li class="nav-item"><a class="nav-link" href="{{ route('admin.dashboard') }}">Dashboard</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ route('admin.candidates.index') }}">Kandidat Tempat</a></li>
             </ul>
             <form method="POST" action="{{ route('admin.logout') }}" class="d-flex">
                 @csrf

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AuthController as AdminAuthController;
+use App\Http\Controllers\Admin\CandidateController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Api\AuthController;
 use Illuminate\Support\Facades\Route;
@@ -31,5 +32,12 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
     Route::middleware(['auth', 'admin'])->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+        Route::get('/candidates', [CandidateController::class, 'index'])->name('candidates.index');
+        Route::post('/candidates/discover', [CandidateController::class, 'discover'])->name('candidates.discover');
+        Route::post('/candidates/{candidate}/approve', [CandidateController::class, 'approve'])->name('candidates.approve');
+        Route::post('/candidates/{candidate}/reject', [CandidateController::class, 'reject'])->name('candidates.reject');
+        Route::post('/candidates/bulk-approve', [CandidateController::class, 'bulkApprove'])->name('candidates.bulk-approve');
+        Route::post('/candidates/bulk-reject', [CandidateController::class, 'bulkReject'])->name('candidates.bulk-reject');
     });
 });

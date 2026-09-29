@@ -2,11 +2,18 @@
 
 use App\Http\Controllers\Admin\AuthController as AdminAuthController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Api\AuthController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('welcome');
 });
+
+// Public registration/account-link verification link opened from the email
+// client (see AuthController::register / verifyRegistration).
+Route::get('/auth/verify-registration', [AuthController::class, 'verifyRegistration'])
+    ->middleware('signed')
+    ->name('auth.verify-registration');
 
 // Admin web panel (Blade + Bootstrap, session auth) - docs/prd Section 8.
 // Entirely separate from routes/api.php, which the Flutter app consumes.

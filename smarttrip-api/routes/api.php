@@ -20,6 +20,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/trips', [TripController::class, 'index']);
     Route::post('/trips', [TripController::class, 'store']);
+    Route::get('/trips/shared', [TripController::class, 'shared']);
+    Route::post('/trips/join-viewer/{viewerInviteToken}', [TripViewerController::class, 'join']);
     Route::get('/trips/{trip}', [TripController::class, 'show']);
     Route::delete('/trips/{trip}', [TripController::class, 'destroy']);
     Route::post('/trips/{trip}/weights', [TripController::class, 'weights']);

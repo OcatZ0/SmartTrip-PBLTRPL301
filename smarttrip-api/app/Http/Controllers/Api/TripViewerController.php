@@ -9,12 +9,11 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 /**
- * F015 (docs/prd design spec Section 9 & 12) - sisi pemilik trip untuk
- * membagikan trip sebagai viewer read-only: undang by email, list/cabut
- * viewer, generate/matikan link undangan (viewer_invite_token). Klaim
- * akses lewat link (POST /api/trips/join-viewer/{token}) dan daftar trip
- * yang dibagikan ke saya (GET /api/trips/shared) - sisi penerima - masuk
- * F016, bukan di sini.
+ * F015+F016 (docs/prd design spec Section 9 & 12) - Trip Viewer.
+ * F015 (sisi pemilik): undang by email, list/cabut viewer, generate/
+ * matikan link undangan (viewer_invite_token). F016 (sisi penerima):
+ * klaim akses lewat link (join()) - daftar "Dibagikan ke Saya"
+ * (GET /api/trips/shared) ada di TripController::shared().
  */
 class TripViewerController extends Controller
 {
@@ -133,5 +132,29 @@ class TripViewerController extends Controller
         } while (Trip::where('viewer_invite_token', $token)->exists());
 
         return $token;
+    }
+
+    /**
+     * F016 - klaim akses viewer lewat link. Butuh login (beda dari Section
+     * 10 yang anon) - route ini sudah di dalam grup auth:sanctum. Tidak ada
+     * langkah accept/reject terpisah, begitu berhasil auth langsung masuk.
+     */
+    public function join(Request $request, string $viewerInviteToken)
+    {
+        $trip = Trip::where('viewer_invite_token', $viewerInviteToken)->first();
+
+        if (! $trip) {
+            abort(404);
+        }
+
+        $user = $request->user();
+
+        if (! $trip->isOwnedBy($user) && ! $trip->viewers()->where('users.users_id', $user->users_id)->exists()) {
+            $trip->viewers()->attach($user->users_id, ['added_at' => now()]);
+        }
+
+        $trip->load(['days' => fn ($q) => $q->orderBy('day_number'), 'days.items' => fn ($q) => $q->orderBy('visit_order')]);
+
+        return response()->json($trip);
     }
 }

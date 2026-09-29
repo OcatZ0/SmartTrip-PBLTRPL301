@@ -20,8 +20,8 @@ class TripController extends Controller
 {
     /**
      * F011: daftar trip yang pernah dibuat user login - punya sendiri saja
-     * (bukan yang dibagikan ke dia - itu GET /api/trips/shared, US16,
-     * belum dibangun). Terurut trip terbaru dulu.
+     * (bukan yang dibagikan ke dia - itu GET /api/trips/shared, F016).
+     * Terurut trip terbaru dulu.
      */
     public function index(Request $request)
     {
@@ -30,6 +30,23 @@ class TripController extends Controller
         $trips = $request->user()->trips()
             ->withCount('days')
             ->orderByDesc('created_at')
+            ->paginate($perPage);
+
+        return response()->json($trips);
+    }
+
+    /**
+     * F016: tab "Dibagikan ke Saya" - trip yang di-share ke user login
+     * sebagai viewer (baris trip_viewers), bukan trip miliknya sendiri.
+     * Terurut kapan diundang (added_at) terbaru dulu.
+     */
+    public function shared(Request $request)
+    {
+        $perPage = min(max((int) $request->integer('per_page', 20), 1), 50);
+
+        $trips = $request->user()->sharedTrips()
+            ->withCount('days')
+            ->orderByDesc('trip_viewers.added_at')
             ->paginate($perPage);
 
         return response()->json($trips);

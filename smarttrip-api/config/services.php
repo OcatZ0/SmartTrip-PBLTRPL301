@@ -33,6 +33,7 @@ return [
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
         'routes_api_key' => env('GOOGLE_ROUTES_API_KEY'),
         'places_api_key' => env('GOOGLE_PLACES_API_KEY'),
+        'places_monthly_quota' => env('GOOGLE_PLACES_MONTHLY_QUOTA', 1000),
     ],
 
     'gemini' => [

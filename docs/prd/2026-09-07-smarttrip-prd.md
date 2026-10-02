@@ -3,9 +3,9 @@
 ## 0. Metadata & Revision History
 
 **Type:** Full PRD
-**Status:** Draft — pre-implementation
-**Version:** 1.15
-**Last Updated:** 2026-09-23
+**Status:** In progress — backend (`smarttrip-api`) and mobile (`smarttrip-mobile`) scaffolds exist with most F001-F024 implemented; see Section 15
+**Version:** 1.18
+**Last Updated:** 2026-10-02
 **Source of truth for implementation detail:** `docs/superpowers/specs/2026-09-07-smarttrip-itinerary-recommendation-design.md` (this PRD is a reformatted, audience-oriented view of the same decisions — where they ever conflict, the design spec wins, since it carries finer-grained rationale)
 
 | Version | Date | Change |
@@ -14,20 +14,21 @@
 | 1.1 | 2026-09-07 | Applied `/prd-analyze` findings: added Metadata, Entity Lifecycles, Glossary, Observability, Competitive Landscape, Decisions Log sections; expanded Acceptance Criteria to cover all 14 user stories; fixed untestable SLA criterion; added data model validation rules |
 | 1.2 | 2026-09-07 | Replaced the unresearched Competitive Landscape placeholder with real research (Wanderlog, TripIt, the LLM-chat AI-planner category, and Atourin as the closest Indonesian comparable) |
 | 1.3 | 2026-09-07 | Resolved hosting open question: Windows Server + PostgreSQL for both dev and deployment (overrides team's usual MySQL default) |
-| 1.7 | 2026-09-17 | Hosting changed to Linux + PostgreSQL (client decision, overrides 1.3); added automatic push/local notification when the weather forecast window opens (US15), on top of the existing per-screen-open check |
 | 1.4 | 2026-09-07 | Decided Riverpod (team has no prior experience with either option); removed accessibility entirely per explicit instruction - not pursuing it this project |
 | 1.5 | 2026-09-11 | Added weather forecast + swap suggestion feature (US15), sourced real ToS text for the scraping-avoidance rationale (TripAdvisor, Traveloka confirmed with exact quotes; Tiket.com could not be independently verified) |
 | 1.6 | 2026-09-11 | Confirmed Open-Meteo over Google Weather API after cost/architecture comparison; fixed stale design-spec section cross-references left over from the weather-section renumbering |
 | 1.7 | 2026-09-11 | Reverted admin from Flutter role-gated screens back to a separate web panel (Blade + Bootstrap) - removed /api/admin/* from the API surface, removed Flutter admin components, updated tech stack/file structure/personas/rollout accordingly |
-| 1.8 | 2026-09-22 | Merged `place_attributes` back into `places` (one table); overwrite protection on Google re-sync moved from schema separation to a code-level whitelist-update discipline in the sync job |
-| 1.9 | 2026-09-22 | Data model audit findings applied: JSON-array category tags replaced with pivot tables (`place_category`, `trip_interest_category`, `user_default_interest_category`) with FK RESTRICT; EAV-style `*_criteria_weights` tables replaced with fixed `weight_*` columns on `users`/`trips`; added `deleted_at` soft delete to `places`/`users`/`trips`/`place_reviews`/`categories`; added `UNIQUE(user_id, place_id)` on `place_reviews`; added CHECK constraint requiring at least one auth method on `users`; clarified `topsis_score` is NULL (not fabricated) for manually-swapped-in items |
-| 1.10 | 2026-09-22 | Added admin audit trail: `activity_log` table via `spatie/laravel-activitylog`, `LogsActivity` trait on `Place`/`Category` models, "Riwayat Perubahan" change-history tab in admin panel - answers "who changed this place's price/category, and when" (previously an explicitly-deferred known gap) |
-| 1.11 | 2026-09-22 | Renamed every primary key from generic `id` to explicit `{table_name}_id` (`places_id`, `users_id`, etc.) and updated all foreign keys to match, so a column name is self-describing outside JOIN context; `google_place_id`/`google_id` (external Google IDs) and `activity_log`'s package-owned `id`/`subject_id`/`causer_id` deliberately excluded |
-| 1.12 | 2026-09-22 | Removed `places.google_maps_uri` (built on the fly from lat/lng instead, avoids staleness after coordinate corrections); added `places.kecamatan` (copied from `place_candidates.search_area` at promotion, admin-editable, powers a new browse filter); added `trip_wishlist_places.custom_visit_minutes` (fixes a real gap - custom map-pin wishlist items had no `places` row to source `estimated_visit_minutes` from for the day time-budget calculation, so the user now enters it manually) |
-| 1.13 | 2026-09-22 | Fixed stale admin-architecture references left over from the 2026-09-11 reversal (web panel, not Flutter role-gated): corrected the Section 1 AI Build Summary and the Section 5 Out of Scope bullet, both of which still described the old Flutter-role-gated admin design |
-| 1.14 | 2026-09-23 | Added US16, read-only trip sharing (`trip_viewers` table, invite/revoke by email, "Dibagikan ke Saya" tab) - a rework of the earlier out-of-scope call, not deferred future work; new design spec Section 9 pushed Weather/API/Mobile Flow/Admin Panel/Testing/Out of Scope sections down by 1 (all cross-references updated in both documents) |
-| 1.15 | 2026-09-23 | Added US17, anonymous public "Share Itinerary" link (`trips.share_token`, `GET /api/shared-itinerary/{share_token}`) - a standalone mechanism unrelated to US16's Trip Viewer, explicitly no login/account; strict response whitelist excludes `visited_at`/owner identity/`budget_total` per explicit "no privacy leak" requirement; also added link-based invite (`viewer_invite_token`) as a second way into US16's `trip_viewers`, alongside the existing email search; new design spec Section 10 pushed Weather/API/Mobile Flow/Admin Panel/Testing/Out of Scope sections down by 1 again (all cross-references updated in both documents) |
-| 1.16 | 2026-09-28 | Added Section 7.1 Kebutuhan Fungsional (F001-F024), a flat functional-requirement checklist cross-referenced to the existing User Stories (Section 7) - requested as a standalone functional-requirements view for documentation/reporting purposes, no scope change |
+| 1.8 | 2026-09-17 | Hosting changed to Linux + PostgreSQL (client decision, overrides 1.3); added automatic push/local notification when the weather forecast window opens (US15), on top of the existing per-screen-open check |
+| 1.9 | 2026-09-22 | Merged `place_attributes` back into `places` (one table); overwrite protection on Google re-sync moved from schema separation to a code-level whitelist-update discipline in the sync job |
+| 1.10 | 2026-09-22 | Data model audit findings applied: JSON-array category tags replaced with pivot tables (`place_category`, `trip_interest_category`, `user_default_interest_category`) with FK RESTRICT; EAV-style `*_criteria_weights` tables replaced with fixed `weight_*` columns on `users`/`trips`; added `deleted_at` soft delete to `places`/`users`/`trips`/`place_reviews`/`categories`; added `UNIQUE(user_id, place_id)` on `place_reviews`; added CHECK constraint requiring at least one auth method on `users`; clarified `topsis_score` is NULL (not fabricated) for manually-swapped-in items |
+| 1.11 | 2026-09-22 | Added admin audit trail: `activity_log` table via `spatie/laravel-activitylog`, `LogsActivity` trait on `Place`/`Category` models, "Riwayat Perubahan" change-history tab in admin panel - answers "who changed this place's price/category, and when" (previously an explicitly-deferred known gap) |
+| 1.12 | 2026-09-22 | Renamed every primary key from generic `id` to explicit `{table_name}_id` (`places_id`, `users_id`, etc.) and updated all foreign keys to match, so a column name is self-describing outside JOIN context; `google_place_id`/`google_id` (external Google IDs) and `activity_log`'s package-owned `id`/`subject_id`/`causer_id` deliberately excluded |
+| 1.13 | 2026-09-22 | Removed `places.google_maps_uri` (built on the fly from lat/lng instead, avoids staleness after coordinate corrections); added `places.kecamatan` (copied from `place_candidates.search_area` at promotion, admin-editable, powers a new browse filter); added `trip_wishlist_places.custom_visit_minutes` (fixes a real gap - custom map-pin wishlist items had no `places` row to source `estimated_visit_minutes` from for the day time-budget calculation, so the user now enters it manually) |
+| 1.14 | 2026-09-22 | Fixed stale admin-architecture references left over from the 2026-09-11 reversal (web panel, not Flutter role-gated): corrected the Section 1 AI Build Summary and the Section 5 Out of Scope bullet, both of which still described the old Flutter-role-gated admin design |
+| 1.15 | 2026-09-23 | Added US16, read-only trip sharing (`trip_viewers` table, invite/revoke by email, "Dibagikan ke Saya" tab) - a rework of the earlier out-of-scope call, not deferred future work; new design spec Section 9 pushed Weather/API/Mobile Flow/Admin Panel/Testing/Out of Scope sections down by 1 (all cross-references updated in both documents) |
+| 1.16 | 2026-09-23 | Added US17, anonymous public "Share Itinerary" link (`trips.share_token`, `GET /api/shared-itinerary/{share_token}`) - a standalone mechanism unrelated to US16's Trip Viewer, explicitly no login/account; strict response whitelist excludes `visited_at`/owner identity/`budget_total` per explicit "no privacy leak" requirement; also added link-based invite (`viewer_invite_token`) as a second way into US16's `trip_viewers`, alongside the existing email search; new design spec Section 10 pushed Weather/API/Mobile Flow/Admin Panel/Testing/Out of Scope sections down by 1 again (all cross-references updated in both documents) |
+| 1.17 | 2026-09-28 | Added Section 7.1 Kebutuhan Fungsional (F001-F024), a flat functional-requirement checklist cross-referenced to the existing User Stories (Section 7) - requested as a standalone functional-requirements view for documentation/reporting purposes, no scope change |
+| 1.18 | 2026-10-02 | PRD review pass: (1) fixed Section 5 Technical Constraints, which still said the Flutter codebase was shared "for end-users and admins" - contradicted Section 8/9/Decisions Log; (2) documented the actual registration/password flow found in `smarttrip-api` - `pending_registrations` staging table, email-verification link, `POST /api/auth/forgot-password`, `POST /api/auth/reset-password`, `PUT /api/auth/password`, none of which were in the data model or API surface before; (3) resolved the duplicate/out-of-order "1.7" entries in this table (see old 1.3-1.8 above) by renumbering chronologically - no version before this one changes meaning, only its label; (4) reworded Section 20 to stop calling the (already-Resolved) hosting decision an "open question"; (5) added `trip_viewers`/`share_token` lifecycle to Section 12; (6) updated Status/Section 15 from "pre-implementation"/"not yet scaffolded" to reflect that implementation has started |
 
 ---
 
@@ -114,7 +115,7 @@ Sources: [Best AI Trip Planner Apps 2026 (Lindy)](https://www.lindy.ai/blog/trip
 - Mid-trip hotel changes (one hotel = one trip's start/end point)
 
 **Technical constraints:**
-- Platform: **Android/iOS via Flutter** (single codebase for end-users and admins)
+- Platform: **Android/iOS via Flutter** for the end-user mobile app only - admin uses a separate web panel (Laravel Blade + Bootstrap, see Section 8), not the Flutter codebase
 - Auth: Laravel Sanctum (opaque bearer tokens), email/password + Google Sign-In, account linking by email
 - Offline support: **partial only** — visit-tracking events queue locally and retry when connectivity returns; no general offline browsing/generation support was designed
 - Performance: no hard SLA (see Section 16, US4) — Google Routes API is called once per day per generate/swap (not per view) specifically to keep this fast and cheap
@@ -311,11 +312,23 @@ place_reviews(place_reviews_id, places_id FK, users_id FK, rating[1-5], comment?
   -- unique constraint revisi 2026-09-22: 1 user cuma boleh 1 review per tempat,
   -- review ulang = edit yang sudah ada, bukan baris baru (jaga integritas Bayesian blend)
 
-users(users_id, ..., password?, google_id?[unique], role[user|admin], timestamps, deleted_at?[soft delete])
+users(users_id, ..., password?, email_verified_at?, google_id?[unique], role[user|admin], timestamps, deleted_at?[soft delete])
   -- CHECK constraint revisi 2026-09-22: password IS NOT NULL OR google_id IS NOT NULL
   -- default_weight_kategori/jarak/anggaran/rating[decimal, nullable] - revisi 2026-09-22,
   -- ganti tabel EAV user_criteria_weights (4 kriteria fixed, tidak butuh bentuk EAV)
   -- google_id is Google's own external ID, not a reference to our users_id, so it kept its name
+  -- email_verified_at ditambahkan 2026-10-02 (ditemukan dari kode, belum pernah didokumentasikan) -
+  -- diisi oleh alur verifikasi registrasi di bawah, atau langsung oleh Google Sign-In (identitas sudah
+  -- terbukti dari provider)
+
+pending_registrations(email[unique], name, password[hash], token[hash], created_at)
+  -- ditambahkan 2026-10-02 (ditemukan dari kode, belum pernah didokumentasikan sama sekali)
+  -- staging area registrasi manual - baris `users` BELUM dibuat saat form daftar disubmit
+  -- POST /api/auth/register simpan ke sini + kirim email berisi signed URL verifikasi (berlaku 60 menit),
+  -- baris `users` baru dibuat/diupdate begitu link diklik (lihat verify-registration di Section 11)
+  -- kalau email itu sudah dipakai akun Google-only (password masih null), verifikasi MENAUTKAN password
+  -- baru ke akun itu - bukan bikin akun baru - karena kepemilikan inbox sudah dibuktikan
+  -- baris di sini dihapus begitu verifikasi sukses ATAU kedaluwarsa (>60 menit, link lama invalid)
 
 trips(trips_id, users_id FK, title, num_days, budget_total, has_own_hotel[bool], hotel_places_id? FK,
   hotel_custom_name?, hotel_lat?, hotel_lng?, start_date,
@@ -390,8 +403,11 @@ Full endpoint list is design spec Section 12 — summarized by group:
 
 | Group | Example | Auth |
 |-------|---------|------|
-| Auth | `/api/auth/register`, `/api/auth/login`, `/api/auth/google` | Public |
+| Auth | `/api/auth/register` (stages to `pending_registrations`, sends verification email - see note below), `/api/auth/login`, `/api/auth/google` | Public |
 | Auth | `/api/auth/logout` | Token required |
+| Auth | `/api/auth/forgot-password`, `/api/auth/reset-password` (added 2026-10-02 - documents F004, previously implemented but undocumented) | Public |
+| Auth | `PUT /api/auth/password` (change password while logged in, added 2026-10-02 - F004) | Token required |
+| Auth (web, not API) | `GET /auth/verify-registration` (signed URL from the verification email, opened in a browser, not called by the Flutter app directly - added 2026-10-02) | Public, signed-URL only |
 | Profile | `/api/profile/preferences` (GET/PUT) | Token |
 | Trip setup | `/api/trips` (POST/GET/DELETE), `/api/trips/{id}/hotel`, `/api/trips/{id}/hotel-options` | Token (GET `/api/trips/{id}` also allows an invited viewer, added 2026-09-23) |
 | Wishlist | `/api/trips/{id}/wishlist` (POST/GET/DELETE) | Token |
@@ -447,6 +463,26 @@ null (not visited) --(geofence entry OR manual tap)--> timestamp set (visited)
 timestamp set --(manual toggle off)--> null [correction path for false-positive geofence triggers]
 ```
 
+**`trip_viewers` (added 2026-10-02 - was missing despite US16 existing since 2026-09-23)**
+```
+no row --(owner invites by email, OR someone claims a viewer_invite_token)--> row exists (read access granted)
+row exists --(owner revokes)--> [hard delete, not soft - see Section 10 soft-delete policy]
+```
+Note: `trips.viewer_invite_token` itself has its own independent lifecycle - `null --(owner generates)--> active token --(owner regenerates or clears)--> null/new token`. Clearing it stops *new* joins but does not touch existing `trip_viewers` rows already created through it.
+
+**`trips.share_token` (added 2026-10-02 - was missing despite US17 existing since 2026-09-23)**
+```
+null --(owner generates)--> active token (GET /api/shared-itinerary/{token} now resolves)
+active token --(owner regenerates or clears)--> null/new token [old token immediately stops resolving for everyone - all-or-nothing, no per-person revoke]
+```
+
+**`pending_registrations` (added 2026-10-02 - see Section 10)**
+```
+no row --(POST /api/auth/register)--> row exists, verification email sent
+row exists --(link clicked within 60 min)--> [deleted; users row created/updated with email_verified_at set]
+row exists --(60 min elapse without click)--> [deleted on next verification attempt; user must register again]
+```
+
 ---
 
 ## 13. Client-Side State Management
@@ -500,7 +536,7 @@ SmartTrip-Batam/
 │   │   └── 2026-09-07-smarttrip-itinerary-recommendation-design.md   # source of truth
 │   └── prd/
 │       └── 2026-09-07-smarttrip-prd.md                                # this document
-├── smarttrip-api/                     # Laravel backend (not yet scaffolded)
+├── smarttrip-api/                     # Laravel backend (scaffolded, implementation in progress as of 2026-10-02)
 │   ├── app/Http/Controllers/Api/      # Trip, Place, Auth controllers - for Flutter (routes/api.php)
 │   ├── app/Http/Controllers/Admin/    # Places, Candidates, Categories controllers - for web panel (routes/web.php)
 │   ├── app/Models/                    # Place, Trip, ItineraryDay, ItineraryItem, ...
@@ -509,7 +545,7 @@ SmartTrip-Batam/
 │   ├── resources/views/admin/         # Blade views - dashboard, places, candidates, categories
 │   ├── database/migrations/
 │   └── database/seeders/              # categories seeder (must run before places bootstrap)
-└── smarttrip-mobile/                  # Flutter app (not yet scaffolded) - end-users only, no admin code here
+└── smarttrip-mobile/                  # Flutter app (scaffolded as of 2026-09-29) - end-users only, no admin code here
     ├── lib/
     │   ├── features/
     │   │   ├── onboarding/            # Pilih Minat gate
@@ -711,7 +747,7 @@ Key pivots made during the design process (all 2026-09-07, in one extended desig
 - **Backend logging:** log every Google Places/Routes/Gemini API call (which endpoint, cost-relevant SKU tier, success/failure) so quota usage is traceable proactively, not discovered only after the free tier is already exhausted
 - **Backend logging:** log `places:discover` runs and each candidate-approval Enrichment (counts, failures) — these are the highest-cost operations in the system
 - **Mobile crash/analytics reporting:** no tooling specified — acceptable gap for a college project, flagged here rather than silently absent
-- **Environment configuration (dev/staging/prod):** not discussed — deferred to implementation planning, where the actual hosting decision (Section 17 open question) will shape this
+- **Environment configuration (dev/staging/prod):** no separate staging/prod split is planned — Section 14 deliberately uses **one Linux server for both development and deployment** (hosting decision already Resolved, see Section 17); a dev/staging/prod split was never raised as a requirement for this one-semester scope, not an oversight
 
 ---
 

@@ -4,7 +4,7 @@
 
 **Type:** Full PRD
 **Status:** In progress — backend (`smarttrip-api`) and mobile (`smarttrip-mobile`) scaffolds exist with most F001-F024 implemented; see Section 15
-**Version:** 1.20
+**Version:** 1.21
 **Last Updated:** 2026-10-04
 **Source of truth for implementation detail:** `docs/superpowers/specs/2026-09-07-smarttrip-itinerary-recommendation-design.md` (this PRD is a reformatted, audience-oriented view of the same decisions — where they ever conflict, the design spec wins, since it carries finer-grained rationale)
 
@@ -31,6 +31,7 @@
 | 1.18 | 2026-10-02 | PRD review pass: (1) fixed Section 5 Technical Constraints, which still said the Flutter codebase was shared "for end-users and admins" - contradicted Section 8/9/Decisions Log; (2) documented the actual registration/password flow found in `smarttrip-api` - `pending_registrations` staging table, email-verification link, `POST /api/auth/forgot-password`, `POST /api/auth/reset-password`, `PUT /api/auth/password`, none of which were in the data model or API surface before; (3) resolved the duplicate/out-of-order "1.7" entries in this table (see old 1.3-1.8 above) by renumbering chronologically - no version before this one changes meaning, only its label; (4) reworded Section 20 to stop calling the (already-Resolved) hosting decision an "open question"; (5) added `trip_viewers`/`share_token` lifecycle to Section 12; (6) updated Status/Section 15 from "pre-implementation"/"not yet scaffolded" to reflect that implementation has started |
 | 1.19 | 2026-10-04 | Synced docs with the implemented backend: documented that UNIQUE constraints on soft-deletable tables must be partial indexes (`WHERE deleted_at IS NULL`) where the value must be reusable after soft delete - `place_reviews (users_id, places_id)` and `categories.slug` (both already fixed by corrective migrations in `smarttrip-api`), `places.google_place_id` kept plain unique on purpose, `users.email`/`users.google_id` flagged as an open decision; F015 wording restored to cover both invite-by-email and invite link, matching `TripViewerController` |
 | 1.20 | 2026-10-04 | Resolved the `users.email`/`users.google_id` open decision from 1.19: partial unique index (`WHERE deleted_at IS NULL`) so a deactivated account's email can be re-registered; migration and the account-deactivation feature itself are not implemented yet |
+| 1.21 | 2026-10-04 | Implemented the 1.20 decision in `smarttrip-api`: migration converting `users.email`/`users.google_id` to partial unique indexes (`WHERE deleted_at IS NULL`) plus 3 `AuthTest` cases; full backend suite green (273 tests) |
 
 ---
 
@@ -391,7 +392,7 @@ activity_log(id, log_name, description, subject_type, subject_id, causer_type, c
 | `place_reviews` | unique(users_id, places_id) as a **partial index `WHERE deleted_at IS NULL`** - one active review per user per place; a plain unique would block re-reviewing after deleting your own review (soft-deleted row still counted) |
 | `categories.slug` | string, unique as a **partial index `WHERE deleted_at IS NULL`** (so a soft-deleted category's slug can be reused), lowercase-slug format (enforced to prevent near-duplicate tags like "kuliner" vs "wisata-kuliner") |
 | `places.google_place_id` | plain unique, **deliberately not partial** - a soft-deleted place must still block re-insertion; Discovery's idempotency check uses `withTrashed()` (design spec Section 3 step 1a) |
-| `users.email` / `users.google_id` | unique as a **partial index `WHERE deleted_at IS NULL`** (decided 2026-10-04), so a soft-deactivated account's email can be re-registered as a new account; every lookup by email/google_id must ignore soft-deleted rows (`User` already uses `SoftDeletes`, so plain Eloquent queries are safe). **Implementation pending:** the existing migration is still a plain unique and no account-deactivation feature exists yet |
+| `users.email` / `users.google_id` | unique as a **partial index `WHERE deleted_at IS NULL`** (decided 2026-10-04), so a soft-deactivated account's email can be re-registered as a new account; every lookup by email/google_id must ignore soft-deleted rows (`User` already uses `SoftDeletes`, so plain Eloquent queries are safe). **Implemented** via migration `2026_10_04_000000_make_users_unique_indexes_ignore_soft_deletes` and covered by `AuthTest`; no account-deactivation feature exists yet, so it is not triggered in practice |
 | `users.email` | unique, valid email format |
 | `users.google_id` | unique when present; nullable |
 | `users` | CHECK: `password IS NOT NULL OR google_id IS NOT NULL` |

@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Mail\RegistrationVerificationMail;
 use App\Models\User;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
@@ -164,6 +165,36 @@ class AuthTest extends TestCase
 
         $this->assertSoftDeleted($user);
         $this->assertDatabaseHas('users', ['users_id' => $user->users_id]);
+    }
+
+    public function test_a_soft_deleted_users_email_and_google_id_can_be_reused(): void
+    {
+        $old = User::factory()->create(['email' => 'budi@example.com', 'google_id' => 'google-sub-budi']);
+        $old->delete();
+
+        $new = User::factory()->create(['email' => 'budi@example.com', 'google_id' => 'google-sub-budi']);
+
+        $this->assertNotSame($old->users_id, $new->users_id);
+        $this->assertSame(1, User::where('email', 'budi@example.com')->count());
+        $this->assertSame($new->users_id, User::where('google_id', 'google-sub-budi')->value('users_id'));
+    }
+
+    public function test_two_active_users_cannot_share_an_email(): void
+    {
+        User::factory()->create(['email' => 'budi@example.com']);
+
+        $this->expectException(QueryException::class);
+
+        User::factory()->create(['email' => 'budi@example.com']);
+    }
+
+    public function test_two_active_users_cannot_share_a_google_id(): void
+    {
+        User::factory()->create(['google_id' => 'google-sub-budi']);
+
+        $this->expectException(QueryException::class);
+
+        User::factory()->create(['google_id' => 'google-sub-budi']);
     }
 
     // --- Google Sign-In + account linking scenarios ---

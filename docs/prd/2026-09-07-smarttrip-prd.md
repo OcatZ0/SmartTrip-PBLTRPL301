@@ -4,8 +4,8 @@
 
 **Type:** Full PRD
 **Status:** In progress — backend (`smarttrip-api`) and mobile (`smarttrip-mobile`) scaffolds exist with most F001-F024 implemented; see Section 15
-**Version:** 1.18
-**Last Updated:** 2026-10-02
+**Version:** 1.19
+**Last Updated:** 2026-10-04
 **Source of truth for implementation detail:** `docs/superpowers/specs/2026-09-07-smarttrip-itinerary-recommendation-design.md` (this PRD is a reformatted, audience-oriented view of the same decisions — where they ever conflict, the design spec wins, since it carries finer-grained rationale)
 
 | Version | Date | Change |
@@ -29,6 +29,7 @@
 | 1.16 | 2026-09-23 | Added US17, anonymous public "Share Itinerary" link (`trips.share_token`, `GET /api/shared-itinerary/{share_token}`) - a standalone mechanism unrelated to US16's Trip Viewer, explicitly no login/account; strict response whitelist excludes `visited_at`/owner identity/`budget_total` per explicit "no privacy leak" requirement; also added link-based invite (`viewer_invite_token`) as a second way into US16's `trip_viewers`, alongside the existing email search; new design spec Section 10 pushed Weather/API/Mobile Flow/Admin Panel/Testing/Out of Scope sections down by 1 again (all cross-references updated in both documents) |
 | 1.17 | 2026-09-28 | Added Section 7.1 Kebutuhan Fungsional (F001-F024), a flat functional-requirement checklist cross-referenced to the existing User Stories (Section 7) - requested as a standalone functional-requirements view for documentation/reporting purposes, no scope change |
 | 1.18 | 2026-10-02 | PRD review pass: (1) fixed Section 5 Technical Constraints, which still said the Flutter codebase was shared "for end-users and admins" - contradicted Section 8/9/Decisions Log; (2) documented the actual registration/password flow found in `smarttrip-api` - `pending_registrations` staging table, email-verification link, `POST /api/auth/forgot-password`, `POST /api/auth/reset-password`, `PUT /api/auth/password`, none of which were in the data model or API surface before; (3) resolved the duplicate/out-of-order "1.7" entries in this table (see old 1.3-1.8 above) by renumbering chronologically - no version before this one changes meaning, only its label; (4) reworded Section 20 to stop calling the (already-Resolved) hosting decision an "open question"; (5) added `trip_viewers`/`share_token` lifecycle to Section 12; (6) updated Status/Section 15 from "pre-implementation"/"not yet scaffolded" to reflect that implementation has started |
+| 1.19 | 2026-10-04 | Synced docs with the implemented backend: documented that UNIQUE constraints on soft-deletable tables must be partial indexes (`WHERE deleted_at IS NULL`) where the value must be reusable after soft delete - `place_reviews (users_id, places_id)` and `categories.slug` (both already fixed by corrective migrations in `smarttrip-api`), `places.google_place_id` kept plain unique on purpose, `users.email`/`users.google_id` flagged as an open decision; F015 wording restored to cover both invite-by-email and invite link, matching `TripViewerController` |
 
 ---
 
@@ -182,7 +183,7 @@ Daftar flat kebutuhan fungsional (functional requirements), disilangrujuk ke Use
 | F012 | Sistem dapat mengirim notifikasi saat pengguna mendekati lokasi tempat wisata | US6 |
 | F013 | Wisatawan dapat melihat peta live dan melacak progres kunjungan tempat wisata secara real-time | US6, US7 |
 | F014 | Wisatawan dapat mengelola ulasan tempat wisata | US10 |
-| F015 | Wisatawan dapat membagikan trip ke pengguna lain sebagai viewer read-only melalui tautan undangan | US16 |
+| F015 | Wisatawan dapat membagikan trip ke pengguna lain sebagai viewer read-only, melalui pencarian email atau tautan undangan | US16 |
 | F016 | Wisatawan dapat melihat trip yang dibagikan pengguna lain kepadanya | US16 |
 | F017 | Wisatawan dapat membagikan itinerary trip melalui tautan publik tanpa memerlukan akun | US17 |
 | F018 | Sistem dapat mengambil data tempat wisata melalui Google Places API | US11 |
@@ -289,7 +290,7 @@ places(places_id, google_place_id?, name, type[attraction|culinary|lodging], lat
   -- google_maps_uri REMOVED 2026-09-22: not stored -- built on the fly from lat/lng (or google_place_id)
   -- instead, so it never goes stale if an admin later corrects the coordinates
 
-categories(categories_id, name_id, name_en, slug[unique], timestamps, deleted_at?[soft delete])
+categories(categories_id, name_id, name_en, slug[unique, partial WHERE deleted_at IS NULL], timestamps, deleted_at?[soft delete])
   -- delete diproteksi ON DELETE RESTRICT dari 3 tabel pivot di bawah
   -- name_id/name_en are language-code suffixes (Indonesian/English label), unrelated to the id/FK convention
 
@@ -308,7 +309,7 @@ place_candidates(place_candidates_id, google_place_id[unique], name, type, lat, 
 place_photos(place_photos_id, places_id FK, photo_url, sort_order)
 
 place_reviews(place_reviews_id, places_id FK, users_id FK, rating[1-5], comment?, itinerary_items_id? FK,
-  unique[users_id, places_id], timestamps, deleted_at?[soft delete])
+  unique[users_id, places_id; partial WHERE deleted_at IS NULL], timestamps, deleted_at?[soft delete])
   -- unique constraint revisi 2026-09-22: 1 user cuma boleh 1 review per tempat,
   -- review ulang = edit yang sudah ada, bukan baris baru (jaga integritas Bayesian blend)
 
@@ -369,7 +370,7 @@ activity_log(id, log_name, description, subject_type, subject_id, causer_type, c
 
 **PK/FK naming convention (added 2026-09-22):** every primary key is now explicit `{table_name}_id` instead of a generic `id` (`places_id`, `categories_id`, `users_id`, `trips_id`, etc.), so a column name is self-describing even outside JOIN context (`trips.users_id` reads as "this trip references a `users` row" on its own). Foreign keys follow the same target name (`place_id`→`places_id`, `category_id`→`categories_id`, `user_id`→`users_id`, `trip_id`→`trips_id`, `itinerary_day_id`→`itinerary_days_id`, `itinerary_item_id`→`itinerary_items_id`); role-prefixed FKs keep their prefix (`hotel_place_id`→`hotel_places_id`, `start_place_id`/`end_place_id`→`start_places_id`/`end_places_id`). **3 deliberate exceptions:** `google_place_id`/`google_id` (Google's own external IDs, not references to our tables — coincidentally similar-looking names only), `activity_log`'s `id`/`subject_id`/`causer_id` (owned by the `spatie/laravel-activitylog` package's stock migration), and the `{id}` path parameter in API routes (Section 11 — a REST resource-identifier convention, not a database column name; `trip_viewers_id` follows the standard convention, added 2026-09-23).
 
-**Soft delete policy (added 2026-09-22, extended 2026-09-23):** `deleted_at` only on tables with an independent delete feature worth preserving history for — `places`, `users`, `trips`, `place_reviews`, `categories`. Deliberately excluded from pure pivot tables (`place_category`, `trip_interest_category`, `user_default_interest_category`, `trip_wishlist_places`, `trip_viewers` — Eloquent's `sync()`/`detach()` expect hard delete; revoking viewer access is a hard delete of that `trip_viewers` row), pure child/detail rows with no independent delete feature (`place_photos`, `itinerary_days`, `itinerary_items`), and `place_candidates` (its `status` column already serves this purpose via `rejected`).
+**Soft delete policy (added 2026-09-22, extended 2026-09-23):** `deleted_at` only on tables with an independent delete feature worth preserving history for — `places`, `users`, `trips`, `place_reviews`, `categories`. Deliberately excluded from pure pivot tables (`place_category`, `trip_interest_category`, `user_default_interest_category`, `trip_wishlist_places`, `trip_viewers` — Eloquent's `sync()`/`detach()` expect hard delete; revoking viewer access is a hard delete of that `trip_viewers` row), pure child/detail rows with no independent delete feature (`place_photos`, `itinerary_days`, `itinerary_items`), and `place_candidates` (its `status` column already serves this purpose via `rejected`). **Unique constraints on soft-deletable tables (added 2026-10-04, found during backend implementation):** a plain UNIQUE also counts soft-deleted rows, so values that must be reusable after a soft delete use a partial index `WHERE deleted_at IS NULL` (`place_reviews (users_id, places_id)`, `categories.slug`); `places.google_place_id` stays plain unique on purpose. See the Key Validation Rules table below and design spec Section 4 ("Aturan unique + soft delete").
 
 **Admin audit trail (added 2026-09-22):** `Place` and `Category` (the two admin-curated models that feed directly into recommendation scoring — price, category tags, description) get the `spatie/laravel-activitylog` package's `LogsActivity` trait, so every create/update/delete through the admin panel is automatically recorded to `activity_log` with no custom controller code. Scoped to just these two models rather than every table — `place_candidates` approve/reject already has an equivalent history via its `status` column, and a 6-person team with full DB access doesn't need a blanket audit trail for a one-semester project. Surfaced in the admin panel as a "Riwayat Perubahan" (change history) tab on each place/category's edit screen.
 
@@ -386,8 +387,10 @@ activity_log(id, log_name, description, subject_type, subject_id, causer_type, c
 | `places.estimated_cost_idr` | integer, IDR, ≥ 0, nullable |
 | `trip_wishlist_places.custom_visit_minutes` | integer, > 0, required when `places_id` is null (custom pin) - no `places` row to fall back on for the day time-budget calculation |
 | `place_reviews.rating` | integer, 1–5 inclusive |
-| `place_reviews` | unique(users_id, places_id) - one review per user per place |
-| `categories.slug` | string, unique, lowercase-slug format (enforced to prevent near-duplicate tags like "kuliner" vs "wisata-kuliner") |
+| `place_reviews` | unique(users_id, places_id) as a **partial index `WHERE deleted_at IS NULL`** - one active review per user per place; a plain unique would block re-reviewing after deleting your own review (soft-deleted row still counted) |
+| `categories.slug` | string, unique as a **partial index `WHERE deleted_at IS NULL`** (so a soft-deleted category's slug can be reused), lowercase-slug format (enforced to prevent near-duplicate tags like "kuliner" vs "wisata-kuliner") |
+| `places.google_place_id` | plain unique, **deliberately not partial** - a soft-deleted place must still block re-insertion; Discovery's idempotency check uses `withTrashed()` (design spec Section 3 step 1a) |
+| `users.email` / `users.google_id` | plain unique today, so a soft-deleted (deactivated) account's email stays reserved - **open decision**: keep as intended, or switch to a partial index like `place_reviews` |
 | `users.email` | unique, valid email format |
 | `users.google_id` | unique when present; nullable |
 | `users` | CHECK: `password IS NOT NULL OR google_id IS NOT NULL` |

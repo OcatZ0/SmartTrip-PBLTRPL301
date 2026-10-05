@@ -13,4 +13,9 @@ class AppConfig {
   static const String googleMapsApiKey = String.fromEnvironment(
     'GOOGLE_MAPS_API_KEY',
   );
+
+  /// OAuth *web* client ID the backend verifies Google id_tokens against.
+  static const String googleServerClientId = String.fromEnvironment(
+    'GOOGLE_SERVER_CLIENT_ID',
+  );
 }

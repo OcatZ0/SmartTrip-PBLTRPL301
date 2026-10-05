@@ -1,0 +1,41 @@
+import 'package:dio/dio.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../core/api/api_client.dart';
+import '../../../core/api/providers.dart';
+import '../../../core/auth/auth_session.dart';
+import '../../../core/error/api_failure.dart';
+
+class AuthRepository {
+  AuthRepository(this._apiClient);
+
+  final ApiClient _apiClient;
+
+  Future<AuthSession> login({
+    required String email,
+    required String password,
+  }) {
+    return _authenticate('/auth/login', {'email': email, 'password': password});
+  }
+
+  Future<AuthSession> loginWithGoogle({required String idToken}) {
+    return _authenticate('/auth/google', {'id_token': idToken});
+  }
+
+  Future<AuthSession> _authenticate(
+    String path,
+    Map<String, dynamic> body,
+  ) async {
+    try {
+      final response =
+          await _apiClient.dio.post<Map<String, dynamic>>(path, data: body);
+      return AuthSession.fromJson(response.data!);
+    } on DioException catch (error) {
+      throw ApiFailure.fromDioException(error);
+    }
+  }
+}
+
+final authRepositoryProvider = Provider<AuthRepository>((ref) {
+  return AuthRepository(ref.watch(apiClientProvider));
+});

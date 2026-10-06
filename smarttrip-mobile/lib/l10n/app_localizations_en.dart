@@ -58,6 +58,86 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loginRegisterNow => 'Register Now';
 
   @override
+  String get registerTitle => 'Create New Account';
+
+  @override
+  String get registerSubtitle =>
+      'Start your smart travel adventure in Batam\neasily & securely.';
+
+  @override
+  String get registerNameLabel => 'Full Name';
+
+  @override
+  String get registerNameHint => 'e.g. Dian Pratama';
+
+  @override
+  String get registerEmailLabel => 'Email Address';
+
+  @override
+  String get registerEmailHint => 'dian@example.com';
+
+  @override
+  String get registerPasswordLabel => 'Password';
+
+  @override
+  String get registerPasswordHint => 'Minimum 8 characters';
+
+  @override
+  String get registerPasswordRequirement => 'Minimum 8 characters';
+
+  @override
+  String get registerPasswordStrength => 'Password Strength';
+
+  @override
+  String get registerPasswordWeak => 'Weak';
+
+  @override
+  String get registerPasswordMedium => 'Medium';
+
+  @override
+  String get registerPasswordStrong => 'Strong';
+
+  @override
+  String get registerPasswordVeryStrong => 'Very Strong';
+
+  @override
+  String get registerConfirmPasswordLabel => 'Confirm Password';
+
+  @override
+  String get registerConfirmPasswordHint => 'Re-enter password';
+
+  @override
+  String get registerTermsPrefix => 'I agree to the ';
+
+  @override
+  String get registerTerms => 'Terms & Conditions';
+
+  @override
+  String get registerTermsAnd => ' and ';
+
+  @override
+  String get registerPrivacy => 'Privacy Policy';
+
+  @override
+  String get registerTermsSuffix => ' of SmartTrip Batam.';
+
+  @override
+  String get registerSubmit => 'Register Account';
+
+  @override
+  String get registerAlreadyHaveAccount => 'Already have an account?';
+
+  @override
+  String get registerSignIn => 'Sign In';
+
+  @override
+  String get registerSuccessVerificationSent =>
+      'Please check your email to verify your account.';
+
+  @override
+  String get validationNameRequired => 'Full name is required';
+
+  @override
   String get validationEmailRequired => 'Email is required';
 
   @override
@@ -65,6 +145,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get validationPasswordRequired => 'Password is required';
+
+  @override
+  String get validationPasswordMinLength =>
+      'Password must be at least 8 characters';
+
+  @override
+  String get validationConfirmPasswordRequired =>
+      'Confirm password is required';
+
+  @override
+  String get validationConfirmPasswordMismatch => 'Passwords do not match';
+
+  @override
+  String get validationTermsRequired =>
+      'You must agree to the Terms & Conditions';
 
   @override
   String get errorNetwork =>

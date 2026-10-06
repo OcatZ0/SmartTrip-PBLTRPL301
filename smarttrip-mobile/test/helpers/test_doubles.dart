@@ -43,12 +43,24 @@ class InMemoryTokenStorage implements TokenStorage {
 }
 
 class FakeAuthRepository implements AuthRepository {
-  FakeAuthRepository({this.onLogin, this.onGoogleLogin});
+  FakeAuthRepository({this.onLogin, this.onGoogleLogin, this.onRegister});
 
   Future<AuthSession> Function(String email, String password)? onLogin;
   Future<AuthSession> Function(String idToken)? onGoogleLogin;
+  Future<String> Function(
+    String name,
+    String email,
+    String password,
+    String passwordConfirmation,
+  )? onRegister;
 
   final loginCalls = <({String email, String password})>[];
+  final registerCalls = <({
+    String name,
+    String email,
+    String password,
+    String passwordConfirmation,
+  })>[];
 
   @override
   Future<AuthSession> login({
@@ -62,6 +74,23 @@ class FakeAuthRepository implements AuthRepository {
   @override
   Future<AuthSession> loginWithGoogle({required String idToken}) {
     return onGoogleLogin?.call(idToken) ?? Future.value(testSession);
+  }
+
+  @override
+  Future<String> register({
+    required String name,
+    required String email,
+    required String password,
+    required String passwordConfirmation,
+  }) {
+    registerCalls.add((
+      name: name,
+      email: email,
+      password: password,
+      passwordConfirmation: passwordConfirmation,
+    ));
+    return onRegister?.call(name, email, password, passwordConfirmation) ??
+        Future.value('Silakan cek email Anda untuk verifikasi akun.');
   }
 }
 

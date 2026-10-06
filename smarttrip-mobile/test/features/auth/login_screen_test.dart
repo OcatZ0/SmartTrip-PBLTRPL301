@@ -13,7 +13,7 @@ import 'package:smarttrip_mobile/features/auth/data/google_auth_service.dart';
 
 import '../../helpers/test_doubles.dart';
 
-const _submit = 'Masuk ke Akun';
+const _submit = 'Masuk';
 
 Future<void> _pumpApp(
   WidgetTester tester, {
@@ -70,7 +70,7 @@ void main() {
     expect(find.text('Ingat Saya'), findsOneWidget);
     expect(find.text('Lupa Kata Sandi?'), findsOneWidget);
     expect(find.text(_submit), findsOneWidget);
-    expect(find.text('atau masuk dengan'), findsOneWidget);
+    expect(find.text('atau'), findsOneWidget);
     expect(find.text('Masuk dengan Google'), findsOneWidget);
     expect(find.text('Masuk tanpa Login'), findsOneWidget);
     expect(find.text('Belum punya akun?'), findsOneWidget);

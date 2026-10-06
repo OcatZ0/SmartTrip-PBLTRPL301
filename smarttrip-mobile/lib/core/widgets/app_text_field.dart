@@ -11,6 +11,7 @@ class AppTextField extends StatelessWidget {
     required this.hintText,
     required this.controller,
     required this.prefixIcon,
+    this.labelTrailing,
     this.suffix,
     this.obscureText = false,
     this.keyboardType,
@@ -24,6 +25,7 @@ class AppTextField extends StatelessWidget {
   });
 
   final String label;
+  final Widget? labelTrailing;
   final String hintText;
   final TextEditingController controller;
   final IconData prefixIcon;
@@ -55,7 +57,16 @@ class AppTextField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: theme.textTheme.labelMedium),
+        if (labelTrailing == null)
+          Text(label, style: theme.textTheme.labelMedium)
+        else
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(label, style: theme.textTheme.labelMedium),
+              labelTrailing!,
+            ],
+          ),
         const SizedBox(height: 6),
         TextFormField(
           controller: controller,

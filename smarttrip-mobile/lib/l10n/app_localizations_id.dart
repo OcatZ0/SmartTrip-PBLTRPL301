@@ -58,6 +58,86 @@ class AppLocalizationsId extends AppLocalizations {
   String get loginRegisterNow => 'Daftar Sekarang';
 
   @override
+  String get registerTitle => 'Buat Akun Baru';
+
+  @override
+  String get registerSubtitle =>
+      'Mulai petualangan cerdas wisatamu di Batam\ndengan mudah & aman.';
+
+  @override
+  String get registerNameLabel => 'Nama Lengkap';
+
+  @override
+  String get registerNameHint => 'cth. Dian Pratama';
+
+  @override
+  String get registerEmailLabel => 'Alamat Email';
+
+  @override
+  String get registerEmailHint => 'dian@example.com';
+
+  @override
+  String get registerPasswordLabel => 'Kata Sandi';
+
+  @override
+  String get registerPasswordHint => 'Minimal 8 karakter';
+
+  @override
+  String get registerPasswordRequirement => 'Minimal 8 karakter';
+
+  @override
+  String get registerPasswordStrength => 'Kekuatan Sandi';
+
+  @override
+  String get registerPasswordWeak => 'Lemah';
+
+  @override
+  String get registerPasswordMedium => 'Sedang';
+
+  @override
+  String get registerPasswordStrong => 'Kuat';
+
+  @override
+  String get registerPasswordVeryStrong => 'Sangat Kuat';
+
+  @override
+  String get registerConfirmPasswordLabel => 'Konfirmasi Kata Sandi';
+
+  @override
+  String get registerConfirmPasswordHint => 'Masukkan ulang kata sandi';
+
+  @override
+  String get registerTermsPrefix => 'Saya menyetujui ';
+
+  @override
+  String get registerTerms => 'Syarat & Ketentuan';
+
+  @override
+  String get registerTermsAnd => ' serta ';
+
+  @override
+  String get registerPrivacy => 'Kebijakan Privasi';
+
+  @override
+  String get registerTermsSuffix => ' SmartTrip Batam.';
+
+  @override
+  String get registerSubmit => 'Daftar Akun';
+
+  @override
+  String get registerAlreadyHaveAccount => 'Sudah punya akun?';
+
+  @override
+  String get registerSignIn => 'Masuk';
+
+  @override
+  String get registerSuccessVerificationSent =>
+      'Silakan cek email Anda untuk verifikasi akun.';
+
+  @override
+  String get validationNameRequired => 'Nama lengkap wajib diisi';
+
+  @override
   String get validationEmailRequired => 'Email wajib diisi';
 
   @override
@@ -65,6 +145,21 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get validationPasswordRequired => 'Kata sandi wajib diisi';
+
+  @override
+  String get validationPasswordMinLength => 'Kata sandi minimal 8 karakter';
+
+  @override
+  String get validationConfirmPasswordRequired =>
+      'Konfirmasi kata sandi wajib diisi';
+
+  @override
+  String get validationConfirmPasswordMismatch =>
+      'Konfirmasi kata sandi tidak cocok';
+
+  @override
+  String get validationTermsRequired =>
+      'Anda harus menyetujui Syarat & Ketentuan';
 
   @override
   String get errorNetwork =>

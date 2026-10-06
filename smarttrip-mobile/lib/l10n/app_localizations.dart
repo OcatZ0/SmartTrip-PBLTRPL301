@@ -194,6 +194,162 @@ abstract class AppLocalizations {
   /// **'Daftar Sekarang'**
   String get loginRegisterNow;
 
+  /// No description provided for @registerTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Buat Akun Baru'**
+  String get registerTitle;
+
+  /// No description provided for @registerSubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Mulai petualangan cerdas wisatamu di Batam\ndengan mudah & aman.'**
+  String get registerSubtitle;
+
+  /// No description provided for @registerNameLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Nama Lengkap'**
+  String get registerNameLabel;
+
+  /// No description provided for @registerNameHint.
+  ///
+  /// In id, this message translates to:
+  /// **'cth. Dian Pratama'**
+  String get registerNameHint;
+
+  /// No description provided for @registerEmailLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Alamat Email'**
+  String get registerEmailLabel;
+
+  /// No description provided for @registerEmailHint.
+  ///
+  /// In id, this message translates to:
+  /// **'dian@example.com'**
+  String get registerEmailHint;
+
+  /// No description provided for @registerPasswordLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Kata Sandi'**
+  String get registerPasswordLabel;
+
+  /// No description provided for @registerPasswordHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Minimal 8 karakter'**
+  String get registerPasswordHint;
+
+  /// No description provided for @registerPasswordRequirement.
+  ///
+  /// In id, this message translates to:
+  /// **'Minimal 8 karakter'**
+  String get registerPasswordRequirement;
+
+  /// No description provided for @registerPasswordStrength.
+  ///
+  /// In id, this message translates to:
+  /// **'Kekuatan Sandi'**
+  String get registerPasswordStrength;
+
+  /// No description provided for @registerPasswordWeak.
+  ///
+  /// In id, this message translates to:
+  /// **'Lemah'**
+  String get registerPasswordWeak;
+
+  /// No description provided for @registerPasswordMedium.
+  ///
+  /// In id, this message translates to:
+  /// **'Sedang'**
+  String get registerPasswordMedium;
+
+  /// No description provided for @registerPasswordStrong.
+  ///
+  /// In id, this message translates to:
+  /// **'Kuat'**
+  String get registerPasswordStrong;
+
+  /// No description provided for @registerPasswordVeryStrong.
+  ///
+  /// In id, this message translates to:
+  /// **'Sangat Kuat'**
+  String get registerPasswordVeryStrong;
+
+  /// No description provided for @registerConfirmPasswordLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Konfirmasi Kata Sandi'**
+  String get registerConfirmPasswordLabel;
+
+  /// No description provided for @registerConfirmPasswordHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Masukkan ulang kata sandi'**
+  String get registerConfirmPasswordHint;
+
+  /// No description provided for @registerTermsPrefix.
+  ///
+  /// In id, this message translates to:
+  /// **'Saya menyetujui '**
+  String get registerTermsPrefix;
+
+  /// No description provided for @registerTerms.
+  ///
+  /// In id, this message translates to:
+  /// **'Syarat & Ketentuan'**
+  String get registerTerms;
+
+  /// No description provided for @registerTermsAnd.
+  ///
+  /// In id, this message translates to:
+  /// **' serta '**
+  String get registerTermsAnd;
+
+  /// No description provided for @registerPrivacy.
+  ///
+  /// In id, this message translates to:
+  /// **'Kebijakan Privasi'**
+  String get registerPrivacy;
+
+  /// No description provided for @registerTermsSuffix.
+  ///
+  /// In id, this message translates to:
+  /// **' SmartTrip Batam.'**
+  String get registerTermsSuffix;
+
+  /// No description provided for @registerSubmit.
+  ///
+  /// In id, this message translates to:
+  /// **'Daftar Akun'**
+  String get registerSubmit;
+
+  /// No description provided for @registerAlreadyHaveAccount.
+  ///
+  /// In id, this message translates to:
+  /// **'Sudah punya akun?'**
+  String get registerAlreadyHaveAccount;
+
+  /// No description provided for @registerSignIn.
+  ///
+  /// In id, this message translates to:
+  /// **'Masuk'**
+  String get registerSignIn;
+
+  /// No description provided for @registerSuccessVerificationSent.
+  ///
+  /// In id, this message translates to:
+  /// **'Silakan cek email Anda untuk verifikasi akun.'**
+  String get registerSuccessVerificationSent;
+
+  /// No description provided for @validationNameRequired.
+  ///
+  /// In id, this message translates to:
+  /// **'Nama lengkap wajib diisi'**
+  String get validationNameRequired;
+
   /// No description provided for @validationEmailRequired.
   ///
   /// In id, this message translates to:
@@ -211,6 +367,30 @@ abstract class AppLocalizations {
   /// In id, this message translates to:
   /// **'Kata sandi wajib diisi'**
   String get validationPasswordRequired;
+
+  /// No description provided for @validationPasswordMinLength.
+  ///
+  /// In id, this message translates to:
+  /// **'Kata sandi minimal 8 karakter'**
+  String get validationPasswordMinLength;
+
+  /// No description provided for @validationConfirmPasswordRequired.
+  ///
+  /// In id, this message translates to:
+  /// **'Konfirmasi kata sandi wajib diisi'**
+  String get validationConfirmPasswordRequired;
+
+  /// No description provided for @validationConfirmPasswordMismatch.
+  ///
+  /// In id, this message translates to:
+  /// **'Konfirmasi kata sandi tidak cocok'**
+  String get validationConfirmPasswordMismatch;
+
+  /// No description provided for @validationTermsRequired.
+  ///
+  /// In id, this message translates to:
+  /// **'Anda harus menyetujui Syarat & Ketentuan'**
+  String get validationTermsRequired;
 
   /// No description provided for @errorNetwork.
   ///

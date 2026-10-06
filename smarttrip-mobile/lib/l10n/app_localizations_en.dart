@@ -43,7 +43,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loginSubmit => 'Sign In';
 
   @override
-  String get loginOrSignInWith => 'or sign in with';
+  String get loginOrSignInWith => 'or ';
 
   @override
   String get loginWithGoogle => 'Sign in with Google';
@@ -56,9 +56,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get loginRegisterNow => 'Register Now';
-
-  @override
-  String get loginSecurityNote => 'Tourism-grade 256-bit encryption';
 
   @override
   String get validationEmailRequired => 'Email is required';

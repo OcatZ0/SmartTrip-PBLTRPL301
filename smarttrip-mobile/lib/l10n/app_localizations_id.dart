@@ -40,10 +40,10 @@ class AppLocalizationsId extends AppLocalizations {
   String get loginForgotPassword => 'Lupa Kata Sandi?';
 
   @override
-  String get loginSubmit => 'Masuk ke Akun';
+  String get loginSubmit => 'Masuk';
 
   @override
-  String get loginOrSignInWith => 'atau masuk dengan';
+  String get loginOrSignInWith => 'atau';
 
   @override
   String get loginWithGoogle => 'Masuk dengan Google';
@@ -56,9 +56,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get loginRegisterNow => 'Daftar Sekarang';
-
-  @override
-  String get loginSecurityNote => 'Enkripsi 256-bit berstandar pariwisata aman';
 
   @override
   String get validationEmailRequired => 'Email wajib diisi';

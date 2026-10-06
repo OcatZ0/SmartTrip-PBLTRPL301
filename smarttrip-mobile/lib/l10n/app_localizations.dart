@@ -161,13 +161,13 @@ abstract class AppLocalizations {
   /// No description provided for @loginSubmit.
   ///
   /// In id, this message translates to:
-  /// **'Masuk ke Akun'**
+  /// **'Masuk'**
   String get loginSubmit;
 
   /// No description provided for @loginOrSignInWith.
   ///
   /// In id, this message translates to:
-  /// **'atau masuk dengan'**
+  /// **'atau'**
   String get loginOrSignInWith;
 
   /// No description provided for @loginWithGoogle.
@@ -193,12 +193,6 @@ abstract class AppLocalizations {
   /// In id, this message translates to:
   /// **'Daftar Sekarang'**
   String get loginRegisterNow;
-
-  /// No description provided for @loginSecurityNote.
-  ///
-  /// In id, this message translates to:
-  /// **'Enkripsi 256-bit berstandar pariwisata aman'**
-  String get loginSecurityNote;
 
   /// No description provided for @validationEmailRequired.
   ///

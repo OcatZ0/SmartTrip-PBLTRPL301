@@ -98,22 +98,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       backgroundColor: tokens.screenBackground,
       body: SafeArea(
         child: Center(
-          child: SingleChildScrollView(
+          child: _FitToScreen(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 420),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const SizedBox(height: 41),
+                  const SizedBox(height: 15),
                   Center(
                     child: SvgPicture.asset(
                       'assets/images/logo.svg',
-                      width: 80,
-                      height: 82,
+                      width: 60,
+                      height: 62,
                     ),
                   ),
-                  const SizedBox(height: 37),
+                  const SizedBox(height: 15),
                   Text(
                     l10n.loginTitle,
                     textAlign: TextAlign.center,
@@ -221,8 +221,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         SizedBox(
-                                          width: 16,
-                                          height: 16,
+                                          width: 24,
+                                          height: 24,
                                           child: FittedBox(
                                             child: Checkbox(
                                               value: _remember,
@@ -248,7 +248,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                             ),
                                           ),
                                         ),
-                                        const SizedBox(width: 8),
+                                        const SizedBox(width: 2),
                                         Text(
                                           l10n.loginRememberMe,
                                           style: theme.textTheme.labelMedium
@@ -278,7 +278,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               padding: const EdgeInsets.only(top: 4),
                               child: PrimaryButton(
                                 label: l10n.loginSubmit,
-                                trailingIcon: Icons.arrow_forward,
                                 isLoading: isLoading,
                                 onPressed: _submit,
                               ),
@@ -299,7 +298,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                       .read(loginControllerProvider.notifier)
                                       .loginWithGoogle(remember: _remember),
                             ),
-                            const SizedBox(height: 36),
+                            const SizedBox(height: 24),
                             InkWell(
                               onTap: () => context.go(AppRoutes.catalog),
                               child: Text(
@@ -312,20 +311,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 39),
+                            const SizedBox(height: 13),
                           ],
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 52),
+                  const SizedBox(height: 30),
                   Text(
                     l10n.loginNoAccount,
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodyMedium
                         ?.copyWith(color: tokens.textSecondary),
                   ),
-                  const SizedBox(height: 11),
+                  const SizedBox(height: 8),
                   InkWell(
                     onTap: () => context.push(AppRoutes.register),
                     child: Text(
@@ -334,22 +333,35 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       style: linkStyle,
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.lock, size: 12, color: tokens.textHint),
-                      const SizedBox(width: 6),
-                      Text(
-                        l10n.loginSecurityNote,
-                        style: theme.textTheme.labelSmall
-                            ?.copyWith(color: tokens.textHint),
-                      ),
-                    ],
-                  ),
                 ],
               ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Never scrolls: scales [child] down (never up) so the whole login page fits
+/// any screen height, including short phones and when the keyboard is open.
+/// The width is bounded first so the scale only ever reacts to height.
+class _FitToScreen extends StatelessWidget {
+  const _FitToScreen({required this.padding, required this.child});
+
+  final EdgeInsets padding;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: padding,
+      child: LayoutBuilder(
+        builder: (context, constraints) => FittedBox(
+          fit: BoxFit.scaleDown,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: constraints.maxWidth),
+            child: child,
           ),
         ),
       ),

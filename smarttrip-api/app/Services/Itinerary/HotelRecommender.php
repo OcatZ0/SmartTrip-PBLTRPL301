@@ -34,13 +34,14 @@ class HotelRecommender
         }
 
         $costEstimator = new PlaceCostEstimator($lodgings);
+        $ratingEstimator = new PlaceRatingEstimator($lodgings);
 
         $matrix = [];
         foreach ($lodgings as $lodging) {
             $matrix[$lodging->places_id] = [
                 'jarak' => Haversine::km($reference['lat'], $reference['lng'], (float) $lodging->lat, (float) $lodging->lng),
                 'anggaran' => $costEstimator->estimate($lodging),
-                'rating' => $lodging->ratingBlend() ?? 0.0,
+                'rating' => $ratingEstimator->estimate($lodging),
             ];
         }
 

@@ -29,12 +29,12 @@ class ItineraryDay extends Model
 
     public function startPlace(): BelongsTo
     {
-        return $this->belongsTo(Place::class, 'start_places_id');
+        return $this->belongsTo(Place::class, 'start_places_id')->withTrashed();
     }
 
     public function endPlace(): BelongsTo
     {
-        return $this->belongsTo(Place::class, 'end_places_id');
+        return $this->belongsTo(Place::class, 'end_places_id')->withTrashed();
     }
 
     public function items(): HasMany

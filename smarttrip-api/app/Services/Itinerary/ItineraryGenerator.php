@@ -137,7 +137,12 @@ class ItineraryGenerator
      */
     private function normalizedWishlist(Trip $trip): Collection
     {
-        return $trip->wishlistPlaces()->with('place')->get()->map(function ($item) {
+        // Wishlist yang tempatnya sudah di-soft-delete admin tidak ikut
+        // digenerate (hilang dari rekomendasi), tapi barisnya tetap ada.
+        return $trip->wishlistPlaces()->with('place')->get()
+            ->reject(fn ($item) => $item->places_id !== null && $item->place->trashed())
+            ->values()
+            ->map(function ($item) {
             if ($item->places_id !== null) {
                 return [
                     'wishlist_id' => $item->trip_wishlist_places_id,
@@ -188,6 +193,7 @@ class ItineraryGenerator
         }
 
         $costEstimator = new PlaceCostEstimator($places);
+        $ratingEstimator = new PlaceRatingEstimator($places);
 
         $matrix = [];
         foreach ($places as $place) {
@@ -195,7 +201,7 @@ class ItineraryGenerator
                 'kategori' => JaccardSimilarity::of($tripCategoryIds, $place->categories->pluck('categories_id')->all()),
                 'jarak' => Haversine::km($start['lat'], $start['lng'], (float) $place->lat, (float) $place->lng),
                 'anggaran' => $costEstimator->estimate($place),
-                'rating' => $place->ratingBlend() ?? 0.0,
+                'rating' => $ratingEstimator->estimate($place),
             ];
         }
 

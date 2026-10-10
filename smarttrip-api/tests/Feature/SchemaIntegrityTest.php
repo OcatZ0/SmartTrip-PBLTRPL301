@@ -131,4 +131,69 @@ class SchemaIntegrityTest extends TestCase
 
         PlaceReview::create(['places_id' => $place->places_id, 'users_id' => $user->users_id, 'rating' => 2]);
     }
+
+    // --- unique constraints added 2026-10-10 (previously code-only invariants) ---
+
+    private function scaffoldTripWithPlace(): array
+    {
+        $user = User::factory()->create();
+        $trip = Trip::create(['users_id' => $user->users_id, 'title' => 'Trip', 'num_days' => 1, 'budget_total' => 100000, 'start_date' => now()->toDateString()]);
+        $place = Place::create(['name' => 'Tempat', 'type' => 'attraction', 'lat' => 1.1, 'lng' => 104.0, 'address' => 'Batam', 'source' => 'manual']);
+
+        return [$trip, $place];
+    }
+
+    public function test_a_place_cannot_be_wishlisted_twice_on_the_same_trip(): void
+    {
+        [$trip, $place] = $this->scaffoldTripWithPlace();
+        TripWishlistPlace::create(['trips_id' => $trip->trips_id, 'places_id' => $place->places_id]);
+
+        $this->expectException(QueryException::class);
+        TripWishlistPlace::create(['trips_id' => $trip->trips_id, 'places_id' => $place->places_id]);
+    }
+
+    public function test_a_trip_cannot_have_two_days_with_the_same_day_number(): void
+    {
+        [$trip] = $this->scaffoldTripWithPlace();
+        ItineraryDay::create(['trips_id' => $trip->trips_id, 'day_number' => 1]);
+
+        $this->expectException(QueryException::class);
+        ItineraryDay::create(['trips_id' => $trip->trips_id, 'day_number' => 1]);
+    }
+
+    public function test_a_place_cannot_appear_twice_on_the_same_day(): void
+    {
+        [$trip, $place] = $this->scaffoldTripWithPlace();
+        $day = ItineraryDay::create(['trips_id' => $trip->trips_id, 'day_number' => 1]);
+        ItineraryItem::create(['itinerary_days_id' => $day->itinerary_days_id, 'places_id' => $place->places_id, 'visit_order' => 1, 'source' => 'recommended']);
+
+        $this->expectException(QueryException::class);
+        ItineraryItem::create(['itinerary_days_id' => $day->itinerary_days_id, 'places_id' => $place->places_id, 'visit_order' => 2, 'source' => 'recommended']);
+    }
+
+    public function test_a_place_cannot_have_two_photos_with_the_same_sort_order(): void
+    {
+        [, $place] = $this->scaffoldTripWithPlace();
+        PlacePhoto::create(['places_id' => $place->places_id, 'photo_url' => 'a.jpg', 'sort_order' => 0]);
+
+        $this->expectException(QueryException::class);
+        PlacePhoto::create(['places_id' => $place->places_id, 'photo_url' => 'b.jpg', 'sort_order' => 0]);
+    }
+
+    public function test_trip_history_relations_still_resolve_a_soft_deleted_place(): void
+    {
+        [$trip, $place] = $this->scaffoldTripWithPlace();
+        $trip->update(['hotel_places_id' => $place->places_id]);
+        $day = ItineraryDay::create(['trips_id' => $trip->trips_id, 'day_number' => 1, 'start_places_id' => $place->places_id]);
+        $item = ItineraryItem::create(['itinerary_days_id' => $day->itinerary_days_id, 'places_id' => $place->places_id, 'visit_order' => 1, 'source' => 'wishlist']);
+        $wishlist = TripWishlistPlace::create(['trips_id' => $trip->trips_id, 'places_id' => $place->places_id]);
+
+        $place->delete();
+
+        $this->assertSame('Tempat', $item->fresh()->place->name);
+        $this->assertSame('Tempat', $wishlist->fresh()->place->name);
+        $this->assertSame('Tempat', $day->fresh()->startPlace->name);
+        $this->assertSame('Tempat', $trip->fresh()->hotelPlace->name);
+        $this->assertNull(Place::find($place->places_id));
+    }
 }

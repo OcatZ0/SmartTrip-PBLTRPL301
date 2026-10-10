@@ -5,6 +5,9 @@ namespace Tests\Feature;
 use App\Models\Trip;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Models\ItineraryDay;
+use App\Models\ItineraryItem;
+use App\Models\Place;
 use Tests\TestCase;
 
 class ManageTripsTest extends TestCase
@@ -156,5 +159,88 @@ class ManageTripsTest extends TestCase
         $response = $this->deleteJson("/api/trips/{$trip->trips_id}");
 
         $response->assertUnauthorized();
+    }
+
+    // --- F011: PATCH /api/trips/{id} (added after the 2026-10-10 PRD audit) ---
+
+    public function test_the_owner_can_update_trip_fields(): void
+    {
+        $user = User::factory()->create();
+        $trip = $this->makeTrip($user);
+
+        $response = $this->withHeaders($this->authHeader($user))->patchJson("/api/trips/{$trip->trips_id}", [
+            'title' => 'Trip Baru', 'budget_total' => 750000, 'start_date' => '2026-12-24',
+        ]);
+
+        $response->assertOk();
+        $response->assertJsonPath('title', 'Trip Baru');
+        $response->assertJsonPath('itinerary_cleared', false);
+        $this->assertDatabaseHas('trips', ['trips_id' => $trip->trips_id, 'title' => 'Trip Baru', 'budget_total' => 750000]);
+    }
+
+    public function test_a_non_owner_cannot_update_a_trip(): void
+    {
+        $owner = User::factory()->create();
+        $stranger = User::factory()->create();
+        $trip = $this->makeTrip($owner);
+
+        $response = $this->withHeaders($this->authHeader($stranger))->patchJson("/api/trips/{$trip->trips_id}", ['title' => 'X']);
+
+        $response->assertForbidden();
+    }
+
+    public function test_a_viewer_cannot_update_a_trip(): void
+    {
+        $owner = User::factory()->create();
+        $viewer = User::factory()->create();
+        $trip = $this->makeTrip($owner);
+        $trip->viewers()->attach($viewer->users_id, ['added_at' => now()]);
+
+        $response = $this->withHeaders($this->authHeader($viewer))->patchJson("/api/trips/{$trip->trips_id}", ['title' => 'X']);
+
+        $response->assertForbidden();
+    }
+
+    public function test_changing_num_days_clears_the_existing_itinerary(): void
+    {
+        $user = User::factory()->create();
+        $trip = $this->makeTrip($user);
+        $place = Place::create(['name' => 'Pantai', 'type' => 'attraction', 'lat' => 1.1, 'lng' => 104.0, 'address' => 'Batam', 'source' => 'manual']);
+        $day = ItineraryDay::create(['trips_id' => $trip->trips_id, 'day_number' => 1]);
+        $item = ItineraryItem::create(['itinerary_days_id' => $day->itinerary_days_id, 'places_id' => $place->places_id, 'visit_order' => 1, 'source' => 'recommended']);
+
+        $response = $this->withHeaders($this->authHeader($user))->patchJson("/api/trips/{$trip->trips_id}", ['num_days' => 3]);
+
+        $response->assertOk();
+        $response->assertJsonPath('itinerary_cleared', true);
+        $response->assertJsonPath('num_days', 3);
+        $this->assertDatabaseMissing('itinerary_days', ['trips_id' => $trip->trips_id]);
+        $this->assertDatabaseMissing('itinerary_items', ['itinerary_items_id' => $item->itinerary_items_id]);
+    }
+
+    public function test_changing_only_the_title_or_start_date_keeps_the_itinerary(): void
+    {
+        $user = User::factory()->create();
+        $trip = $this->makeTrip($user);
+        ItineraryDay::create(['trips_id' => $trip->trips_id, 'day_number' => 1]);
+
+        $response = $this->withHeaders($this->authHeader($user))->patchJson("/api/trips/{$trip->trips_id}", [
+            'title' => 'Ganti Judul', 'start_date' => '2026-12-01',
+        ]);
+
+        $response->assertOk();
+        $response->assertJsonPath('itinerary_cleared', false);
+        $this->assertDatabaseHas('itinerary_days', ['trips_id' => $trip->trips_id, 'day_number' => 1]);
+    }
+
+    public function test_daily_end_time_must_stay_after_daily_start_time_when_updating(): void
+    {
+        $user = User::factory()->create();
+        $trip = $this->makeTrip($user);
+
+        $response = $this->withHeaders($this->authHeader($user))->patchJson("/api/trips/{$trip->trips_id}", ['daily_end_time' => '08:00']);
+
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors('daily_end_time');
     }
 }

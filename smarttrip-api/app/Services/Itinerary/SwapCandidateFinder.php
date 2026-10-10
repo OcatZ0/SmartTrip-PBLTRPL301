@@ -58,6 +58,7 @@ class SwapCandidateFinder
 
         $tripCategoryIds = $trip->interestCategories()->pluck('categories.categories_id')->all();
         $costEstimator = new PlaceCostEstimator($candidates);
+        $ratingEstimator = new PlaceRatingEstimator($candidates);
 
         $matrix = [];
         foreach ($candidates as $candidate) {
@@ -65,7 +66,7 @@ class SwapCandidateFinder
                 'kategori' => JaccardSimilarity::of($tripCategoryIds, $candidate->categories->pluck('categories_id')->all()),
                 'jarak' => Haversine::km($centroid['lat'], $centroid['lng'], (float) $candidate->lat, (float) $candidate->lng),
                 'anggaran' => $costEstimator->estimate($candidate),
-                'rating' => $candidate->ratingBlend() ?? 0.0,
+                'rating' => $ratingEstimator->estimate($candidate),
             ];
         }
 

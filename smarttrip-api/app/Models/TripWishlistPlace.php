@@ -38,6 +38,6 @@ class TripWishlistPlace extends Model
 
     public function place(): BelongsTo
     {
-        return $this->belongsTo(Place::class, 'places_id');
+        return $this->belongsTo(Place::class, 'places_id')->withTrashed();
     }
 }

@@ -11,6 +11,9 @@
 @if (session('status'))
     <div class="alert alert-success">{{ session('status') }}</div>
 @endif
+@if (session('error'))
+    <div class="alert alert-danger text-white">{{ session('error') }}</div>
+@endif
 
 <table class="table table-bordered table-sm bg-white">
     <thead>

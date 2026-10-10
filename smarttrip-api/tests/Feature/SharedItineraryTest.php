@@ -228,4 +228,25 @@ class SharedItineraryTest extends TestCase
         $raw = $response->getContent();
         $this->assertStringNotContainsString('Trip Privat', $raw);
     }
+
+    public function test_a_soft_deleted_place_still_appears_in_the_public_itinerary(): void
+    {
+        $owner = User::factory()->create();
+        $trip = $this->makeTrip($owner, ['share_token' => 'publictoken']);
+        $place = Place::create([
+            'name' => 'Pantai Lama', 'type' => 'attraction', 'lat' => 1.15, 'lng' => 104.05,
+            'address' => 'Batam', 'source' => 'manual',
+        ]);
+        $day = ItineraryDay::create(['trips_id' => $trip->trips_id, 'day_number' => 1]);
+        ItineraryItem::create([
+            'itinerary_days_id' => $day->itinerary_days_id, 'places_id' => $place->places_id,
+            'visit_order' => 1, 'source' => 'wishlist',
+        ]);
+        $place->delete();
+
+        $response = $this->getJson('/api/shared-itinerary/publictoken');
+
+        $response->assertOk();
+        $response->assertJsonPath('days.0.items.0.name', 'Pantai Lama');
+    }
 }

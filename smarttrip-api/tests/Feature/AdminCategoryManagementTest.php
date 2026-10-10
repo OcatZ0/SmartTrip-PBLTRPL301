@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use App\Models\Category;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Models\Place;
+use App\Models\Trip;
 use Tests\TestCase;
 
 class AdminCategoryManagementTest extends TestCase
@@ -223,5 +225,35 @@ class AdminCategoryManagementTest extends TestCase
             'causer_id' => $admin->users_id,
             'event' => 'updated',
         ]);
+    }
+
+    // --- delete guard (PRD audit 2026-10-10: RESTRICT does not cover soft delete) ---
+
+    public function test_a_category_still_used_by_a_place_cannot_be_deleted(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $category = Category::create(['name_id' => 'Pantai', 'name_en' => 'Beach', 'slug' => 'pantai']);
+        $place = Place::create(['name' => 'Pantai Melur', 'type' => 'attraction', 'lat' => 1.1, 'lng' => 104.0, 'address' => 'Nongsa', 'source' => 'manual']);
+        $place->categories()->attach($category->categories_id);
+
+        $response = $this->actingAs($admin)->delete("/admin/categories/{$category->categories_id}");
+
+        $response->assertRedirect(route('admin.categories.index'));
+        $response->assertSessionHas('error');
+        $this->assertDatabaseHas('categories', ['categories_id' => $category->categories_id, 'deleted_at' => null]);
+    }
+
+    public function test_a_category_still_used_by_a_trip_cannot_be_deleted(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $owner = User::factory()->create();
+        $category = Category::create(['name_id' => 'Pantai', 'name_en' => 'Beach', 'slug' => 'pantai']);
+        $trip = Trip::create(['users_id' => $owner->users_id, 'title' => 'Trip', 'num_days' => 1, 'budget_total' => 100000, 'start_date' => now()->toDateString()]);
+        $trip->interestCategories()->attach($category->categories_id);
+
+        $response = $this->actingAs($admin)->delete("/admin/categories/{$category->categories_id}");
+
+        $response->assertSessionHas('error');
+        $this->assertDatabaseHas('categories', ['categories_id' => $category->categories_id, 'deleted_at' => null]);
     }
 }

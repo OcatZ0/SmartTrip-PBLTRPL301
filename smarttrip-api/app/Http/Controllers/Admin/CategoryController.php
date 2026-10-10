@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
@@ -74,6 +75,17 @@ class CategoryController extends Controller
 
     public function destroy(Category $category)
     {
+        // FK ON DELETE RESTRICT hanya menolak hard delete; soft delete adalah
+        // UPDATE, jadi pemakaian harus dicek di sini (PRD audit 2026-10-10).
+        $inUse = $category->places()->withTrashed()->exists()
+            || $category->trips()->withTrashed()->exists()
+            || DB::table('user_default_interest_category')->where('categories_id', $category->categories_id)->exists();
+
+        if ($inUse) {
+            return redirect()->route('admin.categories.index')
+                ->with('error', "\"{$category->name_id}\" masih dipakai tempat, trip, atau preferensi user, tidak bisa dihapus.");
+        }
+
         $category->delete();
 
         return redirect()->route('admin.categories.index')->with('status', "\"{$category->name_id}\" dihapus.");

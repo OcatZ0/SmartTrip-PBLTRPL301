@@ -57,7 +57,7 @@ class Trip extends Model
 
     public function hotelPlace(): BelongsTo
     {
-        return $this->belongsTo(Place::class, 'hotel_places_id');
+        return $this->belongsTo(Place::class, 'hotel_places_id')->withTrashed();
     }
 
     public function interestCategories(): BelongsToMany

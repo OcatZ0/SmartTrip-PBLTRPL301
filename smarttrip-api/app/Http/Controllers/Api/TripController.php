@@ -240,6 +240,59 @@ class TripController extends Controller
     }
 
     /**
+     * F011: edit trip tersimpan (PRD audit 2026-10-10 - endpoint ini
+     * sebelumnya tidak ada walau Section 12/13 mengasumsikan trip bisa
+     * diedit). Owner-only. Kalau field yang menentukan susunan hari berubah
+     * (num_days, budget_total, jam harian) dan itinerary sudah ada, itinerary
+     * lama dibuang - design spec Section 13 langkah 9 memang "regenerate
+     * penuh"; mobile memanggil POST /generate lagi setelah ini. start_date
+     * dan title tidak membuang itinerary.
+     */
+    public function update(Request $request, Trip $trip)
+    {
+        if (! $trip->isOwnedBy($request->user())) {
+            abort(403);
+        }
+
+        $data = $request->validate([
+            'title' => ['sometimes', 'string', 'max:255'],
+            'num_days' => ['sometimes', 'integer', 'min:1'],
+            'budget_total' => ['sometimes', 'integer', 'min:1'],
+            'start_date' => ['sometimes', 'date'],
+            'daily_start_time' => ['sometimes', 'date_format:H:i'],
+            'daily_end_time' => ['sometimes', 'date_format:H:i'],
+        ]);
+
+        $dailyStart = $data['daily_start_time'] ?? substr((string) $trip->daily_start_time, 0, 5);
+        $dailyEnd = $data['daily_end_time'] ?? substr((string) $trip->daily_end_time, 0, 5);
+
+        if ($dailyEnd <= $dailyStart) {
+            throw ValidationException::withMessages([
+                'daily_end_time' => ['Jam selesai harus setelah jam mulai.'],
+            ]);
+        }
+
+        $structural = ['num_days', 'budget_total', 'daily_start_time', 'daily_end_time'];
+        $itineraryCleared = false;
+
+        DB::transaction(function () use ($trip, $data, $structural, &$itineraryCleared) {
+            $trip->fill($data);
+            $structuralChanged = collect($structural)->contains(fn ($field) => $trip->isDirty($field));
+            $trip->save();
+
+            if ($structuralChanged && $trip->days()->exists()) {
+                $trip->days()->delete();
+                $itineraryCleared = true;
+            }
+        });
+
+        return response()->json([
+            ...$trip->fresh()->toArray(),
+            'itinerary_cleared' => $itineraryCleared,
+        ]);
+    }
+
+    /**
      * F011: hapus trip tersimpan - soft delete (trips.deleted_at),
      * riwayat kunjungan yang sudah pernah dilihat viewer dkk tetap utuh
      * di database, cuma hilang dari daftar/pencarian aktif.

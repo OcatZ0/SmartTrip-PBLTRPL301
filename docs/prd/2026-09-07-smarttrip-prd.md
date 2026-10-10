@@ -3,9 +3,9 @@
 ## 0. Metadata & Revision History
 
 **Type:** Full PRD
-**Status:** In progress — backend (`smarttrip-api`) and mobile (`smarttrip-mobile`) scaffolds exist with most F001-F024 implemented; see Section 15
-**Version:** 1.21
-**Last Updated:** 2026-10-04
+**Status:** In progress — backend (`smarttrip-api`) and mobile (`smarttrip-mobile`) scaffolds exist with most F001-F024 implemented; see Sections 15 and 19
+**Version:** 1.22
+**Last Updated:** 2026-10-10
 **Source of truth for implementation detail:** `docs/superpowers/specs/2026-09-07-smarttrip-itinerary-recommendation-design.md` (this PRD is a reformatted, audience-oriented view of the same decisions — where they ever conflict, the design spec wins, since it carries finer-grained rationale)
 
 | Version | Date | Change |
@@ -32,6 +32,7 @@
 | 1.19 | 2026-10-04 | Synced docs with the implemented backend: documented that UNIQUE constraints on soft-deletable tables must be partial indexes (`WHERE deleted_at IS NULL`) where the value must be reusable after soft delete - `place_reviews (users_id, places_id)` and `categories.slug` (both already fixed by corrective migrations in `smarttrip-api`), `places.google_place_id` kept plain unique on purpose, `users.email`/`users.google_id` flagged as an open decision; F015 wording restored to cover both invite-by-email and invite link, matching `TripViewerController` |
 | 1.20 | 2026-10-04 | Resolved the `users.email`/`users.google_id` open decision from 1.19: partial unique index (`WHERE deleted_at IS NULL`) so a deactivated account's email can be re-registered; migration and the account-deactivation feature itself are not implemented yet |
 | 1.21 | 2026-10-04 | Implemented the 1.20 decision in `smarttrip-api`: migration converting `users.email`/`users.google_id` to partial unique indexes (`WHERE deleted_at IS NULL`) plus 3 `AuthTest` cases; full backend suite green (273 tests) |
+| 1.22 | 2026-10-10 | PRD audit (data model + consistency), fixes applied in docs AND `smarttrip-api`: (1) `ON DELETE RESTRICT` never protected soft-deleted categories (soft delete is an UPDATE), so `CategoryController::destroy` now refuses a category still referenced by `place_category`/`trip_interest_category`/`user_default_interest_category`; (2) trip-history relations (`itinerary_items.places_id`, `itinerary_days.start/end_places_id`, `trips.hotel_places_id`, `trip_wishlist_places.places_id`) now use `withTrashed()` so a soft-deleted place no longer vanishes from existing itineraries, while generate/swap/catalog still exclude it; (3) documented `itinerary_days.start/end_places_id` as nullable (migration `2026_09_29_071806`, custom-pin hotel) and `places.rating` as nullable with a new 3-tier rating fallback (`PlaceRatingEstimator`: blend, median of same type, neutral 3.5) replacing the old silent `?? 0.0`; (4) added `PATCH /api/trips/{id}` (owner-only edit; changing `num_days`/`budget_total`/daily times clears the existing itinerary, client calls generate again); (5) added DB uniques `trip_wishlist_places(trips_id, places_id)`, `itinerary_days(trips_id, day_number)`, `itinerary_items(itinerary_days_id, places_id)`, `place_photos(places_id, sort_order)` (migration `2026_10_10_000000`); (6) documented FK `ON DELETE` policy per table, framework-owned tables (`personal_access_tokens`, `password_reset_tokens`, `sessions`), the `activity_log.attribute_changes` column, review orphaning on regenerate, and `GET /api/user` + web reset-password routes; (7) consistency fixes: duplicate `users.email`/`google_id` validation rows removed, Section 9 component table un-split and its admin cross-reference corrected to Section 8, Figma link added, Section 15 file structure updated to what exists, sync status noted as part of the Dashboard. Backend suite 290 tests green |
 
 ---
 
@@ -226,11 +227,11 @@ Terasa seperti aplikasi e-commerce untuk browsing tempat (grid/list, filter, inf
 - Long-press pin di peta = tandai/batalkan kunjungan manual
 - Tap "+wishlist" di kartu katalog = tambah tanpa keluar dari browsing (tidak ada modal blocking)
 
-**Figma / Design Link:** none — no visual design phase happened, this PRD and the design spec are text-only artifacts
+**Figma / Design Link:** [Mockup](https://www.figma.com/design/W2WWAl1Oj1M7hbbZACI4i8/Mockup) (file key `W2WWAl1Oj1M7hbbZACI4i8`, added 2026-10-10; A2 Masuk = node `122:180`, A3 Daftar = node `122:267`, both implemented in `smarttrip-mobile`). The design spec and this PRD remain the text source of truth for behaviour; Figma only covers visual layout
 
 **Admin Panel (separate web app, not part of the Flutter screens above):**
 *(Reversed 2026-09-11 — admin was briefly role-gated inside the Flutter app, moved back to a standalone web panel.)*
-Laravel Blade + Bootstrap, its own login (`/admin/login`, session-based, not the Sanctum tokens the Flutter app uses), controllers hit Eloquent models directly rather than calling the mobile REST API. Pages: Dashboard (stats + "needs attention" lists — missing price data, unreviewed category tags, last sync status), Candidate Review (trigger Discovery, filter/approve/reject `place_candidates`, bulk actions), Places list (filterable by kecamatan, added 2026-09-22) + edit form (admin-owned fields: estimated cost, description overrides, is_outdoor, category tags, kecamatan, manual add) with a "Riwayat Perubahan" change-history tab (reads `activity_log`, added 2026-09-22), Categories list + edit form (same change-history tab), Sync Status (quota usage, last run stats). Admin never installs or opens the mobile app.
+Laravel Blade + Bootstrap, its own login (`/admin/login`, session-based, not the Sanctum tokens the Flutter app uses), controllers hit Eloquent models directly rather than calling the mobile REST API. Pages: Dashboard (stats + "needs attention" lists — missing price data, unreviewed category tags, last sync status), Candidate Review (trigger Discovery, filter/approve/reject `place_candidates`, bulk actions), Places list (filterable by kecamatan, added 2026-09-22) + edit form (admin-owned fields: estimated cost, description overrides, is_outdoor, category tags, kecamatan, manual add) with a "Riwayat Perubahan" change-history tab (reads `activity_log`, added 2026-09-22), Categories list + edit form (same change-history tab), and sync status (quota usage, last run stats) shown as cards on the Dashboard itself, not a separate page (clarified 2026-10-10; F024 is satisfied by the Dashboard). Admin never installs or opens the mobile app.
 
 ---
 
@@ -256,7 +257,6 @@ Laravel Blade + Bootstrap, its own login (`/admin/login`, session-based, not the
 | ProfilePreferencesScreen | Form | Edit default minat + weights | US8 |
 | LanguageToggle | Action | ID/EN switch, settings | - |
 
-**Admin (US11-US14) is not built as Flutter components at all** — it's a separate web panel (Blade views + Bootstrap, standard HTML forms/tables, not part of this Flutter component tree). See Section 13 (Admin Panel) for its page list instead of this table.
 | WeatherForecastCard | Display | Per-day forecast summary, shown once trip is within ~7 days | US15 |
 | WeatherSwapBadge | Action | Rain-warning badge on a day with outdoor stops, opens SwapModal on tap | US15 |
 | ShareTripButton | Action | Opens the "Bagikan Trip" screen from a trip's detail page (owner only, added 2026-09-23) | US16, US17 |
@@ -267,6 +267,8 @@ Laravel Blade + Bootstrap, its own login (`/admin/login`, session-based, not the
 | ShareItineraryTile | Action | Generate/reset `share_token` and hand the public link to the OS share sheet — a distinct, unrelated section of the same "Bagikan Trip" screen (anonymous, no account, added 2026-09-23) | US17 |
 | SharedItineraryReadOnlyScreen | Display | Renders the anonymous public itinerary from `GET /api/shared-itinerary/{share_token}` — no login, nothing saved locally about the viewer | US17 |
 
+**Admin (US11-US14) is not built as Flutter components at all** — it's a separate web panel (Blade views + Bootstrap, standard HTML forms/tables, not part of this Flutter component tree). See Section 8 (Admin Panel) for its page list instead of this table.
+
 ---
 
 ## 10. Data Models
@@ -275,7 +277,7 @@ Backend is Laravel/Eloquent (not TypeScript) — schema shown as field lists per
 
 ```
 places(places_id, google_place_id?, name, type[attraction|culinary|lodging], lat, lng, address,
-  kecamatan?, price_level?, rating, review_count, opening_hours[json], photo_url, description?,
+  kecamatan?, price_level?, rating?, review_count, opening_hours[json], photo_url?, description?,
   phone?, website?, business_status[operational|closed_temporarily|closed_permanently],
   types[json], source[google|manual],
   category_tags_reviewed[bool], estimated_visit_minutes,
@@ -291,6 +293,10 @@ places(places_id, google_place_id?, name, type[attraction|culinary|lodging], lat
   -- powers GET /api/places?kecamatan= filter -- zero extra API cost, data already collected by Discovery
   -- google_maps_uri REMOVED 2026-09-22: not stored -- built on the fly from lat/lng (or google_place_id)
   -- instead, so it never goes stale if an admin later corrects the coordinates
+  -- rating is NULLABLE (documented 2026-10-10): source=manual places have no Google rating, so the TOPSIS
+  -- rating criterion uses a 3-tier fallback (PlaceRatingEstimator): Bayesian blend if any rating exists,
+  -- else the median blend of the same `type` in the candidate pool, else a neutral 3.5 (mirrors the
+  -- 4-tier budget fallback; previously an undocumented `?? 0.0` punished every unrated manual place)
 
 categories(categories_id, name_id, name_en, slug[unique, partial WHERE deleted_at IS NULL], timestamps, deleted_at?[soft delete])
   -- delete diproteksi ON DELETE RESTRICT dari 3 tabel pivot di bawah
@@ -308,14 +314,16 @@ user_default_interest_category(users_id FK, categories_id FK[ON DELETE RESTRICT]
 place_candidates(place_candidates_id, google_place_id[unique], name, type, lat, lng, search_area,
   status[pending|approved|rejected], timestamps)
 
-place_photos(place_photos_id, places_id FK, photo_url, sort_order)
+place_photos(place_photos_id, places_id FK, photo_url, sort_order, unique[places_id, sort_order])
 
 place_reviews(place_reviews_id, places_id FK, users_id FK, rating[1-5], comment?, itinerary_items_id? FK,
   unique[users_id, places_id; partial WHERE deleted_at IS NULL], timestamps, deleted_at?[soft delete])
   -- unique constraint revisi 2026-09-22: 1 user cuma boleh 1 review per tempat,
   -- review ulang = edit yang sudah ada, bukan baris baru (jaga integritas Bayesian blend)
 
-users(users_id, ..., password?, email_verified_at?, google_id?[unique], role[user|admin], timestamps, deleted_at?[soft delete])
+users(users_id, name, email[unique, partial WHERE deleted_at IS NULL], password?, email_verified_at?,
+  remember_token?, google_id?[unique, partial WHERE deleted_at IS NULL], role[user|admin],
+  default_weight_kategori/jarak/anggaran/rating?[decimal], timestamps, deleted_at?[soft delete])
   -- CHECK constraint revisi 2026-09-22: password IS NOT NULL OR google_id IS NOT NULL
   -- default_weight_kategori/jarak/anggaran/rating[decimal, nullable] - revisi 2026-09-22,
   -- ganti tabel EAV user_criteria_weights (4 kriteria fixed, tidak butuh bentuk EAV)
@@ -345,16 +353,23 @@ trips(trips_id, users_id FK, title, num_days, budget_total, has_own_hotel[bool],
   -- itinerary link (US17, design spec Section 10) -- do not conflate the two, different auth models
 
 trip_wishlist_places(trip_wishlist_places_id, trips_id FK, places_id? FK,
-  custom_name?, custom_lat?, custom_lng?, custom_visit_minutes?[integer])
+  custom_name?, custom_lat?, custom_lng?, custom_visit_minutes?[integer],
+  unique[trips_id, places_id], CHECK(places_id IS NOT NULL OR (custom_name, custom_lat, custom_lng, custom_visit_minutes all NOT NULL)))
+  -- unique added 2026-10-10 (US3 "adding twice is a no-op" was only firstOrCreate before); the CHECK existed
+  -- since the first migration but was never documented here
   -- custom_* only populated when places_id is null (map-pin addition not in the catalog)
   -- custom_visit_minutes added 2026-09-22: a custom pin has no places row, so no estimated_visit_minutes
   -- to draw from for the day time-budget math (Section 7 step 6b) -- user enters it manually when pinning,
   -- required on this path specifically (catalog picks use places.estimated_visit_minutes instead)
 
-itinerary_days(itinerary_days_id, trips_id FK, day_number, start_places_id, end_places_id)
+itinerary_days(itinerary_days_id, trips_id FK, day_number, start_places_id? FK, end_places_id? FK, unique[trips_id, day_number])
+  -- start/end NULLABLE since migration 2026_09_29_071806 (documented 2026-10-10): a custom-pin hotel has no
+  -- places row, NULL means the day starts/ends at trips.hotel_lat/hotel_lng; unique added 2026-10-10
 
-itinerary_items(itinerary_items_id, itinerary_days_id FK, places_id FK, visit_order, topsis_score, source[wishlist|recommended],
-  polyline_to_here, visited_at?)
+itinerary_items(itinerary_items_id, itinerary_days_id FK, places_id FK, visit_order, topsis_score?, source[wishlist|recommended],
+  polyline_to_here?, visited_at?, unique[itinerary_days_id, places_id])
+  -- unique added 2026-10-10 (US4 "no place twice in one run" was code-only); visit_order is deliberately NOT
+  -- unique because resequenceDay() rewrites it row by row after a swap and would collide mid-loop
 
 trip_viewers(trip_viewers_id, trips_id FK, users_id FK, added_at, unique[trips_id, users_id])
   -- added 2026-09-23, read-only trip sharing (US16) -- pure invite pivot, trips.users_id (owner) untouched
@@ -362,17 +377,35 @@ trip_viewers(trip_viewers_id, trips_id FK, users_id FK, added_at, unique[trips_i
   -- read endpoints check owner OR trip_viewers row; every write endpoint stays owner-only, unchanged
 
 activity_log(id, log_name, description, subject_type, subject_id, causer_type, causer_id,
-  properties[json - old/attributes], event[created|updated|deleted], timestamps)
+  attribute_changes?[json], properties[json - old/attributes], event[created|updated|deleted], timestamps)
+  -- attribute_changes is a LOCAL addition in 2026_09_29_025036 on top of the package columns (noted 2026-10-10);
+  -- the package's batch_uuid column was not included
   -- added 2026-09-22, provided by spatie/laravel-activitylog package (stock migration, not hand-written)
   -- Place and Category models use the LogsActivity trait -- admin edit audit trail (who changed what, when)
   -- id/subject_id/causer_id kept as-is -- package-owned migration, out of scope for the PK/FK rename below
+
+-- Framework-owned tables (documented 2026-10-10, not domain tables but the auth flow depends on them):
+personal_access_tokens(id, tokenable_type, tokenable_id, name, token[unique], abilities?, last_used_at?, expires_at?, timestamps)
+  -- Laravel Sanctum; one row per issued bearer token, POST /api/auth/logout deletes the current one
+password_reset_tokens(email PK, token, created_at)
+  -- Laravel default; written by POST /api/auth/forgot-password, consumed by the reset-password web form
+sessions(id PK, user_id?, ip_address?, user_agent?, payload, last_activity)
+  -- SESSION_DRIVER=database; used only by the admin web panel (guard web), never by the Flutter app
 ```
 
 > Full field-level rationale for every table lives in the design spec Section 4 — this is a cross-reference summary, not the source of truth.
 
 **PK/FK naming convention (added 2026-09-22):** every primary key is now explicit `{table_name}_id` instead of a generic `id` (`places_id`, `categories_id`, `users_id`, `trips_id`, etc.), so a column name is self-describing even outside JOIN context (`trips.users_id` reads as "this trip references a `users` row" on its own). Foreign keys follow the same target name (`place_id`→`places_id`, `category_id`→`categories_id`, `user_id`→`users_id`, `trip_id`→`trips_id`, `itinerary_day_id`→`itinerary_days_id`, `itinerary_item_id`→`itinerary_items_id`); role-prefixed FKs keep their prefix (`hotel_place_id`→`hotel_places_id`, `start_place_id`/`end_place_id`→`start_places_id`/`end_places_id`). **3 deliberate exceptions:** `google_place_id`/`google_id` (Google's own external IDs, not references to our tables — coincidentally similar-looking names only), `activity_log`'s `id`/`subject_id`/`causer_id` (owned by the `spatie/laravel-activitylog` package's stock migration), and the `{id}` path parameter in API routes (Section 11 — a REST resource-identifier convention, not a database column name; `trip_viewers_id` follows the standard convention, added 2026-09-23).
 
-**Soft delete policy (added 2026-09-22, extended 2026-09-23):** `deleted_at` only on tables with an independent delete feature worth preserving history for — `places`, `users`, `trips`, `place_reviews`, `categories`. Deliberately excluded from pure pivot tables (`place_category`, `trip_interest_category`, `user_default_interest_category`, `trip_wishlist_places`, `trip_viewers` — Eloquent's `sync()`/`detach()` expect hard delete; revoking viewer access is a hard delete of that `trip_viewers` row), pure child/detail rows with no independent delete feature (`place_photos`, `itinerary_days`, `itinerary_items`), and `place_candidates` (its `status` column already serves this purpose via `rejected`). **Unique constraints on soft-deletable tables (added 2026-10-04, found during backend implementation):** a plain UNIQUE also counts soft-deleted rows, so values that must be reusable after a soft delete use a partial index `WHERE deleted_at IS NULL` (`place_reviews (users_id, places_id)`, `categories.slug`); `places.google_place_id` stays plain unique on purpose. See the Key Validation Rules table below and design spec Section 4 ("Aturan unique + soft delete").
+**Soft delete policy (added 2026-09-22, extended 2026-09-23):** `deleted_at` only on tables with an independent delete feature worth preserving history for — `places`, `users`, `trips`, `place_reviews`, `categories`. Deliberately excluded from pure pivot tables (`place_category`, `trip_interest_category`, `user_default_interest_category`, `trip_wishlist_places`, `trip_viewers` — Eloquent's `sync()`/`detach()` expect hard delete; revoking viewer access is a hard delete of that `trip_viewers` row), pure child/detail rows with no independent delete feature (`place_photos`, `itinerary_days`, `itinerary_items`), and `place_candidates` (its `status` column already serves this purpose via `rejected`). **Unique constraints on soft-deletable tables (added 2026-10-04, found during backend implementation):** a plain UNIQUE also counts soft-deleted rows, so values that must be reusable after a soft delete use a partial index `WHERE deleted_at IS NULL` (`place_reviews (users_id, places_id)`, `categories.slug`, and since 2026-10-04 `users.email`/`users.google_id`); `places.google_place_id` stays plain unique on purpose. See the Key Validation Rules table below and design spec Section 4 ("Aturan unique + soft delete").
+
+**Soft delete, FK and history rules (added 2026-10-10 after the PRD audit):**
+- **`ON DELETE RESTRICT` does not protect soft deletes.** A soft delete is an `UPDATE deleted_at`, so the FK RESTRICT from the three category pivots never fires for it. The earlier claim that "the database refuses to delete a category still in use" was wrong for soft delete; `CategoryController::destroy` now checks `place_category`, `trip_interest_category` and `user_default_interest_category` (including rows of soft-deleted places/trips) and refuses with a flash error instead. Same reasoning applies to any future soft-deletable table: usage checks live in code.
+- **History relations must use `withTrashed()`.** The whole point of `places.deleted_at` is that an existing itinerary keeps showing the place. `Place` carries the `SoftDeletes` global scope, so `ItineraryItem::place()`, `ItineraryDay::startPlace()/endPlace()`, `Trip::hotelPlace()` and `TripWishlistPlace::place()` are declared `->withTrashed()`. Everything that *chooses* places (catalog browse, TOPSIS candidate pool, swap candidates, hotel options, wishlist/hotel validation) keeps the default scope and therefore never offers a soft-deleted place; `ItineraryGenerator` also skips wishlist rows whose place was soft-deleted. The same rule holds for `users` relations (`trips.owner`, `trip_viewers.user`) if account deactivation is ever built.
+- **FK `ON DELETE` policy as implemented** (relevant only for `forceDelete`, since the parents above are soft-deleted in practice): `CASCADE` from `trips` to `itinerary_days`/`trip_interest_category`/`trip_wishlist_places`/`trip_viewers`, from `itinerary_days` to `itinerary_items`, from `places` to `place_photos`/`place_reviews`/`trip_wishlist_places`, from `users` to `trips`/`place_reviews`/`trip_viewers`/`user_default_interest_category`; `RESTRICT` from `categories` to all three pivots and from `places` to `place_category`/`itinerary_items`/`itinerary_days.start|end_places_id`; `SET NULL` from `places` to `trips.hotel_places_id` and from `itinerary_items` to `place_reviews.itinerary_items_id`. A hard delete of a place would therefore silently wipe users' reviews and wishlist rows, which is one more reason `forceDelete` is not exposed anywhere.
+- **Reviews lose their itinerary link on regenerate.** `POST /api/trips/{id}/generate` and a structural `PATCH /api/trips/{id}` delete the old `itinerary_days` (cascading to `itinerary_items`), so `place_reviews.itinerary_items_id` is set to NULL for any post-visit review tied to the old plan. The review itself survives (it hangs off `places`/`users`); only the "written from this stop" link is lost. Accepted, not a bug.
+- **Unique constraints that were code-only until 2026-10-10** now exist in the schema: `trip_wishlist_places(trips_id, places_id)`, `itinerary_days(trips_id, day_number)`, `itinerary_items(itinerary_days_id, places_id)`, `place_photos(places_id, sort_order)`. `itinerary_items.visit_order` stays non-unique on purpose (see the data model comment).
+- **Trip viewer self-invite** is rejected in code (`POST /api/trips/{id}/viewers` returns 422 for the owner's own email; joining your own invite link is a no-op). No schema rule, since a CHECK cannot reference `trips.users_id`.
 
 **Admin audit trail (added 2026-09-22):** `Place` and `Category` (the two admin-curated models that feed directly into recommendation scoring — price, category tags, description) get the `spatie/laravel-activitylog` package's `LogsActivity` trait, so every create/update/delete through the admin panel is automatically recorded to `activity_log` with no custom controller code. Scoped to just these two models rather than every table — `place_candidates` approve/reject already has an equivalent history via its `status` column, and a 6-person team with full DB access doesn't need a blanket audit trail for a one-semester project. Surfaced in the admin panel as a "Riwayat Perubahan" (change history) tab on each place/category's edit screen.
 
@@ -393,11 +426,16 @@ activity_log(id, log_name, description, subject_type, subject_id, causer_type, c
 | `categories.slug` | string, unique as a **partial index `WHERE deleted_at IS NULL`** (so a soft-deleted category's slug can be reused), lowercase-slug format (enforced to prevent near-duplicate tags like "kuliner" vs "wisata-kuliner") |
 | `places.google_place_id` | plain unique, **deliberately not partial** - a soft-deleted place must still block re-insertion; Discovery's idempotency check uses `withTrashed()` (design spec Section 3 step 1a) |
 | `users.email` / `users.google_id` | unique as a **partial index `WHERE deleted_at IS NULL`** (decided 2026-10-04), so a soft-deactivated account's email can be re-registered as a new account; every lookup by email/google_id must ignore soft-deleted rows (`User` already uses `SoftDeletes`, so plain Eloquent queries are safe). **Implemented** via migration `2026_10_04_000000_make_users_unique_indexes_ignore_soft_deletes` and covered by `AuthTest`; no account-deactivation feature exists yet, so it is not triggered in practice |
-| `users.email` | unique, valid email format |
-| `users.google_id` | unique when present; nullable |
+| `users.email` | valid email format (uniqueness: see the partial-index row above) |
 | `users` | CHECK: `password IS NOT NULL OR google_id IS NOT NULL` |
 | `place_candidates.google_place_id` | unique — this is the idempotency key preventing duplicate Discovery inserts (design spec Section 3) |
 | `trip_viewers` | unique(trips_id, users_id) - no duplicate invites; invited email must belong to an existing registered user, no invite-by-email-for-non-users flow |
+| `trip_wishlist_places` | unique(trips_id, places_id) (added 2026-10-10) - a catalog place at most once per trip; custom pins (`places_id` NULL) are unaffected because NULLs never collide |
+| `itinerary_days` | unique(trips_id, day_number) (added 2026-10-10) |
+| `itinerary_items` | unique(itinerary_days_id, places_id) (added 2026-10-10); `visit_order` intentionally not unique |
+| `place_photos` | unique(places_id, sort_order) (added 2026-10-10) |
+| `places.rating` | nullable; when NULL the TOPSIS rating criterion falls back to the median blend of the same `type`, then to a neutral 3.5 (added 2026-10-10) |
+| `categories` (delete) | soft delete refused while any `place_category`/`trip_interest_category`/`user_default_interest_category` row references it, checked in code because FK RESTRICT does not cover soft delete (added 2026-10-10) |
 | `trips.viewer_invite_token` / `share_token` | both nullable, unique, high-entropy random strings; regenerating either invalidates the OLD link for new joins only, does not affect anyone who already joined/has the old link cached — genuinely two separate tokens for two separate purposes, never reused across each other |
 
 ---
@@ -412,9 +450,10 @@ Full endpoint list is design spec Section 12 — summarized by group:
 | Auth | `/api/auth/logout` | Token required |
 | Auth | `/api/auth/forgot-password`, `/api/auth/reset-password` (added 2026-10-02 - documents F004, previously implemented but undocumented) | Public |
 | Auth | `PUT /api/auth/password` (change password while logged in, added 2026-10-02 - F004) | Token required |
-| Auth (web, not API) | `GET /auth/verify-registration` (signed URL from the verification email, opened in a browser, not called by the Flutter app directly - added 2026-10-02) | Public, signed-URL only |
+| Auth (web, not API) | `GET /auth/verify-registration` (signed URL from the verification email, opened in a browser, not called by the Flutter app directly - added 2026-10-02); `GET`/`POST /auth/reset-password` (the browser form the forgot-password email links to, documented 2026-10-10) | Public, signed-URL / reset-token only |
+| Session | `GET /api/user` (returns the authenticated user; the mobile app calls it on launch to restore a stored token, documented 2026-10-10) | Token required |
 | Profile | `/api/profile/preferences` (GET/PUT) | Token |
-| Trip setup | `/api/trips` (POST/GET/DELETE), `/api/trips/{id}/hotel`, `/api/trips/{id}/hotel-options` | Token (GET `/api/trips/{id}` also allows an invited viewer, added 2026-09-23) |
+| Trip setup | `/api/trips` (POST/GET), `/api/trips/{id}` (GET/PATCH/DELETE), `/api/trips/{id}/hotel`, `/api/trips/{id}/hotel-options` | Token (GET `/api/trips/{id}` also allows an invited viewer, added 2026-09-23). `PATCH /api/trips/{id}` added 2026-10-10: owner-only edit of `title`/`num_days`/`budget_total`/`start_date`/`daily_*_time`; when `num_days`, `budget_total` or the daily times change and an itinerary exists, it is cleared and the response carries `itinerary_cleared: true`, the app then calls generate again (design spec "regenerate penuh"); `title`/`start_date` alone keep the itinerary |
 | Wishlist | `/api/trips/{id}/wishlist` (POST/GET/DELETE) | Token |
 | Generate | `/api/trips/{id}/weights`, `/api/trips/{id}/generate` | Token |
 | Trip Viewer | `POST/GET /api/trips/{id}/viewers`, `DELETE /api/trips/{id}/viewers/{viewer_id}`, `POST/DELETE /api/trips/{id}/viewer-invite-link`, `POST /api/trips/join-viewer/{viewer_invite_token}`, `GET /api/trips/shared` (added 2026-09-23) | Token — invite/revoke owner-only, joining via link still requires login |
@@ -458,7 +497,8 @@ pending --(admin rejects)-----> rejected --[terminal; row stays to prevent re-di
 created (weights/wishlist/hotel being assembled, no itinerary yet)
   --(generate)--> has itinerary
       --(swap one stop)--> has itinerary [unchanged state; partial update only]
-      --(edit num_days/budget/hotel)--> has itinerary [regenerated from scratch]
+      --(PATCH num_days/budget_total/daily times)--> created [itinerary cleared, must generate again - added 2026-10-10]
+      --(PATCH title/start_date, or POST hotel)--> has itinerary [unchanged; hotel change takes effect on the next generate]
   --(delete)--> [terminal]
 ```
 
@@ -467,6 +507,7 @@ created (weights/wishlist/hotel being assembled, no itinerary yet)
 null (not visited) --(geofence entry OR manual tap)--> timestamp set (visited)
 timestamp set --(manual toggle off)--> null [correction path for false-positive geofence triggers]
 ```
+Note (2026-10-10): the whole `itinerary_days`/`itinerary_items` set is hard-deleted and rebuilt by every generate (and by a structural `PATCH /api/trips/{id}`), so `visited_at` and `place_reviews.itinerary_items_id` do not survive a regenerate. This is by design (the old plan no longer exists), not data loss to guard against.
 
 **`trip_viewers` (added 2026-10-02 - was missing despite US16 existing since 2026-09-23)**
 ```
@@ -496,7 +537,7 @@ row exists --(60 min elapse without click)--> [deleted on next verification atte
 
 | State | Location | Persistence | Notes |
 |-------|----------|-------------|-------|
-| Auth token | Local secure storage (`flutter_secure_storage`) | Persistent | Sanctum bearer token |
+| Auth token | Local secure storage (`flutter_secure_storage`), or memory only | Persistent only when "Ingat Saya" is ticked at login; otherwise kept in memory for the session (A2 implementation, documented 2026-10-10) | Sanctum bearer token; `GET /api/user` on launch restores the session from a stored token |
 | Active trip being built (setup/wishlist/weights before generate) | Local UI state (**Riverpod**) | Session (survives navigation, not app restart) | Multi-step wizard state |
 | Generated itinerary | Server (source of truth) + local cache for offline viewing | Persistent (server), cached locally | Re-fetched via `GET /api/trips/{id}` |
 | Live GPS position | Local UI state (stream) | None | From `geolocator`, not persisted |
@@ -545,21 +586,27 @@ SmartTrip-Batam/
 │   ├── app/Http/Controllers/Api/      # Trip, Place, Auth controllers - for Flutter (routes/api.php)
 │   ├── app/Http/Controllers/Admin/    # Places, Candidates, Categories controllers - for web panel (routes/web.php)
 │   ├── app/Models/                    # Place, Trip, ItineraryDay, ItineraryItem, ...
-│   ├── app/Services/                  # TOPSIS scoring, K-Means clustering, route assembly
-│   ├── app/Console/Commands/          # places:discover, places:enrich
+│   ├── app/Services/Itinerary/        # Topsis, KMeans, NearestNeighborRoute, Haversine, JaccardSimilarity,
+│   │                                  # PlaceCostEstimator, PlaceRatingEstimator, ItineraryGenerator,
+│   │                                  # HotelRecommender, SwapCandidateFinder, GoogleRoutesClient
+│   ├── app/Services/Places/           # Discovery/Details/Gemini clients, PlaceDiscoveryService, PlaceCandidateReviewService
+│   ├── app/Console/Commands/          # DiscoverPlaces (places:discover); enrichment runs inside candidate approval, no separate command
 │   ├── resources/views/admin/         # Blade views - dashboard, places, candidates, categories
 │   ├── database/migrations/
 │   └── database/seeders/              # categories seeder (must run before places bootstrap)
-└── smarttrip-mobile/                  # Flutter app (scaffolded as of 2026-09-29) - end-users only, no admin code here
+└── smarttrip-mobile/                  # Flutter app - end-users only, no admin code here (state as of 2026-10-10)
     ├── lib/
-    │   ├── features/
-    │   │   ├── onboarding/            # Pilih Minat gate
+    │   ├── features/                  # feature-first, each with data/ + presentation/
+    │   │   ├── auth/                  # A2 Masuk + A3 Daftar (built), forgot-password placeholder
+    │   │   ├── splash/                # session restore gate (built)
+    │   │   ├── onboarding/            # Pilih Minat gate (planned)
     │   │   ├── trip_setup/
     │   │   ├── wishlist/
     │   │   ├── itinerary/
     │   │   ├── live_map/
     │   │   └── profile/
-    │   ├── core/                      # API client, auth, i18n
+    │   ├── core/                      # api/ (Dio client), auth/ (session controller, token storage), router/, theme/, widgets/, error/
+    │   ├── l10n/                      # gen-l10n ARB (id, en)
     │   └── main.dart
     └── ...
 ```

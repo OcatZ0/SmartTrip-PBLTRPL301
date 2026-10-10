@@ -26,6 +26,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/trips/join-viewer/{viewerInviteToken}', [TripViewerController::class, 'join']);
     Route::get('/trips/{trip}', [TripController::class, 'show']);
     Route::delete('/trips/{trip}', [TripController::class, 'destroy']);
+    Route::patch('/trips/{trip}', [TripController::class, 'update']);
     Route::post('/trips/{trip}/weights', [TripController::class, 'weights']);
     Route::post('/trips/{trip}/hotel', [TripController::class, 'hotel']);
     Route::get('/trips/{trip}/hotel-options', [TripController::class, 'hotelOptions']);

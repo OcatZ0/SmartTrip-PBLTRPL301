@@ -40,7 +40,9 @@ class ItineraryItem extends Model
 
     public function place(): BelongsTo
     {
-        return $this->belongsTo(Place::class, 'places_id');
+        // Riwayat trip harus tetap utuh walau admin soft-delete tempatnya
+        // (docs/prd Section 10 soft delete policy).
+        return $this->belongsTo(Place::class, 'places_id')->withTrashed();
     }
 
     public function review(): HasOne

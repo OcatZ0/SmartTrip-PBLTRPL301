@@ -7,9 +7,10 @@ class AppRoutes {
   static const register = '/register';
   static const forgotPassword = '/forgot-password';
   static const onboarding = '/onboarding';
+  static const trips = '/trips';
 
   /// Reachable without being logged in (PRD Section 8: browsing is public).
-  static const publicPaths = {catalog, login, register, forgotPassword};
+  static const publicPaths = {catalog, login, register, forgotPassword, trips};
 
   /// Only reachable while logged out.
   static const guestOnlyPaths = {login, register, forgotPassword};

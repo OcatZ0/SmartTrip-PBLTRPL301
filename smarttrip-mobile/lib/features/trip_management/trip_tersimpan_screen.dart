@@ -3,8 +3,7 @@ import 'package:flutter/material.dart';
 import 'trip_model.dart';
 import 'trip_card.dart';
 
-/// D3. Halaman "Trip Tersimpan" — 4 tab: Berlangsung / Akan Datang / Selesai / Draft
-/// Sesuai screenshot Figma dari anggota tim. Murni frontend, data statis.
+
 class TripTersimpanScreen extends StatefulWidget {
   const TripTersimpanScreen({super.key});
 

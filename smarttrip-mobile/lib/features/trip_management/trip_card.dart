@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 
 import 'trip_model.dart';
 
-/// Widget TripCard — tampil berbeda-beda tergantung status trip.
-/// Sesuai Figma D3: Berlangsung / Akan Datang / Selesai / Draft.
 class TripCard extends StatelessWidget {
   const TripCard({super.key, required this.trip});
 

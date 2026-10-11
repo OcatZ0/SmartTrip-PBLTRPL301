@@ -1,4 +1,4 @@
-// Domain model statis untuk fitur Trip Tersimpan (Figma D3). Murni frontend.
+// Domain model statis untuk fitur Trip Tersimpan
 
 enum TripStatus {
   berlangsung,
@@ -66,7 +66,7 @@ class TripModel {
   String get budgetTotalLabel => rupiahFormat(budgetTotal);
 }
 
-/// Data statis yang merepresentasikan screenshot Figma D3.
+/// Data statis
 class TripData {
   static const List<TripModel> mockTrips = [
     // ─── TAB: BERLANGSUNG ─────────────────────────────

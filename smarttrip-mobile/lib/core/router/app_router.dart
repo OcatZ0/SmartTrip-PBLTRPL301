@@ -8,6 +8,7 @@ import '../../features/auth/presentation/register_screen.dart';
 import '../../features/catalog/catalog_screen.dart';
 import '../../features/onboarding/onboarding_screen.dart';
 import '../../features/splash/splash_screen.dart';
+import '../../features/place_reviews/review_form_screen.dart';
 import '../../features/trip_management/trip_tersimpan_screen.dart';
 import '../auth/session_controller.dart';
 import 'app_routes.dart';
@@ -56,6 +57,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.trips,
         builder: (context, state) => const TripTersimpanScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.review,
+        builder: (context, state) => const ReviewFormScreen(),
       ),
       GoRoute(
         path: AppRoutes.login,

@@ -4,8 +4,8 @@
 
 **Type:** Full PRD
 **Status:** In progress — backend (`smarttrip-api`) and mobile (`smarttrip-mobile`) scaffolds exist with most F001-F024 implemented; see Sections 15 and 19
-**Version:** 1.22
-**Last Updated:** 2026-10-10
+**Version:** 1.23
+**Last Updated:** 2026-10-11
 **Source of truth for implementation detail:** `docs/superpowers/specs/2026-09-07-smarttrip-itinerary-recommendation-design.md` (this PRD is a reformatted, audience-oriented view of the same decisions — where they ever conflict, the design spec wins, since it carries finer-grained rationale)
 
 | Version | Date | Change |
@@ -33,6 +33,7 @@
 | 1.20 | 2026-10-04 | Resolved the `users.email`/`users.google_id` open decision from 1.19: partial unique index (`WHERE deleted_at IS NULL`) so a deactivated account's email can be re-registered; migration and the account-deactivation feature itself are not implemented yet |
 | 1.21 | 2026-10-04 | Implemented the 1.20 decision in `smarttrip-api`: migration converting `users.email`/`users.google_id` to partial unique indexes (`WHERE deleted_at IS NULL`) plus 3 `AuthTest` cases; full backend suite green (273 tests) |
 | 1.22 | 2026-10-10 | PRD audit (data model + consistency), fixes applied in docs AND `smarttrip-api`: (1) `ON DELETE RESTRICT` never protected soft-deleted categories (soft delete is an UPDATE), so `CategoryController::destroy` now refuses a category still referenced by `place_category`/`trip_interest_category`/`user_default_interest_category`; (2) trip-history relations (`itinerary_items.places_id`, `itinerary_days.start/end_places_id`, `trips.hotel_places_id`, `trip_wishlist_places.places_id`) now use `withTrashed()` so a soft-deleted place no longer vanishes from existing itineraries, while generate/swap/catalog still exclude it; (3) documented `itinerary_days.start/end_places_id` as nullable (migration `2026_09_29_071806`, custom-pin hotel) and `places.rating` as nullable with a new 3-tier rating fallback (`PlaceRatingEstimator`: blend, median of same type, neutral 3.5) replacing the old silent `?? 0.0`; (4) added `PATCH /api/trips/{id}` (owner-only edit; changing `num_days`/`budget_total`/daily times clears the existing itinerary, client calls generate again); (5) added DB uniques `trip_wishlist_places(trips_id, places_id)`, `itinerary_days(trips_id, day_number)`, `itinerary_items(itinerary_days_id, places_id)`, `place_photos(places_id, sort_order)` (migration `2026_10_10_000000`); (6) documented FK `ON DELETE` policy per table, framework-owned tables (`personal_access_tokens`, `password_reset_tokens`, `sessions`), the `activity_log.attribute_changes` column, review orphaning on regenerate, and `GET /api/user` + web reset-password routes; (7) consistency fixes: duplicate `users.email`/`google_id` validation rows removed, Section 9 component table un-split and its admin cross-reference corrected to Section 8, Figma link added, Section 15 file structure updated to what exists, sync status noted as part of the Dashboard. Backend suite 290 tests green |
+| 1.23 | 2026-10-11 | Table minimisation: dropped the six unused Laravel infrastructure tables (`sessions`, `cache`, `cache_locks`, `jobs`, `job_batches`, `failed_jobs`) via migration `2026_10_11_000000_drop_unused_framework_tables`; drivers switched to `SESSION_DRIVER=file`, `CACHE_STORE=file`, `QUEUE_CONNECTION=sync` (also the new defaults in `config/`). Schema goes from 25 to 19 tables. `password_reset_tokens` and `personal_access_tokens` kept, reasons in Section 10 |
 
 ---
 
@@ -389,8 +390,16 @@ personal_access_tokens(id, tokenable_type, tokenable_id, name, token[unique], ab
   -- Laravel Sanctum; one row per issued bearer token, POST /api/auth/logout deletes the current one
 password_reset_tokens(email PK, token, created_at)
   -- Laravel default; written by POST /api/auth/forgot-password, consumed by the reset-password web form
-sessions(id PK, user_id?, ip_address?, user_agent?, payload, last_activity)
-  -- SESSION_DRIVER=database; used only by the admin web panel (guard web), never by the Flutter app
+-- REMOVED 2026-10-11: sessions, cache, cache_locks, jobs, job_batches, failed_jobs (Laravel's stock
+-- database-driver tables). Nothing queues work (mail is sent synchronously), nothing uses the cache, and the
+-- admin panel is the only session user on a single Linux server, so the app runs on QUEUE_CONNECTION=sync,
+-- CACHE_STORE=file and SESSION_DRIVER=file (storage/framework must be writable). Migration
+-- 2026_10_11_000000_drop_unused_framework_tables. Bring them back only if the app ever moves to several
+-- servers (shared session/cache store) or starts queueing jobs.
+-- KEPT on purpose: password_reset_tokens (one-time tokens for F004 forgot-password via Laravel's Password
+-- broker; replacing it with a stateless signed link means hand-written security logic to save one table),
+-- personal_access_tokens (every mobile login/logout is a Sanctum token row; removing it means JWT, which
+-- reverses the Sanctum decision taken for easy revocation), migrations (Laravel's own bookkeeping)
 ```
 
 > Full field-level rationale for every table lives in the design spec Section 4 — this is a cross-reference summary, not the source of truth.

@@ -4,8 +4,8 @@
 
 **Type:** Full PRD
 **Status:** In progress — backend (`smarttrip-api`) and mobile (`smarttrip-mobile`) scaffolds exist with most F001-F024 implemented; see Sections 15 and 19
-**Version:** 1.23
-**Last Updated:** 2026-10-11
+**Version:** 1.24
+**Last Updated:** 2026-10-13
 **Source of truth for implementation detail:** `docs/superpowers/specs/2026-09-07-smarttrip-itinerary-recommendation-design.md` (this PRD is a reformatted, audience-oriented view of the same decisions — where they ever conflict, the design spec wins, since it carries finer-grained rationale)
 
 | Version | Date | Change |
@@ -33,6 +33,7 @@
 | 1.20 | 2026-10-04 | Resolved the `users.email`/`users.google_id` open decision from 1.19: partial unique index (`WHERE deleted_at IS NULL`) so a deactivated account's email can be re-registered; migration and the account-deactivation feature itself are not implemented yet |
 | 1.21 | 2026-10-04 | Implemented the 1.20 decision in `smarttrip-api`: migration converting `users.email`/`users.google_id` to partial unique indexes (`WHERE deleted_at IS NULL`) plus 3 `AuthTest` cases; full backend suite green (273 tests) |
 | 1.22 | 2026-10-10 | PRD audit (data model + consistency), fixes applied in docs AND `smarttrip-api`: (1) `ON DELETE RESTRICT` never protected soft-deleted categories (soft delete is an UPDATE), so `CategoryController::destroy` now refuses a category still referenced by `place_category`/`trip_interest_category`/`user_default_interest_category`; (2) trip-history relations (`itinerary_items.places_id`, `itinerary_days.start/end_places_id`, `trips.hotel_places_id`, `trip_wishlist_places.places_id`) now use `withTrashed()` so a soft-deleted place no longer vanishes from existing itineraries, while generate/swap/catalog still exclude it; (3) documented `itinerary_days.start/end_places_id` as nullable (migration `2026_09_29_071806`, custom-pin hotel) and `places.rating` as nullable with a new 3-tier rating fallback (`PlaceRatingEstimator`: blend, median of same type, neutral 3.5) replacing the old silent `?? 0.0`; (4) added `PATCH /api/trips/{id}` (owner-only edit; changing `num_days`/`budget_total`/daily times clears the existing itinerary, client calls generate again); (5) added DB uniques `trip_wishlist_places(trips_id, places_id)`, `itinerary_days(trips_id, day_number)`, `itinerary_items(itinerary_days_id, places_id)`, `place_photos(places_id, sort_order)` (migration `2026_10_10_000000`); (6) documented FK `ON DELETE` policy per table, framework-owned tables (`personal_access_tokens`, `password_reset_tokens`, `sessions`), the `activity_log.attribute_changes` column, review orphaning on regenerate, and `GET /api/user` + web reset-password routes; (7) consistency fixes: duplicate `users.email`/`google_id` validation rows removed, Section 9 component table un-split and its admin cross-reference corrected to Section 8, Figma link added, Section 15 file structure updated to what exists, sync status noted as part of the Dashboard. Backend suite 290 tests green |
+| 1.24 | 2026-10-13 | Provider switch and F008 fixes, applied in docs AND code: (1) the Google Cloud project could not enable billing (free trial requires a prepayment), so road routing moved from the Google Routes API to OpenRouteService (free Standard plan, 2,000 directions/day, no credit card; `OpenRouteServiceClient`, `ORS_API_KEY`) and map rendering moved from `google_maps_flutter` to `flutter_map` with OpenStreetMap tiles (no key). `polyline_to_here` keeps the Google encoded polyline format, so stored data and the mobile decoder are unchanged. Google Places (discovery/details/photos) stays as designed until billing is sorted; a starter catalog of 31 real Batam places (names/coordinates from OpenStreetMap) plus 10 categories is seeded by `PlaceSeeder`/`CategorySeeder` for local development; (2) `itinerary_items.places_id` is now nullable with a pin snapshot (`custom_name`, `custom_lat`, `custom_lng`, `custom_visit_minutes`, pgsql CHECK `itinerary_items_place_or_pin_check`), because a custom-pin wishlist item could not be inserted and made generate fail; (3) new public `GET /api/categories`, `GET /api/places?type=`, and `GET /api/trips/{id}` now includes each stop's place and the hotel; (4) Gemini model is configurable (`GEMINI_MODEL`, default alias `gemini-flash-latest`, since `gemini-2.0-flash` was retired) with retries on 429/5xx/timeouts. Mobile F008/F012/F013 screens (C1-C5, D1, E1) built |
 | 1.23 | 2026-10-11 | Table minimisation: dropped the six unused Laravel infrastructure tables (`sessions`, `cache`, `cache_locks`, `jobs`, `job_batches`, `failed_jobs`) via migration `2026_10_11_000000_drop_unused_framework_tables`; drivers switched to `SESSION_DRIVER=file`, `CACHE_STORE=file`, `QUEUE_CONNECTION=sync` (also the new defaults in `config/`). Schema goes from 25 to 19 tables. `password_reset_tokens` and `personal_access_tokens` kept, reasons in Section 10 |
 
 ---
@@ -82,7 +83,7 @@ Sources: [Best AI Trip Planner Apps 2026 (Lindy)](https://www.lindy.ai/blog/trip
 **Primary Goal:** Ship a working, demonstrable end-to-end app (not just a design) within one semester that a 6-person team can build, covering the full loop from admin data curation through personalized itinerary generation to live in-trip tracking.
 
 **Success Metrics** *(proxies appropriate for a pre-launch student project, not live-usage metrics — adjust if you have specific skripsi/demo-day targets)*:
-- A generated itinerary for a realistic Batam trip (3-5 days, real preferences) completes end-to-end (weights → TOPSIS → K-Means → NN → Routes API) in a single demo run without manual intervention
+- A generated itinerary for a realistic Batam trip (3-5 days, real preferences) completes end-to-end (weights → TOPSIS → K-Means → NN → OpenRouteService) in a single demo run without manual intervention
 - The initial place-data bootstrap (Discovery → admin review → Enrichment) reaches the ~300-500 place target while staying inside Google's free API tiers (Pro 5,000/mo, Enterprise 1,000/mo)
 - Core algorithm units (weight normalization, TOPSIS scoring, Haversine, K-Means, Bayesian rating blend) pass deterministic unit tests, since this is the part most likely to be questioned in a demo/defense
 - Live map + geofencing visit-tracking demonstrably works on at least one real Android device outdoors (not just emulator)
@@ -123,7 +124,7 @@ Sources: [Best AI Trip Planner Apps 2026 (Lindy)](https://www.lindy.ai/blog/trip
 - Platform: **Android/iOS via Flutter** for the end-user mobile app only - admin uses a separate web panel (Laravel Blade + Bootstrap, see Section 8), not the Flutter codebase
 - Auth: Laravel Sanctum (opaque bearer tokens), email/password + Google Sign-In, account linking by email
 - Offline support: **partial only** — visit-tracking events queue locally and retry when connectivity returns; no general offline browsing/generation support was designed
-- Performance: no hard SLA (see Section 16, US4) — Google Routes API is called once per day per generate/swap (not per view) specifically to keep this fast and cheap
+- Performance: no hard SLA (see Section 16, US4) - the routing API (OpenRouteService since v1.24) is called once per day per generate/swap (not per view) specifically to keep this fast and cheap
 - Data residency/compliance: none specified (not a concern raised for this project)
 - Budget-hard constraint: Google Places Enterprise SKU capped at 1,000 free calls/month — directly shaped the two-phase Discovery/Enrichment architecture
 
@@ -221,7 +222,7 @@ Terasa seperti aplikasi e-commerce untuk browsing tempat (grid/list, filter, inf
 - List trip tersimpan
 - Empty state: katalog kosong (belum ada data tersinkron), wishlist kosong, trip list kosong
 - Error state: generate gagal (pool kandidat tidak cukup → flag "tidak muat"/"padat"), geofence permission ditolak (fallback manual), offline saat visit-tracking (antri lokal)
-- Loading state: skeleton/spinner saat generate (proses multi-tahap: TOPSIS → K-Means → NN → Routes API)
+- Loading state: skeleton/spinner saat generate (proses multi-tahap: TOPSIS → K-Means → NN → OpenRouteService)
 
 **Interaction Model:**
 - Primary flow: Section 12 of design spec (numbered end-to-end)
@@ -245,12 +246,12 @@ Laravel Blade + Bootstrap, its own login (`/admin/login`, session-based, not the
 | PlaceCatalogGrid | Display | Infinite-scroll place browsing with category filter | US3 |
 | PlaceCard | Display | Thumbnail, name, rating, badge (wishlist/recommended) | US3, US4 |
 | WishlistButton | Action | Toggle add/remove place to trip wishlist | US3 |
-| MapPinPicker | Form | Tap/drag pin on `google_maps_flutter` for custom locations + name; wishlist custom pins also require a manual estimated-visit-duration input (added 2026-09-22 — see US3) | US3 (hotel/wishlist custom pin) |
+| MapPinPicker | Form | Tap/drag pin on `flutter_map` (OpenStreetMap tiles) for custom locations + name; wishlist custom pins also require a manual estimated-visit-duration input (added 2026-09-22 — see US3) | US3 (hotel/wishlist custom pin) |
 | HotelSearchOrPin | Form | Search catalog or fallback to map pin | US2 |
 | TripSetupForm | Form | num_days, budget, dates, time window, hotel toggle | US2 |
 | ItineraryDayCard | Display | One day's stops with source badges | US4 |
 | SwapModal | Modal | Ranked alternatives or manual search for one stop | US5 |
-| LiveMapView | Display | `google_maps_flutter` with markers, colored polylines, live location | US6 |
+| LiveMapView | Display | `flutter_map` (OpenStreetMap tiles) with numbered markers, colored polylines, live location | US6 |
 | GeofenceStatusIndicator | Display | Visual feedback that tracking is active | US6, US7 |
 | ManualVisitToggle | Action | Long-press/button to mark/unmark visited | US7 |
 | ReviewForm | Form | Rating + comment, optionally linked to visited itinerary_item | US10 |
@@ -479,8 +480,8 @@ Full endpoint list is design spec Section 12 — summarized by group:
 
 **External integrations:**
 - Google Places API (New) — Nearby/Text Search (Pro SKU) + Place Details (Enterprise SKU) for place data
-- Google Routes API (`computeRoutes`) — real road polylines, Essentials SKU
-- Google Maps SDK via `google_maps_flutter` — map rendering, free
+- OpenRouteService directions (`driving-car`) - real road polylines, free Standard plan (2,000/day); replaced Google Routes API in v1.24
+- `flutter_map` with OpenStreetMap tiles - map rendering, no API key; replaced `google_maps_flutter` in v1.24
 - Gemini API — bilingual content + AI category tagging + visit-duration estimation + is_outdoor inference, one combined call per place (Gemini chosen for its genuine free tier)
 - Open-Meteo — day-level weather forecast, called directly client-side (no API key needed, so nothing to protect server-side), only once a trip's `start_date` is within ~7 days
 - `geolocator` — device GPS, no API
@@ -570,8 +571,8 @@ row exists --(60 min elapse without click)--> [deleted on next verification atte
 | State management | Riverpod | See Section 13 |
 | Database | PostgreSQL | Decided over the team's usual MySQL-with-Laravel default (client's own hosting decision) |
 | Auth | Laravel Sanctum (API tokens) + Google Sign-In | First-party, easy revocation, sufficient at this scale (chosen over JWT after explicit comparison) |
-| Maps | Google Maps SDK (`google_maps_flutter`) | Free unlimited rendering |
-| Routing | Google Routes API | Real road-following polylines, generous free tier for this call volume |
+| Maps | `flutter_map` + OpenStreetMap tiles | No API key or billing account (v1.24, Google Maps SDK needed billing) |
+| Routing | OpenRouteService | Real road-following polylines, 2,000 free directions/day without a credit card (v1.24, replaced Google Routes API) |
 | Place data | Google Places API (New) | Only source; no scraping (ToS/legal risk explicitly rejected) |
 | AI enrichment | Gemini API (Flash/Flash-Lite) | Genuinely free ongoing tier vs. OpenAI/Claude's one-time trial credits |
 | Notifications | `flutter_local_notifications` | Fully client-side, no Firebase needed - covers day-start reminders, next-stop-approaching alerts, and the weather-window-opened alert (US15) |
@@ -597,7 +598,7 @@ SmartTrip-Batam/
 │   ├── app/Models/                    # Place, Trip, ItineraryDay, ItineraryItem, ...
 │   ├── app/Services/Itinerary/        # Topsis, KMeans, NearestNeighborRoute, Haversine, JaccardSimilarity,
 │   │                                  # PlaceCostEstimator, PlaceRatingEstimator, ItineraryGenerator,
-│   │                                  # HotelRecommender, SwapCandidateFinder, GoogleRoutesClient
+│   │                                  # HotelRecommender, SwapCandidateFinder, OpenRouteServiceClient, EncodedPolyline
 │   ├── app/Services/Places/           # Discovery/Details/Gemini clients, PlaceDiscoveryService, PlaceCandidateReviewService
 │   ├── app/Console/Commands/          # DiscoverPlaces (places:discover); enrichment runs inside candidate approval, no separate command
 │   ├── resources/views/admin/         # Blade views - dashboard, places, candidates, categories
@@ -649,7 +650,7 @@ SmartTrip-Batam/
 - [ ] Each day's stops respect the daily time window (visit duration + estimated travel time ≤ window)
 - [ ] No place appears on more than one day within the same generate run
 - [ ] Edge case handled: insufficient candidate pool returns a "tidak muat" flag rather than an error or silently duplicated content
-- [ ] Edge case handled: real Routes API travel time significantly exceeding the estimate flags the day "padat" post-generation
+- [ ] Edge case handled: real routed travel time significantly exceeding the estimate flags the day "padat" post-generation
 
 **US5 — Swap satu tempat**
 - [ ] Tapping swap on a stop shows ranked TOPSIS alternatives (same category, same day's area radius) plus a manual search option

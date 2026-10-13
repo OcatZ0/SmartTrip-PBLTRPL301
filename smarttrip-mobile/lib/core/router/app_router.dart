@@ -6,8 +6,15 @@ import '../../features/auth/presentation/forgot_password_screen.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/register_screen.dart';
 import '../../features/catalog/catalog_screen.dart';
+import '../../features/live_trip/presentation/live_map_screen.dart';
 import '../../features/onboarding/onboarding_screen.dart';
 import '../../features/splash/splash_screen.dart';
+import '../../features/trip/presentation/generate_itinerary_screen.dart';
+import '../../features/trip/presentation/itinerary_screen.dart';
+import '../../features/trip/presentation/trip_hotel_screen.dart';
+import '../../features/trip/presentation/trip_preferences_screen.dart';
+import '../../features/trip/presentation/trip_setup_screen.dart';
+import '../../features/wishlist/presentation/wishlist_step_screen.dart';
 import '../auth/session_controller.dart';
 import 'app_routes.dart';
 
@@ -68,6 +75,42 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.onboarding,
         builder: (context, state) => const OnboardingScreen(),
       ),
+      // Declared before '/trips/:tripsId' so "new" is not read as an id.
+      GoRoute(
+        path: AppRoutes.newTrip,
+        builder: (context, state) => const TripSetupScreen(),
+      ),
+      GoRoute(
+        path: '/trips/:tripsId',
+        builder: (context, state) => ItineraryScreen(tripsId: _tripsId(state)),
+        routes: [
+          GoRoute(
+            path: 'wishlist',
+            builder: (context, state) => WishlistStepScreen(tripsId: _tripsId(state)),
+          ),
+          GoRoute(
+            path: 'preferences',
+            builder: (context, state) => TripPreferencesScreen(tripsId: _tripsId(state)),
+          ),
+          GoRoute(
+            path: 'hotel',
+            builder: (context, state) => TripHotelScreen(tripsId: _tripsId(state)),
+          ),
+          GoRoute(
+            path: 'generate',
+            builder: (context, state) => GenerateItineraryScreen(tripsId: _tripsId(state)),
+          ),
+          GoRoute(
+            path: 'days/:dayNumber/map',
+            builder: (context, state) => LiveMapScreen(
+              tripsId: _tripsId(state),
+              dayNumber: int.parse(state.pathParameters['dayNumber']!),
+            ),
+          ),
+        ],
+      ),
     ],
   );
 });
+
+int _tripsId(GoRouterState state) => int.parse(state.pathParameters['tripsId']!);

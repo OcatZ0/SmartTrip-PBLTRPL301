@@ -1,19 +1,17 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/error/api_failure.dart';
 import '../../../core/router/app_routes.dart';
-import '../../../core/theme/app_tokens.dart';
-import '../../../core/widgets/app_text_field.dart';
-import '../../../core/widgets/primary_button.dart';
 import '../../../l10n/app_localizations.dart';
 import 'register_controller.dart';
+import 'widgets/auth_layout.dart';
 import 'widgets/password_strength_meter.dart';
 
-/// A3. Daftar (Register) - Figma Mockup, node 122:267.
+/// A3. Daftar (Register): same night-harbour glass layout as the login
+/// screen (see [AuthScaffold]), with a shorter gap so the longer form fits.
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
 
@@ -100,8 +98,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    final tokens = context.tokens;
 
     final registerState = ref.watch(registerControllerProvider);
     final isLoading = registerState.isLoading;
@@ -146,379 +142,192 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       }
     });
 
-    final linkStyle = theme.textTheme.labelLarge?.copyWith(
-      color: tokens.link,
-      fontSize: 14,
-      fontWeight: FontWeight.w600,
-    );
+    final linkStyle = authText(12, FontWeight.w600, AuthColors.sun400).copyWith(decoration: TextDecoration.underline);
 
-    return Scaffold(
-      backgroundColor: tokens.screenBackground,
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(18, 16, 18, 24),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const SizedBox(height: 12),
-                  Center(
-                    child: SvgPicture.asset(
-                      'assets/images/logo.svg',
-                      width: 68,
-                      height: 70,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    l10n.registerTitle,
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 320),
-                      child: Text(
-                        l10n.registerSubtitle,
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: tokens.textSecondary,
-                          height: 1.4,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(AppTokens.radius),
-                      boxShadow: AppTokens.softShadow,
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Form(
-                        key: _formKey,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            AppTextField(
-                              label: l10n.registerNameLabel,
-                              hintText: l10n.registerNameHint,
-                              controller: _nameController,
-                              prefixIcon: Icons.person_outline,
-                              keyboardType: TextInputType.name,
-                              textInputAction: TextInputAction.next,
-                              autofillHints: const [AutofillHints.name],
-                              enabled: !isLoading,
-                              forceErrorText:
-                                  validationFailure?.firstError('name'),
-                              onChanged: (_) => _clearServerError(),
-                              validator: (value) {
-                                final name = value?.trim() ?? '';
-                                if (name.isEmpty) {
-                                  return l10n.validationNameRequired;
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 16),
-                            AppTextField(
-                              label: l10n.registerEmailLabel,
-                              hintText: l10n.registerEmailHint,
-                              controller: _emailController,
-                              prefixIcon: Icons.mail_outlined,
-                              keyboardType: TextInputType.emailAddress,
-                              textInputAction: TextInputAction.next,
-                              autofillHints: const [AutofillHints.email],
-                              enabled: !isLoading,
-                              forceErrorText:
-                                  validationFailure?.firstError('email'),
-                              onChanged: (_) => _clearServerError(),
-                              validator: (value) {
-                                final email = value?.trim() ?? '';
-                                if (email.isEmpty) {
-                                  return l10n.validationEmailRequired;
-                                }
-                                if (!_emailPattern.hasMatch(email)) {
-                                  return l10n.validationEmailInvalid;
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 16),
-                            AppTextField(
-                              label: l10n.registerPasswordLabel,
-                              labelTrailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(
-                                    Icons.lock_outline,
-                                    size: 12,
-                                    color: Color(0xFF744A00),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    l10n.registerPasswordRequirement,
-                                    style: theme.textTheme.labelSmall?.copyWith(
-                                      color: const Color(0xFF744A00),
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              hintText: l10n.registerPasswordHint,
-                              controller: _passwordController,
-                              prefixIcon: Icons.lock_outlined,
-                              obscureText: _obscurePassword,
-                              textInputAction: TextInputAction.next,
-                              autofillHints: const [AutofillHints.newPassword],
-                              enabled: !isLoading,
-                              forceErrorText:
-                                  validationFailure?.firstError('password'),
-                              onChanged: (value) {
-                                setState(() => _password = value);
-                                _clearServerError();
-                              },
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return l10n.validationPasswordRequired;
-                                }
-                                if (value.length < 8) {
-                                  return l10n.validationPasswordMinLength;
-                                }
-                                return null;
-                              },
-                              suffix: IconButton(
-                                tooltip: _obscurePassword
-                                    ? l10n.loginShowPassword
-                                    : l10n.loginHidePassword,
-                                padding: EdgeInsets.zero,
-                                color: tokens.textSecondary,
-                                icon: Icon(
-                                  _obscurePassword
-                                      ? Icons.visibility_outlined
-                                      : Icons.visibility_off_outlined,
-                                  size: 20,
-                                ),
-                                onPressed: () => setState(
-                                  () => _obscurePassword = !_obscurePassword,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            PasswordStrengthMeter(password: _password),
-                            const SizedBox(height: 16),
-                            AppTextField(
-                              label: l10n.registerConfirmPasswordLabel,
-                              hintText: l10n.registerConfirmPasswordHint,
-                              controller: _confirmPasswordController,
-                              prefixIcon: Icons.lock_outlined,
-                              obscureText: _obscureConfirmPassword,
-                              textInputAction: TextInputAction.done,
-                              enabled: !isLoading,
-                              forceErrorText: validationFailure
-                                  ?.firstError('password_confirmation'),
-                              onChanged: (_) => _clearServerError(),
-                              onFieldSubmitted: (_) => _submit(),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return l10n.validationConfirmPasswordRequired;
-                                }
-                                if (value != _passwordController.text) {
-                                  return l10n.validationConfirmPasswordMismatch;
-                                }
-                                return null;
-                              },
-                              suffix: IconButton(
-                                tooltip: _obscureConfirmPassword
-                                    ? l10n.loginShowPassword
-                                    : l10n.loginHidePassword,
-                                padding: EdgeInsets.zero,
-                                color: tokens.textSecondary,
-                                icon: Icon(
-                                  _obscureConfirmPassword
-                                      ? Icons.visibility_outlined
-                                      : Icons.visibility_off_outlined,
-                                  size: 20,
-                                ),
-                                onPressed: () => setState(
-                                  () => _obscureConfirmPassword =
-                                      !_obscureConfirmPassword,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 18),
-                            InkWell(
-                              borderRadius: BorderRadius.circular(6),
-                              onTap: isLoading
-                                  ? null
-                                  : () => setState(() {
-                                        _agreedToTerms = !_agreedToTerms;
-                                        if (_agreedToTerms) {
-                                          _showTermsError = false;
-                                        }
-                                      }),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 2),
-                                    child: SizedBox(
-                                      width: 22,
-                                      height: 22,
-                                      child: FittedBox(
-                                        child: Checkbox(
-                                          value: _agreedToTerms,
-                                          onChanged: isLoading
-                                              ? null
-                                              : (value) => setState(() {
-                                                    _agreedToTerms =
-                                                        value ?? false;
-                                                    if (_agreedToTerms) {
-                                                      _showTermsError = false;
-                                                    }
-                                                  }),
-                                          side: BorderSide(
-                                            color: _showTermsError
-                                                ? theme.colorScheme.error
-                                                : tokens.checkboxBorder,
-                                            width: 1.5,
-                                          ),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(5),
-                                          ),
-                                          materialTapTargetSize:
-                                              MaterialTapTargetSize.shrinkWrap,
-                                          visualDensity: VisualDensity.compact,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: RichText(
-                                      text: TextSpan(
-                                        style: theme.textTheme.bodySmall
-                                            ?.copyWith(
-                                          color: tokens.textSecondary,
-                                          fontSize: 12,
-                                          height: 1.35,
-                                        ),
-                                        children: [
-                                          TextSpan(
-                                              text: l10n.registerTermsPrefix),
-                                          TextSpan(
-                                            text: l10n.registerTerms,
-                                            style: const TextStyle(
-                                              color: Color(0xFF00568E),
-                                              fontWeight: FontWeight.w600,
-                                              decoration:
-                                                  TextDecoration.underline,
-                                            ),
-                                            recognizer: TapGestureRecognizer()
-                                              ..onTap = () => _showInfoDialog(
-                                                    l10n.registerTerms,
-                                                    'Syarat & Ketentuan SmartTrip Batam.',
-                                                  ),
-                                          ),
-                                          TextSpan(text: l10n.registerTermsAnd),
-                                          TextSpan(
-                                            text: l10n.registerPrivacy,
-                                            style: const TextStyle(
-                                              color: Color(0xFF00568E),
-                                              fontWeight: FontWeight.w600,
-                                              decoration:
-                                                  TextDecoration.underline,
-                                            ),
-                                            recognizer: TapGestureRecognizer()
-                                              ..onTap = () => _showInfoDialog(
-                                                    l10n.registerPrivacy,
-                                                    'Kebijakan Privasi SmartTrip Batam.',
-                                                  ),
-                                          ),
-                                          TextSpan(
-                                              text: l10n.registerTermsSuffix),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            if (_showTermsError) ...[
-                              const SizedBox(height: 6),
-                              Padding(
-                                padding: const EdgeInsets.only(left: 32),
-                                child: Text(
-                                  l10n.validationTermsRequired,
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: theme.colorScheme.error,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ),
-                            ],
-                            const SizedBox(height: 20),
-                            PrimaryButton(
-                              label: l10n.registerSubmit,
-                              trailingIcon: Icons.arrow_forward,
-                              isLoading: isLoading,
-                              onPressed: _submit,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        l10n.registerAlreadyHaveAccount,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: tokens.textSecondary,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      InkWell(
-                        onTap: () {
-                          if (context.canPop()) {
-                            context.pop();
-                          } else {
-                            context.go(AppRoutes.login);
-                          }
-                        },
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              l10n.registerSignIn,
-                              style: linkStyle,
-                            ),
-                            const SizedBox(width: 2),
-                            const Icon(
-                              Icons.arrow_forward_ios,
-                              size: 11,
-                              color: Color(0xFF00568E),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+    return AuthScaffold(
+      panoramaGap: 56,
+      footer: AuthFooterLink(
+        question: l10n.registerAlreadyHaveAccount,
+        action: l10n.registerSignIn,
+        onTap: () {
+          if (context.canPop()) {
+            context.pop();
+          } else {
+            context.go(AppRoutes.login);
+          }
+        },
+      ),
+      card: GlassCard(
+        title: l10n.registerTitle,
+        subtitle: l10n.registerSubtitle,
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              GlassField(
+                label: l10n.registerNameLabel,
+                controller: _nameController,
+                hint: l10n.registerNameHint,
+                icon: Icons.person_outline,
+                keyboardType: TextInputType.name,
+                textInputAction: TextInputAction.next,
+                autofillHints: const [AutofillHints.name],
+                enabled: !isLoading,
+                forceErrorText: validationFailure?.firstError('name'),
+                onChanged: (_) => _clearServerError(),
+                validator: (value) => (value?.trim() ?? '').isEmpty ? l10n.validationNameRequired : null,
               ),
-            ),
+              const SizedBox(height: 14),
+              GlassField(
+                label: l10n.registerEmailLabel,
+                controller: _emailController,
+                hint: l10n.registerEmailHint,
+                icon: Icons.mail_outline,
+                keyboardType: TextInputType.emailAddress,
+                textInputAction: TextInputAction.next,
+                autofillHints: const [AutofillHints.email],
+                enabled: !isLoading,
+                forceErrorText: validationFailure?.firstError('email'),
+                onChanged: (_) => _clearServerError(),
+                validator: (value) {
+                  final email = value?.trim() ?? '';
+                  if (email.isEmpty) return l10n.validationEmailRequired;
+                  if (!_emailPattern.hasMatch(email)) return l10n.validationEmailInvalid;
+                  return null;
+                },
+              ),
+              const SizedBox(height: 14),
+              GlassField(
+                label: l10n.registerPasswordLabel,
+                labelTrailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.lock_outline, size: 12, color: Colors.white.withValues(alpha: 0.6)),
+                    const SizedBox(width: 4),
+                    Text(
+                      l10n.registerPasswordRequirement,
+                      style: authText(11, FontWeight.w600, Colors.white.withValues(alpha: 0.6)),
+                    ),
+                  ],
+                ),
+                controller: _passwordController,
+                hint: l10n.registerPasswordHint,
+                icon: Icons.lock_outline,
+                obscureText: _obscurePassword,
+                textInputAction: TextInputAction.next,
+                autofillHints: const [AutofillHints.newPassword],
+                enabled: !isLoading,
+                forceErrorText: validationFailure?.firstError('password'),
+                onChanged: (value) {
+                  setState(() => _password = value);
+                  _clearServerError();
+                },
+                validator: (value) {
+                  if (value == null || value.isEmpty) return l10n.validationPasswordRequired;
+                  if (value.length < 8) return l10n.validationPasswordMinLength;
+                  return null;
+                },
+                suffix: GlassPasswordToggle(
+                  isObscured: _obscurePassword,
+                  tooltip: _obscurePassword ? l10n.loginShowPassword : l10n.loginHidePassword,
+                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                ),
+              ),
+              const SizedBox(height: 10),
+              PasswordStrengthMeter(password: _password),
+              const SizedBox(height: 14),
+              GlassField(
+                label: l10n.registerConfirmPasswordLabel,
+                controller: _confirmPasswordController,
+                hint: l10n.registerConfirmPasswordHint,
+                icon: Icons.lock_outline,
+                obscureText: _obscureConfirmPassword,
+                textInputAction: TextInputAction.done,
+                enabled: !isLoading,
+                forceErrorText: validationFailure?.firstError('password_confirmation'),
+                onChanged: (_) => _clearServerError(),
+                onFieldSubmitted: (_) => _submit(),
+                validator: (value) {
+                  if (value == null || value.isEmpty) return l10n.validationConfirmPasswordRequired;
+                  if (value != _passwordController.text) return l10n.validationConfirmPasswordMismatch;
+                  return null;
+                },
+                suffix: GlassPasswordToggle(
+                  isObscured: _obscureConfirmPassword,
+                  tooltip: _obscureConfirmPassword ? l10n.loginShowPassword : l10n.loginHidePassword,
+                  onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+                ),
+              ),
+              const SizedBox(height: 14),
+              InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: isLoading
+                    ? null
+                    : () => setState(() {
+                          _agreedToTerms = !_agreedToTerms;
+                          if (_agreedToTerms) _showTermsError = false;
+                        }),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(top: 1),
+                      child: GlassCheckbox(
+                        value: _agreedToTerms,
+                        hasError: _showTermsError,
+                        onChanged: isLoading
+                            ? null
+                            : (value) => setState(() {
+                                  _agreedToTerms = value;
+                                  if (_agreedToTerms) _showTermsError = false;
+                                }),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: RichText(
+                        text: TextSpan(
+                          style: authText(12, FontWeight.w400, Colors.white.withValues(alpha: 0.85), height: 1.4),
+                          children: [
+                            TextSpan(text: l10n.registerTermsPrefix),
+                            TextSpan(
+                              text: l10n.registerTerms,
+                              style: linkStyle,
+                              recognizer: TapGestureRecognizer()
+                                ..onTap = () => _showInfoDialog(
+                                      l10n.registerTerms,
+                                      'Syarat & Ketentuan SmartTrip Batam.',
+                                    ),
+                            ),
+                            TextSpan(text: l10n.registerTermsAnd),
+                            TextSpan(
+                              text: l10n.registerPrivacy,
+                              style: linkStyle,
+                              recognizer: TapGestureRecognizer()
+                                ..onTap = () => _showInfoDialog(
+                                      l10n.registerPrivacy,
+                                      'Kebijakan Privasi SmartTrip Batam.',
+                                    ),
+                            ),
+                            TextSpan(text: l10n.registerTermsSuffix),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (_showTermsError) ...[
+                const SizedBox(height: 6),
+                Padding(
+                  padding: const EdgeInsets.only(left: 30),
+                  child: Text(l10n.validationTermsRequired, style: authText(12, FontWeight.w400, AuthColors.error)),
+                ),
+              ],
+              const SizedBox(height: 18),
+              AuthSubmitButton(label: l10n.registerSubmit, isLoading: isLoading, onPressed: _submit),
+            ],
           ),
         ),
       ),

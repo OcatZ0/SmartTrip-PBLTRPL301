@@ -23,6 +23,10 @@ class ItineraryItem extends Model
         'source',
         'polyline_to_here',
         'visited_at',
+        'custom_name',
+        'custom_lat',
+        'custom_lng',
+        'custom_visit_minutes',
     ];
 
     protected function casts(): array
@@ -30,6 +34,8 @@ class ItineraryItem extends Model
         return [
             'topsis_score' => 'decimal:4',
             'visited_at' => 'datetime',
+            'custom_lat' => 'decimal:7',
+            'custom_lng' => 'decimal:7',
         ];
     }
 
@@ -43,6 +49,30 @@ class ItineraryItem extends Model
         // Riwayat trip harus tetap utuh walau admin soft-delete tempatnya
         // (docs/prd Section 10 soft delete policy).
         return $this->belongsTo(Place::class, 'places_id')->withTrashed();
+    }
+
+    /**
+     * A stop is either a catalog place or a custom wishlist pin (places_id
+     * null, custom_* filled - migration 2026_10_13_000000).
+     *
+     * @return array{lat: float, lng: float}
+     */
+    public function coordinates(): array
+    {
+        if ($this->places_id === null) {
+            return ['lat' => (float) $this->custom_lat, 'lng' => (float) $this->custom_lng];
+        }
+
+        return ['lat' => (float) $this->place->lat, 'lng' => (float) $this->place->lng];
+    }
+
+    public function visitMinutes(): int
+    {
+        if ($this->places_id === null) {
+            return (int) $this->custom_visit_minutes;
+        }
+
+        return (int) ($this->place->estimated_visit_minutes ?? 60);
     }
 
     public function review(): HasOne

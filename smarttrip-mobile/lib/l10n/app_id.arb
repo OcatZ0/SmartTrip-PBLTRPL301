@@ -1,23 +1,23 @@
 {
   "@@locale": "id",
   "loginTitle": "Selamat Datang Kembali",
-  "loginSubtitle": "Akses rencana perjalanan bahari & wishlist wisatamu di Batam",
+  "loginSubtitle": "Masuk untuk lanjut merencanakan tripmu.",
   "loginEmailLabel": "Alamat Email",
   "loginEmailHint": "nama@email.com",
   "loginPasswordLabel": "Kata Sandi",
   "loginPasswordHint": "Minimal 8 karakter",
   "loginShowPassword": "Tampilkan kata sandi",
   "loginHidePassword": "Sembunyikan kata sandi",
-  "loginRememberMe": "Ingat Saya",
-  "loginForgotPassword": "Lupa Kata Sandi?",
+  "loginRememberMe": "Ingat saya",
+  "loginForgotPassword": "Lupa kata sandi?",
   "loginSubmit": "Masuk",
   "loginOrSignInWith": "atau",
-  "loginWithGoogle": "Masuk dengan Google",
-  "loginBrowseWithoutLogin": "Masuk tanpa Login",
+  "loginWithGoogle": "Lanjut dengan Google",
+  "loginBrowseWithoutLogin": "Lewati",
   "loginNoAccount": "Belum punya akun?",
-  "loginRegisterNow": "Daftar Sekarang",
+  "loginRegisterNow": "Daftar sekarang",
   "registerTitle": "Buat Akun Baru",
-  "registerSubtitle": "Mulai petualangan cerdas wisatamu di Batam\ndengan mudah & aman.",
+  "registerSubtitle": "Daftar untuk mulai merencanakan tripmu di Batam.",
   "registerNameLabel": "Nama Lengkap",
   "registerNameHint": "cth. Dian Pratama",
   "registerEmailLabel": "Alamat Email",
@@ -52,5 +52,273 @@
   "errorNetwork": "Tidak dapat terhubung ke server. Periksa koneksi internetmu.",
   "errorGeneric": "Terjadi kesalahan. Coba lagi.",
   "errorGoogleNotConfigured": "Masuk dengan Google belum dikonfigurasi pada build ini.",
-  "comingSoon": "Segera hadir"
+  "comingSoon": "Segera hadir",
+  "actionRetry": "Coba Lagi",
+  "actionBack": "Kembali",
+  "actionCancel": "Batal",
+  "actionSave": "Simpan",
+  "catalogCreateTrip": "Buat Trip",
+  "tripStepLabel": "Langkah {step} dari {total}: {name}",
+  "@tripStepLabel": {
+    "placeholders": {
+      "step": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tripSetupHeader": "Atur Trip",
+  "tripSetupTitle": "Rencanakan Trip-mu",
+  "tripSetupSubtitle": "Beri tahu preferensimu, kami susunkan itinerary terbaik.",
+  "tripDurationLabel": "Durasi Perjalanan",
+  "tripDurationHint": "Berapa lama liburan di Batam?",
+  "tripDurationDecrease": "Kurangi durasi",
+  "tripDurationIncrease": "Tambah durasi",
+  "tripDays": "{count} Hari",
+  "@tripDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tripNights": "{count} Malam",
+  "@tripNights": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tripDurationLongWarning": "Lebih dari 7 hari boleh, tapi pilihan tempat di Batam bisa mulai terasa berulang.",
+  "tripBudgetLabel": "Estimasi Anggaran per Orang",
+  "tripBudgetHint": "Eksklusi tiket penerbangan utama",
+  "tripBudgetEconomy": "Ekonomis",
+  "tripBudgetEconomyRange": "< 1 Jt",
+  "tripBudgetStandard": "Standar",
+  "tripBudgetStandardRange": "1 - 2.5 Jt",
+  "tripBudgetPremium": "Premium",
+  "tripBudgetPremiumRange": "> 2.5 Jt",
+  "validationBudgetRequired": "Anggaran harus lebih dari 0",
+  "tripDateLabel": "Tanggal Mulai & Selesai",
+  "tripDateHint": "Waktu pelesiran di pulau",
+  "tripStartTimeLabel": "Jam Mulai",
+  "tripEndTimeLabel": "Jam Selesai",
+  "tripTimeZone": "WIB",
+  "validationEndTimeAfterStart": "Jam selesai harus setelah jam mulai",
+  "tripTipTitle": "Tips SmartTrip:",
+  "tripTipBody": " Waktu terbaik tiba di Batam Centre adalah sebelum jam 10:00 WIB agar itinerary maksimal.",
+  "tripSetupNext": "Lanjut ke Wishlist (2/4)",
+  "tripCancelTitle": "Batalkan pembuatan trip?",
+  "tripCancelBody": "Pengaturan yang belum disimpan akan hilang.",
+  "tripCancelStay": "Lanjut Mengisi",
+  "tripCancelConfirm": "Batalkan",
+  "tripWishlistHeader": "Susun Wishlist",
+  "tripWishlistComingSoon": "Penyusunan wishlist sedang disiapkan. Kamu tetap bisa lanjut, sistem akan memilihkan tempat terbaik untukmu.",
+  "tripWishlistNext": "Lanjut ke Minat & Prioritas (3/4)",
+  "tripPreferencesHeader": "Pilih Minat dan Prioritas",
+  "tripPreferencesStepName": "Preferensi & Prioritas",
+  "tripPreferencesTitle": "Sesuaikan Karakter Trip-mu",
+  "tripPreferencesSubtitle": "Algoritma cerdas kami akan mengoptimalkan rute sesuai bobot preferensimu.",
+  "tripInterestTitle": "Minat untuk Trip Ini",
+  "tripInterestHint": "Kategori yang diprioritaskan dalam trip ini:",
+  "validationInterestRequired": "Pilih minimal 1 kategori",
+  "tripPriorityTitle": "Apa yang Paling Penting Buatmu?",
+  "tripPriorityHint": "Geser slider untuk mengatur prioritas komputasi rute.",
+  "tripPriorityInterest": "Kesesuaian Minat Wisata",
+  "tripPriorityInterestMin": "Eksplorasi Acak",
+  "tripPriorityInterestMax": "Fokus Minat 100%",
+  "tripPriorityDistance": "Jarak / Waktu Perjalanan",
+  "tripPriorityDistanceMin": "Bebas Keliling",
+  "tripPriorityDistanceMax": "Paling Cepat",
+  "tripPriorityBudget": "Kepatuhan Anggaran",
+  "tripPriorityBudgetMin": "Fleksibel Pengeluaran",
+  "tripPriorityBudgetMax": "Ketat di Bawah Plafon",
+  "tripPriorityRating": "Rating & Ulasan Terbaik",
+  "tripPriorityRatingMin": "Spot Hidden Gem",
+  "tripPriorityRatingMax": "Top Verified Only",
+  "tripPriorityValue": "{value}/10 ({level})",
+  "@tripPriorityValue": {
+    "placeholders": {
+      "value": {
+        "type": "int"
+      },
+      "level": {
+        "type": "String"
+      }
+    }
+  },
+  "tripPriorityLevelLow": "Rendah",
+  "tripPriorityLevelMedium": "Sedang",
+  "tripPriorityLevelHigh": "Prioritas",
+  "tripPriorityLevelVeryHigh": "Sangat Prioritas",
+  "tripSaveDefaultTitle": "Simpan sebagai preferensi default profil saya",
+  "tripSaveDefaultHint": "Diterapkan otomatis untuk perencanaan rute berikutnya",
+  "tripPreferencesNext": "Lanjut ke Pilih Hotel (4/4)",
+  "tripHotelHeader": "Pilih Hotel",
+  "tripHotelBadge": "Penentu Titik Berangkat & Pulang",
+  "tripHotelTitle": "Pilih Titik Menginap / Hotel",
+  "tripHotelSubtitle": "Titik hotel menjadi acuan titik awal keberangkatan dan kepulangan harianmu agar rute keliling Batam seimbang.",
+  "tripHotelSearchHint": "Cari nama hotel atau resort di Batam...",
+  "tripHotelTabRecommended": "Rekomendasi Cerdas",
+  "tripHotelTabSearch": "Cari Semua Hotel",
+  "tripHotelRecommendedTitle": "{count} Hotel Rekomendasi",
+  "@tripHotelRecommendedTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tripHotelRecommendedBadge": "AI Matched",
+  "tripHotelRecommendedHint": "Disesuaikan dengan minat dan anggaran trip-mu",
+  "tripHotelRank": "Rekomendasi #{rank}",
+  "@tripHotelRank": {
+    "placeholders": {
+      "rank": {
+        "type": "int"
+      }
+    }
+  },
+  "tripHotelSelect": "Pilih Hotel Ini",
+  "tripHotelSelected": "Hotel Dipilih",
+  "tripHotelNoRecommendation": "Belum ada rekomendasi hotel. Cari hotel atau tambah manual.",
+  "tripHotelNoResult": "Hotel tidak ditemukan.",
+  "tripHotelManual": "Tidak menemukan hotelmu? Tambah hotel manual di peta",
+  "tripHotelInfoTitle": "Optimalisasi Navigasi Harian",
+  "tripHotelInfoBody": "Hotel yang kamu pilih menjadi titik awal dan akhir rute setiap hari.",
+  "tripHotelSelectedLabel": "Titik Terpilih:",
+  "tripHotelNoneSelected": "Belum dipilih",
+  "tripGenerateButton": "Buat Itinerary Cerdas Sekarang",
+  "tripGenerateHint": "SmartTrip akan menghitung rute, jam buka, dan durasi kunjungan.",
+  "mapPickerTitle": "Pilih Lokasi di Peta",
+  "mapPickerHint": "Ketuk peta untuk menaruh titik lokasi",
+  "mapPickerPinRequired": "Ketuk peta untuk memilih lokasi terlebih dahulu",
+  "mapPickerNameLabel": "Nama Tempat",
+  "mapPickerNameHint": "cth. Hotel Harmoni",
+  "validationPlaceNameRequired": "Nama tempat wajib diisi",
+  "generateTitle": "Menyusun Perjalanan Terbaikmu",
+  "generateFailedTitle": "Itinerary gagal dibuat",
+  "generateStepCandidates": "Mengumpulkan tempat wishlist & rekomendasi",
+  "generateStepCandidatesHint": "Mencocokkan minat dan anggaranmu",
+  "generateStepRoute": "Menghitung estimasi rute antar tempat",
+  "generateStepRouteHint": "Mengurutkan kunjungan dari hotel",
+  "generateStepSchedule": "Menyesuaikan jadwal dengan jam buka",
+  "generateStepScheduleHint": "Memastikan tiap hari muat di jam jalan-jalanmu",
+  "generateStage": "TAHAP AKHIR KURASI",
+  "itineraryHeader": "Trip Saya",
+  "itineraryDayTab": "Hari {day} ({date})",
+  "@itineraryDayTab": {
+    "placeholders": {
+      "day": {
+        "type": "int"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "itineraryRecommended": "Rekomendasi",
+  "itineraryFromWishlist": "Dari Wishlist",
+  "itineraryVisitMinutes": "{minutes} menit",
+  "@itineraryVisitMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "itineraryDistance": "± {km} km dari tempat sebelumnya",
+  "@itineraryDistance": {
+    "placeholders": {
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "itineraryVisited": "Sudah dikunjungi",
+  "itineraryOpenMap": "Buka Rute Peta Live",
+  "itineraryEmpty": "Itinerary belum dibuat untuk trip ini.",
+  "itineraryGenerateNow": "Buat Itinerary",
+  "itineraryDayEmpty": "Tidak ada tempat yang muat di hari ini.",
+  "itineraryOverpacked": "Jadwal hari ini cukup padat, pertimbangkan mengganti satu tempat.",
+  "itineraryShortOfPlaces": "Tempat yang cocok kurang untuk mengisi hari ini.",
+  "itineraryDroppedWishlist": "{count} tempat wishlist tidak muat dan dilewati.",
+  "@itineraryDroppedWishlist": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "itineraryStartFrom": "Berangkat dari {name}",
+  "@itineraryStartFrom": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "itineraryUnknownPlace": "Tempat tidak tersedia",
+  "liveMapTitle": "Pelacakan Trip",
+  "liveMapSubtitle": "SmartTrip Batam • Hari {day}",
+  "@liveMapSubtitle": {
+    "placeholders": {
+      "day": {
+        "type": "int"
+      }
+    }
+  },
+  "liveMapStartDay": "Mulai Hari Ini",
+  "liveMapStopTracking": "Hentikan Pelacakan",
+  "liveMapTrackingActive": "Tracking aktif",
+  "liveMapTrackingOff": "Tracking belum aktif",
+  "liveMapCenter": "Pusatkan lokasi",
+  "liveMapArrived": "Kamu sudah tiba di lokasi tujuan!",
+  "liveMapAutoCheckIn": "Auto Check-in ✓",
+  "liveMapMarkVisited": "Selesai Dikunjungi",
+  "liveMapUnmarkVisited": "Batalkan Tanda",
+  "liveMapNavigate": "Buka Navigasi",
+  "liveMapStopsTitle": "Rangkaian Kunjungan Hari Ini",
+  "liveMapStopsCount": "{count} Destinasi",
+  "@liveMapStopsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "liveMapStopVisited": "Selesai",
+  "liveMapStopNext": "Tujuan berikutnya",
+  "liveMapStopPending": "Belum dikunjungi",
+  "liveMapNextBadge": "Berikutnya",
+  "liveMapAllocation": "Alokasi {minutes} mnt",
+  "@liveMapAllocation": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "liveMapHotel": "Hotel",
+  "liveMapLongPressHint": "Tekan lama penanda atau daftar tempat untuk menandai/membatalkan kunjungan.",
+  "liveMapPermissionDenied": "Izin lokasi ditolak. Kamu tetap bisa menandai kunjungan secara manual.",
+  "liveMapLocationServiceOff": "Layanan lokasi (GPS) mati. Nyalakan untuk pelacakan otomatis.",
+  "liveMapVisitQueued": "Tidak ada koneksi. Tanda kunjungan disimpan dan dikirim otomatis nanti.",
+  "notificationChannelName": "Kedatangan di Tempat Wisata",
+  "notificationChannelDescription": "Pemberitahuan saat kamu tiba di tempat dalam itinerary hari ini.",
+  "notificationArrivedTitle": "Kamu sudah tiba di {name}",
+  "@notificationArrivedTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationArrivedBody": "Kunjunganmu otomatis ditandai. Selamat menikmati!"
 }

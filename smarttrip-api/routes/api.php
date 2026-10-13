@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\ItineraryItemController;
 use App\Http\Controllers\Api\PlaceController;
 use App\Http\Controllers\Api\ProfileController;
@@ -12,6 +13,7 @@ use App\Http\Controllers\Api\WishlistController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
+Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/places', [PlaceController::class, 'index']);
 Route::get('/places/{place}', [PlaceController::class, 'show']);
 Route::get('/shared-itinerary/{shareToken}', [SharedItineraryController::class, 'show']);

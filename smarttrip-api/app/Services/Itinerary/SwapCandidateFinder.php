@@ -28,13 +28,10 @@ class SwapCandidateFinder
         $otherStops = $day->items()
             ->where('itinerary_items_id', '!=', $item->itinerary_items_id)
             ->with('place')
-            ->get()
-            ->filter(fn (ItineraryItem $i) => $i->place !== null);
+            ->get();
 
         $centroid = $otherStops->isNotEmpty()
-            ? KMeans::centroid($otherStops->map(fn (ItineraryItem $i) => [
-                'lat' => (float) $i->place->lat, 'lng' => (float) $i->place->lng,
-            ])->all())
+            ? KMeans::centroid($otherStops->map(fn (ItineraryItem $i) => $i->coordinates())->all())
             : $start;
 
         $usedElsewhereInTrip = ItineraryItem::query()
@@ -44,7 +41,12 @@ class SwapCandidateFinder
             ->all();
 
         $candidates = Place::query()
-            ->where('type', $item->place->type)
+            // A custom wishlist pin has no type; any sight or eatery can replace it.
+            ->when(
+                $item->place !== null,
+                fn ($q) => $q->where('type', $item->place->type),
+                fn ($q) => $q->whereIn('type', ['attraction', 'culinary'])
+            )
             ->where('business_status', '!=', 'closed_permanently')
             ->whereNotIn('places_id', $usedElsewhereInTrip)
             ->with('categories')

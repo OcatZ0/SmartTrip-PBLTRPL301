@@ -1,19 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/error/api_failure.dart';
 import '../../../core/router/app_routes.dart';
-import '../../../core/theme/app_tokens.dart';
-import '../../../core/widgets/app_text_field.dart';
-import '../../../core/widgets/primary_button.dart';
 import '../../../l10n/app_localizations.dart';
 import '../data/google_auth_service.dart';
 import 'login_controller.dart';
+import 'widgets/auth_layout.dart';
 import 'widgets/google_sign_in_button.dart';
 
-/// A2. Masuk (Login) - Figma Mockup, node 122:180.
+/// A2. Masuk (Login): the Batam harbour at dusk with a dark glass sign-in
+/// card. Never scrolls, see [AuthScaffold].
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
@@ -41,11 +39,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
 
-    ref.read(loginControllerProvider.notifier).login(
-          email: _emailController.text,
-          password: _passwordController.text,
-          remember: _remember,
-        );
+    ref
+        .read(loginControllerProvider.notifier)
+        .login(email: _emailController.text, password: _passwordController.text, remember: _remember);
   }
 
   // Drops a server-side field error as soon as the user edits the form.
@@ -56,9 +52,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   bool _isFieldError(Object error) =>
-      error is ValidationFailure &&
-      (error.firstError('email') != null ||
-          error.firstError('password') != null);
+      error is ValidationFailure && (error.firstError('email') != null || error.firstError('password') != null);
 
   String _errorMessage(Object error, AppLocalizations l10n) {
     return switch (error) {
@@ -72,8 +66,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    final tokens = context.tokens;
 
     final loginState = ref.watch(loginControllerProvider);
     final isLoading = loginState.isLoading;
@@ -88,280 +80,127 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         ..showSnackBar(SnackBar(content: Text(_errorMessage(error, l10n))));
     });
 
-    final linkStyle = theme.textTheme.labelLarge?.copyWith(
-      color: tokens.link,
-      fontSize: 16,
-      letterSpacing: 0.14,
-    );
-
-    return Scaffold(
-      backgroundColor: tokens.screenBackground,
-      body: SafeArea(
-        child: Center(
-          child: _FitToScreen(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+    return AuthScaffold(
+      footer: AuthFooterLink(
+        question: l10n.loginNoAccount,
+        action: l10n.loginRegisterNow,
+        onTap: () => context.push(AppRoutes.register),
+      ),
+      card: GlassCard(
+        title: l10n.loginTitle,
+        subtitle: l10n.loginSubtitle,
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              GlassField(
+                label: l10n.loginEmailLabel,
+                controller: _emailController,
+                hint: l10n.loginEmailHint,
+                icon: Icons.mail_outline,
+                keyboardType: TextInputType.emailAddress,
+                textInputAction: TextInputAction.next,
+                autofillHints: const [AutofillHints.email],
+                enabled: !isLoading,
+                forceErrorText: validationFailure?.firstError('email'),
+                onChanged: (_) => _clearServerError(),
+                validator: (value) {
+                  final email = value?.trim() ?? '';
+                  if (email.isEmpty) return l10n.validationEmailRequired;
+                  if (!_emailPattern.hasMatch(email)) return l10n.validationEmailInvalid;
+                  return null;
+                },
+              ),
+              const SizedBox(height: 14),
+              GlassField(
+                label: l10n.loginPasswordLabel,
+                controller: _passwordController,
+                hint: l10n.loginPasswordHint,
+                icon: Icons.lock_outline,
+                obscureText: _obscurePassword,
+                textInputAction: TextInputAction.done,
+                autofillHints: const [AutofillHints.password],
+                enabled: !isLoading,
+                forceErrorText: validationFailure?.firstError('password'),
+                onChanged: (_) => _clearServerError(),
+                onFieldSubmitted: (_) => _submit(),
+                validator: (value) => (value == null || value.isEmpty) ? l10n.validationPasswordRequired : null,
+                suffix: GlassPasswordToggle(
+                  isObscured: _obscurePassword,
+                  tooltip: _obscurePassword ? l10n.loginShowPassword : l10n.loginHidePassword,
+                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
                 children: [
-                  const SizedBox(height: 15),
-                  Center(
-                    child: SvgPicture.asset(
-                      'assets/images/logo.svg',
-                      width: 60,
-                      height: 62,
-                    ),
-                  ),
-                  const SizedBox(height: 15),
-                  Text(
-                    l10n.loginTitle,
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.headlineSmall,
-                  ),
-                  const SizedBox(height: 4),
-                  Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 320),
-                      child: Text(
-                        l10n.loginSubtitle,
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.bodyMedium
-                            ?.copyWith(color: tokens.textSecondary),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 7),
-                  DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(AppTokens.radius),
-                      boxShadow: AppTokens.softShadow,
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Form(
-                        key: _formKey,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            AppTextField(
-                              label: l10n.loginEmailLabel,
-                              hintText: l10n.loginEmailHint,
-                              controller: _emailController,
-                              prefixIcon: Icons.mail_outlined,
-                              keyboardType: TextInputType.emailAddress,
-                              textInputAction: TextInputAction.next,
-                              autofillHints: const [AutofillHints.email],
-                              enabled: !isLoading,
-                              forceErrorText:
-                                  validationFailure?.firstError('email'),
-                              onChanged: (_) => _clearServerError(),
-                              validator: (value) {
-                                final email = value?.trim() ?? '';
-                                if (email.isEmpty) {
-                                  return l10n.validationEmailRequired;
-                                }
-                                if (!_emailPattern.hasMatch(email)) {
-                                  return l10n.validationEmailInvalid;
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 16),
-                            AppTextField(
-                              label: l10n.loginPasswordLabel,
-                              hintText: l10n.loginPasswordHint,
-                              controller: _passwordController,
-                              prefixIcon: Icons.lock_outlined,
-                              obscureText: _obscurePassword,
-                              textInputAction: TextInputAction.done,
-                              autofillHints: const [AutofillHints.password],
-                              enabled: !isLoading,
-                              forceErrorText:
-                                  validationFailure?.firstError('password'),
-                              onChanged: (_) => _clearServerError(),
-                              onFieldSubmitted: (_) => _submit(),
-                              validator: (value) =>
-                                  (value == null || value.isEmpty)
-                                      ? l10n.validationPasswordRequired
-                                      : null,
-                              suffix: IconButton(
-                                tooltip: _obscurePassword
-                                    ? l10n.loginShowPassword
-                                    : l10n.loginHidePassword,
-                                padding: EdgeInsets.zero,
-                                color: tokens.textSecondary,
-                                icon: Icon(
-                                  _obscurePassword
-                                      ? Icons.visibility_outlined
-                                      : Icons.visibility_off_outlined,
-                                  size: 20,
-                                ),
-                                onPressed: () => setState(
-                                  () => _obscurePassword = !_obscurePassword,
+                  // Takes the free space so "Lupa kata sandi?" sits at the
+                  // right edge.
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(8),
+                        onTap: isLoading ? null : () => setState(() => _remember = !_remember),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              GlassCheckbox(
+                                value: _remember,
+                                onChanged: isLoading ? null : (value) => setState(() => _remember = value),
+                              ),
+                              const SizedBox(width: 8),
+                              Flexible(
+                                child: Text(
+                                  l10n.loginRememberMe,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: authText(13, FontWeight.w400, Colors.white.withValues(alpha: 0.9)),
                                 ),
                               ),
-                            ),
-                            const SizedBox(height: 16),
-                            Padding(
-                              padding: const EdgeInsets.only(top: 2),
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  InkWell(
-                                    borderRadius: BorderRadius.circular(5),
-                                    onTap: isLoading
-                                        ? null
-                                        : () => setState(
-                                              () => _remember = !_remember,
-                                            ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        SizedBox(
-                                          width: 24,
-                                          height: 24,
-                                          child: FittedBox(
-                                            child: Checkbox(
-                                              value: _remember,
-                                              onChanged: isLoading
-                                                  ? null
-                                                  : (value) => setState(
-                                                        () => _remember =
-                                                            value ?? false,
-                                                      ),
-                                              side: BorderSide(
-                                                color: tokens.checkboxBorder,
-                                                width: 1.5,
-                                              ),
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(5),
-                                              ),
-                                              materialTapTargetSize:
-                                                  MaterialTapTargetSize
-                                                      .shrinkWrap,
-                                              visualDensity:
-                                                  VisualDensity.compact,
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 2),
-                                        Text(
-                                          l10n.loginRememberMe,
-                                          style: theme.textTheme.labelMedium
-                                              ?.copyWith(
-                                            color: tokens.textSecondary,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  InkWell(
-                                    onTap: () =>
-                                        context.push(AppRoutes.forgotPassword),
-                                    child: Text(
-                                      l10n.loginForgotPassword,
-                                      style:
-                                          theme.textTheme.labelMedium?.copyWith(
-                                        color: tokens.link,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            Padding(
-                              padding: const EdgeInsets.only(top: 4),
-                              child: PrimaryButton(
-                                label: l10n.loginSubmit,
-                                isLoading: isLoading,
-                                onPressed: _submit,
-                              ),
-                            ),
-                            const SizedBox(height: 7),
-                            Text(
-                              l10n.loginOrSignInWith,
-                              textAlign: TextAlign.center,
-                              style: theme.textTheme.bodyMedium
-                                  ?.copyWith(color: tokens.textSecondary),
-                            ),
-                            const SizedBox(height: 7),
-                            GoogleSignInButton(
-                              label: l10n.loginWithGoogle,
-                              onPressed: isLoading
-                                  ? null
-                                  : () => ref
-                                      .read(loginControllerProvider.notifier)
-                                      .loginWithGoogle(remember: _remember),
-                            ),
-                            const SizedBox(height: 24),
-                            InkWell(
-                              onTap: () => context.go(AppRoutes.catalog),
-                              child: Text(
-                                l10n.loginBrowseWithoutLogin,
-                                textAlign: TextAlign.center,
-                                style: theme.textTheme.labelLarge?.copyWith(
-                                  color: tokens.link,
-                                  fontSize: 15,
-                                  letterSpacing: 0.24,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 13),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 30),
-                  Text(
-                    l10n.loginNoAccount,
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.bodyMedium
-                        ?.copyWith(color: tokens.textSecondary),
-                  ),
-                  const SizedBox(height: 8),
-                  InkWell(
-                    onTap: () => context.push(AppRoutes.register),
-                    child: Text(
-                      l10n.loginRegisterNow,
-                      textAlign: TextAlign.center,
-                      style: linkStyle,
+                  const SizedBox(width: 8),
+                  TextButton(
+                    onPressed: () => context.push(AppRoutes.forgotPassword),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AuthColors.sun400,
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
                     ),
+                    child: Text(l10n.loginForgotPassword, style: authText(13, FontWeight.w600, AuthColors.sun400)),
                   ),
                 ],
               ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Never scrolls: scales [child] down (never up) so the whole login page fits
-/// any screen height, including short phones and when the keyboard is open.
-/// The width is bounded first so the scale only ever reacts to height.
-class _FitToScreen extends StatelessWidget {
-  const _FitToScreen({required this.padding, required this.child});
-
-  final EdgeInsets padding;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: padding,
-      child: LayoutBuilder(
-        builder: (context, constraints) => FittedBox(
-          fit: BoxFit.scaleDown,
-          child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: constraints.maxWidth),
-            child: child,
+              const SizedBox(height: 8),
+              AuthSubmitButton(label: l10n.loginSubmit, isLoading: isLoading, onPressed: _submit),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Expanded(child: Divider(color: Colors.white.withValues(alpha: 0.18), height: 1)),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Text(
+                      l10n.loginOrSignInWith,
+                      style: authText(12, FontWeight.w500, Colors.white.withValues(alpha: 0.75)),
+                    ),
+                  ),
+                  Expanded(child: Divider(color: Colors.white.withValues(alpha: 0.18), height: 1)),
+                ],
+              ),
+              const SizedBox(height: 14),
+              GoogleSignInButton(
+                label: l10n.loginWithGoogle,
+                onPressed: isLoading
+                    ? null
+                    : () => ref.read(loginControllerProvider.notifier).loginWithGoogle(remember: _remember),
+              ),
+            ],
           ),
         ),
       ),

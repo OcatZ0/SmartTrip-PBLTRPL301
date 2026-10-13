@@ -30,7 +30,7 @@ class ItineraryGenerator
 
     private const AVERAGE_SPEED_KMH = 27.5;
 
-    public function __construct(private readonly GoogleRoutesClient $routesClient) {}
+    public function __construct(private readonly OpenRouteServiceClient $routesClient) {}
 
     /**
      * @return array{days: array<int, array{day: ItineraryDay, tidak_muat: bool, padat: bool}>, dropped_wishlist_places: array<int, string>}
@@ -356,7 +356,7 @@ class ItineraryGenerator
         $items = $day->items()->with('place')->get();
 
         $keyed = $items->mapWithKeys(fn (ItineraryItem $item) => [
-            $item->itinerary_items_id => ['lat' => (float) $item->place->lat, 'lng' => (float) $item->place->lng],
+            $item->itinerary_items_id => $item->coordinates(),
         ])->all();
 
         $order = $keyed === [] ? [] : NearestNeighborRoute::order($start, $keyed);
@@ -375,7 +375,7 @@ class ItineraryGenerator
 
         $padat = false;
         if ($legs !== []) {
-            $visitMinutes = $items->sum(fn (ItineraryItem $item) => $item->place->estimated_visit_minutes ?? 60);
+            $visitMinutes = $items->sum(fn (ItineraryItem $item) => $item->visitMinutes());
             $realMinutes = array_sum(array_column($legs, 'duration_seconds')) / 60 + $visitMinutes;
             $padat = $realMinutes > $this->windowMinutes($trip) * self::OVERBUDGET_THRESHOLD;
         }
@@ -414,6 +414,12 @@ class ItineraryGenerator
                 'topsis_score' => $stop['topsis_score'],
                 'source' => $stop['source'],
                 'polyline_to_here' => $legs[$i]['polyline'] ?? null,
+                ...($stop['places_id'] === null ? [
+                    'custom_name' => $stop['label'],
+                    'custom_lat' => $stop['lat'],
+                    'custom_lng' => $stop['lng'],
+                    'custom_visit_minutes' => $stop['visit_minutes'],
+                ] : []),
             ]);
         }
 

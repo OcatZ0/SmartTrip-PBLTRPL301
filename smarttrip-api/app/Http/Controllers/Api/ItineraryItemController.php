@@ -73,9 +73,6 @@ class ItineraryItemController extends Controller
 
         $newPlace = Place::findOrFail($data['places_id']);
 
-        // Baris ini pasti sudah punya places_id (item generate() selalu diisi
-        // sebuah tempat), jadi rankedCandidates() di dalam scoreFor() aman
-        // memakai $itineraryItem->place->type.
         $topsisScore = $finder->scoreFor($itineraryItem, $newPlace);
 
         try {
@@ -84,6 +81,10 @@ class ItineraryItemController extends Controller
                     'places_id' => $data['places_id'],
                     'topsis_score' => $topsisScore,
                     'visited_at' => null,
+                    'custom_name' => null,
+                    'custom_lat' => null,
+                    'custom_lng' => null,
+                    'custom_visit_minutes' => null,
                 ]);
 
                 $generator->resequenceDay($trip, $day);

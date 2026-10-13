@@ -7,6 +7,7 @@ use App\Models\Place;
 use App\Models\PlaceCandidate;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -189,6 +190,56 @@ class CandidateReviewTest extends TestCase
         $this->assertNotNull($place);
         $this->assertNull($place->description_en);
         $this->assertFalse((bool) $place->category_tags_reviewed);
+    }
+
+    public function test_a_gemini_timeout_still_leaves_the_place_promoted_instead_of_a_server_error(): void
+    {
+        Storage::fake('public');
+        $admin = User::factory()->create(['role' => 'admin']);
+        $candidate = $this->makeCandidate();
+        Http::fake([
+            'places.googleapis.com/v1/places/*/media' => Http::response('fake-image-bytes'),
+            'places.googleapis.com/v1/places/*' => Http::response([
+                'id' => 'gp-review-1', 'displayName' => ['text' => 'Pantai Kandidat Lengkap'],
+                'formattedAddress' => 'Nongsa, Batam', 'location' => ['latitude' => 1.15, 'longitude' => 104.05],
+                'businessStatus' => 'OPERATIONAL',
+            ]),
+            'generativelanguage.googleapis.com/*' => fn () => throw new ConnectionException('cURL error 28: Operation timed out'),
+        ]);
+
+        $response = $this->actingAs($admin)->post("/admin/candidates/{$candidate->place_candidates_id}/approve");
+
+        $response->assertRedirect();
+        $this->assertSame('approved', $candidate->fresh()->status);
+        $this->assertNotNull(Place::where('google_place_id', 'gp-review-1')->first());
+    }
+
+    public function test_gemini_is_retried_after_a_temporary_high_demand_error(): void
+    {
+        Storage::fake('public');
+        Category::create(['name_id' => 'Pantai', 'name_en' => 'Beach', 'slug' => 'pantai']);
+        $admin = User::factory()->create(['role' => 'admin']);
+        $candidate = $this->makeCandidate();
+        Http::fake([
+            'places.googleapis.com/v1/places/*/media' => Http::response('fake-image-bytes'),
+            'places.googleapis.com/v1/places/*' => Http::response([
+                'id' => 'gp-review-1', 'displayName' => ['text' => 'Pantai Kandidat Lengkap'],
+                'formattedAddress' => 'Nongsa, Batam', 'location' => ['latitude' => 1.15, 'longitude' => 104.05],
+                'businessStatus' => 'OPERATIONAL',
+            ]),
+            'generativelanguage.googleapis.com/*' => Http::sequence()
+                ->push(['error' => ['code' => 503, 'status' => 'UNAVAILABLE']], 503)
+                ->push(['candidates' => [['content' => ['parts' => [['text' => json_encode([
+                    'description_en' => 'A beautiful beach.', 'category_tags' => ['pantai'],
+                    'estimated_visit_minutes' => 90, 'is_outdoor' => true,
+                ])]]]]]]),
+        ]);
+
+        $this->actingAs($admin)->post("/admin/candidates/{$candidate->place_candidates_id}/approve");
+
+        $place = Place::where('google_place_id', 'gp-review-1')->first();
+        $this->assertSame('A beautiful beach.', $place->description_en);
+        $this->assertSame(90, $place->estimated_visit_minutes);
     }
 
     public function test_a_non_admin_cannot_approve_a_candidate(): void

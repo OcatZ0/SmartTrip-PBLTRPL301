@@ -8,6 +8,7 @@ use App\Models\ItineraryItem;
 use App\Models\Place;
 use App\Models\Trip;
 use App\Models\User;
+use App\Services\Itinerary\EncodedPolyline;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
@@ -30,18 +31,31 @@ class SwapTest extends TestCase
         ], $overrides));
     }
 
-    private function fakeGoogleRoutes(): void
+    private function fakeRoutes(): void
     {
         Http::fake([
-            'routes.googleapis.com/*' => Http::response([
-                'routes' => [[
-                    'legs' => array_fill(0, 8, [
-                        'duration' => '600s',
-                        'polyline' => ['encodedPolyline' => 'fakePolyline123'],
-                    ]),
-                ]],
-            ]),
+            'api.openrouteservice.org/*' => fn ($request) => Http::response(self::orsRoute(count($request['coordinates']))),
         ]);
+    }
+
+    /**
+     * OpenRouteService GeoJSON response for any number of waypoints: every
+     * leg takes 10 minutes and is a straight two-point line.
+     */
+    private static function orsRoute(int $waypointCount): array
+    {
+        $coordinates = [];
+        for ($i = 0; $i < $waypointCount; $i++) {
+            $coordinates[] = [104.0 + $i / 100, 1.1 + $i / 100];
+        }
+
+        return ['features' => [[
+            'geometry' => ['type' => 'LineString', 'coordinates' => $coordinates],
+            'properties' => [
+                'segments' => array_fill(0, max($waypointCount - 1, 0), ['duration' => 600.0, 'distance' => 5000.0]),
+                'way_points' => range(0, $waypointCount - 1),
+            ],
+        ]]];
     }
 
     /**
@@ -161,7 +175,7 @@ class SwapTest extends TestCase
         ['trip' => $trip, 'item' => $item, 'category' => $category] = $this->tripWithOneItem($user);
         $alt = $this->makePlace(['name' => 'Alternatif', 'lat' => 1.1311, 'lng' => 104.0311, 'google_place_id' => 'gp-alt']);
         $alt->categories()->attach($category->categories_id);
-        $this->fakeGoogleRoutes();
+        $this->fakeRoutes();
 
         $response = $this->withHeaders($this->authHeader($user))
             ->patchJson("/api/itinerary-items/{$item->itinerary_items_id}", ['places_id' => $alt->places_id]);
@@ -179,7 +193,7 @@ class SwapTest extends TestCase
         // A lodging is never part of the (attraction) swap-candidate pool -
         // stands in for "picked via full manual catalog search".
         $manualPick = $this->makePlace(['type' => 'lodging', 'name' => 'Hasil Cari Manual', 'lat' => 1.4000, 'lng' => 104.4000, 'google_place_id' => 'gp-manual']);
-        $this->fakeGoogleRoutes();
+        $this->fakeRoutes();
 
         $response = $this->withHeaders($this->authHeader($user))
             ->patchJson("/api/itinerary-items/{$item->itinerary_items_id}", ['places_id' => $manualPick->places_id]);
@@ -197,7 +211,7 @@ class SwapTest extends TestCase
         $item->update(['visited_at' => now()]);
         $alt = $this->makePlace(['name' => 'Alternatif', 'lat' => 1.1311, 'lng' => 104.0311, 'google_place_id' => 'gp-alt']);
         $alt->categories()->attach($category->categories_id);
-        $this->fakeGoogleRoutes();
+        $this->fakeRoutes();
 
         $this->withHeaders($this->authHeader($user))
             ->patchJson("/api/itinerary-items/{$item->itinerary_items_id}", ['places_id' => $alt->places_id])
@@ -219,7 +233,7 @@ class SwapTest extends TestCase
 
         $alt = $this->makePlace(['name' => 'Alternatif', 'lat' => 1.1311, 'lng' => 104.0311, 'google_place_id' => 'gp-alt']);
         $alt->categories()->attach($category->categories_id);
-        $this->fakeGoogleRoutes();
+        $this->fakeRoutes();
 
         $this->withHeaders($this->authHeader($user))
             ->patchJson("/api/itinerary-items/{$item->itinerary_items_id}", ['places_id' => $alt->places_id])
@@ -234,14 +248,18 @@ class SwapTest extends TestCase
         ['trip' => $trip, 'item' => $item, 'category' => $category] = $this->tripWithOneItem($user);
         $alt = $this->makePlace(['name' => 'Alternatif', 'lat' => 1.1311, 'lng' => 104.0311, 'google_place_id' => 'gp-alt']);
         $alt->categories()->attach($category->categories_id);
-        $this->fakeGoogleRoutes();
+        $this->fakeRoutes();
 
         $response = $this->withHeaders($this->authHeader($user))
             ->patchJson("/api/itinerary-items/{$item->itinerary_items_id}", ['places_id' => $alt->places_id]);
 
         $response->assertOk();
         $item->refresh();
-        $this->assertSame('fakePolyline123', $item->polyline_to_here);
+        // First leg of the faked route: hotel waypoint -> the only stop.
+        $this->assertSame(
+            EncodedPolyline::encode([['lat' => 1.1, 'lng' => 104.0], ['lat' => 1.11, 'lng' => 104.01]]),
+            $item->polyline_to_here
+        );
         $this->assertSame(1, $item->visit_order);
     }
 
@@ -262,7 +280,7 @@ class SwapTest extends TestCase
 
         $alt = $this->makePlace(['name' => 'Alternatif', 'lat' => 1.1311, 'lng' => 104.0311, 'google_place_id' => 'gp-alt']);
         $alt->categories()->attach($category->categories_id);
-        $this->fakeGoogleRoutes();
+        $this->fakeRoutes();
 
         $this->withHeaders($this->authHeader($user))
             ->patchJson("/api/itinerary-items/{$item->itinerary_items_id}", ['places_id' => $alt->places_id])
@@ -271,6 +289,35 @@ class SwapTest extends TestCase
         $otherDayItem->refresh();
         $this->assertSame($otherDayPlace->places_id, $otherDayItem->places_id);
         $this->assertSame('untouchedPolyline', $otherDayItem->polyline_to_here);
+    }
+
+    public function test_a_custom_pin_stop_can_be_swapped_for_a_catalog_place(): void
+    {
+        $user = User::factory()->create();
+        ['day' => $day, 'category' => $category] = $this->tripWithOneItem($user);
+        $pin = ItineraryItem::create([
+            'itinerary_days_id' => $day->itinerary_days_id, 'places_id' => null,
+            'visit_order' => 2, 'source' => 'wishlist',
+            'custom_name' => 'Rumah Saudara', 'custom_lat' => 1.1320, 'custom_lng' => 104.0320,
+            'custom_visit_minutes' => 30,
+        ]);
+        $alternative = $this->makePlace(['name' => 'Kuliner', 'type' => 'culinary', 'lat' => 1.1330, 'lng' => 104.0330, 'google_place_id' => 'gp-alt']);
+        $alternative->categories()->attach($category->categories_id);
+        $this->fakeRoutes();
+
+        $candidates = $this->withHeaders($this->authHeader($user))
+            ->getJson("/api/itinerary-items/{$pin->itinerary_items_id}/swap-candidates");
+        $candidates->assertOk();
+        $this->assertContains($alternative->places_id, array_column($candidates->json('data'), 'places_id'));
+
+        $response = $this->withHeaders($this->authHeader($user))
+            ->patchJson("/api/itinerary-items/{$pin->itinerary_items_id}", ['places_id' => $alternative->places_id]);
+
+        $response->assertOk();
+        $pin->refresh();
+        $this->assertSame($alternative->places_id, $pin->places_id);
+        $this->assertNull($pin->custom_name);
+        $this->assertNull($pin->custom_visit_minutes);
     }
 
     public function test_cannot_swap_in_a_place_already_used_elsewhere_in_the_trip(): void
@@ -323,7 +370,7 @@ class SwapTest extends TestCase
         ['item' => $item, 'category' => $category] = $this->tripWithOneItem($user);
         $alt = $this->makePlace(['name' => 'Alternatif', 'lat' => 1.1311, 'lng' => 104.0311, 'google_place_id' => 'gp-alt']);
         $alt->categories()->attach($category->categories_id);
-        Http::fake(['routes.googleapis.com/*' => Http::response(['error' => 'boom'], 403)]);
+        Http::fake(['api.openrouteservice.org/*' => Http::response(['error' => 'boom'], 403)]);
 
         $response = $this->withHeaders($this->authHeader($user))
             ->patchJson("/api/itinerary-items/{$item->itinerary_items_id}", ['places_id' => $alt->places_id]);

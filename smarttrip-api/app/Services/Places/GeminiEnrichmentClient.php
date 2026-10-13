@@ -2,6 +2,8 @@
 
 namespace App\Services\Places;
 
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
@@ -15,12 +17,24 @@ use RuntimeException;
 class GeminiEnrichmentClient
 {
     /**
+     * Flash models regularly answer 503 "high demand" or stall for a while;
+     * those are worth a couple of retries before giving up.
+     */
+    private const RETRY_TIMES = 3;
+
+    private const RETRY_SLEEP_MS = 2000;
+
+    private const TIMEOUT_SECONDS = 60;
+
+    private const RETRYABLE_STATUSES = [429, 500, 503];
+
+    /**
      * @param  array<int, string>  $availableCategorySlugs  categories.slug yang sudah di-seed (Section 3: wajib diseed duluan)
      * @return array{description_en: string|null, category_tags: array<int, string>, estimated_visit_minutes: int|null, is_outdoor: bool|null}
      */
     public function enrich(string $name, ?string $descriptionId, array $availableCategorySlugs): array
     {
-        $model = config('services.gemini.model', 'gemini-2.0-flash');
+        $model = config('services.gemini.model');
         $slugList = implode(', ', $availableCategorySlugs);
 
         $prompt = <<<PROMPT
@@ -39,13 +53,23 @@ class GeminiEnrichmentClient
             }
             PROMPT;
 
-        $response = Http::withHeaders([
-            'Content-Type' => 'application/json',
-            'x-goog-api-key' => config('services.gemini.api_key'),
-        ])->post("https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent", [
-            'contents' => [['parts' => [['text' => $prompt]]]],
-            'generationConfig' => ['responseMimeType' => 'application/json'],
-        ]);
+        try {
+            $response = Http::withHeaders([
+                'Content-Type' => 'application/json',
+                'x-goog-api-key' => config('services.gemini.api_key'),
+            ])
+                ->timeout(self::TIMEOUT_SECONDS)
+                ->retry(self::RETRY_TIMES, self::RETRY_SLEEP_MS, fn ($e) => $e instanceof ConnectionException
+                    || ($e instanceof RequestException && in_array($e->response->status(), self::RETRYABLE_STATUSES, true)), throw: false)
+                ->post("https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent", [
+                    'contents' => [['parts' => [['text' => $prompt]]]],
+                    'generationConfig' => ['responseMimeType' => 'application/json'],
+                ]);
+        } catch (ConnectionException $e) {
+            // Callers only expect RuntimeException (PlaceCandidateReviewService
+            // keeps the place promoted without enrichment).
+            throw new RuntimeException('Gemini API tidak bisa dihubungi: '.$e->getMessage(), 0, $e);
+        }
 
         if ($response->failed()) {
             throw new RuntimeException('Gemini API gagal: '.$response->body());

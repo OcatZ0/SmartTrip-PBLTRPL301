@@ -37,22 +37,34 @@ class ItineraryGenerationTest extends TestCase
     }
 
     /**
-     * Google Routes API dipalsukan dengan cukup banyak leg (10 menit tiap
-     * leg) buat menutupi berapa pun stop yang dibutuhkan skenario test -
-     * leg berlebih diabaikan dengan aman oleh generator.
+     * OpenRouteService dipalsukan: respons menyesuaikan jumlah waypoint
+     * yang dikirim, 10 menit tiap leg.
      */
-    private function fakeGoogleRoutes(): void
+    private function fakeRoutes(): void
     {
         Http::fake([
-            'routes.googleapis.com/*' => Http::response([
-                'routes' => [[
-                    'legs' => array_fill(0, 8, [
-                        'duration' => '600s',
-                        'polyline' => ['encodedPolyline' => 'fakePolyline123'],
-                    ]),
-                ]],
-            ]),
+            'api.openrouteservice.org/*' => fn ($request) => Http::response(self::orsRoute(count($request['coordinates']))),
         ]);
+    }
+
+    /**
+     * OpenRouteService GeoJSON response for any number of waypoints: every
+     * leg takes 10 minutes and is a straight two-point line.
+     */
+    private static function orsRoute(int $waypointCount): array
+    {
+        $coordinates = [];
+        for ($i = 0; $i < $waypointCount; $i++) {
+            $coordinates[] = [104.0 + $i / 100, 1.1 + $i / 100];
+        }
+
+        return ['features' => [[
+            'geometry' => ['type' => 'LineString', 'coordinates' => $coordinates],
+            'properties' => [
+                'segments' => array_fill(0, max($waypointCount - 1, 0), ['duration' => 600.0, 'distance' => 5000.0]),
+                'way_points' => range(0, $waypointCount - 1),
+            ],
+        ]]];
     }
 
     // --- weights ---
@@ -240,7 +252,7 @@ class ItineraryGenerationTest extends TestCase
         $recommended = $this->makePlace(['name' => 'Rekomendasi', 'lat' => 1.1305, 'lng' => 104.0305, 'google_place_id' => 'gp-rec']);
         $recommended->categories()->attach($category->categories_id);
 
-        $this->fakeGoogleRoutes();
+        $this->fakeRoutes();
 
         $response = $this->withHeaders($this->authHeader($user))
             ->postJson("/api/trips/{$trip->trips_id}/generate");
@@ -260,6 +272,34 @@ class ItineraryGenerationTest extends TestCase
         $this->assertDatabaseCount('itinerary_items', $allPlaceIds->count());
     }
 
+    public function test_a_custom_pin_wishlist_item_becomes_a_stop_with_its_pin_snapshot(): void
+    {
+        $user = User::factory()->create();
+        $trip = $this->readyTrip($user, 1);
+        $trip->wishlistPlaces()->create([
+            'custom_name' => 'Rumah Saudara', 'custom_lat' => 1.1302, 'custom_lng' => 104.0302,
+            'custom_visit_minutes' => 45,
+        ]);
+
+        $this->fakeRoutes();
+
+        $response = $this->withHeaders($this->authHeader($user))
+            ->postJson("/api/trips/{$trip->trips_id}/generate");
+
+        $response->assertOk();
+        $this->assertDatabaseHas('itinerary_items', [
+            'places_id' => null,
+            'source' => 'wishlist',
+            'custom_name' => 'Rumah Saudara',
+            'custom_visit_minutes' => 45,
+        ]);
+
+        $detail = $this->withHeaders($this->authHeader($user))->getJson("/api/trips/{$trip->trips_id}");
+        $stop = collect($detail->json('days.0.items'))->firstWhere('custom_name', 'Rumah Saudara');
+        $this->assertNull($stop['place']);
+        $this->assertEqualsWithDelta(1.1302, (float) $stop['custom_lat'], 0.0001);
+    }
+
     public function test_wishlist_items_are_geographically_clustered_into_separate_days(): void
     {
         $user = User::factory()->create();
@@ -275,7 +315,7 @@ class ItineraryGenerationTest extends TestCase
             $trip->wishlistPlaces()->create(['places_id' => $place->places_id]);
         }
 
-        $this->fakeGoogleRoutes();
+        $this->fakeRoutes();
 
         $response = $this->withHeaders($this->authHeader($user))
             ->postJson("/api/trips/{$trip->trips_id}/generate");
@@ -298,7 +338,7 @@ class ItineraryGenerationTest extends TestCase
         $wishlist = $this->makePlace(['name' => 'Wishlist', 'lat' => 1.1301, 'lng' => 104.0301, 'google_place_id' => 'gp-w']);
         $trip->wishlistPlaces()->create(['places_id' => $wishlist->places_id]);
 
-        $this->fakeGoogleRoutes();
+        $this->fakeRoutes();
 
         $response = $this->withHeaders($this->authHeader($user))
             ->postJson("/api/trips/{$trip->trips_id}/generate");
@@ -317,7 +357,7 @@ class ItineraryGenerationTest extends TestCase
         $trip = $this->readyTrip($user, 1);
         $wishlist = $this->makePlace(['name' => 'Wishlist', 'lat' => 1.1301, 'lng' => 104.0301, 'google_place_id' => 'gp-w']);
         $trip->wishlistPlaces()->create(['places_id' => $wishlist->places_id]);
-        $this->fakeGoogleRoutes();
+        $this->fakeRoutes();
 
         $headers = $this->authHeader($user);
         $this->withHeaders($headers)->postJson("/api/trips/{$trip->trips_id}/generate")->assertOk();
@@ -337,7 +377,7 @@ class ItineraryGenerationTest extends TestCase
         // recommend, day should come back empty and flagged.
         $trip = $this->readyTrip($user, 1);
 
-        $this->fakeGoogleRoutes();
+        $this->fakeRoutes();
 
         $response = $this->withHeaders($this->authHeader($user))
             ->postJson("/api/trips/{$trip->trips_id}/generate");
@@ -353,7 +393,7 @@ class ItineraryGenerationTest extends TestCase
         $trip = $this->readyTrip($user, 1);
         $wishlist = $this->makePlace(['name' => 'Wishlist', 'lat' => 1.1301, 'lng' => 104.0301, 'google_place_id' => 'gp-w']);
         $trip->wishlistPlaces()->create(['places_id' => $wishlist->places_id]);
-        $this->fakeGoogleRoutes();
+        $this->fakeRoutes();
 
         $headers = $this->authHeader($user);
         $this->withHeaders($headers)->postJson("/api/trips/{$trip->trips_id}/generate")->assertOk();

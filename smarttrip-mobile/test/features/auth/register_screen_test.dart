@@ -1,6 +1,3 @@
-import 'dart:ui';
-
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -21,9 +18,9 @@ Future<void> _pumpApp(
 }) async {
   tester.view.physicalSize = const Size(1200, 2800);
   tester.view.devicePixelRatio = 2;
-  tester.platformDispatcher.localeTestValue = const Locale('id');
+  tester.platformDispatcher.localesTestValue = const [Locale('id')];
   addTearDown(tester.view.reset);
-  addTearDown(tester.platformDispatcher.clearLocaleTestValue);
+  addTearDown(tester.platformDispatcher.clearLocalesTestValue);
 
   await tester.pumpWidget(
     ProviderScope(
@@ -38,7 +35,7 @@ Future<void> _pumpApp(
   await tester.pumpAndSettle();
 
   // Navigate to Register screen from Login screen
-  await tester.tap(find.text('Daftar Sekarang'));
+  await tester.tap(find.text('Daftar sekarang'));
   await tester.pumpAndSettle();
 }
 
@@ -63,6 +60,8 @@ Future<void> _fillForm(
 }
 
 void main() {
+  setUpAll(loadAppFont);
+
   late InMemoryTokenStorage tokenStorage;
   late FakeAuthRepository repository;
 
@@ -75,14 +74,12 @@ void main() {
     await _pumpApp(tester, tokenStorage: tokenStorage, repository: repository);
 
     expect(find.text('Buat Akun Baru'), findsOneWidget);
-    expect(
-      find.text('Mulai petualangan cerdas wisatamu di Batam\ndengan mudah & aman.'),
-      findsOneWidget,
-    );
+    expect(find.text('Daftar untuk mulai merencanakan tripmu di Batam.'), findsOneWidget);
     expect(find.text('Nama Lengkap'), findsOneWidget);
     expect(find.text('Alamat Email'), findsOneWidget);
     expect(find.text('Kata Sandi'), findsOneWidget);
-    expect(find.text('Minimal 8 karakter'), findsOneWidget);
+    // Shown twice: the requirement label above the field and its hint.
+    expect(find.text('Minimal 8 karakter'), findsNWidgets(2));
     expect(find.text('Kekuatan Sandi'), findsOneWidget);
     expect(find.text('Konfirmasi Kata Sandi'), findsOneWidget);
     expect(find.byType(Checkbox), findsOneWidget);
@@ -183,12 +180,9 @@ void main() {
 
   testWidgets('server validation errors display on fields', (tester) async {
     repository.onRegister = (name, email, password, confirmation) {
-      throw ValidationFailure(
-        message: 'Data tidak valid.',
-        errors: const {
-          'email': ['Email ini sudah terdaftar. Silakan login.'],
-        },
-      );
+      throw const ValidationFailure('Data tidak valid.', {
+        'email': ['Email ini sudah terdaftar. Silakan login.'],
+      });
     };
 
     await _pumpApp(tester, tokenStorage: tokenStorage, repository: repository);
@@ -202,7 +196,7 @@ void main() {
 
   testWidgets('network failure shows snackbar', (tester) async {
     repository.onRegister = (name, email, password, confirmation) {
-      throw const NetworkFailure(DioExceptionType.connectionError);
+      throw const NetworkFailure();
     };
 
     await _pumpApp(tester, tokenStorage: tokenStorage, repository: repository);
@@ -215,5 +209,44 @@ void main() {
       find.text('Tidak dapat terhubung ke server. Periksa koneksi internetmu.'),
       findsOneWidget,
     );
+  });
+
+  group('layout fits without scrolling', () {
+    const screens = {
+      'small phone 320x568': Size(320, 568),
+      'medium phone 412x915': Size(412, 915),
+      'tablet 800x1280': Size(800, 1280),
+    };
+
+    for (final entry in screens.entries) {
+      testWidgets('${entry.key}: everything is on screen and nothing scrolls', (tester) async {
+        await _pumpApp(tester, tokenStorage: tokenStorage, repository: repository);
+        tester.view.physicalSize = entry.value * 2;
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull);
+        expect(find.byWidgetPredicate((w) => w is ScrollView || w is SingleChildScrollView), findsNothing);
+        for (final text in ['Buat Akun Baru', _submit, 'Sudah punya akun?']) {
+          final rect = tester.getRect(find.text(text));
+          expect(rect.top, greaterThanOrEqualTo(0), reason: text);
+          expect(rect.bottom, lessThanOrEqualTo(entry.value.height), reason: text);
+        }
+      });
+    }
+
+    testWidgets('focusing the last field lifts it above the keyboard', (tester) async {
+      await _pumpApp(tester, tokenStorage: tokenStorage, repository: repository);
+      final confirm = find.byType(TextFormField).at(3);
+      const keyboardHeight = 330.0;
+
+      await tester.tap(confirm);
+      tester.view.viewInsets = const FakeViewPadding(bottom: keyboardHeight * 2);
+      addTearDown(tester.view.resetViewInsets);
+      await tester.pumpAndSettle();
+      await tester.pump();
+
+      final screenHeight = tester.view.physicalSize.height / tester.view.devicePixelRatio;
+      expect(tester.getRect(confirm).bottom, lessThanOrEqualTo(screenHeight - keyboardHeight));
+    });
   });
 }

@@ -12,8 +12,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loginTitle => 'Welcome Back';
 
   @override
-  String get loginSubtitle =>
-      'Access your marine travel plans & wishlist in Batam';
+  String get loginSubtitle => 'Sign in to keep planning your trip.';
 
   @override
   String get loginEmailLabel => 'Email Address';
@@ -34,10 +33,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loginHidePassword => 'Hide password';
 
   @override
-  String get loginRememberMe => 'Remember Me';
+  String get loginRememberMe => 'Remember me';
 
   @override
-  String get loginForgotPassword => 'Forgot Password?';
+  String get loginForgotPassword => 'Forgot password?';
 
   @override
   String get loginSubmit => 'Sign In';
@@ -46,23 +45,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loginOrSignInWith => 'or ';
 
   @override
-  String get loginWithGoogle => 'Sign in with Google';
+  String get loginWithGoogle => 'Continue with Google';
 
   @override
-  String get loginBrowseWithoutLogin => 'Continue without logging in';
+  String get loginBrowseWithoutLogin => 'Skip';
 
   @override
   String get loginNoAccount => 'Don\'t have an account?';
 
   @override
-  String get loginRegisterNow => 'Register Now';
+  String get loginRegisterNow => 'Register now';
 
   @override
   String get registerTitle => 'Create New Account';
 
   @override
-  String get registerSubtitle =>
-      'Start your smart travel adventure in Batam\neasily & securely.';
+  String get registerSubtitle => 'Register to start planning your Batam trip.';
 
   @override
   String get registerNameLabel => 'Full Name';
@@ -174,4 +172,536 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get comingSoon => 'Coming soon';
+
+  @override
+  String get actionRetry => 'Try Again';
+
+  @override
+  String get actionBack => 'Back';
+
+  @override
+  String get actionCancel => 'Cancel';
+
+  @override
+  String get actionSave => 'Save';
+
+  @override
+  String get catalogCreateTrip => 'Create Trip';
+
+  @override
+  String tripStepLabel(int step, int total, String name) {
+    return 'Step $step of $total: $name';
+  }
+
+  @override
+  String get tripSetupHeader => 'Trip Setup';
+
+  @override
+  String get tripSetupTitle => 'Plan Your Trip';
+
+  @override
+  String get tripSetupSubtitle =>
+      'Tell us your preferences and we will build the best itinerary.';
+
+  @override
+  String get tripDurationLabel => 'Trip Duration';
+
+  @override
+  String get tripDurationHint => 'How long is your Batam holiday?';
+
+  @override
+  String get tripDurationDecrease => 'Decrease duration';
+
+  @override
+  String get tripDurationIncrease => 'Increase duration';
+
+  @override
+  String tripDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Days',
+      one: '1 Day',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String tripNights(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Nights',
+      one: '1 Night',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get tripDurationLongWarning =>
+      'More than 7 days is allowed, but places in Batam may start to repeat.';
+
+  @override
+  String get tripBudgetLabel => 'Estimated Budget per Person';
+
+  @override
+  String get tripBudgetHint => 'Excluding main flight tickets';
+
+  @override
+  String get tripBudgetEconomy => 'Economy';
+
+  @override
+  String get tripBudgetEconomyRange => '< 1M';
+
+  @override
+  String get tripBudgetStandard => 'Standard';
+
+  @override
+  String get tripBudgetStandardRange => '1 - 2.5M';
+
+  @override
+  String get tripBudgetPremium => 'Premium';
+
+  @override
+  String get tripBudgetPremiumRange => '> 2.5M';
+
+  @override
+  String get validationBudgetRequired => 'Budget must be more than 0';
+
+  @override
+  String get tripDateLabel => 'Start & End Date';
+
+  @override
+  String get tripDateHint => 'Your time on the island';
+
+  @override
+  String get tripStartTimeLabel => 'Start Time';
+
+  @override
+  String get tripEndTimeLabel => 'End Time';
+
+  @override
+  String get tripTimeZone => 'WIB';
+
+  @override
+  String get validationEndTimeAfterStart => 'End time must be after start time';
+
+  @override
+  String get tripTipTitle => 'SmartTrip tip:';
+
+  @override
+  String get tripTipBody =>
+      ' Arriving in Batam Centre before 10:00 WIB gets the most out of your itinerary.';
+
+  @override
+  String get tripSetupNext => 'Continue to Wishlist (2/4)';
+
+  @override
+  String get tripCancelTitle => 'Cancel trip setup?';
+
+  @override
+  String get tripCancelBody => 'Unsaved settings will be lost.';
+
+  @override
+  String get tripCancelStay => 'Keep Editing';
+
+  @override
+  String get tripCancelConfirm => 'Cancel Setup';
+
+  @override
+  String get tripWishlistHeader => 'Build Wishlist';
+
+  @override
+  String get tripWishlistComingSoon =>
+      'The wishlist is still being prepared. You can continue and the system will pick the best places for you.';
+
+  @override
+  String get tripWishlistNext => 'Continue to Interests & Priorities (3/4)';
+
+  @override
+  String get tripPreferencesHeader => 'Interests and Priorities';
+
+  @override
+  String get tripPreferencesStepName => 'Preferences & Priorities';
+
+  @override
+  String get tripPreferencesTitle => 'Shape Your Trip';
+
+  @override
+  String get tripPreferencesSubtitle =>
+      'Our algorithm optimizes the route by how much each preference matters to you.';
+
+  @override
+  String get tripInterestTitle => 'Interests for This Trip';
+
+  @override
+  String get tripInterestHint => 'Categories to prioritize on this trip:';
+
+  @override
+  String get validationInterestRequired => 'Choose at least 1 category';
+
+  @override
+  String get tripPriorityTitle => 'What Matters Most to You?';
+
+  @override
+  String get tripPriorityHint =>
+      'Move the sliders to set the route priorities.';
+
+  @override
+  String get tripPriorityInterest => 'Interest Match';
+
+  @override
+  String get tripPriorityInterestMin => 'Random Exploring';
+
+  @override
+  String get tripPriorityInterestMax => '100% Interest Focus';
+
+  @override
+  String get tripPriorityDistance => 'Distance / Travel Time';
+
+  @override
+  String get tripPriorityDistanceMin => 'Roam Freely';
+
+  @override
+  String get tripPriorityDistanceMax => 'Fastest';
+
+  @override
+  String get tripPriorityBudget => 'Budget Fit';
+
+  @override
+  String get tripPriorityBudgetMin => 'Flexible Spending';
+
+  @override
+  String get tripPriorityBudgetMax => 'Strictly Under Budget';
+
+  @override
+  String get tripPriorityRating => 'Best Ratings & Reviews';
+
+  @override
+  String get tripPriorityRatingMin => 'Hidden Gems';
+
+  @override
+  String get tripPriorityRatingMax => 'Top Rated Only';
+
+  @override
+  String tripPriorityValue(int value, String level) {
+    return '$value/10 ($level)';
+  }
+
+  @override
+  String get tripPriorityLevelLow => 'Low';
+
+  @override
+  String get tripPriorityLevelMedium => 'Medium';
+
+  @override
+  String get tripPriorityLevelHigh => 'High';
+
+  @override
+  String get tripPriorityLevelVeryHigh => 'Top Priority';
+
+  @override
+  String get tripSaveDefaultTitle => 'Save as my profile defaults';
+
+  @override
+  String get tripSaveDefaultHint => 'Applied automatically to your next trips';
+
+  @override
+  String get tripPreferencesNext => 'Continue to Hotel (4/4)';
+
+  @override
+  String get tripHotelHeader => 'Choose Hotel';
+
+  @override
+  String get tripHotelBadge => 'Daily Start & End Point';
+
+  @override
+  String get tripHotelTitle => 'Choose Where You Stay';
+
+  @override
+  String get tripHotelSubtitle =>
+      'Your hotel is where every day starts and ends, so the route around Batam stays balanced.';
+
+  @override
+  String get tripHotelSearchHint => 'Search hotels or resorts in Batam...';
+
+  @override
+  String get tripHotelTabRecommended => 'Smart Picks';
+
+  @override
+  String get tripHotelTabSearch => 'Search All Hotels';
+
+  @override
+  String tripHotelRecommendedTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Recommended Hotels',
+      one: '1 Recommended Hotel',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get tripHotelRecommendedBadge => 'AI Matched';
+
+  @override
+  String get tripHotelRecommendedHint => 'Matched to your interests and budget';
+
+  @override
+  String tripHotelRank(int rank) {
+    return 'Pick #$rank';
+  }
+
+  @override
+  String get tripHotelSelect => 'Choose Hotel';
+
+  @override
+  String get tripHotelSelected => 'Selected';
+
+  @override
+  String get tripHotelNoRecommendation =>
+      'No hotel recommendations yet. Search for a hotel or add one manually.';
+
+  @override
+  String get tripHotelNoResult => 'No hotels found.';
+
+  @override
+  String get tripHotelManual => 'Can\'t find your hotel? Add it on the map';
+
+  @override
+  String get tripHotelInfoTitle => 'Daily Route Optimization';
+
+  @override
+  String get tripHotelInfoBody =>
+      'Your chosen hotel is the start and end of every day\'s route.';
+
+  @override
+  String get tripHotelSelectedLabel => 'Selected:';
+
+  @override
+  String get tripHotelNoneSelected => 'Not chosen yet';
+
+  @override
+  String get tripGenerateButton => 'Build My Smart Itinerary';
+
+  @override
+  String get tripGenerateHint =>
+      'SmartTrip will work out routes, opening hours and visit times.';
+
+  @override
+  String get mapPickerTitle => 'Pick a Location';
+
+  @override
+  String get mapPickerHint => 'Tap the map to drop a pin';
+
+  @override
+  String get mapPickerPinRequired => 'Tap the map to choose a location first';
+
+  @override
+  String get mapPickerNameLabel => 'Place Name';
+
+  @override
+  String get mapPickerNameHint => 'e.g. Harmoni Hotel';
+
+  @override
+  String get validationPlaceNameRequired => 'Place name is required';
+
+  @override
+  String get generateTitle => 'Building Your Best Trip';
+
+  @override
+  String get generateFailedTitle => 'Could not build the itinerary';
+
+  @override
+  String get generateStepCandidates =>
+      'Gathering wishlist and recommended places';
+
+  @override
+  String get generateStepCandidatesHint => 'Matching your interests and budget';
+
+  @override
+  String get generateStepRoute => 'Estimating routes between places';
+
+  @override
+  String get generateStepRouteHint => 'Ordering stops from your hotel';
+
+  @override
+  String get generateStepSchedule => 'Fitting the schedule to opening hours';
+
+  @override
+  String get generateStepScheduleHint => 'Making each day fit your daily hours';
+
+  @override
+  String get generateStage => 'FINAL CURATION';
+
+  @override
+  String get itineraryHeader => 'My Trips';
+
+  @override
+  String itineraryDayTab(int day, String date) {
+    return 'Day $day ($date)';
+  }
+
+  @override
+  String get itineraryRecommended => 'Recommended';
+
+  @override
+  String get itineraryFromWishlist => 'From Wishlist';
+
+  @override
+  String itineraryVisitMinutes(int minutes) {
+    return '$minutes min';
+  }
+
+  @override
+  String itineraryDistance(String km) {
+    return '± $km km from the previous stop';
+  }
+
+  @override
+  String get itineraryVisited => 'Visited';
+
+  @override
+  String get itineraryOpenMap => 'Open Live Route Map';
+
+  @override
+  String get itineraryEmpty => 'This trip has no itinerary yet.';
+
+  @override
+  String get itineraryGenerateNow => 'Build Itinerary';
+
+  @override
+  String get itineraryDayEmpty => 'No places fit on this day.';
+
+  @override
+  String get itineraryOverpacked =>
+      'This day is packed, consider swapping a place.';
+
+  @override
+  String get itineraryShortOfPlaces =>
+      'There were not enough matching places to fill this day.';
+
+  @override
+  String itineraryDroppedWishlist(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count wishlist places did not fit and were skipped.',
+      one: '1 wishlist place did not fit and was skipped.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String itineraryStartFrom(String name) {
+    return 'Starting from $name';
+  }
+
+  @override
+  String get itineraryUnknownPlace => 'Place unavailable';
+
+  @override
+  String get liveMapTitle => 'Trip Tracking';
+
+  @override
+  String liveMapSubtitle(int day) {
+    return 'SmartTrip Batam • Day $day';
+  }
+
+  @override
+  String get liveMapStartDay => 'Start Today';
+
+  @override
+  String get liveMapStopTracking => 'Stop Tracking';
+
+  @override
+  String get liveMapTrackingActive => 'Tracking on';
+
+  @override
+  String get liveMapTrackingOff => 'Tracking off';
+
+  @override
+  String get liveMapCenter => 'Center on me';
+
+  @override
+  String get liveMapArrived => 'You have arrived!';
+
+  @override
+  String get liveMapAutoCheckIn => 'Auto check-in ✓';
+
+  @override
+  String get liveMapMarkVisited => 'Mark Visited';
+
+  @override
+  String get liveMapUnmarkVisited => 'Unmark';
+
+  @override
+  String get liveMapNavigate => 'Navigate';
+
+  @override
+  String get liveMapStopsTitle => 'Today\'s Stops';
+
+  @override
+  String liveMapStopsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Stops',
+      one: '1 Stop',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get liveMapStopVisited => 'Visited';
+
+  @override
+  String get liveMapStopNext => 'Next stop';
+
+  @override
+  String get liveMapStopPending => 'Not visited yet';
+
+  @override
+  String get liveMapNextBadge => 'Next';
+
+  @override
+  String liveMapAllocation(int minutes) {
+    return '$minutes min planned';
+  }
+
+  @override
+  String get liveMapHotel => 'Hotel';
+
+  @override
+  String get liveMapLongPressHint =>
+      'Long-press a pin or a stop in the list to mark or unmark it.';
+
+  @override
+  String get liveMapPermissionDenied =>
+      'Location permission denied. You can still mark visits by hand.';
+
+  @override
+  String get liveMapLocationServiceOff =>
+      'Location services (GPS) are off. Turn them on for automatic tracking.';
+
+  @override
+  String get liveMapVisitQueued =>
+      'No connection. The visit is saved and will be sent automatically.';
+
+  @override
+  String get notificationChannelName => 'Arrival at a Stop';
+
+  @override
+  String get notificationChannelDescription =>
+      'Alerts when you reach a stop on today\'s itinerary.';
+
+  @override
+  String notificationArrivedTitle(String name) {
+    return 'You have reached $name';
+  }
+
+  @override
+  String get notificationArrivedBody =>
+      'Your visit was marked automatically. Enjoy!';
 }

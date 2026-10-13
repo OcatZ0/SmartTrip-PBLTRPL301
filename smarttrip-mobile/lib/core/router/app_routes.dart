@@ -7,6 +7,15 @@ class AppRoutes {
   static const register = '/register';
   static const forgotPassword = '/forgot-password';
   static const onboarding = '/onboarding';
+  static const newTrip = '/trips/new';
+
+  /// Trip setup steps 2-4, the generate screen and the itinerary (C2-D1).
+  static String tripWishlist(int tripsId) => '/trips/$tripsId/wishlist';
+  static String tripPreferences(int tripsId) => '/trips/$tripsId/preferences';
+  static String tripHotel(int tripsId) => '/trips/$tripsId/hotel';
+  static String tripGenerate(int tripsId) => '/trips/$tripsId/generate';
+  static String trip(int tripsId) => '/trips/$tripsId';
+  static String liveMap(int tripsId, int dayNumber) => '/trips/$tripsId/days/$dayNumber/map';
 
   /// Reachable without being logged in (PRD Section 8: browsing is public).
   static const publicPaths = {catalog, login, register, forgotPassword};

@@ -50,8 +50,10 @@ dependencies:
   # Auth
   google_sign_in: ^6.2.2
 
-  # Maps & routing
-  google_maps_flutter: ^2.9.0
+  # Maps: OpenStreetMap tiles via flutter_map (replaced google_maps_flutter
+  # 2026-10-13, the Google project could not enable billing)
+  flutter_map: ^8.3.2
+  latlong2: ^0.10.1
 
   # Live location + geofencing
   geolocator: ^13.0.2
@@ -71,6 +73,9 @@ dependencies:
 
   # Routing/navigation
   go_router: ^14.6.2
+
+  # Opens Google Maps turn-by-turn navigation from the live map (E1)
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:

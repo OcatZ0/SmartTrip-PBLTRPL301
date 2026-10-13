@@ -89,6 +89,30 @@ class PlaceCatalogTest extends TestCase
         $this->assertSame('A', $response->json('data.0.name'));
     }
 
+    public function test_the_catalog_can_be_filtered_by_type(): void
+    {
+        $this->makePlace(['name' => 'Hotel Harbour Bay', 'type' => 'lodging']);
+        $this->makePlace(['name' => 'Pantai Melur', 'google_place_id' => 'gp-2']);
+
+        $response = $this->getJson('/api/places?type=lodging');
+
+        $response->assertOk();
+        $this->assertCount(1, $response->json('data'));
+        $this->assertSame('Hotel Harbour Bay', $response->json('data.0.name'));
+    }
+
+    public function test_the_category_list_is_public_and_excludes_soft_deleted_categories(): void
+    {
+        Category::create(['name_id' => 'Pantai', 'name_en' => 'Beach', 'slug' => 'pantai']);
+        Category::create(['name_id' => 'Kuliner', 'name_en' => 'Culinary', 'slug' => 'kuliner']);
+        Category::create(['name_id' => 'Lama', 'name_en' => 'Old', 'slug' => 'lama'])->delete();
+
+        $response = $this->getJson('/api/categories');
+
+        $response->assertOk();
+        $this->assertSame(['Kuliner', 'Pantai'], array_column($response->json('data'), 'name_id'));
+    }
+
     public function test_the_catalog_is_paginated(): void
     {
         for ($i = 0; $i < 25; $i++) {

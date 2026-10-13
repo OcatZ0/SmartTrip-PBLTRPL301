@@ -27,6 +27,36 @@ class ManageTripsTest extends TestCase
         ], $overrides));
     }
 
+    // --- F008: GET /api/trips/{id} ---
+
+    public function test_the_trip_detail_includes_place_info_for_every_stop_and_the_hotel(): void
+    {
+        $user = User::factory()->create();
+        $hotel = Place::create([
+            'name' => 'Hotel Harbour Bay', 'type' => 'lodging', 'lat' => 1.16, 'lng' => 104.0,
+            'address' => 'Batu Ampar', 'source' => 'google', 'google_place_id' => 'gp-hotel',
+        ]);
+        $trip = $this->makeTrip($user, ['hotel_places_id' => $hotel->places_id]);
+        $place = Place::create([
+            'name' => 'Pantai Melur', 'type' => 'attraction', 'lat' => 1.15, 'lng' => 104.05,
+            'address' => 'Barelang', 'source' => 'google', 'google_place_id' => 'gp-1',
+            'estimated_visit_minutes' => 90, 'is_outdoor' => true,
+        ]);
+        $day = ItineraryDay::create(['trips_id' => $trip->trips_id, 'day_number' => 1]);
+        ItineraryItem::create([
+            'itinerary_days_id' => $day->itinerary_days_id, 'places_id' => $place->places_id,
+            'visit_order' => 1, 'source' => 'recommended',
+        ]);
+
+        $response = $this->withHeaders($this->authHeader($user))->getJson("/api/trips/{$trip->trips_id}");
+
+        $response->assertOk();
+        $this->assertSame('Pantai Melur', $response->json('days.0.items.0.place.name'));
+        $this->assertSame(90, $response->json('days.0.items.0.place.estimated_visit_minutes'));
+        $this->assertTrue($response->json('days.0.items.0.place.is_outdoor'));
+        $this->assertSame('Hotel Harbour Bay', $response->json('hotel_place.name'));
+    }
+
     // --- F011: GET /api/trips ---
 
     public function test_a_user_can_list_their_own_trips(): void

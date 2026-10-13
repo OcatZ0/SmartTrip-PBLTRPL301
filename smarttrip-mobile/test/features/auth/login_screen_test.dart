@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -23,9 +21,9 @@ Future<void> _pumpApp(
 }) async {
   tester.view.physicalSize = const Size(1200, 2800);
   tester.view.devicePixelRatio = 2;
-  tester.platformDispatcher.localeTestValue = const Locale('id');
+  tester.platformDispatcher.localesTestValue = const [Locale('id')];
   addTearDown(tester.view.reset);
-  addTearDown(tester.platformDispatcher.clearLocaleTestValue);
+  addTearDown(tester.platformDispatcher.clearLocalesTestValue);
 
   await tester.pumpWidget(
     ProviderScope(
@@ -53,6 +51,8 @@ Future<void> _fillAndSubmit(
 }
 
 void main() {
+  setUpAll(loadAppFont);
+
   late InMemoryTokenStorage tokenStorage;
   late FakeAuthRepository repository;
 
@@ -67,14 +67,14 @@ void main() {
     expect(find.text('Selamat Datang Kembali'), findsOneWidget);
     expect(find.text('Alamat Email'), findsOneWidget);
     expect(find.text('Kata Sandi'), findsOneWidget);
-    expect(find.text('Ingat Saya'), findsOneWidget);
-    expect(find.text('Lupa Kata Sandi?'), findsOneWidget);
+    expect(find.text('Ingat saya'), findsOneWidget);
+    expect(find.text('Lupa kata sandi?'), findsOneWidget);
     expect(find.text(_submit), findsOneWidget);
     expect(find.text('atau'), findsOneWidget);
-    expect(find.text('Masuk dengan Google'), findsOneWidget);
-    expect(find.text('Masuk tanpa Login'), findsOneWidget);
+    expect(find.text('Lanjut dengan Google'), findsOneWidget);
+    expect(find.text('Lewati'), findsOneWidget);
     expect(find.text('Belum punya akun?'), findsOneWidget);
-    expect(find.text('Daftar Sekarang'), findsOneWidget);
+    expect(find.text('Daftar sekarang'), findsOneWidget);
   });
 
   testWidgets('empty submit shows required errors and calls nothing', (tester) async {
@@ -107,7 +107,7 @@ void main() {
     expect(find.text('Selamat Datang Kembali'), findsNothing);
   });
 
-  testWidgets('"Ingat Saya" off keeps the token out of persistent storage', (tester) async {
+  testWidgets('"Ingat saya" off keeps the token out of persistent storage', (tester) async {
     await _pumpApp(tester, tokenStorage: tokenStorage, repository: repository);
 
     await _fillAndSubmit(tester);
@@ -117,10 +117,10 @@ void main() {
     expect(await tokenStorage.read(), 'token-123');
   });
 
-  testWidgets('"Ingat Saya" on persists the token', (tester) async {
+  testWidgets('"Ingat saya" on persists the token', (tester) async {
     await _pumpApp(tester, tokenStorage: tokenStorage, repository: repository);
 
-    await tester.tap(find.text('Ingat Saya'));
+    await tester.tap(find.text('Ingat saya'));
     await tester.pump();
     await _fillAndSubmit(tester);
 
@@ -193,7 +193,7 @@ void main() {
       google: FakeGoogleAuthService(configured: false),
     );
 
-    await tester.tap(find.text('Masuk dengan Google'));
+    await tester.tap(find.text('Lanjut dengan Google'));
     await tester.pumpAndSettle();
 
     expect(
@@ -211,7 +211,7 @@ void main() {
     };
     await _pumpApp(tester, tokenStorage: tokenStorage, repository: repository);
 
-    await tester.tap(find.text('Masuk dengan Google'));
+    await tester.tap(find.text('Lanjut dengan Google'));
     await tester.pumpAndSettle();
 
     expect(receivedIdToken, 'google-id-token');
@@ -226,7 +226,7 @@ void main() {
       google: FakeGoogleAuthService(idToken: null),
     );
 
-    await tester.tap(find.text('Masuk dengan Google'));
+    await tester.tap(find.text('Lanjut dengan Google'));
     await tester.pumpAndSettle();
 
     expect(find.text('Selamat Datang Kembali'), findsOneWidget);
@@ -236,7 +236,7 @@ void main() {
   testWidgets('browse-without-login opens the public catalog', (tester) async {
     await _pumpApp(tester, tokenStorage: tokenStorage, repository: repository);
 
-    await tester.tap(find.text('Masuk tanpa Login'));
+    await tester.tap(find.text('Lewati'));
     await tester.pumpAndSettle();
 
     expect(find.text('Katalog tempat wisata'), findsOneWidget);
@@ -245,13 +245,14 @@ void main() {
   testWidgets('register and forgot-password links open their screens', (tester) async {
     await _pumpApp(tester, tokenStorage: tokenStorage, repository: repository);
 
-    await tester.tap(find.text('Daftar Sekarang'));
+    await tester.tap(find.text('Daftar sekarang'));
     await tester.pumpAndSettle();
-    expect(find.text('Segera hadir'), findsOneWidget);
+    expect(find.text('Buat Akun Baru'), findsOneWidget);
 
-    await tester.pageBack();
+    // The register screen has no app bar; its "Masuk" link goes back.
+    await tester.tap(find.text('Masuk'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Lupa Kata Sandi?'));
+    await tester.tap(find.text('Lupa kata sandi?'));
     await tester.pumpAndSettle();
     expect(find.text('Segera hadir'), findsOneWidget);
   });
@@ -259,9 +260,9 @@ void main() {
   testWidgets('a stored token restores the session straight into the app', (tester) async {
     tester.view.physicalSize = const Size(1200, 2800);
     tester.view.devicePixelRatio = 2;
-    tester.platformDispatcher.localeTestValue = const Locale('id');
+    tester.platformDispatcher.localesTestValue = const [Locale('id')];
     addTearDown(tester.view.reset);
-    addTearDown(tester.platformDispatcher.clearLocaleTestValue);
+    addTearDown(tester.platformDispatcher.clearLocalesTestValue);
 
     final storage = InMemoryTokenStorage(stored: 'abc');
     final adapter = FakeHttpClientAdapter(
@@ -292,5 +293,69 @@ void main() {
     expect(find.text('Katalog tempat wisata'), findsOneWidget);
     expect(find.text('Selamat Datang Kembali'), findsNothing);
     expect(adapter.requests.single.path, '/user');
+  });
+
+  group('layout fits without scrolling', () {
+    // Logical sizes from a small phone up to a tablet.
+    const screens = {
+      'small phone 320x568': Size(320, 568),
+      'medium phone 412x915': Size(412, 915),
+      'tablet 800x1280': Size(800, 1280),
+    };
+
+    for (final entry in screens.entries) {
+      testWidgets('${entry.key}: everything is on screen and nothing scrolls', (tester) async {
+        await _pumpApp(tester, tokenStorage: tokenStorage, repository: repository);
+        tester.view.physicalSize = entry.value * 2;
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull);
+        // Text fields keep their own internal Scrollable; the page itself
+        // must not be a scroll view.
+        expect(find.byWidgetPredicate((w) => w is ScrollView || w is SingleChildScrollView), findsNothing);
+        for (final text in ['Selamat Datang Kembali', 'Masuk', 'Daftar sekarang']) {
+          final rect = tester.getRect(find.text(text).last);
+          expect(rect.top, greaterThanOrEqualTo(0), reason: text);
+          expect(rect.bottom, lessThanOrEqualTo(entry.value.height), reason: text);
+        }
+      });
+    }
+
+    testWidgets('the English copy also fits a small phone', (tester) async {
+      await _pumpApp(tester, tokenStorage: tokenStorage, repository: repository);
+      tester.platformDispatcher.localesTestValue = const [Locale('en')];
+      tester.view.physicalSize = const Size(320, 568) * 2;
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Welcome Back'), findsOneWidget);
+    });
+
+    testWidgets('the keyboard slides the page up so the focused field stays visible', (tester) async {
+      await _pumpApp(tester, tokenStorage: tokenStorage, repository: repository);
+      final titleSize = tester.getSize(find.text('Selamat Datang Kembali'));
+      final password = find.byType(TextFormField).at(1);
+      const keyboardHeight = 330.0;
+
+      await tester.tap(password);
+      tester.view.viewInsets = const FakeViewPadding(bottom: keyboardHeight * 2);
+      addTearDown(tester.view.resetViewInsets);
+      await tester.pumpAndSettle();
+      // The lift is computed from the previous layout, so settle once more.
+      await tester.pump();
+
+      final screenHeight = tester.view.physicalSize.height / tester.view.devicePixelRatio;
+      expect(tester.getSize(find.text('Selamat Datang Kembali')), titleSize);
+      expect(tester.getRect(password).bottom, lessThanOrEqualTo(screenHeight - keyboardHeight));
+      expect(find.byWidgetPredicate((w) => w is ScrollView || w is SingleChildScrollView), findsNothing);
+    });
+
+    testWidgets('"Ingat saya" sits at the left edge and "Lupa kata sandi?" at the right edge', (tester) async {
+      await _pumpApp(tester, tokenStorage: tokenStorage, repository: repository);
+      final field = tester.getRect(find.byType(TextFormField).at(1));
+
+      expect(tester.getRect(find.byType(Checkbox)).left, closeTo(field.left, 4));
+      expect(tester.getRect(find.text('Lupa kata sandi?')).right, closeTo(field.right, 8));
+    });
   });
 }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/theme/app_tokens.dart';
 import '../../../../l10n/app_localizations.dart';
+import 'auth_layout.dart';
 
 /// Evaluates password strength (0 to 4).
 int calculatePasswordStrength(String password) {
@@ -20,7 +20,8 @@ int calculatePasswordStrength(String password) {
   return score;
 }
 
-/// Password strength indicator card matching Figma node 122:324.
+/// Password strength indicator for the dark glass register card. Colors are
+/// light tints so every level stays readable on navy.
 class PasswordStrengthMeter extends StatelessWidget {
   const PasswordStrengthMeter({super.key, required this.password});
 
@@ -29,22 +30,21 @@ class PasswordStrengthMeter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final tokens = context.tokens;
     final score = calculatePasswordStrength(password);
 
     final (String label, Color color) = switch (score) {
-      1 => (l10n.registerPasswordWeak, const Color(0xFFE53E3E)),
-      2 => (l10n.registerPasswordMedium, const Color(0xFFDD6B20)),
-      3 => (l10n.registerPasswordStrong, const Color(0xFF1C6FB0)),
-      4 => (l10n.registerPasswordVeryStrong, const Color(0xFF00568E)),
-      _ => ('-', tokens.textHint),
+      1 => (l10n.registerPasswordWeak, AuthColors.error),
+      2 => (l10n.registerPasswordMedium, AuthColors.sun400),
+      3 => (l10n.registerPasswordStrong, const Color(0xFF8CC8F2)),
+      4 => (l10n.registerPasswordVeryStrong, const Color(0xFF7EE0B5)),
+      _ => ('-', Colors.white.withValues(alpha: 0.5)),
     };
 
-    const inactiveColor = Color(0xFFDCE4F0);
+    final inactiveColor = Colors.white.withValues(alpha: 0.16);
 
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0x99EFF4FF),
+        color: Colors.white.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(8),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -56,11 +56,7 @@ class PasswordStrengthMeter extends StatelessWidget {
             children: [
               Text(
                 l10n.registerPasswordStrength,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: tokens.textSecondary,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                    ),
+                style: authText(11, FontWeight.w600, Colors.white.withValues(alpha: 0.75)),
               ),
               if (password.isNotEmpty)
                 Row(
@@ -77,11 +73,7 @@ class PasswordStrengthMeter extends StatelessWidget {
                     const SizedBox(width: 4),
                     Text(
                       label,
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: color,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                          ),
+                      style: authText(11, FontWeight.w600, color),
                     ),
                   ],
                 ),

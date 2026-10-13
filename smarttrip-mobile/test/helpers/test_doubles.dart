@@ -1,7 +1,7 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/services.dart';
 import 'package:smarttrip_mobile/core/auth/auth_session.dart';
 import 'package:smarttrip_mobile/core/auth/auth_user.dart';
 import 'package:smarttrip_mobile/core/auth/token_storage.dart';
@@ -136,4 +136,12 @@ ResponseBody jsonResponse(Object body, int statusCode) {
       Headers.contentTypeHeader: [Headers.jsonContentType],
     },
   );
+}
+
+/// Widget tests draw unknown fonts as 1em-wide boxes, which makes text far
+/// wider than on a phone. Layout tests load the real app font instead.
+Future<void> loadAppFont() async {
+  final loader = FontLoader('PlusJakartaSans')
+    ..addFont(rootBundle.load('assets/fonts/PlusJakartaSans-Variable.ttf'));
+  await loader.load();
 }

@@ -15,7 +15,8 @@ use Illuminate\Pagination\LengthAwarePaginator;
 /**
  * F005-F006: katalog tempat wisata (browse/search publik) dan detail
  * tempat. docs/prd design spec Section 12: GET /api/places?search=&
- * category=&kecamatan=, GET /api/places/{id} - keduanya publik.
+ * category=&kecamatan=&type=, GET /api/places/{id} - keduanya publik.
+ * type=lodging dipakai pencarian hotel di trip setup (C4).
  * near_itinerary_day (F0010 - Swap, "cari lainnya" manual) urutkan hasil
  * dari yang terdekat ke hari itinerary tersebut.
  */
@@ -43,6 +44,7 @@ class PlaceController extends Controller
                 $slug = $request->string('category')->trim();
                 $query->whereHas('categories', fn ($q) => $q->where('slug', $slug));
             })
+            ->when($request->filled('type'), fn ($query) => $query->where('type', $request->string('type')->trim()))
             ->when($request->filled('kecamatan'), function ($query) use ($request) {
                 $kecamatan = mb_strtolower($request->string('kecamatan')->trim());
                 $query->whereRaw('LOWER(kecamatan) = ?', [$kecamatan]);

@@ -86,7 +86,16 @@ class TripController extends Controller
             abort(403);
         }
 
-        $trip->load(['days' => fn ($q) => $q->orderBy('day_number'), 'days.items' => fn ($q) => $q->orderBy('visit_order')]);
+        // Hasil itinerary (D1) dan peta live (E1) butuh nama/koordinat/foto
+        // tiap stop dan hotel sekaligus, tanpa satu request per tempat.
+        $placeColumns = 'places_id,name,type,lat,lng,address,kecamatan,photo_url,estimated_visit_minutes,is_outdoor';
+
+        $trip->load([
+            'days' => fn ($q) => $q->orderBy('day_number'),
+            'days.items' => fn ($q) => $q->orderBy('visit_order'),
+            "days.items.place:{$placeColumns}",
+            "hotelPlace:{$placeColumns}",
+        ]);
 
         return response()->json($trip);
     }

@@ -51,7 +51,9 @@ class EnrichPlaces extends Command
                 $rows[] = [$place->places_id, $place->name, $filled === [] ? '-' : implode(', ', $filled)];
             } catch (RuntimeException $e) {
                 $failed++;
-                $rows[] = [$place->places_id, $place->name, 'GAGAL: '.mb_strimwidth($e->getMessage(), 0, 80, '...')];
+                // Gemini errors are multi-line JSON; keep the table one row per place.
+                $message = preg_replace('/\s+/', ' ', $e->getMessage());
+                $rows[] = [$place->places_id, $place->name, 'GAGAL: '.mb_strimwidth($message, 0, 80, '...')];
             }
         }
 

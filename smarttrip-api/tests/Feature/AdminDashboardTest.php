@@ -135,7 +135,7 @@ class AdminDashboardTest extends TestCase
         $response = $this->actingAs($admin)->get('/admin/dashboard');
 
         $response->assertOk();
-        $response->assertSee('1 tag kategori belum direview');
+        $response->assertSee('1 hasil AI (deskripsi/tag) belum direview');
     }
 
     // --- analytics ---

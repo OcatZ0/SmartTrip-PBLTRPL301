@@ -2,7 +2,6 @@
 
 namespace App\Services\Places;
 
-use App\Models\Category;
 use App\Models\Place;
 use App\Models\PlaceCandidate;
 use Illuminate\Support\Facades\DB;
@@ -20,7 +19,7 @@ class PlaceCandidateReviewService
 {
     public function __construct(
         private readonly GeoapifyPlacesClient $detailsClient,
-        private readonly GeminiEnrichmentClient $geminiClient,
+        private readonly PlaceEnrichmentService $enrichment,
         private readonly PlaceDuplicateFinder $duplicates,
     ) {}
 
@@ -115,21 +114,8 @@ class PlaceCandidateReviewService
 
     private function tryEnrichWithGemini(Place $place): void
     {
-        $availableSlugs = Category::query()->pluck('slug')->all();
-
         try {
-            $enrichment = $this->geminiClient->enrich($place->name, $place->description, $availableSlugs);
-
-            $place->update([
-                'description_en' => $enrichment['description_en'],
-                'estimated_visit_minutes' => $enrichment['estimated_visit_minutes'],
-                'is_outdoor' => $enrichment['is_outdoor'],
-            ]);
-
-            if ($enrichment['category_tags'] !== []) {
-                $categoryIds = Category::query()->whereIn('slug', $enrichment['category_tags'])->pluck('categories_id');
-                $place->categories()->sync($categoryIds);
-            }
+            $this->enrichment->enrich($place);
         } catch (RuntimeException $e) {
             Log::warning("Gagal enrichment Gemini buat place {$place->places_id}: {$e->getMessage()}");
         }

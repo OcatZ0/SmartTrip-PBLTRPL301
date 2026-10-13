@@ -21,7 +21,7 @@
                 <p class="display-6 mb-0">{{ $placesMissingCost + $placesTagsNotReviewed }}</p>
                 <p class="text-muted small mb-0">
                     {{ $placesMissingCost }} belum ada estimasi biaya,
-                    {{ $placesTagsNotReviewed }} tag kategori belum direview
+                    {{ $placesTagsNotReviewed }} hasil AI (deskripsi/tag) belum direview
                 </p>
             </div>
         </div>

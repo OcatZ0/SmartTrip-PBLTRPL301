@@ -12,7 +12,10 @@ use RuntimeException;
  * Satu call Gemini langsung nyambung ke akhir Enrichment (fase 3), begitu
  * description tersimpan dari Place Details - hasilnya description_en
  * (auto-translate), category_tags (disarankan dari categories yang ada),
- * estimated_visit_minutes, dan is_outdoor.
+ * estimated_visit_minutes, dan is_outdoor. Sejak 2026-10-13 juga menulis
+ * deskripsi singkat Bahasa Indonesia kalau sumber data tidak punya (Geoapify
+ * dan tempat seed memang kosong); teks itu buatan AI, jadi pemanggil
+ * menandainya untuk direview admin.
  */
 class GeminiEnrichmentClient
 {
@@ -30,23 +33,43 @@ class GeminiEnrichmentClient
 
     /**
      * @param  array<int, string>  $availableCategorySlugs  categories.slug yang sudah di-seed (Section 3: wajib diseed duluan)
-     * @return array{description_en: string|null, category_tags: array<int, string>, estimated_visit_minutes: int|null, is_outdoor: bool|null}
+     * @param  array{type?: string|null, kecamatan?: string|null, address?: string|null}  $context  helps Gemini tell same-named places apart
+     * @return array{description_id: string|null, description_en: string|null, category_tags: array<int, string>, estimated_visit_minutes: int|null, is_outdoor: bool|null}
      */
-    public function enrich(string $name, ?string $descriptionId, array $availableCategorySlugs): array
+    public function enrich(string $name, ?string $descriptionId, array $availableCategorySlugs, array $context = []): array
     {
         $model = config('services.gemini.model');
         $slugList = implode(', ', $availableCategorySlugs);
+        $hasDescription = trim((string) $descriptionId) !== '';
+        $place = implode(', ', array_filter([
+            $name,
+            $context['type'] ?? null,
+            $context['kecamatan'] ?? null,
+            $context['address'] ?? null,
+        ]));
+
+        $descriptionTask = $hasDescription
+            ? "Deskripsi (Bahasa Indonesia): {$descriptionId}"
+            : 'Tempat ini belum punya deskripsi. Tulis deskripsi singkat 2-3 kalimat Bahasa Indonesia yang netral '
+                .'tentang tempat ini untuk wisatawan. Hanya tulis hal yang umum diketahui; jangan mengarang harga, '
+                .'jam buka, nomor telepon, atau fasilitas yang tidak pasti. Kalau tidak yakin tempat persisnya, '
+                .'deskripsikan secara umum sesuai jenis tempatnya.';
+
+        $descriptionIdField = $hasDescription
+            ? '"description_id": null,'
+            : '"description_id": "deskripsi singkat Bahasa Indonesia yang kamu tulis",';
 
         $prompt = <<<PROMPT
             Kamu membantu kurasi data tempat wisata/kuliner/hotel di Batam, Indonesia.
-            Nama tempat: {$name}
-            Deskripsi (Bahasa Indonesia): {$descriptionId}
+            Tempat: {$place}
+            {$descriptionTask}
 
             Daftar tag kategori yang TERSEDIA (cuma boleh pilih dari daftar ini, jangan buat tag baru): {$slugList}
 
             Balas HANYA dalam format JSON persis seperti ini, tanpa teks lain:
             {
-              "description_en": "terjemahan Inggris dari deskripsi (null kalau deskripsi kosong)",
+              {$descriptionIdField}
+              "description_en": "terjemahan Inggris dari deskripsi Bahasa Indonesia di atas",
               "category_tags": ["slug1", "slug2"],
               "estimated_visit_minutes": angka perkiraan lama kunjungan wajar dalam menit,
               "is_outdoor": true atau false, apakah tempat ini sensitif cuaca/kegiatan luar ruangan
@@ -82,7 +105,10 @@ class GeminiEnrichmentClient
             throw new RuntimeException('Gemini API mengembalikan respons yang tidak bisa di-parse sebagai JSON: '.$text);
         }
 
+        $written = $hasDescription ? null : trim((string) ($parsed['description_id'] ?? ''));
+
         return [
+            'description_id' => $written === '' ? null : $written,
             'description_en' => $parsed['description_en'] ?? null,
             // Whitelist ketat - Gemini cuma "menyarankan", tag di luar daftar
             // categories yang ada dibuang, bukan ikut kesimpan (Section 5:

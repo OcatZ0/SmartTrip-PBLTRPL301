@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\ReviewController;
 use App\Http\Controllers\Api\SharedItineraryController;
 use App\Http\Controllers\Api\TripController;
 use App\Http\Controllers\Api\TripViewerController;
+use App\Http\Controllers\Api\UserWishlistController;
 use App\Http\Controllers\Api\WishlistController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -21,6 +22,11 @@ Route::get('/shared-itinerary/{shareToken}', [SharedItineraryController::class, 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/profile/preferences', [ProfileController::class, 'show']);
     Route::put('/profile/preferences', [ProfileController::class, 'update']);
+
+    Route::get('/wishlist', [UserWishlistController::class, 'index']);
+    Route::post('/wishlist', [UserWishlistController::class, 'store']);
+    // withTrashed: a place the admin deleted can still be removed from a wishlist.
+    Route::delete('/wishlist/{place}', [UserWishlistController::class, 'destroy'])->withTrashed();
 
     Route::get('/trips', [TripController::class, 'index']);
     Route::post('/trips', [TripController::class, 'store']);

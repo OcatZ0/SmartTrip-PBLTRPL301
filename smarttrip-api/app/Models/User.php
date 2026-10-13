@@ -86,6 +86,16 @@ class User extends Authenticatable
         );
     }
 
+    /**
+     * Soft-deleted places drop out through Place's SoftDeletes scope, and
+     * come back if the admin restores them.
+     */
+    public function wishlistPlaces(): BelongsToMany
+    {
+        return $this->belongsToMany(Place::class, 'user_wishlist_place', 'users_id', 'places_id')
+            ->withPivot('added_at');
+    }
+
     public function trips(): HasMany
     {
         return $this->hasMany(Trip::class, 'users_id');

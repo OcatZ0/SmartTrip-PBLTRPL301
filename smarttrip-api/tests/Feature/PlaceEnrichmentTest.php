@@ -163,6 +163,23 @@ class PlaceEnrichmentTest extends TestCase
         Http::assertSentCount(1);
     }
 
+    public function test_an_enriched_hotel_is_not_sent_to_gemini_again(): void
+    {
+        Http::fake();
+        // A hotel after a first enrichment: described, unreviewed, and with no
+        // visit length or categories on purpose.
+        $this->makePlace([
+            'name' => 'Mercure Batam', 'type' => 'lodging', 'description' => 'Hotel.',
+            'description_en' => 'Hotel.', 'is_outdoor' => false, 'category_tags_reviewed' => false,
+        ]);
+
+        $this->artisan('places:enrich', ['--sleep' => 0])
+            ->expectsOutput('Tidak ada tempat yang perlu di-enrich.')
+            ->assertExitCode(0);
+
+        Http::assertNothingSent();
+    }
+
     public function test_the_command_reports_failures_with_a_failure_exit_code(): void
     {
         Http::fake(['generativelanguage.googleapis.com/*' => Http::response(['error' => 'quota'], 400)]);

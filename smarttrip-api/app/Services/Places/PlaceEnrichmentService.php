@@ -33,9 +33,14 @@ class PlaceEnrichmentService
             return false;
         }
 
-        return $place->estimated_visit_minutes === null
-            || $place->is_outdoor === null
-            || (! $this->isLodging($place) && ! $place->categories()->exists());
+        if ($place->is_outdoor === null) {
+            return true;
+        }
+
+        // Hotels never get a visit length or interest categories, so those
+        // gaps are not worth a Gemini call.
+        return ! $this->isLodging($place)
+            && ($place->estimated_visit_minutes === null || ! $place->categories()->exists());
     }
 
     /**

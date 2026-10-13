@@ -189,6 +189,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get catalogCreateTrip => 'Create Trip';
 
   @override
+  String get navHome => 'Home';
+
+  @override
+  String get navWishlist => 'Wishlist';
+
+  @override
+  String get navTrips => 'My Trips';
+
+  @override
+  String get navProfile => 'Profile';
+
+  @override
   String get catalogHeaderSubtitle => 'Home';
 
   @override

@@ -190,6 +190,18 @@ class AppLocalizationsId extends AppLocalizations {
   String get catalogCreateTrip => 'Buat Trip';
 
   @override
+  String get navHome => 'Home';
+
+  @override
+  String get navWishlist => 'Wishlist';
+
+  @override
+  String get navTrips => 'Trip Saya';
+
+  @override
+  String get navProfile => 'Profil';
+
+  @override
   String get catalogHeaderSubtitle => 'Beranda';
 
   @override

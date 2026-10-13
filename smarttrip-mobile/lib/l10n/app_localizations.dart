@@ -446,6 +446,30 @@ abstract class AppLocalizations {
   /// **'Buat Trip'**
   String get catalogCreateTrip;
 
+  /// No description provided for @navHome.
+  ///
+  /// In id, this message translates to:
+  /// **'Home'**
+  String get navHome;
+
+  /// No description provided for @navWishlist.
+  ///
+  /// In id, this message translates to:
+  /// **'Wishlist'**
+  String get navWishlist;
+
+  /// No description provided for @navTrips.
+  ///
+  /// In id, this message translates to:
+  /// **'Trip Saya'**
+  String get navTrips;
+
+  /// No description provided for @navProfile.
+  ///
+  /// In id, this message translates to:
+  /// **'Profil'**
+  String get navProfile;
+
   /// No description provided for @catalogHeaderSubtitle.
   ///
   /// In id, this message translates to:

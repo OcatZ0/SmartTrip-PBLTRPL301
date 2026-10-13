@@ -185,6 +185,21 @@ void main() {
     expect(find.text('Destinasi di Batam'), findsOneWidget);
   });
 
+  testWidgets('the bottom bar opens trip setup and says the other tabs are coming', (tester) async {
+    await _pumpCatalog(tester);
+
+    expect(find.text('Trip Saya'), findsOneWidget);
+    expect(find.text('Profil'), findsOneWidget);
+
+    await tester.tap(find.text('Profil'));
+    await tester.pumpAndSettle();
+    expect(find.text('Segera hadir'), findsOneWidget);
+
+    await tester.tap(find.bySemanticsLabel('Buat Trip'));
+    await tester.pumpAndSettle();
+    expect(find.text(_greeting), findsNothing);
+  });
+
   testWidgets('a failed kecamatan list offers a retry', (tester) async {
     final catalog = FakeCatalogRepository()..kecamatanFailWith = Exception('offline');
     await _pumpCatalog(tester, catalog: catalog);

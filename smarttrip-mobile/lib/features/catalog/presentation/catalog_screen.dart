@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/session_controller.dart';
 import '../../../core/router/app_routes.dart';
+import '../../../core/widgets/app_bottom_bar.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../trip/data/trip_models.dart';
 import '../../trip/presentation/trip_error_message.dart';
@@ -57,6 +58,14 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
   }
 
   void _goToLogin() => context.go(AppRoutes.login);
+
+  // Only the catalog exists so far; the other tabs get their screens later.
+  void _selectTab(AppTab tab) {
+    if (tab == AppTab.home) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(AppLocalizations.of(context).comingSoon)));
+  }
 
   bool _onScroll(ScrollNotification notification) {
     if (notification.metrics.axis == Axis.vertical && notification.metrics.extentAfter < _loadMoreThreshold) {
@@ -116,6 +125,8 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
         backgroundColor: CatalogColors.surface,
+        // The list scrolls behind the raised "Buat Trip" button.
+        extendBody: true,
         body: RefreshIndicator(
           color: CatalogColors.sea600,
           onRefresh: () async {
@@ -179,20 +190,25 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
                 ),
                 ..._content(context, state, rest, savedIds),
                 SliverPadding(
-                  padding: EdgeInsets.only(bottom: 96 + MediaQuery.paddingOf(context).bottom),
+                  padding: EdgeInsets.only(
+                    bottom: AppBottomBar.barHeight + AppBottomBar.fabRise + 16 + MediaQuery.paddingOf(context).bottom,
+                  ),
                 ),
               ],
             ),
           ),
         ),
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: () => context.push(AppRoutes.newTrip),
-          backgroundColor: CatalogColors.sun400,
-          foregroundColor: CatalogColors.navy900,
-          elevation: 6,
-          shape: const StadiumBorder(),
-          icon: const Icon(Icons.edit_calendar_outlined, size: 20),
-          label: Text(l10n.catalogCreateTrip, style: catalogText(15, FontWeight.w700, CatalogColors.navy900)),
+        bottomNavigationBar: AppBottomBar(
+          current: AppTab.home,
+          onSelect: _selectTab,
+          onCreateTrip: () => context.push(AppRoutes.newTrip),
+          labels: {
+            AppTab.home: l10n.navHome,
+            AppTab.wishlist: l10n.navWishlist,
+            AppTab.trips: l10n.navTrips,
+            AppTab.profile: l10n.navProfile,
+          },
+          createLabel: l10n.catalogCreateTrip,
         ),
       ),
     );

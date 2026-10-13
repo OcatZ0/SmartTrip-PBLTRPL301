@@ -18,6 +18,10 @@ class PlacePhoto extends Model
         'places_id',
         'photo_url',
         'sort_order',
+        'credit',
+        'license',
+        'license_url',
+        'source_url',
     ];
 
     public function place(): BelongsTo

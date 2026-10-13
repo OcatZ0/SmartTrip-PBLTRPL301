@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\CandidateController;
 use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\PlaceController as AdminPlaceController;
+use App\Http\Controllers\Admin\PlacePhotoController;
 use App\Http\Controllers\Api\AuthController;
 use Illuminate\Support\Facades\Route;
 
@@ -48,6 +49,12 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/places/{place}/edit', [AdminPlaceController::class, 'edit'])->name('places.edit');
         Route::put('/places/{place}', [AdminPlaceController::class, 'update'])->name('places.update');
         Route::delete('/places/{place}', [AdminPlaceController::class, 'destroy'])->name('places.destroy');
+
+        Route::post('/places/{place}/photos', [PlacePhotoController::class, 'store'])->name('places.photos.store');
+        Route::get('/places/{place}/photos/openverse', [PlacePhotoController::class, 'search'])->name('places.photos.openverse');
+        Route::post('/places/{place}/photos/openverse', [PlacePhotoController::class, 'storeFromOpenverse'])->name('places.photos.openverse.store');
+        Route::post('/places/{place}/photos/{photo}/primary', [PlacePhotoController::class, 'primary'])->name('places.photos.primary');
+        Route::delete('/places/{place}/photos/{photo}', [PlacePhotoController::class, 'destroy'])->name('places.photos.destroy');
 
         Route::get('/categories', [AdminCategoryController::class, 'index'])->name('categories.index');
         Route::get('/categories/create', [AdminCategoryController::class, 'create'])->name('categories.create');

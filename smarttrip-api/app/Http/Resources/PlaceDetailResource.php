@@ -24,9 +24,17 @@ class PlaceDetailResource extends JsonResource
             'lng' => (float) $this->lng,
             'maps_url' => "https://www.google.com/maps/search/?api=1&query={$this->lat},{$this->lng}",
             'photo_url' => $this->photo_url,
+            // Openverse photos carry their Creative Commons credit, which the
+            // license requires the app to show; uploads have none.
             'photos' => $this->whenLoaded('photos', fn () => $this->photos
                 ->sortBy('sort_order')
-                ->pluck('photo_url')
+                ->map(fn ($photo) => [
+                    'url' => $photo->photo_url,
+                    'credit' => $photo->credit,
+                    'license' => $photo->license,
+                    'license_url' => $photo->license_url,
+                    'source_url' => $photo->source_url,
+                ])
                 ->values()),
             'description_id' => $this->description_override ?? $this->description,
             'description_en' => $this->description_en,

@@ -69,7 +69,7 @@ class PlaceController extends Controller
 
     public function edit(Place $place)
     {
-        $place->load('categories');
+        $place->load(['categories', 'photos' => fn ($query) => $query->orderBy('sort_order')]);
 
         return view('admin.places.edit', [
             'place' => $place,

@@ -105,6 +105,11 @@ class PlaceCatalogTest extends TestCase
         ]]);
     }
 
+    public function test_a_non_numeric_place_id_is_a_404(): void
+    {
+        $this->getJson('/api/places/abc')->assertNotFound();
+    }
+
     public function test_the_catalog_can_be_filtered_by_type(): void
     {
         $this->makePlace(['name' => 'Hotel Harbour Bay', 'type' => 'lodging']);

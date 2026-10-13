@@ -259,5 +259,7 @@
   "detailAddedToTrip": "Added to {title}'s wishlist.",
   "detailAddedNeedsRegenerate": "Added to {title}'s wishlist. Generate its itinerary again to include this place.",
   "detailAlreadyInTrip": "Already in {title}'s wishlist.",
-  "detailLoadFailed": "Couldn't load this place."
+  "detailLoadFailed": "Couldn't load this place.",
+  "detailPhotoCredit": "Photo: {credit}, {license}",
+  "detailPhotoAnonymous": "Unknown"
 }

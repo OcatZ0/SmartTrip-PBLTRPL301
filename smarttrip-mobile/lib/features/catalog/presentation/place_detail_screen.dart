@@ -137,42 +137,132 @@ class _DetailBody extends ConsumerWidget {
   }
 }
 
-class _Hero extends StatelessWidget {
+class _Hero extends StatefulWidget {
   const _Hero({required this.detail});
+
+  final PlaceDetail detail;
+
+  @override
+  State<_Hero> createState() => _HeroState();
+}
+
+class _HeroState extends State<_Hero> {
+  int _page = 0;
+
+  Future<void> _openSource(PlacePhoto photo) async {
+    final url = photo.sourceUrl;
+    if (url == null) return;
+    await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+  }
 
   @override
   Widget build(BuildContext context) {
-    final photoUrl = detail.heroPhotoUrl;
+    final detail = widget.detail;
+    final photos = detail.photos;
     final placeholder = CatalogPhoto(place: detail.summary, iconSize: 96, iconAlignment: const Alignment(0, -0.35));
+    final belowBar = MediaQuery.paddingOf(context).top + GlassTopBar.height + 8;
+
+    Widget image(String url) => Image.network(
+      url,
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) => placeholder,
+      loadingBuilder: (_, child, progress) => progress == null ? child : placeholder,
+    );
+
+    final heroUrl = detail.heroPhotoUrl;
+    final current = photos.isEmpty ? null : photos[_page.clamp(0, photos.length - 1)];
 
     return Stack(
       fit: StackFit.expand,
       children: [
-        if (photoUrl == null)
+        if (photos.length > 1)
+          PageView.builder(
+            itemCount: photos.length,
+            onPageChanged: (page) => setState(() => _page = page),
+            itemBuilder: (_, index) => image(photos[index].url),
+          )
+        else if (heroUrl == null)
           placeholder
         else
-          Image.network(
-            photoUrl,
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => placeholder,
-            loadingBuilder: (_, child, progress) => progress == null ? child : placeholder,
-          ),
+          image(heroUrl),
         // Darkens the top for the bar and fades into the page at the bottom.
-        const DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Color(0x800A2440), Color(0x000A2440), Color(0x590A2440), CatalogColors.navy900],
-              stops: [0, 0.25, 0.55, 1],
+        const IgnorePointer(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0x800A2440), Color(0x000A2440), Color(0x590A2440), CatalogColors.navy900],
+                stops: [0, 0.25, 0.55, 1],
+              ),
             ),
           ),
         ),
+        if (photos.length > 1)
+          Positioned(
+            top: belowBar + 6,
+            left: 16,
+            child: Row(
+              children: [
+                for (var index = 0; index < photos.length; index++)
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    margin: const EdgeInsets.only(right: 4),
+                    width: index == _page ? 16 : 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: index == _page ? CatalogColors.sun400 : Colors.white.withValues(alpha: 0.6),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        if (current != null && current.needsCredit)
+          Positioned(
+            top: belowBar,
+            right: 12,
+            left: photos.length > 1 ? 16 + photos.length * 10.0 + 12 : 12,
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: _PhotoCredit(photo: current, onTap: () => _openSource(current)),
+            ),
+          ),
       ],
     );
   }
+}
 
-  final PlaceDetail detail;
+/// Creative Commons credit for the photo on screen; tapping opens its
+/// source page, where the full license is.
+class _PhotoCredit extends StatelessWidget {
+  const _PhotoCredit({required this.photo, required this.onTap});
+
+  final PlacePhoto photo;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final credit = photo.credit?.trim();
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          color: CatalogColors.navy900.withValues(alpha: 0.55),
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Text(
+          l10n.detailPhotoCredit(credit == null || credit.isEmpty ? l10n.detailPhotoAnonymous : credit, photo.license!),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: catalogText(10, FontWeight.w500, Colors.white.withValues(alpha: 0.9)),
+        ),
+      ),
+    );
+  }
 }
 
 class _TitleBlock extends StatelessWidget {

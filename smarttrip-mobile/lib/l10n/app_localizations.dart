@@ -1657,6 +1657,18 @@ abstract class AppLocalizations {
   /// In id, this message translates to:
   /// **'Detail tempat gagal dimuat.'**
   String get detailLoadFailed;
+
+  /// No description provided for @detailPhotoCredit.
+  ///
+  /// In id, this message translates to:
+  /// **'Foto: {credit}, {license}'**
+  String detailPhotoCredit(String credit, String license);
+
+  /// No description provided for @detailPhotoAnonymous.
+  ///
+  /// In id, this message translates to:
+  /// **'Anonim'**
+  String get detailPhotoAnonymous;
 }
 
 class _AppLocalizationsDelegate

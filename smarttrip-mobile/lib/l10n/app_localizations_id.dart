@@ -872,4 +872,12 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get detailLoadFailed => 'Detail tempat gagal dimuat.';
+
+  @override
+  String detailPhotoCredit(String credit, String license) {
+    return 'Foto: $credit, $license';
+  }
+
+  @override
+  String get detailPhotoAnonymous => 'Anonim';
 }

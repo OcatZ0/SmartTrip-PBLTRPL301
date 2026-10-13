@@ -195,6 +195,38 @@ void main() {
     expect(wishlist.added, isEmpty);
   });
 
+  testWidgets('a Creative Commons photo shows its credit, and swiping shows the next one', (tester) async {
+    final catalog = FakeCatalogRepository();
+    final base = placeDetail(2);
+    catalog.details[2] = PlaceDetail(
+      summary: base.summary,
+      lat: base.lat,
+      lng: base.lng,
+      photos: const [
+        PlacePhoto(
+          url: 'https://example.test/a.jpg',
+          credit: 'Si Gam',
+          license: 'CC BY-SA 4.0',
+          sourceUrl: 'https://commons.wikimedia.org/a',
+        ),
+        PlacePhoto(url: 'https://example.test/b.jpg', license: 'CC0 1.0'),
+        PlacePhoto(url: 'https://example.test/c.jpg'),
+      ],
+    );
+    await _openDetail(tester, catalog: catalog);
+
+    expect(find.text('Foto: Si Gam, CC BY-SA 4.0'), findsOneWidget);
+
+    await tester.drag(find.byType(PageView), const Offset(-400, 0));
+    await tester.pumpAndSettle();
+    expect(find.text('Foto: Anonim, CC0 1.0'), findsOneWidget);
+
+    // An uploaded photo has no license, so no credit is shown.
+    await tester.drag(find.byType(PageView), const Offset(-400, 0));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Foto:'), findsNothing);
+  });
+
   testWidgets('a hotel has no "Tambah ke Trip", hotels are picked in step C4', (tester) async {
     final catalog = FakeCatalogRepository();
     catalog.details[2] = placeDetail(2, type: 'lodging');
@@ -244,7 +276,14 @@ void main() {
       'type': 'attraction',
       'lat': 1.05,
       'lng': 104.1,
-      'photos': ['a.jpg'],
+      'photos': [
+        {
+          'url': 'a.jpg',
+          'credit': 'Si Gam',
+          'license': 'CC BY-SA 4.0',
+          'source_url': 'https://commons.wikimedia.org/a',
+        },
+      ],
       'description_id': 'Deskripsi',
       'description_en': ' ',
       'opening_hours': {'osm': 'Mo-Su 08:00-18:00'},
@@ -268,6 +307,8 @@ void main() {
     expect(detail.description('en'), 'Deskripsi');
     expect(detail.openingHours, 'Mo-Su 08:00-18:00');
     expect(detail.heroPhotoUrl, endsWith('a.jpg'));
+    expect(detail.photos.single.credit, 'Si Gam');
+    expect(detail.photos.single.needsCredit, isTrue);
     expect(detail.summary.reviewCount, 1);
     expect(detail.reviews.single.userName, 'Budi');
   });

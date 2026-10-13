@@ -25,8 +25,8 @@ class CatalogPlace {
       rating: (json['rating'] as num?)?.toDouble(),
       // Same count the rating blend is built from: source reviews plus
       // reviews written in the app.
-      reviewCount: ((json['review_count_google'] as num?) ?? 0).toInt() +
-          ((json['review_count_in_app'] as num?) ?? 0).toInt(),
+      reviewCount:
+          ((json['review_count_google'] as num?) ?? 0).toInt() + ((json['review_count_in_app'] as num?) ?? 0).toInt(),
       estimatedCostIdr: (json['estimated_cost_idr'] as num?)?.toInt(),
       categories: (json['categories'] as List? ?? const [])
           .cast<Map<String, dynamic>>()
@@ -60,10 +60,7 @@ class CatalogPage {
     final meta = json['meta'] as Map<String, dynamic>? ?? const {};
 
     return CatalogPage(
-      places: (json['data'] as List? ?? const [])
-          .cast<Map<String, dynamic>>()
-          .map(CatalogPlace.fromJson)
-          .toList(),
+      places: (json['data'] as List? ?? const []).cast<Map<String, dynamic>>().map(CatalogPlace.fromJson).toList(),
       currentPage: meta['current_page'] as int? ?? 1,
       lastPage: meta['last_page'] as int? ?? 1,
     );
@@ -106,6 +103,33 @@ class PlaceReview {
   final DateTime? createdAt;
 }
 
+/// A photo on the B2 detail screen. Openverse photos carry the Creative
+/// Commons credit the app must show; photos the admin uploaded have none.
+class PlacePhoto {
+  const PlacePhoto({required this.url, this.credit, this.license, this.sourceUrl});
+
+  factory PlacePhoto.fromJson(Object? json) {
+    // Older API responses listed bare URLs.
+    if (json is! Map<String, dynamic>) return PlacePhoto(url: AppConfig.resolveMediaUrl(json?.toString()) ?? '');
+
+    return PlacePhoto(
+      url: AppConfig.resolveMediaUrl(json['url'] as String?) ?? '',
+      credit: json['credit'] as String?,
+      license: json['license'] as String?,
+      sourceUrl: json['source_url'] as String?,
+    );
+  }
+
+  final String url;
+  final String? credit;
+  final String? license;
+
+  /// Page the photo came from, opened when the credit is tapped.
+  final String? sourceUrl;
+
+  bool get needsCredit => license != null;
+}
+
 /// B2 Detail Tempat, from `GET /api/places/{id}` (PlaceDetailResource).
 class PlaceDetail {
   const PlaceDetail({
@@ -131,18 +155,15 @@ class PlaceDetail {
       address: json['address'] as String?,
       mapsUrl: json['maps_url'] as String?,
       photos: (json['photos'] as List? ?? const [])
-          .map((url) => AppConfig.resolveMediaUrl(url?.toString()))
-          .whereType<String>()
+          .map(PlacePhoto.fromJson)
+          .where((photo) => photo.url.isNotEmpty)
           .toList(),
       descriptionId: json['description_id'] as String?,
       descriptionEn: json['description_en'] as String?,
       openingHours: _openingHours(json['opening_hours']),
       businessStatus: json['business_status'] as String? ?? 'operational',
       estimatedVisitMinutes: (json['estimated_visit_minutes'] as num?)?.toInt(),
-      reviews: (json['reviews'] as List? ?? const [])
-          .cast<Map<String, dynamic>>()
-          .map(PlaceReview.fromJson)
-          .toList(),
+      reviews: (json['reviews'] as List? ?? const []).cast<Map<String, dynamic>>().map(PlaceReview.fromJson).toList(),
     );
   }
 
@@ -152,7 +173,7 @@ class PlaceDetail {
   final double lng;
   final String? address;
   final String? mapsUrl;
-  final List<String> photos;
+  final List<PlacePhoto> photos;
   final String? descriptionId;
   final String? descriptionEn;
 
@@ -169,7 +190,7 @@ class PlaceDetail {
   }
 
   /// Hero photo: the gallery's first photo, else the catalog thumbnail.
-  String? get heroPhotoUrl => photos.isNotEmpty ? photos.first : summary.photoUrl;
+  String? get heroPhotoUrl => photos.isNotEmpty ? photos.first.url : summary.photoUrl;
 
   static String? _nonEmpty(String? value) => value == null || value.trim().isEmpty ? null : value.trim();
 

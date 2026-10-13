@@ -506,6 +506,12 @@ abstract class AppLocalizations {
   /// **'Destinasi di Batam'**
   String get catalogSectionAll;
 
+  /// No description provided for @catalogSectionTopRated.
+  ///
+  /// In id, this message translates to:
+  /// **'Rating tertinggi'**
+  String get catalogSectionTopRated;
+
   /// No description provided for @catalogSectionSearch.
   ///
   /// In id, this message translates to:

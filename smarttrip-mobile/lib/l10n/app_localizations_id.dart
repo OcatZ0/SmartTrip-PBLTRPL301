@@ -220,6 +220,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get catalogSectionAll => 'Destinasi di Batam';
 
   @override
+  String get catalogSectionTopRated => 'Rating tertinggi';
+
+  @override
   String catalogSectionSearch(String query) {
     return 'Hasil untuk \"$query\"';
   }

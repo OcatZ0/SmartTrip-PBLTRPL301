@@ -219,6 +219,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get catalogSectionAll => 'Places in Batam';
 
   @override
+  String get catalogSectionTopRated => 'Top rated';
+
+  @override
   String catalogSectionSearch(String query) {
     return 'Results for \"$query\"';
   }

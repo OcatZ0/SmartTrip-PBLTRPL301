@@ -68,6 +68,7 @@
   "catalogFilterAll": "All",
   "catalogFilterLodging": "Hotels",
   "catalogSectionAll": "Places in Batam",
+  "catalogSectionTopRated": "Top rated",
   "catalogSectionSearch": "Results for \"{query}\"",
   "catalogFavoriteCount": "{count} Saved",
   "catalogNoReviews": "No reviews yet",

@@ -1,24 +1,25 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/session_controller.dart';
 import '../../../core/router/app_routes.dart';
-import '../../../core/theme/app_tokens.dart';
-import '../../../core/widgets/screen_header.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../trip/data/trip_models.dart';
 import '../../trip/presentation/trip_error_message.dart';
 import '../../trip/presentation/widgets/load_error_view.dart';
 import '../../wishlist/presentation/user_wishlist_controller.dart';
+import '../data/catalog_models.dart';
+import '../data/catalog_repository.dart';
 import 'catalog_controller.dart';
-import 'widgets/place_card.dart';
+import 'widgets/catalog_style.dart';
+import 'widgets/featured_place_card.dart';
+import 'widgets/place_list_tile.dart';
 
-/// B1. Home: katalog tempat wisata (F005, PRD Section 8 - browse tanpa
-/// login). Search, category chips and an infinite-scroll grid; the heart on
-/// a card saves the place to the user's own wishlist.
 class CatalogScreen extends ConsumerStatefulWidget {
   const CatalogScreen({super.key});
 
@@ -28,9 +29,9 @@ class CatalogScreen extends ConsumerStatefulWidget {
 
 class _CatalogScreenState extends ConsumerState<CatalogScreen> {
   static const _searchDebounce = Duration(milliseconds: 400);
-
-  // Start the next page while this many pixels of grid are still below.
   static const _loadMoreThreshold = 600.0;
+  static const _featuredCount = 5;
+  static const _minPlacesForFeatured = 8;
 
   final _searchController = TextEditingController();
   Timer? _debounce;
@@ -55,9 +56,6 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
     ref.read(catalogControllerProvider.notifier).search('');
   }
 
-  // go, not push: the router only sends a freshly logged-in user back to the
-  // catalog when login is the current location, and a pushed login page
-  // would stay on top after a successful sign-in.
   void _goToLogin() => context.go(AppRoutes.login);
 
   bool _onScroll(ScrollNotification notification) {
@@ -83,88 +81,123 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
     }
   }
 
+  List<CatalogPlace> _featured(CatalogState state) {
+    if (!state.filter.isUnfiltered) return const [];
+
+    final firstPage = state.places.take(CatalogRepository.pageSize).toList();
+    if (firstPage.length < _minPlacesForFeatured) return const [];
+
+    final rated = [
+      for (var i = 0; i < firstPage.length; i++)
+        if (firstPage[i].rating != null) (index: i, place: firstPage[i]),
+    ]..sort((a, b) {
+        final byRating = b.place.rating!.compareTo(a.place.rating!);
+        if (byRating != 0) return byRating;
+        final byReviews = b.place.reviewCount.compareTo(a.place.reviewCount);
+        return byReviews != 0 ? byReviews : a.index.compareTo(b.index);
+      });
+
+    return [for (final entry in rated.take(_featuredCount)) entry.place];
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final tokens = context.tokens;
     final state = ref.watch(catalogControllerProvider);
     final isLoggedIn = ref.watch(sessionControllerProvider).valueOrNull != null;
     final savedIds = ref.watch(userWishlistControllerProvider).valueOrNull ?? const <int>{};
+    final featured = _featured(state);
+    final featuredIds = {for (final place in featured) place.placesId};
+    final rest = featuredIds.isEmpty
+        ? state.places
+        : [for (final place in state.places) if (!featuredIds.contains(place.placesId)) place];
 
-    return Scaffold(
-      appBar: ScreenHeader(
-        subtitle: l10n.catalogHeaderSubtitle,
-        trailing: isLoggedIn
-            ? null
-            : TextButton(
-                onPressed: _goToLogin,
-                child: Text(l10n.catalogLogin),
-              ),
-      ),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          await Future.wait([
-            ref.read(catalogControllerProvider.notifier).refresh(),
-            ref.refresh(userWishlistControllerProvider.future).catchError((_) => const <int>{}),
-          ]);
-        },
-        child: NotificationListener<ScrollNotification>(
-          onNotification: _onScroll,
-          child: CustomScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            slivers: [
-              const SliverPadding(
-                padding: EdgeInsets.fromLTRB(20, 16, 20, 8),
-                sliver: SliverToBoxAdapter(child: _Greeting()),
-              ),
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                sliver: SliverToBoxAdapter(
-                  child: _SearchField(
-                    controller: _searchController,
-                    onChanged: _onSearchChanged,
-                    onClear: _clearSearch,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: CatalogColors.surface,
+        body: RefreshIndicator(
+          color: CatalogColors.sea600,
+          onRefresh: () async {
+            await Future.wait([
+              ref.read(catalogControllerProvider.notifier).refresh(),
+              ref.refresh(userWishlistControllerProvider.future).catchError((_) => const <int>{}),
+            ]);
+          },
+          child: NotificationListener<ScrollNotification>(
+            onNotification: _onScroll,
+            child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
+                SliverToBoxAdapter(
+                  child: _CatalogHeader(
+                    isLoggedIn: isLoggedIn,
+                    onLogin: _goToLogin,
+                    search: _SearchField(
+                      controller: _searchController,
+                      onChanged: _onSearchChanged,
+                      onClear: _clearSearch,
+                    ),
                   ),
                 ),
-              ),
-              SliverToBoxAdapter(child: _ChipBar(filter: state.filter)),
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
-                sliver: SliverToBoxAdapter(
-                  child: _SectionHeader(
-                    filter: state.filter,
-                    savedCount: isLoggedIn ? savedIds.length : 0,
+                SliverToBoxAdapter(child: _ChipBar(filter: state.filter)),
+                if (featured.isNotEmpty) ...[
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(16, 22, 16, 12),
+                    sliver: SliverToBoxAdapter(child: _SectionTitle(l10n.catalogSectionTopRated)),
+                  ),
+                  SliverToBoxAdapter(
+                    child: SizedBox(
+                      height: FeaturedPlaceCard.height,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        itemCount: featured.length,
+                        separatorBuilder: (_, __) => const SizedBox(width: 12),
+                        itemBuilder: (_, index) {
+                          final place = featured[index];
+                          return FeaturedPlaceCard(
+                            key: ValueKey(place.placesId),
+                            place: place,
+                            isSaved: savedIds.contains(place.placesId),
+                            onToggleSaved: () => _toggleSaved(place.placesId),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+                SliverPadding(
+                  padding: EdgeInsets.fromLTRB(16, featured.isEmpty ? 20 : 24, 16, 10),
+                  sliver: SliverToBoxAdapter(
+                    child: _SectionHeader(
+                      filter: state.filter,
+                      savedCount: isLoggedIn ? savedIds.length : 0,
+                    ),
                   ),
                 ),
-              ),
-              ..._content(context, state, savedIds),
-              SliverPadding(
-                padding: EdgeInsets.only(bottom: 96 + MediaQuery.paddingOf(context).bottom),
-              ),
-            ],
+                ..._content(context, state, rest, savedIds),
+                SliverPadding(
+                  padding: EdgeInsets.only(bottom: 96 + MediaQuery.paddingOf(context).bottom),
+                ),
+              ],
+            ),
           ),
         ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        // "Buat Trip" (B1): the router sends a logged-out user to login first.
-        onPressed: () => context.push(AppRoutes.newTrip),
-        backgroundColor: const Color(0xFFFFB956),
-        foregroundColor: tokens.onAmber,
-        shape: const StadiumBorder(),
-        icon: const Icon(Icons.edit_calendar_outlined, size: 20),
-        label: Text(
-          l10n.catalogCreateTrip,
-          style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: tokens.onAmber,
-                fontWeight: FontWeight.w700,
-                fontVariations: const [FontVariation.weight(700)],
-              ),
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: () => context.push(AppRoutes.newTrip),
+          backgroundColor: CatalogColors.sun400,
+          foregroundColor: CatalogColors.navy900,
+          elevation: 6,
+          shape: const StadiumBorder(),
+          icon: const Icon(Icons.edit_calendar_outlined, size: 20),
+          label: Text(l10n.catalogCreateTrip, style: catalogText(15, FontWeight.w700, CatalogColors.navy900)),
         ),
       ),
     );
   }
 
-  List<Widget> _content(BuildContext context, CatalogState state, Set<int> savedIds) {
+  List<Widget> _content(BuildContext context, CatalogState state, List<CatalogPlace> places, Set<int> savedIds) {
     final l10n = AppLocalizations.of(context);
 
     if (state.places.isEmpty) {
@@ -198,34 +231,17 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
 
     return [
       SliverPadding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        sliver: SliverLayoutBuilder(
-          builder: (context, constraints) {
-            const spacing = 16.0;
-            final cardWidth = (constraints.crossAxisExtent - spacing) / 2;
-            final textScaler = MediaQuery.textScalerOf(context);
-            final cardHeight = cardWidth / PlaceCard.photoAspectRatio +
-                PlaceCard.infoHeight -
-                PlaceCard.infoTextHeight +
-                textScaler.scale(PlaceCard.infoTextHeight);
-
-            return SliverGrid.builder(
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: spacing,
-                mainAxisSpacing: 24,
-                mainAxisExtent: cardHeight,
-              ),
-              itemCount: state.places.length,
-              itemBuilder: (context, index) {
-                final place = state.places[index];
-                return PlaceCard(
-                  key: ValueKey(place.placesId),
-                  place: place,
-                  isSaved: savedIds.contains(place.placesId),
-                  onToggleSaved: () => _toggleSaved(place.placesId),
-                );
-              },
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        sliver: SliverList.separated(
+          itemCount: places.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 10),
+          itemBuilder: (context, index) {
+            final place = places[index];
+            return PlaceListTile(
+              key: ValueKey(place.placesId),
+              place: place,
+              isSaved: savedIds.contains(place.placesId),
+              onToggleSaved: () => _toggleSaved(place.placesId),
             );
           },
         ),
@@ -257,47 +273,100 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
   }
 }
 
-class _Greeting extends StatelessWidget {
-  const _Greeting();
+class _CatalogHeader extends StatelessWidget {
+  const _CatalogHeader({required this.isLoggedIn, required this.onLogin, required this.search});
 
-  static const _guideBrown = Color(0xFF744A00);
+  static const _panoramaHeight = 200.0;
+  static const _searchOverlap = 26.0;
+
+  final bool isLoggedIn;
+  final VoidCallback onLogin;
+  final Widget search;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
+    final topInset = MediaQuery.paddingOf(context).top;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            const Icon(Icons.explore, size: 15, color: _guideBrown),
-            const SizedBox(width: 4),
-            Flexible(
-              child: Text(
-                l10n.catalogEyebrow,
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: _guideBrown,
-                  fontWeight: FontWeight.w700,
-                  fontVariations: const [FontVariation.weight(700)],
-                  letterSpacing: 0.6,
+    return SizedBox(
+      height: topInset + _panoramaHeight + _searchOverlap,
+      child: Stack(
+        children: [
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: topInset + _panoramaHeight,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                SvgPicture.asset(
+                  'assets/images/login_panorama.svg',
+                  fit: BoxFit.cover,
+                  alignment: Alignment.bottomCenter,
                 ),
-              ),
+                const DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Color(0x8C0A2440), Color(0x000A2440)],
+                      stops: [0, 0.7],
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        Text(
-          l10n.catalogGreeting,
-          style: theme.textTheme.headlineSmall?.copyWith(fontSize: 22, height: 28 / 22, letterSpacing: -0.55),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          l10n.catalogTagline,
-          style: theme.textTheme.bodyMedium?.copyWith(color: context.tokens.textSecondary),
-        ),
-      ],
+          ),
+          Positioned(
+            top: topInset + 18,
+            left: 16,
+            right: 16,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l10n.catalogEyebrow,
+                        style: catalogText(11, FontWeight.w700, CatalogColors.sun400, height: 16, letterSpacing: 0.88),
+                      ),
+                      const SizedBox(height: 4),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 240),
+                        child: Text(
+                          l10n.catalogGreeting,
+                          style: catalogText(24, FontWeight.w800, Colors.white, height: 30, letterSpacing: -0.48),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (!isLoggedIn) ...[
+                  const SizedBox(width: 12),
+                  Material(
+                    color: Colors.white.withValues(alpha: 0.16),
+                    shape: StadiumBorder(side: BorderSide(color: Colors.white.withValues(alpha: 0.28))),
+                    child: InkWell(
+                      customBorder: const StadiumBorder(),
+                      onTap: onLogin,
+                      child: Container(
+                        height: 36,
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                        alignment: Alignment.center,
+                        child: Text(l10n.catalogLogin, style: catalogText(12, FontWeight.w600, Colors.white)),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          Positioned(left: 16, right: 16, bottom: 0, child: search),
+        ],
+      ),
     );
   }
 }
@@ -311,34 +380,33 @@ class _SearchField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.tokens;
-    final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
 
     return Container(
-      height: 48,
+      height: 52,
+      padding: const EdgeInsets.only(left: 14, right: 4),
       decoration: BoxDecoration(
-        color: tokens.chipFill,
-        borderRadius: BorderRadius.circular(AppTokens.radius),
-        boxShadow: const [BoxShadow(color: Color(0x0D000000), offset: Offset(0, 1), blurRadius: 1)],
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: CatalogColors.floatShadow,
       ),
-      padding: const EdgeInsets.only(left: 16, right: 4),
       child: Row(
         children: [
-          Icon(Icons.search, size: 20, color: tokens.link),
-          const SizedBox(width: 8),
+          const Icon(Icons.search, size: 22, color: CatalogColors.sea600),
+          const SizedBox(width: 10),
           Expanded(
             child: TextField(
               controller: controller,
               onChanged: onChanged,
               textInputAction: TextInputAction.search,
-              style: theme.textTheme.bodyMedium,
+              cursorColor: CatalogColors.sea600,
+              style: catalogText(14, FontWeight.w400, CatalogColors.ink),
               decoration: InputDecoration(
                 isCollapsed: true,
                 border: InputBorder.none,
                 hintText: l10n.catalogSearchHint,
                 hintMaxLines: 1,
-                hintStyle: theme.textTheme.bodyMedium?.copyWith(color: tokens.textHint.withValues(alpha: 0.7)),
+                hintStyle: catalogText(14, FontWeight.w400, CatalogColors.inkMuted),
               ),
             ),
           ),
@@ -346,7 +414,7 @@ class _SearchField extends StatelessWidget {
             IconButton(
               tooltip: l10n.catalogClearSearch,
               onPressed: onClear,
-              icon: Icon(Icons.close, size: 18, color: tokens.textSecondary),
+              icon: const Icon(Icons.close, size: 18, color: CatalogColors.inkMuted),
             ),
         ],
       ),
@@ -354,8 +422,6 @@ class _SearchField extends StatelessWidget {
   }
 }
 
-/// Horizontal chips: "Semua", every interest category, then "Hotel"
-/// (lodging has no interest categories, so it filters by type instead).
 class _ChipBar extends ConsumerWidget {
   const _ChipBar({required this.filter});
 
@@ -371,91 +437,84 @@ class _ChipBar extends ConsumerWidget {
     final chips = <Widget>[
       _FilterChip(
         label: l10n.catalogFilterAll,
-        icon: Icons.stars_outlined,
         selected: filter.categorySlug == null && filter.type == null,
         onTap: () => controller.selectCategory(null),
       ),
       for (final category in categories)
         _FilterChip(
           label: category.localizedName(languageCode),
-          icon: _categoryIcon(category.slug),
           selected: filter.categorySlug == category.slug,
           onTap: () => controller.selectCategory(category.slug),
         ),
       _FilterChip(
         label: l10n.catalogFilterLodging,
-        icon: Icons.hotel_outlined,
         selected: filter.type == 'lodging',
         onTap: () => controller.selectType('lodging'),
       ),
     ];
 
     return SizedBox(
-      height: 56,
+      height: 52,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
         itemCount: chips.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
         itemBuilder: (_, index) => chips[index],
       ),
     );
   }
-
-  static IconData _categoryIcon(String slug) {
-    return switch (slug) {
-      'pantai' => Icons.waves,
-      'alam' => Icons.park_outlined,
-      'sejarah' => Icons.account_balance_outlined,
-      'religi' => Icons.mosque_outlined,
-      'landmark' => Icons.location_city,
-      'spot-foto' => Icons.photo_camera_outlined,
-      'rekreasi' => Icons.attractions_outlined,
-      'belanja' => Icons.shopping_bag_outlined,
-      'kuliner-seafood' => Icons.set_meal_outlined,
-      'kuliner-lokal' => Icons.restaurant,
-      _ => Icons.label_outline,
-    };
-  }
 }
 
 class _FilterChip extends StatelessWidget {
-  const _FilterChip({required this.label, required this.icon, required this.selected, required this.onTap});
+  const _FilterChip({required this.label, required this.selected, required this.onTap});
 
   final String label;
-  final IconData icon;
   final bool selected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.tokens;
-    final theme = Theme.of(context);
-    final foreground = selected ? Colors.white : theme.colorScheme.onSurface;
-
     return Semantics(
       button: true,
       selected: selected,
       child: Material(
-        color: selected ? tokens.accent : tokens.accentSoft,
-        shape: const StadiumBorder(),
-        elevation: selected ? 1 : 0,
+        color: selected ? CatalogColors.navy900 : Colors.white,
+        shape: StadiumBorder(side: selected ? BorderSide.none : const BorderSide(color: CatalogColors.line)),
         child: InkWell(
           customBorder: const StadiumBorder(),
           onTap: onTap,
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: selected ? 16 : 14),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon, size: 15, color: foreground),
-                const SizedBox(width: 6),
-                Text(label, style: theme.textTheme.labelMedium?.copyWith(color: foreground)),
-              ],
+          child: Container(
+            height: 36,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            alignment: Alignment.center,
+            child: Text(
+              label,
+              style: catalogText(
+                13,
+                selected ? FontWeight.w700 : FontWeight.w600,
+                selected ? Colors.white : CatalogColors.ink,
+              ),
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: catalogText(18, FontWeight.w700, CatalogColors.ink, height: 24),
     );
   }
 }
@@ -463,40 +522,29 @@ class _FilterChip extends StatelessWidget {
 class _SectionHeader extends ConsumerWidget {
   const _SectionHeader({required this.filter, required this.savedCount});
 
-  static const _badgeText = Color(0xFF42607E);
-
   final CatalogFilter filter;
   final int savedCount;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
 
     return Row(
       children: [
-        Expanded(
-          child: Text(
-            _title(ref, l10n, Localizations.localeOf(context).languageCode),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontSize: 18,
-              height: 24 / 18,
-              fontWeight: FontWeight.w700,
-              fontVariations: const [FontVariation.weight(700)],
-            ),
-          ),
-        ),
+        Expanded(child: _SectionTitle(_title(ref, l10n, Localizations.localeOf(context).languageCode))),
         if (savedCount > 0)
           Container(
-            height: 20,
-            padding: const EdgeInsets.symmetric(horizontal: 8),
+            height: 24,
+            padding: const EdgeInsets.symmetric(horizontal: 10),
             alignment: Alignment.center,
-            decoration: BoxDecoration(color: context.tokens.badgeFill, borderRadius: BorderRadius.circular(9999)),
-            child: Text(
-              l10n.catalogFavoriteCount(savedCount),
-              style: theme.textTheme.labelSmall?.copyWith(color: _badgeText),
+            decoration: BoxDecoration(color: CatalogColors.field, borderRadius: BorderRadius.circular(999)),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.favorite_rounded, size: 12, color: CatalogColors.sun400),
+                const SizedBox(width: 4),
+                Text(l10n.catalogFavoriteCount(savedCount), style: catalogText(11, FontWeight.w700, CatalogColors.ink)),
+              ],
             ),
           ),
       ],
@@ -530,9 +578,13 @@ class _EmptyState extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(32, 48, 32, 0),
       child: Column(
         children: [
-          Icon(Icons.travel_explore, size: 48, color: context.tokens.textHint),
+          const Icon(Icons.travel_explore, size: 48, color: CatalogColors.inkMuted),
           const SizedBox(height: 12),
-          Text(message, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: catalogText(14, FontWeight.w400, CatalogColors.inkMuted, height: 20),
+          ),
         ],
       ),
     );

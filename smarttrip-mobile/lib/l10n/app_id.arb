@@ -68,6 +68,7 @@
   "catalogFilterAll": "Semua",
   "catalogFilterLodging": "Hotel",
   "catalogSectionAll": "Destinasi di Batam",
+  "catalogSectionTopRated": "Rating tertinggi",
   "catalogSectionSearch": "Hasil untuk \"{query}\"",
   "@catalogSectionSearch": {
     "placeholders": {

@@ -500,6 +500,42 @@ abstract class AppLocalizations {
   /// **'Hotel'**
   String get catalogFilterLodging;
 
+  /// No description provided for @catalogKecamatanAll.
+  ///
+  /// In id, this message translates to:
+  /// **'Semua kecamatan'**
+  String get catalogKecamatanAll;
+
+  /// No description provided for @catalogKecamatanPick.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih kecamatan'**
+  String get catalogKecamatanPick;
+
+  /// No description provided for @catalogKecamatanCount.
+  ///
+  /// In id, this message translates to:
+  /// **'{count} tempat'**
+  String catalogKecamatanCount(int count);
+
+  /// No description provided for @catalogKecamatanLoadFailed.
+  ///
+  /// In id, this message translates to:
+  /// **'Daftar kecamatan gagal dimuat.'**
+  String get catalogKecamatanLoadFailed;
+
+  /// No description provided for @catalogSectionKecamatan.
+  ///
+  /// In id, this message translates to:
+  /// **'Destinasi di {kecamatan}'**
+  String catalogSectionKecamatan(String kecamatan);
+
+  /// No description provided for @catalogSectionInKecamatan.
+  ///
+  /// In id, this message translates to:
+  /// **'{title} di {kecamatan}'**
+  String catalogSectionInKecamatan(String title, String kecamatan);
+
   /// No description provided for @catalogSectionAll.
   ///
   /// In id, this message translates to:

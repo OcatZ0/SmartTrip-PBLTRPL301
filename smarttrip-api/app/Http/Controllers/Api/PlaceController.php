@@ -17,6 +17,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
  * tempat. docs/prd design spec Section 12: GET /api/places?search=&
  * category=&kecamatan=&type=, GET /api/places/{id} - keduanya publik.
  * type=lodging dipakai pencarian hotel di trip setup (C4).
+ * GET /api/places/kecamatan mengisi pilihan filter kecamatan di katalog.
  * near_itinerary_day (F0010 - Swap, "cari lainnya" manual) urutkan hasil
  * dari yang terdekat ke hari itinerary tersebut.
  */
@@ -47,7 +48,7 @@ class PlaceController extends Controller
             ->when($request->filled('type'), fn ($query) => $query->where('type', $request->string('type')->trim()))
             ->when($request->filled('kecamatan'), function ($query) use ($request) {
                 $kecamatan = mb_strtolower($request->string('kecamatan')->trim());
-                $query->whereRaw('LOWER(kecamatan) = ?', [$kecamatan]);
+                $query->whereRaw('LOWER(TRIM(kecamatan)) = ?', [$kecamatan]);
             })
             ->withAvg('reviews', 'rating')
             ->withCount('reviews')
@@ -58,6 +59,36 @@ class PlaceController extends Controller
         }
 
         return PlaceResource::collection($query->orderBy('places_id')->paginate($perPage));
+    }
+
+    /**
+     * Kecamatan that have at least one open place, for the catalog's
+     * kecamatan filter. Grouped case-insensitively because admins type the
+     * value by hand, matching the case-insensitive ?kecamatan= filter.
+     */
+    public function kecamatan()
+    {
+        $rows = Place::query()
+            ->where('business_status', '!=', 'closed_permanently')
+            ->whereNotNull('kecamatan')
+            ->where('kecamatan', '!=', '')
+            ->selectRaw('kecamatan, COUNT(*) as places_count')
+            ->groupBy('kecamatan')
+            ->orderBy('kecamatan')
+            ->get();
+
+        $kecamatan = [];
+        foreach ($rows as $row) {
+            $name = trim($row->kecamatan);
+            $key = mb_strtolower($name);
+            if (isset($kecamatan[$key])) {
+                $kecamatan[$key]['places_count'] += (int) $row->places_count;
+                continue;
+            }
+            $kecamatan[$key] = ['name' => $name, 'places_count' => (int) $row->places_count];
+        }
+
+        return response()->json(['data' => collect($kecamatan)->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)->values()]);
     }
 
     private function paginateNearDay($query, int $dayId, int $perPage, Request $request)

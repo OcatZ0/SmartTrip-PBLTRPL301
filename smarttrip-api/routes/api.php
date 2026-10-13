@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/places', [PlaceController::class, 'index']);
+Route::get('/places/kecamatan', [PlaceController::class, 'kecamatan']);
 Route::get('/places/{place}', [PlaceController::class, 'show']);
 Route::get('/shared-itinerary/{shareToken}', [SharedItineraryController::class, 'show']);
 

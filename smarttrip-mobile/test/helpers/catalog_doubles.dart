@@ -37,7 +37,7 @@ CatalogPlace catalogPlace(int index) {
   );
 }
 
-typedef CatalogCall = ({int page, String search, String? categorySlug, String? type});
+typedef CatalogCall = ({int page, String search, String? categorySlug, String? type, String? kecamatan});
 
 /// [total] places served 20 per page, like the API.
 class FakeCatalogRepository implements CatalogRepository {
@@ -52,8 +52,14 @@ class FakeCatalogRepository implements CatalogRepository {
   final calls = <CatalogCall>[];
 
   @override
-  Future<CatalogPage> fetchPlaces({required int page, String search = '', String? categorySlug, String? type}) async {
-    calls.add((page: page, search: search, categorySlug: categorySlug, type: type));
+  Future<CatalogPage> fetchPlaces({
+    required int page,
+    String search = '',
+    String? categorySlug,
+    String? type,
+    String? kecamatan,
+  }) async {
+    calls.add((page: page, search: search, categorySlug: categorySlug, type: type, kecamatan: kecamatan));
     await gate?.future;
     final error = failWith;
     if (error != null) throw error;
@@ -66,6 +72,19 @@ class FakeCatalogRepository implements CatalogRepository {
       currentPage: page,
       lastPage: max(1, (total / size).ceil()),
     );
+  }
+
+  List<KecamatanOption> kecamatan = const [
+    KecamatanOption(name: 'Batam Kota', placesCount: 10),
+    KecamatanOption(name: 'Nongsa', placesCount: 1),
+  ];
+  Object? kecamatanFailWith;
+
+  @override
+  Future<List<KecamatanOption>> fetchKecamatan() async {
+    final error = kecamatanFailWith;
+    if (error != null) throw error;
+    return kecamatan;
   }
 
   /// Per-id overrides; any other id gets [placeDetail].

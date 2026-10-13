@@ -308,6 +308,7 @@ POST   /api/itinerary-items/{id}/visit               - tandai visited_at (dipang
 
 Places & review
 GET    /api/places?search=&category=&kecamatan=      - browse/search umum (katalog tempat, filter kecamatan baru - revisi 2026-09-22) (publik)
+GET    /api/places/kecamatan                         - daftar kecamatan yang punya tempat + jumlahnya, untuk pilihan filter kecamatan di katalog (revisi 2026-10-13) (publik)
 GET    /api/places/{id}                              - detail tempat                                (publik)
 POST   /api/places/{id}/reviews                      - submit rating/review in-app
 PATCH/DELETE /api/reviews/{id}                        - edit/hapus review milik sendiri

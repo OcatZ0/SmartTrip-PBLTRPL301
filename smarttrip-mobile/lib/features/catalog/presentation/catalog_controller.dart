@@ -11,26 +11,41 @@ final catalogCategoriesProvider = FutureProvider<List<TripCategory>>((ref) {
   return ref.watch(tripRepositoryProvider).fetchCategories();
 });
 
+/// Options of the kecamatan filter, from the places the catalog has.
+final catalogKecamatanProvider = FutureProvider<List<KecamatanOption>>((ref) {
+  return ref.watch(catalogRepositoryProvider).fetchKecamatan();
+});
+
 /// What the grid is filtered by. A chip selects either one category or the
-/// lodging type, never both; the search term combines with either.
+/// lodging type, never both; the search term and the kecamatan combine with
+/// either.
 @immutable
 class CatalogFilter {
-  const CatalogFilter({this.search = '', this.categorySlug, this.type});
+  const CatalogFilter({this.search = '', this.categorySlug, this.type, this.kecamatan});
 
   final String search;
   final String? categorySlug;
   final String? type;
+  final String? kecamatan;
 
-  bool get isUnfiltered => search.isEmpty && categorySlug == null && type == null;
+  bool get isUnfiltered => search.isEmpty && categorySlug == null && type == null && kecamatan == null;
 
-  CatalogFilter withSearch(String value) => CatalogFilter(search: value, categorySlug: categorySlug, type: type);
+  CatalogFilter withSearch(String value) =>
+      CatalogFilter(search: value, categorySlug: categorySlug, type: type, kecamatan: kecamatan);
+
+  CatalogFilter withKecamatan(String? value) =>
+      CatalogFilter(search: search, categorySlug: categorySlug, type: type, kecamatan: value);
 
   @override
   bool operator ==(Object other) =>
-      other is CatalogFilter && other.search == search && other.categorySlug == categorySlug && other.type == type;
+      other is CatalogFilter &&
+      other.search == search &&
+      other.categorySlug == categorySlug &&
+      other.type == type &&
+      other.kecamatan == kecamatan;
 
   @override
-  int get hashCode => Object.hash(search, categorySlug, type);
+  int get hashCode => Object.hash(search, categorySlug, type, kecamatan);
 }
 
 @immutable
@@ -80,9 +95,12 @@ class CatalogController extends Notifier<CatalogState> {
   Future<void> search(String term) => _applyFilter(state.filter.withSearch(term.trim()));
 
   Future<void> selectCategory(String? slug) =>
-      _applyFilter(CatalogFilter(search: state.filter.search, categorySlug: slug));
+      _applyFilter(CatalogFilter(search: state.filter.search, categorySlug: slug, kecamatan: state.filter.kecamatan));
 
-  Future<void> selectType(String type) => _applyFilter(CatalogFilter(search: state.filter.search, type: type));
+  Future<void> selectType(String type) =>
+      _applyFilter(CatalogFilter(search: state.filter.search, type: type, kecamatan: state.filter.kecamatan));
+
+  Future<void> selectKecamatan(String? kecamatan) => _applyFilter(state.filter.withKecamatan(kecamatan));
 
   Future<void> refresh() => _load(reset: true);
 
@@ -113,6 +131,7 @@ class CatalogController extends Notifier<CatalogState> {
             search: filter.search,
             categorySlug: filter.categorySlug,
             type: filter.type,
+            kecamatan: filter.kecamatan,
           );
       if (generation != _generation) return;
 

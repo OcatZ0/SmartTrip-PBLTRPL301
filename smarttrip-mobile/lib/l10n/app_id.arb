@@ -67,6 +67,36 @@
   "catalogClearSearch": "Hapus pencarian",
   "catalogFilterAll": "Semua",
   "catalogFilterLodging": "Hotel",
+  "catalogKecamatanAll": "Semua kecamatan",
+  "catalogKecamatanPick": "Pilih kecamatan",
+  "catalogKecamatanCount": "{count} tempat",
+  "@catalogKecamatanCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "catalogKecamatanLoadFailed": "Daftar kecamatan gagal dimuat.",
+  "catalogSectionKecamatan": "Destinasi di {kecamatan}",
+  "@catalogSectionKecamatan": {
+    "placeholders": {
+      "kecamatan": {
+        "type": "String"
+      }
+    }
+  },
+  "catalogSectionInKecamatan": "{title} di {kecamatan}",
+  "@catalogSectionInKecamatan": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "kecamatan": {
+        "type": "String"
+      }
+    }
+  },
   "catalogSectionAll": "Destinasi di Batam",
   "catalogSectionTopRated": "Rating tertinggi",
   "catalogSectionSearch": "Hasil untuk \"{query}\"",

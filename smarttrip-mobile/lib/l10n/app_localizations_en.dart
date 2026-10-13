@@ -216,6 +216,36 @@ class AppLocalizationsEn extends AppLocalizations {
   String get catalogFilterLodging => 'Hotels';
 
   @override
+  String get catalogKecamatanAll => 'All districts';
+
+  @override
+  String get catalogKecamatanPick => 'Choose a district';
+
+  @override
+  String catalogKecamatanCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count places',
+      one: '1 place',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get catalogKecamatanLoadFailed => 'Couldn\'t load the districts.';
+
+  @override
+  String catalogSectionKecamatan(String kecamatan) {
+    return 'Places in $kecamatan';
+  }
+
+  @override
+  String catalogSectionInKecamatan(String title, String kecamatan) {
+    return '$title in $kecamatan';
+  }
+
+  @override
   String get catalogSectionAll => 'Places in Batam';
 
   @override

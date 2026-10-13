@@ -19,6 +19,7 @@ class CatalogRepository {
     String search = '',
     String? categorySlug,
     String? type,
+    String? kecamatan,
   }) async {
     try {
       final response = await _apiClient.dio.get<Map<String, dynamic>>(
@@ -29,9 +30,22 @@ class CatalogRepository {
           if (search.isNotEmpty) 'search': search,
           if (categorySlug != null) 'category': categorySlug,
           if (type != null) 'type': type,
+          if (kecamatan != null) 'kecamatan': kecamatan,
         },
       );
       return CatalogPage.fromJson(response.data ?? const {});
+    } on DioException catch (error) {
+      throw ApiFailure.fromDioException(error);
+    }
+  }
+
+  Future<List<KecamatanOption>> fetchKecamatan() async {
+    try {
+      final response = await _apiClient.dio.get<Map<String, dynamic>>('/places/kecamatan');
+      return (response.data?['data'] as List? ?? const [])
+          .cast<Map<String, dynamic>>()
+          .map(KecamatanOption.fromJson)
+          .toList();
     } on DioException catch (error) {
       throw ApiFailure.fromDioException(error);
     }

@@ -217,6 +217,30 @@ class AppLocalizationsId extends AppLocalizations {
   String get catalogFilterLodging => 'Hotel';
 
   @override
+  String get catalogKecamatanAll => 'Semua kecamatan';
+
+  @override
+  String get catalogKecamatanPick => 'Pilih kecamatan';
+
+  @override
+  String catalogKecamatanCount(int count) {
+    return '$count tempat';
+  }
+
+  @override
+  String get catalogKecamatanLoadFailed => 'Daftar kecamatan gagal dimuat.';
+
+  @override
+  String catalogSectionKecamatan(String kecamatan) {
+    return 'Destinasi di $kecamatan';
+  }
+
+  @override
+  String catalogSectionInKecamatan(String title, String kecamatan) {
+    return '$title di $kecamatan';
+  }
+
+  @override
   String get catalogSectionAll => 'Destinasi di Batam';
 
   @override

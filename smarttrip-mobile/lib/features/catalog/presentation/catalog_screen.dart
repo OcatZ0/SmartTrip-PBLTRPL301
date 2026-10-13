@@ -436,7 +436,16 @@ class _ChipBar extends ConsumerWidget {
     final categories = ref.watch(catalogCategoriesProvider).valueOrNull ?? const <TripCategory>[];
     final controller = ref.read(catalogControllerProvider.notifier);
 
+    final kecamatan = filter.kecamatan;
     final chips = <Widget>[
+      _FilterChip(
+        label: kecamatan ?? l10n.catalogKecamatanAll,
+        selected: kecamatan != null,
+        leading: Icons.place_outlined,
+        trailing: Icons.expand_more,
+        onTap: () => _pickKecamatan(context),
+      ),
+      Center(child: Container(width: 1, height: 24, color: CatalogColors.line)),
       _FilterChip(
         label: l10n.catalogFilterAll,
         selected: filter.categorySlug == null && filter.type == null,
@@ -466,14 +475,90 @@ class _ChipBar extends ConsumerWidget {
       ),
     );
   }
+
+  static void _pickKecamatan(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      showDragHandle: true,
+      builder: (_) => const _KecamatanSheet(),
+    );
+  }
+}
+
+class _KecamatanSheet extends ConsumerWidget {
+  const _KecamatanSheet();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final selected = ref.watch(catalogControllerProvider.select((state) => state.filter.kecamatan));
+    final options = ref.watch(catalogKecamatanProvider);
+
+    void choose(String? kecamatan) {
+      ref.read(catalogControllerProvider.notifier).selectKecamatan(kecamatan);
+      Navigator.of(context).pop();
+    }
+
+    Widget tile(String label, String? value, {String? subtitle}) {
+      final isSelected = value == selected;
+      return ListTile(
+        title: Text(label, style: catalogText(15, isSelected ? FontWeight.w700 : FontWeight.w500, CatalogColors.ink)),
+        subtitle: subtitle == null
+            ? null
+            : Text(subtitle, style: catalogText(12, FontWeight.w400, CatalogColors.inkMuted)),
+        trailing: isSelected ? const Icon(Icons.check, color: CatalogColors.sea600) : null,
+        selected: isSelected,
+        onTap: () => choose(value),
+      );
+    }
+
+    return SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Text(
+              l10n.catalogKecamatanPick,
+              style: catalogText(18, FontWeight.w700, CatalogColors.ink, height: 24),
+            ),
+          ),
+          tile(l10n.catalogKecamatanAll, null),
+          Flexible(
+            child: options.when(
+              data: (items) => ListView(
+                shrinkWrap: true,
+                children: [
+                  for (final option in items)
+                    tile(option.name, option.name, subtitle: l10n.catalogKecamatanCount(option.placesCount)),
+                ],
+              ),
+              loading: () => const Padding(
+                padding: EdgeInsets.all(24),
+                child: Center(child: CircularProgressIndicator()),
+              ),
+              error: (_, __) => LoadErrorView(
+                message: l10n.catalogKecamatanLoadFailed,
+                onRetry: () => ref.invalidate(catalogKecamatanProvider),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _FilterChip extends StatelessWidget {
-  const _FilterChip({required this.label, required this.selected, required this.onTap});
+  const _FilterChip({required this.label, required this.selected, required this.onTap, this.leading, this.trailing});
 
   final String label;
   final bool selected;
   final VoidCallback onTap;
+  final IconData? leading;
+  final IconData? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -488,15 +573,28 @@ class _FilterChip extends StatelessWidget {
           onTap: onTap,
           child: Container(
             height: 36,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: EdgeInsets.only(left: leading == null ? 16 : 12, right: trailing == null ? 16 : 10),
             alignment: Alignment.center,
-            child: Text(
-              label,
-              style: catalogText(
-                13,
-                selected ? FontWeight.w700 : FontWeight.w600,
-                selected ? Colors.white : CatalogColors.ink,
-              ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (leading != null) ...[
+                  Icon(leading, size: 16, color: selected ? CatalogColors.sun400 : CatalogColors.sea600),
+                  const SizedBox(width: 6),
+                ],
+                Text(
+                  label,
+                  style: catalogText(
+                    13,
+                    selected ? FontWeight.w700 : FontWeight.w600,
+                    selected ? Colors.white : CatalogColors.ink,
+                  ),
+                ),
+                if (trailing != null) ...[
+                  const SizedBox(width: 4),
+                  Icon(trailing, size: 18, color: selected ? Colors.white : CatalogColors.inkMuted),
+                ],
+              ],
             ),
           ),
         ),
@@ -554,6 +652,13 @@ class _SectionHeader extends ConsumerWidget {
   }
 
   String _title(WidgetRef ref, AppLocalizations l10n, String languageCode) {
+    final kecamatan = filter.kecamatan;
+    final title = _filterTitle(ref, l10n, languageCode);
+    if (kecamatan == null) return title ?? l10n.catalogSectionAll;
+    return title == null ? l10n.catalogSectionKecamatan(kecamatan) : l10n.catalogSectionInKecamatan(title, kecamatan);
+  }
+
+  String? _filterTitle(WidgetRef ref, AppLocalizations l10n, String languageCode) {
     if (filter.search.isNotEmpty) return l10n.catalogSectionSearch(filter.search);
     if (filter.type == 'lodging') return l10n.catalogFilterLodging;
 
@@ -565,7 +670,7 @@ class _SectionHeader extends ConsumerWidget {
       }
     }
 
-    return l10n.catalogSectionAll;
+    return null;
   }
 }
 

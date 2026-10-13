@@ -46,6 +46,20 @@ Future<void> _pumpCatalog(
   }
 }
 
+/// Taps the filter chip labelled [label], scrolling the chip bar to it first.
+Future<void> _tapChip(WidgetTester tester, String label) async {
+  final chipBar = find.byType(ListView).first;
+  final chip = find.descendant(of: chipBar, matching: find.text(label));
+  await tester.scrollUntilVisible(
+    chip,
+    80,
+    scrollable: find.descendant(of: chipBar, matching: find.byType(Scrollable)),
+  );
+  await tester.pumpAndSettle();
+  await tester.tap(chip);
+  await tester.pumpAndSettle();
+}
+
 void main() {
   setUpAll(loadAppFont);
 
@@ -61,7 +75,7 @@ void main() {
     expect(find.text('Gratis'), findsOneWidget);
     expect(find.text('Belum ada ulasan'), findsOneWidget);
     expect(find.text('Belum ada info'), findsOneWidget);
-    expect(catalog.calls.first, (page: 1, search: '', categorySlug: null, type: null));
+    expect(catalog.calls.first, (page: 1, search: '', categorySlug: null, type: null, kecamatan: null));
   });
 
   testWidgets('the heart saves a place and the badge counts it', (tester) async {
@@ -136,15 +150,53 @@ void main() {
     final catalog = FakeCatalogRepository();
     await _pumpCatalog(tester, catalog: catalog);
 
-    await tester.tap(find.text('Pantai').first);
-    await tester.pumpAndSettle();
-    expect(catalog.calls.last, (page: 1, search: '', categorySlug: 'pantai', type: null));
+    await _tapChip(tester, 'Pantai');
+    expect(catalog.calls.last, (page: 1, search: '', categorySlug: 'pantai', type: null, kecamatan: null));
 
-    await tester.ensureVisible(find.text('Hotel'));
+    await _tapChip(tester, 'Hotel');
+    expect(catalog.calls.last, (page: 1, search: '', categorySlug: null, type: 'lodging', kecamatan: null));
+  });
+
+  testWidgets('the kecamatan sheet filters the grid and keeps the category chip', (tester) async {
+    final catalog = FakeCatalogRepository();
+    await _pumpCatalog(tester, catalog: catalog);
+
+    await _tapChip(tester, 'Pantai');
+    await _tapChip(tester, 'Semua kecamatan');
+
+    expect(find.text('Pilih kecamatan'), findsOneWidget);
+    expect(find.text('10 tempat'), findsOneWidget);
+
+    await tester.tap(find.text('Nongsa'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Hotel'));
+
+    expect(find.text('Pilih kecamatan'), findsNothing);
+    expect(catalog.calls.last, (page: 1, search: '', categorySlug: 'pantai', type: null, kecamatan: 'Nongsa'));
+    expect(find.text('Pantai di Nongsa'), findsOneWidget);
+
+    await _tapChip(tester, 'Semua');
+    expect(catalog.calls.last.kecamatan, 'Nongsa');
+    expect(find.text('Destinasi di Nongsa'), findsOneWidget);
+
+    await _tapChip(tester, 'Nongsa');
+    await tester.tap(find.text('Semua kecamatan').last);
     await tester.pumpAndSettle();
-    expect(catalog.calls.last, (page: 1, search: '', categorySlug: null, type: 'lodging'));
+    expect(catalog.calls.last.kecamatan, isNull);
+    expect(find.text('Destinasi di Batam'), findsOneWidget);
+  });
+
+  testWidgets('a failed kecamatan list offers a retry', (tester) async {
+    final catalog = FakeCatalogRepository()..kecamatanFailWith = Exception('offline');
+    await _pumpCatalog(tester, catalog: catalog);
+
+    await tester.tap(find.text('Semua kecamatan'));
+    await tester.pumpAndSettle();
+    expect(find.text('Daftar kecamatan gagal dimuat.'), findsOneWidget);
+
+    catalog.kecamatanFailWith = null;
+    await tester.tap(find.text('Coba Lagi'));
+    await tester.pumpAndSettle();
+    expect(find.text('Batam Kota'), findsOneWidget);
   });
 
   testWidgets('search waits for the user to stop typing', (tester) async {
@@ -158,7 +210,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(catalog.calls.where((call) => call.search.isNotEmpty).toList(), [
-      (page: 1, search: 'ocarina', categorySlug: null, type: null),
+      (page: 1, search: 'ocarina', categorySlug: null, type: null, kecamatan: null),
     ]);
     expect(find.text('Hasil untuk "ocarina"'), findsOneWidget);
   });

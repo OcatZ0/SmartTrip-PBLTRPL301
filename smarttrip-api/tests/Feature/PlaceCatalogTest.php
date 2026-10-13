@@ -89,6 +89,22 @@ class PlaceCatalogTest extends TestCase
         $this->assertSame('A', $response->json('data.0.name'));
     }
 
+    public function test_the_kecamatan_list_counts_open_places_and_merges_spelling_variants(): void
+    {
+        $this->makePlace(['name' => 'A', 'kecamatan' => 'Nongsa']);
+        $this->makePlace(['name' => 'B', 'kecamatan' => 'nongsa ', 'external_place_id' => 'gp-2']);
+        $this->makePlace(['name' => 'C', 'kecamatan' => 'Batam Kota', 'external_place_id' => 'gp-3']);
+        $this->makePlace(['name' => 'D', 'kecamatan' => 'Galang', 'external_place_id' => 'gp-4', 'business_status' => 'closed_permanently']);
+        $this->makePlace(['name' => 'E', 'kecamatan' => null, 'external_place_id' => 'gp-5']);
+
+        $response = $this->getJson('/api/places/kecamatan');
+
+        $response->assertOk()->assertExactJson(['data' => [
+            ['name' => 'Batam Kota', 'places_count' => 1],
+            ['name' => 'Nongsa', 'places_count' => 2],
+        ]]);
+    }
+
     public function test_the_catalog_can_be_filtered_by_type(): void
     {
         $this->makePlace(['name' => 'Hotel Harbour Bay', 'type' => 'lodging']);

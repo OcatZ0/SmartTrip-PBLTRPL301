@@ -73,6 +73,18 @@ class CatalogPage {
   bool get hasMore => currentPage < lastPage;
 }
 
+/// One option of the catalog's kecamatan filter, only kecamatan that have places.
+class KecamatanOption {
+  const KecamatanOption({required this.name, required this.placesCount});
+
+  factory KecamatanOption.fromJson(Map<String, dynamic> json) {
+    return KecamatanOption(name: json['name'] as String, placesCount: json['places_count'] as int? ?? 0);
+  }
+
+  final String name;
+  final int placesCount;
+}
+
 /// A review on the B2 detail screen, newest first from the API.
 class PlaceReview {
   const PlaceReview({

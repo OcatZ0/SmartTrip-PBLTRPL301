@@ -1,0 +1,107 @@
+name: Deploy API
+
+# Pushes to master that touch the Laravel API deploy it to
+# https://smarttrip.filltech.network on the Filltech Windows Server, through
+# the self-hosted runner and the shared release/junction engine in
+# C:\Deploy\Scripts. Mobile and docs changes do not trigger a deploy.
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'smarttrip-api/**'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch:
+    inputs:
+      rollback:
+        description: 'Roll back to the previous release instead of deploying'
+        required: false
+        type: boolean
+        default: false
+      target_release:
+        description: 'Specific release timestamp to roll back to (blank rolls back to the immediately previous release)'
+        required: false
+        type: string
+      commit_sha:
+        description: 'Specific commit SHA to deploy (blank deploys the latest commit on master)'
+        required: false
+        type: string
+
+concurrency:
+  group: deploy-${{ github.repository }}
+  cancel-in-progress: false
+
+env:
+  PROJECT: SmartTrip-Batam
+  APP_POOL: smarttrip-batam
+  HEALTH_URL: https://smarttrip.filltech.network/up
+  PHP_PATH: C:\Program Files\PHP\current\php.exe
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, windows]
+    steps:
+      - uses: actions/checkout@v4
+        if: ${{ github.event.inputs.rollback != 'true' }}
+        with:
+          ref: ${{ github.event.inputs.commit_sha || github.sha }}
+          clean: false
+
+      - name: Composer install
+        if: ${{ github.event.inputs.rollback != 'true' }}
+        shell: powershell
+        working-directory: smarttrip-api
+        run: |
+          $hashFile = '.composer-lock.hash'
+          $currentHash = (Get-FileHash composer.lock -Algorithm SHA256).Hash
+          $previousHash = if (Test-Path $hashFile) { Get-Content $hashFile -Raw } else { $null }
+          if ($currentHash -ne $previousHash -or -not (Test-Path 'vendor')) {
+            composer install --no-dev --optimize-autoloader --no-interaction
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            Set-Content -Path $hashFile -Value $currentHash -NoNewline
+          } else {
+            Write-Host 'composer.lock unchanged - skipping composer install'
+          }
+
+      - name: Deploy
+        shell: powershell
+        env:
+          ROLLBACK: ${{ github.event.inputs.rollback }}
+          TARGET_RELEASE: ${{ github.event.inputs.target_release }}
+          DEPLOY_SHA: ${{ github.event.inputs.commit_sha || github.sha }}
+        run: |
+          if ($env:ROLLBACK -eq 'true') {
+            C:\Deploy\Scripts\Deploy-Laravel.ps1 `
+              -Project $env:PROJECT `
+              -AppPoolName $env:APP_POOL `
+              -HealthUrl $env:HEALTH_URL `
+              -PhpPath $env:PHP_PATH `
+              -TargetRelease "$env:TARGET_RELEASE" `
+              -SitesRoot 'C:\Website' `
+              -Rollback
+          } else {
+            C:\Deploy\Scripts\Deploy-Laravel.ps1 `
+              -Project $env:PROJECT `
+              -Source "$env:GITHUB_WORKSPACE\smarttrip-api" `
+              -AppPoolName $env:APP_POOL `
+              -HealthUrl $env:HEALTH_URL `
+              -PhpPath $env:PHP_PATH `
+              -CommitSha "$env:DEPLOY_SHA" `
+              -SitesRoot 'C:\Website'
+          }
+
+      - name: Migrate, link storage and rebuild caches
+        if: ${{ github.event.inputs.rollback != 'true' }}
+        shell: powershell
+        run: |
+          cd "C:\Website\$env:PROJECT\current"
+          & $env:PHP_PATH artisan migrate --force
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          # Each release has its own public\ folder, so the public\storage link
+          # to the shared storage (place photos) is recreated every deploy.
+          if (-not (Test-Path 'public\storage')) { & $env:PHP_PATH artisan storage:link }
+          & $env:PHP_PATH artisan optimize:clear
+          # optimize:clear also wipes the config/view caches Deploy-Laravel.ps1
+          # built, so rebuild them instead of running uncached until the next deploy.
+          & $env:PHP_PATH artisan config:cache
+          & $env:PHP_PATH artisan route:cache
+          & $env:PHP_PATH artisan view:cache

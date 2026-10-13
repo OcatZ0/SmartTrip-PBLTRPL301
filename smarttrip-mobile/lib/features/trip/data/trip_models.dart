@@ -15,12 +15,14 @@ DateTime? _toDate(Object? value) {
   return DateTime(parsed.year, parsed.month, parsed.day);
 }
 
-/// Interest category from `GET /api/categories`.
+/// Interest category from `GET /api/categories`, also embedded in each
+/// catalog place.
 class TripCategory {
   const TripCategory({
     required this.categoriesId,
     required this.nameId,
     required this.nameEn,
+    this.slug = '',
   });
 
   factory TripCategory.fromJson(Map<String, dynamic> json) {
@@ -28,12 +30,16 @@ class TripCategory {
       categoriesId: json['categories_id'] as int,
       nameId: json['name_id'] as String,
       nameEn: json['name_en'] as String? ?? json['name_id'] as String,
+      slug: json['slug'] as String? ?? '',
     );
   }
 
   final int categoriesId;
   final String nameId;
   final String nameEn;
+
+  /// The `GET /api/places?category=` filter value.
+  final String slug;
 
   String localizedName(String languageCode) => languageCode == 'en' ? nameEn : nameId;
 }

@@ -9,6 +9,7 @@ import 'package:smarttrip_mobile/core/error/api_failure.dart';
 import 'package:smarttrip_mobile/features/auth/data/auth_repository.dart';
 import 'package:smarttrip_mobile/features/auth/data/google_auth_service.dart';
 
+import '../../helpers/catalog_doubles.dart';
 import '../../helpers/test_doubles.dart';
 
 const _submit = 'Masuk';
@@ -32,6 +33,7 @@ Future<void> _pumpApp(
         authRepositoryProvider.overrideWithValue(repository),
         googleAuthServiceProvider
             .overrideWithValue(google ?? FakeGoogleAuthService()),
+        ...catalogOverrides(),
       ],
       child: const SmartTripApp(),
     ),
@@ -103,7 +105,7 @@ void main() {
     await _fillAndSubmit(tester, email: '  budi@example.com  ');
 
     expect(repository.loginCalls.single.email, 'budi@example.com');
-    expect(find.text('Katalog tempat wisata'), findsOneWidget);
+    expect(find.text('Halo, mau ke mana hari ini?'), findsOneWidget);
     expect(find.text('Selamat Datang Kembali'), findsNothing);
   });
 
@@ -215,7 +217,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(receivedIdToken, 'google-id-token');
-    expect(find.text('Katalog tempat wisata'), findsOneWidget);
+    expect(find.text('Halo, mau ke mana hari ini?'), findsOneWidget);
   });
 
   testWidgets('dismissing the Google picker does nothing', (tester) async {
@@ -239,7 +241,7 @@ void main() {
     await tester.tap(find.text('Lewati'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Katalog tempat wisata'), findsOneWidget);
+    expect(find.text('Halo, mau ke mana hari ini?'), findsOneWidget);
   });
 
   testWidgets('register and forgot-password links open their screens', (tester) async {
@@ -284,13 +286,14 @@ void main() {
               dio: Dio()..httpClientAdapter = adapter,
             ),
           ),
+          ...catalogOverrides(),
         ],
         child: const SmartTripApp(),
       ),
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Katalog tempat wisata'), findsOneWidget);
+    expect(find.text('Halo, mau ke mana hari ini?'), findsOneWidget);
     expect(find.text('Selamat Datang Kembali'), findsNothing);
     expect(adapter.requests.single.path, '/user');
   });

@@ -190,6 +190,89 @@ class AppLocalizationsId extends AppLocalizations {
   String get catalogCreateTrip => 'Buat Trip';
 
   @override
+  String get catalogHeaderSubtitle => 'Beranda';
+
+  @override
+  String get catalogLogin => 'Masuk';
+
+  @override
+  String get catalogEyebrow => 'PANDUAN WISATA BATAM';
+
+  @override
+  String get catalogGreeting => 'Halo, mau ke mana hari ini?';
+
+  @override
+  String get catalogTagline => 'Temukan surga bahari & kuliner di Batam';
+
+  @override
+  String get catalogSearchHint => 'Cari pantai, jembatan barelang, seafood...';
+
+  @override
+  String get catalogClearSearch => 'Hapus pencarian';
+
+  @override
+  String get catalogFilterAll => 'Semua';
+
+  @override
+  String get catalogFilterLodging => 'Hotel';
+
+  @override
+  String get catalogSectionAll => 'Destinasi di Batam';
+
+  @override
+  String catalogSectionSearch(String query) {
+    return 'Hasil untuk \"$query\"';
+  }
+
+  @override
+  String catalogFavoriteCount(int count) {
+    return '$count Favorit';
+  }
+
+  @override
+  String get catalogNoReviews => 'Belum ada ulasan';
+
+  @override
+  String get catalogPriceFreeLabel => 'Tiket Masuk';
+
+  @override
+  String get catalogPriceFree => 'Gratis';
+
+  @override
+  String get catalogPriceFromLabel => 'Mulai dari';
+
+  @override
+  String get catalogPriceUnknownLabel => 'Harga';
+
+  @override
+  String get catalogPriceUnknown => 'Belum ada info';
+
+  @override
+  String get catalogTypeAttraction => 'Wisata';
+
+  @override
+  String get catalogTypeCulinary => 'Kuliner';
+
+  @override
+  String get catalogTypeLodging => 'Hotel';
+
+  @override
+  String get catalogSaveToWishlist => 'Simpan ke wishlist';
+
+  @override
+  String get catalogRemoveFromWishlist => 'Hapus dari wishlist';
+
+  @override
+  String get catalogWishlistFailed => 'Wishlist gagal diperbarui. Coba lagi.';
+
+  @override
+  String get catalogEmpty => 'Belum ada tempat di katalog.';
+
+  @override
+  String get catalogNoResults =>
+      'Tidak ada tempat yang cocok. Coba kata kunci atau kategori lain.';
+
+  @override
   String tripStepLabel(int step, int total, String name) {
     return 'Langkah $step dari $total: $name';
   }

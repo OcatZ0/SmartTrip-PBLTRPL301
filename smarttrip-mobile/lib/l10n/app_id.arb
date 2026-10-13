@@ -58,6 +58,46 @@
   "actionCancel": "Batal",
   "actionSave": "Simpan",
   "catalogCreateTrip": "Buat Trip",
+  "catalogHeaderSubtitle": "Beranda",
+  "catalogLogin": "Masuk",
+  "catalogEyebrow": "PANDUAN WISATA BATAM",
+  "catalogGreeting": "Halo, mau ke mana hari ini?",
+  "catalogTagline": "Temukan surga bahari & kuliner di Batam",
+  "catalogSearchHint": "Cari pantai, jembatan barelang, seafood...",
+  "catalogClearSearch": "Hapus pencarian",
+  "catalogFilterAll": "Semua",
+  "catalogFilterLodging": "Hotel",
+  "catalogSectionAll": "Destinasi di Batam",
+  "catalogSectionSearch": "Hasil untuk \"{query}\"",
+  "@catalogSectionSearch": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "catalogFavoriteCount": "{count} Favorit",
+  "@catalogFavoriteCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "catalogNoReviews": "Belum ada ulasan",
+  "catalogPriceFreeLabel": "Tiket Masuk",
+  "catalogPriceFree": "Gratis",
+  "catalogPriceFromLabel": "Mulai dari",
+  "catalogPriceUnknownLabel": "Harga",
+  "catalogPriceUnknown": "Belum ada info",
+  "catalogTypeAttraction": "Wisata",
+  "catalogTypeCulinary": "Kuliner",
+  "catalogTypeLodging": "Hotel",
+  "catalogSaveToWishlist": "Simpan ke wishlist",
+  "catalogRemoveFromWishlist": "Hapus dari wishlist",
+  "catalogWishlistFailed": "Wishlist gagal diperbarui. Coba lagi.",
+  "catalogEmpty": "Belum ada tempat di katalog.",
+  "catalogNoResults": "Tidak ada tempat yang cocok. Coba kata kunci atau kategori lain.",
   "tripStepLabel": "Langkah {step} dari {total}: {name}",
   "@tripStepLabel": {
     "placeholders": {

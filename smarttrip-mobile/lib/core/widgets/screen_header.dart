@@ -10,10 +10,13 @@ import '../theme/app_tokens.dart';
 /// Frosted 64px top bar shared by the trip screens (Figma "Header"): back
 /// button, logo, app name with the screen name below it, and the user avatar.
 class ScreenHeader extends ConsumerWidget implements PreferredSizeWidget {
-  const ScreenHeader({super.key, required this.subtitle, this.onBack});
+  const ScreenHeader({super.key, required this.subtitle, this.onBack, this.trailing});
 
   final String subtitle;
   final VoidCallback? onBack;
+
+  /// Shown before the avatar, e.g. a log-in button for a guest.
+  final Widget? trailing;
 
   @override
   Size get preferredSize => const Size.fromHeight(64);
@@ -77,6 +80,7 @@ class ScreenHeader extends ConsumerWidget implements PreferredSizeWidget {
                         ],
                       ),
                     ),
+                    if (trailing != null) trailing!,
                     if (userName != null && userName.isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.only(right: 8),

@@ -446,6 +446,162 @@ abstract class AppLocalizations {
   /// **'Buat Trip'**
   String get catalogCreateTrip;
 
+  /// No description provided for @catalogHeaderSubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Beranda'**
+  String get catalogHeaderSubtitle;
+
+  /// No description provided for @catalogLogin.
+  ///
+  /// In id, this message translates to:
+  /// **'Masuk'**
+  String get catalogLogin;
+
+  /// No description provided for @catalogEyebrow.
+  ///
+  /// In id, this message translates to:
+  /// **'PANDUAN WISATA BATAM'**
+  String get catalogEyebrow;
+
+  /// No description provided for @catalogGreeting.
+  ///
+  /// In id, this message translates to:
+  /// **'Halo, mau ke mana hari ini?'**
+  String get catalogGreeting;
+
+  /// No description provided for @catalogTagline.
+  ///
+  /// In id, this message translates to:
+  /// **'Temukan surga bahari & kuliner di Batam'**
+  String get catalogTagline;
+
+  /// No description provided for @catalogSearchHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Cari pantai, jembatan barelang, seafood...'**
+  String get catalogSearchHint;
+
+  /// No description provided for @catalogClearSearch.
+  ///
+  /// In id, this message translates to:
+  /// **'Hapus pencarian'**
+  String get catalogClearSearch;
+
+  /// No description provided for @catalogFilterAll.
+  ///
+  /// In id, this message translates to:
+  /// **'Semua'**
+  String get catalogFilterAll;
+
+  /// No description provided for @catalogFilterLodging.
+  ///
+  /// In id, this message translates to:
+  /// **'Hotel'**
+  String get catalogFilterLodging;
+
+  /// No description provided for @catalogSectionAll.
+  ///
+  /// In id, this message translates to:
+  /// **'Destinasi di Batam'**
+  String get catalogSectionAll;
+
+  /// No description provided for @catalogSectionSearch.
+  ///
+  /// In id, this message translates to:
+  /// **'Hasil untuk \"{query}\"'**
+  String catalogSectionSearch(String query);
+
+  /// No description provided for @catalogFavoriteCount.
+  ///
+  /// In id, this message translates to:
+  /// **'{count} Favorit'**
+  String catalogFavoriteCount(int count);
+
+  /// No description provided for @catalogNoReviews.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada ulasan'**
+  String get catalogNoReviews;
+
+  /// No description provided for @catalogPriceFreeLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Tiket Masuk'**
+  String get catalogPriceFreeLabel;
+
+  /// No description provided for @catalogPriceFree.
+  ///
+  /// In id, this message translates to:
+  /// **'Gratis'**
+  String get catalogPriceFree;
+
+  /// No description provided for @catalogPriceFromLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Mulai dari'**
+  String get catalogPriceFromLabel;
+
+  /// No description provided for @catalogPriceUnknownLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Harga'**
+  String get catalogPriceUnknownLabel;
+
+  /// No description provided for @catalogPriceUnknown.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada info'**
+  String get catalogPriceUnknown;
+
+  /// No description provided for @catalogTypeAttraction.
+  ///
+  /// In id, this message translates to:
+  /// **'Wisata'**
+  String get catalogTypeAttraction;
+
+  /// No description provided for @catalogTypeCulinary.
+  ///
+  /// In id, this message translates to:
+  /// **'Kuliner'**
+  String get catalogTypeCulinary;
+
+  /// No description provided for @catalogTypeLodging.
+  ///
+  /// In id, this message translates to:
+  /// **'Hotel'**
+  String get catalogTypeLodging;
+
+  /// No description provided for @catalogSaveToWishlist.
+  ///
+  /// In id, this message translates to:
+  /// **'Simpan ke wishlist'**
+  String get catalogSaveToWishlist;
+
+  /// No description provided for @catalogRemoveFromWishlist.
+  ///
+  /// In id, this message translates to:
+  /// **'Hapus dari wishlist'**
+  String get catalogRemoveFromWishlist;
+
+  /// No description provided for @catalogWishlistFailed.
+  ///
+  /// In id, this message translates to:
+  /// **'Wishlist gagal diperbarui. Coba lagi.'**
+  String get catalogWishlistFailed;
+
+  /// No description provided for @catalogEmpty.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada tempat di katalog.'**
+  String get catalogEmpty;
+
+  /// No description provided for @catalogNoResults.
+  ///
+  /// In id, this message translates to:
+  /// **'Tidak ada tempat yang cocok. Coba kata kunci atau kategori lain.'**
+  String get catalogNoResults;
+
   /// No description provided for @tripStepLabel.
   ///
   /// In id, this message translates to:

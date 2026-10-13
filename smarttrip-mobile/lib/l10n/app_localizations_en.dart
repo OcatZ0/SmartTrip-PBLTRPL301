@@ -189,6 +189,90 @@ class AppLocalizationsEn extends AppLocalizations {
   String get catalogCreateTrip => 'Create Trip';
 
   @override
+  String get catalogHeaderSubtitle => 'Home';
+
+  @override
+  String get catalogLogin => 'Log in';
+
+  @override
+  String get catalogEyebrow => 'BATAM TRAVEL GUIDE';
+
+  @override
+  String get catalogGreeting => 'Hi, where to today?';
+
+  @override
+  String get catalogTagline => 'Discover Batam\'s seaside spots and food';
+
+  @override
+  String get catalogSearchHint => 'Search beaches, Barelang bridge, seafood...';
+
+  @override
+  String get catalogClearSearch => 'Clear search';
+
+  @override
+  String get catalogFilterAll => 'All';
+
+  @override
+  String get catalogFilterLodging => 'Hotels';
+
+  @override
+  String get catalogSectionAll => 'Places in Batam';
+
+  @override
+  String catalogSectionSearch(String query) {
+    return 'Results for \"$query\"';
+  }
+
+  @override
+  String catalogFavoriteCount(int count) {
+    return '$count Saved';
+  }
+
+  @override
+  String get catalogNoReviews => 'No reviews yet';
+
+  @override
+  String get catalogPriceFreeLabel => 'Entry';
+
+  @override
+  String get catalogPriceFree => 'Free';
+
+  @override
+  String get catalogPriceFromLabel => 'From';
+
+  @override
+  String get catalogPriceUnknownLabel => 'Price';
+
+  @override
+  String get catalogPriceUnknown => 'Not available yet';
+
+  @override
+  String get catalogTypeAttraction => 'Attraction';
+
+  @override
+  String get catalogTypeCulinary => 'Food';
+
+  @override
+  String get catalogTypeLodging => 'Hotel';
+
+  @override
+  String get catalogSaveToWishlist => 'Save to wishlist';
+
+  @override
+  String get catalogRemoveFromWishlist => 'Remove from wishlist';
+
+  @override
+  String get catalogWishlistFailed =>
+      'Couldn\'t update your wishlist. Try again.';
+
+  @override
+  String get catalogEmpty => 'The catalog has no places yet.';
+
+  @override
+  String get catalogNoResults =>
+      'No places match. Try another keyword or category.';
+
+  @override
   String tripStepLabel(int step, int total, String name) {
     return 'Step $step of $total: $name';
   }

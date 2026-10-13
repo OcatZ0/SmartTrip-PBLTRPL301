@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\Place;
 use App\Models\PlaceCandidate;
 use App\Models\User;
+use App\Services\Places\PlaceCandidateReviewService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
@@ -19,28 +20,28 @@ class CandidateReviewTest extends TestCase
     private function makeCandidate(array $overrides = []): PlaceCandidate
     {
         return PlaceCandidate::create(array_merge([
-            'google_place_id' => 'gp-review-1', 'name' => 'Pantai Kandidat', 'type' => 'attraction',
+            'external_place_id' => 'osm:n2001', 'name' => 'Pantai Kandidat', 'type' => 'attraction',
             'lat' => 1.15, 'lng' => 104.05, 'search_area' => 'Nongsa', 'status' => 'pending',
         ], $overrides));
     }
 
-    private function fakeDetailsPhotoAndGemini(): void
+    private function fakeDetailsAndGemini(): void
     {
         Http::fake([
-            'places.googleapis.com/v1/places/*/media' => Http::response('fake-image-bytes'),
-            'places.googleapis.com/v1/places/*' => Http::response([
-                'id' => 'gp-review-1',
-                'displayName' => ['text' => 'Pantai Kandidat Lengkap'],
-                'formattedAddress' => 'Nongsa, Batam',
-                'location' => ['latitude' => 1.15, 'longitude' => 104.05],
-                'types' => ['tourist_attraction'],
-                'rating' => 4.5,
-                'userRatingCount' => 120,
-                'priceLevel' => 'PRICE_LEVEL_MODERATE',
-                'editorialSummary' => ['text' => 'Pantai yang indah.'],
-                'businessStatus' => 'OPERATIONAL',
-                'photos' => [['name' => 'places/gp-review-1/photos/abc']],
-            ]),
+            'api.geoapify.com/v2/place-details*' => Http::response(['features' => [[
+                'properties' => [
+                    'feature_type' => 'details',
+                    'place_id' => 'osm:n2001',
+                    'name' => 'Pantai Kandidat Lengkap',
+                    'formatted' => 'Nongsa, Batam',
+                    'lat' => 1.15,
+                    'lon' => 104.05,
+                    'categories' => ['beach'],
+                    'opening_hours' => 'Mo-Su 08:00-18:00',
+                    'website' => 'https://pantai.example',
+                    'contact' => ['phone' => '+62 778 123'],
+                ],
+            ]]]),
             'generativelanguage.googleapis.com/*' => Http::response([
                 'candidates' => [[
                     'content' => ['parts' => [[
@@ -80,7 +81,7 @@ class CandidateReviewTest extends TestCase
     {
         $admin = User::factory()->create(['role' => 'admin']);
         $this->makeCandidate(['name' => 'Pending A']);
-        $this->makeCandidate(['name' => 'Rejected B', 'google_place_id' => 'gp-2', 'status' => 'rejected']);
+        $this->makeCandidate(['name' => 'Rejected B', 'external_place_id' => 'osm:n2003', 'status' => 'rejected']);
 
         $response = $this->actingAs($admin)->get('/admin/candidates');
 
@@ -104,7 +105,7 @@ class CandidateReviewTest extends TestCase
     {
         $admin = User::factory()->create(['role' => 'admin']);
         $this->makeCandidate(['name' => 'Nongsa Punya', 'search_area' => 'Nongsa']);
-        $this->makeCandidate(['name' => 'Sekupang Punya', 'google_place_id' => 'gp-2', 'search_area' => 'Sekupang']);
+        $this->makeCandidate(['name' => 'Sekupang Punya', 'external_place_id' => 'osm:n2003', 'search_area' => 'Sekupang']);
 
         $response = $this->actingAs($admin)->get('/admin/candidates?search_area=Sekupang');
 
@@ -115,29 +116,33 @@ class CandidateReviewTest extends TestCase
 
     // --- approve ---
 
-    public function test_approving_a_candidate_promotes_it_to_a_full_place_with_photo_and_gemini_tags(): void
+    public function test_approving_a_candidate_promotes_it_to_a_full_place_with_gemini_tags(): void
     {
         Storage::fake('public');
         $category = Category::create(['name_id' => 'Pantai', 'name_en' => 'Beach', 'slug' => 'pantai']);
         $admin = User::factory()->create(['role' => 'admin']);
         $candidate = $this->makeCandidate();
-        $this->fakeDetailsPhotoAndGemini();
+        $this->fakeDetailsAndGemini();
 
         $response = $this->actingAs($admin)->post("/admin/candidates/{$candidate->place_candidates_id}/approve");
 
         $response->assertRedirect();
         $this->assertSame('approved', $candidate->fresh()->status);
 
-        $place = Place::where('google_place_id', 'gp-review-1')->first();
+        $place = Place::where('external_place_id', 'osm:n2001')->first();
         $this->assertNotNull($place);
         $this->assertSame('Pantai Kandidat Lengkap', $place->name);
         $this->assertSame('Nongsa', $place->kecamatan);
         $this->assertSame('A beautiful beach.', $place->description_en);
         $this->assertSame(90, $place->estimated_visit_minutes);
         $this->assertTrue((bool) $place->is_outdoor);
-        $this->assertNotNull($place->photo_url);
+        $this->assertSame('geoapify', $place->source);
+        $this->assertSame('+62 778 123', $place->phone);
+        $this->assertSame(['osm' => 'Mo-Su 08:00-18:00'], $place->opening_hours);
+        // Geoapify has no ratings or photos; the admin adds photos.
+        $this->assertNull($place->rating);
+        $this->assertNull($place->photo_url);
         $this->assertTrue($place->categories->contains('categories_id', $category->categories_id));
-        $this->assertCount(1, $place->photos);
     }
 
     public function test_approving_never_attaches_a_gemini_suggested_tag_outside_the_known_category_list(): void
@@ -146,11 +151,11 @@ class CandidateReviewTest extends TestCase
         $admin = User::factory()->create(['role' => 'admin']);
         $candidate = $this->makeCandidate();
         // "pantai" category sengaja TIDAK di-seed - Gemini menyarankannya tapi harus dibuang.
-        $this->fakeDetailsPhotoAndGemini();
+        $this->fakeDetailsAndGemini();
 
         $this->actingAs($admin)->post("/admin/candidates/{$candidate->place_candidates_id}/approve");
 
-        $place = Place::where('google_place_id', 'gp-review-1')->first();
+        $place = Place::where('external_place_id', 'osm:n2001')->first();
         $this->assertCount(0, $place->categories);
     }
 
@@ -158,13 +163,13 @@ class CandidateReviewTest extends TestCase
     {
         $admin = User::factory()->create(['role' => 'admin']);
         $candidate = $this->makeCandidate();
-        Http::fake(['places.googleapis.com/*' => Http::response(['error' => 'boom'], 403)]);
+        Http::fake(['api.geoapify.com/*' => Http::response(['error' => 'boom'], 403)]);
 
         $response = $this->actingAs($admin)->post("/admin/candidates/{$candidate->place_candidates_id}/approve");
 
         $response->assertRedirect();
         $this->assertSame('pending', $candidate->fresh()->status);
-        $this->assertDatabaseMissing('places', ['google_place_id' => 'gp-review-1']);
+        $this->assertDatabaseMissing('places', ['external_place_id' => 'osm:n2001']);
     }
 
     public function test_a_gemini_failure_still_leaves_the_place_promoted_with_core_fields(): void
@@ -173,12 +178,17 @@ class CandidateReviewTest extends TestCase
         $admin = User::factory()->create(['role' => 'admin']);
         $candidate = $this->makeCandidate();
         Http::fake([
-            'places.googleapis.com/v1/places/*/media' => Http::response('fake-image-bytes'),
-            'places.googleapis.com/v1/places/*' => Http::response([
-                'id' => 'gp-review-1', 'displayName' => ['text' => 'Pantai Kandidat Lengkap'],
-                'formattedAddress' => 'Nongsa, Batam', 'location' => ['latitude' => 1.15, 'longitude' => 104.05],
-                'businessStatus' => 'OPERATIONAL',
-            ]),
+            'api.geoapify.com/v2/place-details*' => Http::response(['features' => [[
+                'properties' => [
+                    'feature_type' => 'details',
+                    'place_id' => 'osm:n2001',
+                    'name' => 'Pantai Kandidat Lengkap',
+                    'formatted' => 'Nongsa, Batam',
+                    'lat' => 1.15,
+                    'lon' => 104.05,
+                    'categories' => ['beach'],
+                ],
+            ]]]),
             'generativelanguage.googleapis.com/*' => Http::response(['error' => 'boom'], 500),
         ]);
 
@@ -186,7 +196,7 @@ class CandidateReviewTest extends TestCase
 
         $response->assertRedirect();
         $this->assertSame('approved', $candidate->fresh()->status);
-        $place = Place::where('google_place_id', 'gp-review-1')->first();
+        $place = Place::where('external_place_id', 'osm:n2001')->first();
         $this->assertNotNull($place);
         $this->assertNull($place->description_en);
         $this->assertFalse((bool) $place->category_tags_reviewed);
@@ -198,12 +208,17 @@ class CandidateReviewTest extends TestCase
         $admin = User::factory()->create(['role' => 'admin']);
         $candidate = $this->makeCandidate();
         Http::fake([
-            'places.googleapis.com/v1/places/*/media' => Http::response('fake-image-bytes'),
-            'places.googleapis.com/v1/places/*' => Http::response([
-                'id' => 'gp-review-1', 'displayName' => ['text' => 'Pantai Kandidat Lengkap'],
-                'formattedAddress' => 'Nongsa, Batam', 'location' => ['latitude' => 1.15, 'longitude' => 104.05],
-                'businessStatus' => 'OPERATIONAL',
-            ]),
+            'api.geoapify.com/v2/place-details*' => Http::response(['features' => [[
+                'properties' => [
+                    'feature_type' => 'details',
+                    'place_id' => 'osm:n2001',
+                    'name' => 'Pantai Kandidat Lengkap',
+                    'formatted' => 'Nongsa, Batam',
+                    'lat' => 1.15,
+                    'lon' => 104.05,
+                    'categories' => ['beach'],
+                ],
+            ]]]),
             'generativelanguage.googleapis.com/*' => fn () => throw new ConnectionException('cURL error 28: Operation timed out'),
         ]);
 
@@ -211,7 +226,7 @@ class CandidateReviewTest extends TestCase
 
         $response->assertRedirect();
         $this->assertSame('approved', $candidate->fresh()->status);
-        $this->assertNotNull(Place::where('google_place_id', 'gp-review-1')->first());
+        $this->assertNotNull(Place::where('external_place_id', 'osm:n2001')->first());
     }
 
     public function test_gemini_is_retried_after_a_temporary_high_demand_error(): void
@@ -221,12 +236,17 @@ class CandidateReviewTest extends TestCase
         $admin = User::factory()->create(['role' => 'admin']);
         $candidate = $this->makeCandidate();
         Http::fake([
-            'places.googleapis.com/v1/places/*/media' => Http::response('fake-image-bytes'),
-            'places.googleapis.com/v1/places/*' => Http::response([
-                'id' => 'gp-review-1', 'displayName' => ['text' => 'Pantai Kandidat Lengkap'],
-                'formattedAddress' => 'Nongsa, Batam', 'location' => ['latitude' => 1.15, 'longitude' => 104.05],
-                'businessStatus' => 'OPERATIONAL',
-            ]),
+            'api.geoapify.com/v2/place-details*' => Http::response(['features' => [[
+                'properties' => [
+                    'feature_type' => 'details',
+                    'place_id' => 'osm:n2001',
+                    'name' => 'Pantai Kandidat Lengkap',
+                    'formatted' => 'Nongsa, Batam',
+                    'lat' => 1.15,
+                    'lon' => 104.05,
+                    'categories' => ['beach'],
+                ],
+            ]]]),
             'generativelanguage.googleapis.com/*' => Http::sequence()
                 ->push(['error' => ['code' => 503, 'status' => 'UNAVAILABLE']], 503)
                 ->push(['candidates' => [['content' => ['parts' => [['text' => json_encode([
@@ -237,7 +257,7 @@ class CandidateReviewTest extends TestCase
 
         $this->actingAs($admin)->post("/admin/candidates/{$candidate->place_candidates_id}/approve");
 
-        $place = Place::where('google_place_id', 'gp-review-1')->first();
+        $place = Place::where('external_place_id', 'osm:n2001')->first();
         $this->assertSame('A beautiful beach.', $place->description_en);
         $this->assertSame(90, $place->estimated_visit_minutes);
     }
@@ -264,7 +284,7 @@ class CandidateReviewTest extends TestCase
 
         $response->assertRedirect();
         $this->assertSame('rejected', $candidate->fresh()->status);
-        $this->assertDatabaseMissing('places', ['google_place_id' => 'gp-review-1']);
+        $this->assertDatabaseMissing('places', ['external_place_id' => 'osm:n2001']);
     }
 
     // --- bulk actions ---
@@ -273,7 +293,7 @@ class CandidateReviewTest extends TestCase
     {
         $admin = User::factory()->create(['role' => 'admin']);
         $a = $this->makeCandidate(['name' => 'A']);
-        $b = $this->makeCandidate(['name' => 'B', 'google_place_id' => 'gp-2']);
+        $b = $this->makeCandidate(['name' => 'B', 'external_place_id' => 'osm:n2003']);
 
         $response = $this->actingAs($admin)->post('/admin/candidates/bulk-reject', [
             'ids' => [$a->place_candidates_id, $b->place_candidates_id],
@@ -288,14 +308,20 @@ class CandidateReviewTest extends TestCase
     {
         Storage::fake('public');
         $admin = User::factory()->create(['role' => 'admin']);
-        $a = $this->makeCandidate(['name' => 'A', 'google_place_id' => 'gp-review-1']);
-        $b = $this->makeCandidate(['name' => 'B', 'google_place_id' => 'gp-review-2']);
+        $a = $this->makeCandidate(['name' => 'A', 'external_place_id' => 'osm:n2001']);
+        $b = $this->makeCandidate(['name' => 'B', 'external_place_id' => 'osm:n2002']);
         Http::fake([
-            'places.googleapis.com/v1/places/*/media' => Http::response('fake-image-bytes'),
-            'places.googleapis.com/v1/places/*' => Http::response([
-                'displayName' => ['text' => 'Promoted'], 'formattedAddress' => 'Batam',
-                'location' => ['latitude' => 1.15, 'longitude' => 104.05], 'businessStatus' => 'OPERATIONAL',
-            ]),
+            'api.geoapify.com/v2/place-details*' => Http::response(['features' => [[
+                'properties' => [
+                    'feature_type' => 'details',
+                    'place_id' => 'osm:n2001',
+                    'name' => 'Promoted',
+                    'formatted' => 'Nongsa, Batam',
+                    'lat' => 1.15,
+                    'lon' => 104.05,
+                    'categories' => ['beach'],
+                ],
+            ]]]),
             'generativelanguage.googleapis.com/*' => Http::response([
                 'candidates' => [['content' => ['parts' => [['text' => '{}']]]]],
             ]),
@@ -317,14 +343,74 @@ class CandidateReviewTest extends TestCase
     {
         $admin = User::factory()->create(['role' => 'admin']);
         Http::fake([
-            'places.googleapis.com/*' => Http::response([
-                'places' => [['id' => 'gp-triggered', 'displayName' => ['text' => 'Baru'], 'location' => ['latitude' => 1.1, 'longitude' => 104.1], 'types' => []]],
-            ]),
+            'api.geoapify.com/v2/places*' => Http::response(['features' => [[
+                'properties' => [
+                    'place_id' => 'geoapify-opaque', 'name' => 'Baru', 'lat' => 1.1, 'lon' => 104.1, 'categories' => [],
+                    'datasource' => ['raw' => ['osm_type' => 'n', 'osm_id' => 3001]],
+                ],
+            ]]]),
         ]);
 
         $response = $this->actingAs($admin)->post('/admin/candidates/discover');
 
         $response->assertRedirect(route('admin.candidates.index'));
-        $this->assertDatabaseHas('place_candidates', ['google_place_id' => 'gp-triggered']);
+        $this->assertDatabaseHas('place_candidates', ['external_place_id' => 'osm:n3001']);
+    }
+
+    // --- duplicates ---
+
+    public function test_approve_looks_up_details_by_the_openstreetmap_element(): void
+    {
+        config(['services.geoapify.api_key' => 'geo-test-key']);
+        $candidate = $this->makeCandidate(['external_place_id' => 'osm:w2001']);
+        $this->fakeDetailsAndGemini();
+
+        app(PlaceCandidateReviewService::class)->approve($candidate);
+
+        Http::assertSent(fn ($request) => str_starts_with($request->url(), 'https://api.geoapify.com/v2/place-details')
+            && $request['osm_type'] === 'w'
+            && $request['osm_id'] === '2001');
+    }
+
+    public function test_approve_refuses_a_candidate_whose_place_is_already_in_the_catalog(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        // Added by hand after Discovery, so no external id; ~45 m away.
+        Place::create([
+            'name' => 'Pantai Kandidat Nongsa', 'type' => 'attraction', 'lat' => 1.1504, 'lng' => 104.05,
+            'address' => 'Batam', 'source' => 'manual',
+        ]);
+        $candidate = $this->makeCandidate();
+        Http::fake();
+
+        $response = $this->actingAs($admin)->post("/admin/candidates/{$candidate->place_candidates_id}/approve");
+
+        $response->assertSessionHas('error', fn (string $message) => str_contains($message, 'Pantai Kandidat Nongsa'));
+        $this->assertSame('pending', $candidate->fresh()->status);
+        $this->assertSame(1, Place::count());
+        Http::assertNothingSent();
+    }
+
+    public function test_the_reject_duplicates_command_rejects_pending_copies_and_keeps_the_first(): void
+    {
+        Place::create([
+            'external_place_id' => 'osm:n5000', 'name' => 'Masjid Agung Batam', 'type' => 'attraction',
+            'lat' => 1.1264, 'lng' => 104.0534, 'address' => 'Batam', 'source' => 'manual',
+        ]);
+        $sameElement = $this->makeCandidate(['external_place_id' => 'osm:n5000', 'name' => 'Masjid Agung', 'lat' => 1.2, 'lng' => 104.2]);
+        $nearbySameName = $this->makeCandidate(['external_place_id' => 'osm:w5001', 'name' => 'Masjid Agung Batam', 'lat' => 1.1265, 'lng' => 104.0535]);
+        $first = $this->makeCandidate(['external_place_id' => 'osm:n6000', 'name' => 'Pantai Ocarina']);
+        $copy = $this->makeCandidate(['external_place_id' => 'osm:w6001', 'name' => 'Ocarina', 'lat' => 1.1502]);
+        $unrelated = $this->makeCandidate(['external_place_id' => 'osm:n7000', 'name' => 'Kedai Kopi', 'lat' => 1.1501]);
+
+        $this->artisan('places:reject-duplicates')
+            ->expectsOutput('3 kandidat duplikat ditolak.')
+            ->assertExitCode(0);
+
+        $this->assertSame('rejected', $sameElement->fresh()->status);
+        $this->assertSame('rejected', $nearbySameName->fresh()->status);
+        $this->assertSame('pending', $first->fresh()->status);
+        $this->assertSame('rejected', $copy->fresh()->status);
+        $this->assertSame('pending', $unrelated->fresh()->status);
     }
 }

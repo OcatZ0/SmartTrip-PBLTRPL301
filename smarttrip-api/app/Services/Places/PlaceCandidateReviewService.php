@@ -5,40 +5,48 @@ namespace App\Services\Places;
 use App\Models\Category;
 use App\Models\Place;
 use App\Models\PlaceCandidate;
-use App\Models\PlacePhoto;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use RuntimeException;
 
 /**
  * F019 (US12) - approve = satu alur: promosikan candidate jadi places
- * (Place Details, Enterprise SKU), download foto ke storage lokal, lalu
- * satu call Gemini (translate + tag kategori + durasi + is_outdoor).
- * search_area candidate disalin jadi places.kecamatan gratis di sini.
+ * (Place Details dari Geoapify sejak 2026-10-13), lalu satu call Gemini
+ * (translate + tag kategori + durasi + is_outdoor). search_area candidate
+ * disalin jadi places.kecamatan gratis di sini. Geoapify tidak punya foto,
+ * jadi foto dilengkapi admin.
  */
 class PlaceCandidateReviewService
 {
     public function __construct(
-        private readonly GooglePlacesDetailsClient $detailsClient,
+        private readonly GeoapifyPlacesClient $detailsClient,
         private readonly GeminiEnrichmentClient $geminiClient,
+        private readonly PlaceDuplicateFinder $duplicates,
     ) {}
 
     /**
      * Place Details gagal -> approve dibatalkan total, candidate tetap
-     * pending (bisa dicoba lagi nanti). Foto/Gemini gagal SETELAH place
+     * pending (bisa dicoba lagi nanti). Gemini gagal SETELAH place
      * inti berhasil dibuat -> tidak membatalkan promosi (place tetap
      * berguna walau belum ada foto/tag) - dicatat ke log, admin bisa
-     * lengkapi manual lewat CRUD places (F021).
+     * lengkapi manual lewat CRUD places (F021). Kandidat yang ternyata
+     * sudah ada di katalog (misal admin menambah tempatnya manual setelah
+     * Discovery) ditolak sebelum memakai kredit Geoapify.
      */
     public function approve(PlaceCandidate $candidate): Place
     {
-        $details = $this->detailsClient->fetch($candidate->google_place_id);
+        $existing = $this->duplicates->findPlace(
+            $candidate->external_place_id, $candidate->name, (float) $candidate->lat, (float) $candidate->lng
+        );
+        if ($existing !== null) {
+            throw new RuntimeException("sudah ada di katalog sebagai \"{$existing->name}\"");
+        }
+
+        $details = $this->detailsClient->fetch($candidate->external_place_id);
 
         $place = DB::transaction(function () use ($candidate, $details) {
             $place = Place::create([
-                'google_place_id' => $candidate->google_place_id,
+                'external_place_id' => $candidate->external_place_id,
                 'name' => $details['name'] !== '' ? $details['name'] : $candidate->name,
                 'type' => $candidate->type,
                 'lat' => $details['lat'] ?: $candidate->lat,
@@ -46,10 +54,8 @@ class PlaceCandidateReviewService
                 'address' => $details['address'],
                 'kecamatan' => $candidate->search_area,
                 'rating' => $details['rating'],
-                // Google tidak selalu balikin userRatingCount (tempat baru
-                // tanpa review sama sekali) - places.review_count NOT NULL
-                // dengan default 0, tapi Eloquent create() kirim NULL
-                // eksplisit kalau tidak di-coalesce, menimpa default kolom.
+                // places.review_count NOT NULL default 0, tapi Eloquent
+                // create() kirim NULL eksplisit kalau tidak di-coalesce.
                 'review_count' => $details['review_count'] ?? 0,
                 'opening_hours' => $details['opening_hours'],
                 'description' => $details['description'],
@@ -58,7 +64,7 @@ class PlaceCandidateReviewService
                 'business_status' => $details['business_status'],
                 'types' => $details['types'],
                 'price_level' => $details['price_level'],
-                'source' => 'google',
+                'source' => 'geoapify',
                 'category_tags_reviewed' => false,
             ]);
 
@@ -67,7 +73,6 @@ class PlaceCandidateReviewService
             return $place;
         });
 
-        $this->tryDownloadPhoto($place, $details['photo_reference']);
         $this->tryEnrichWithGemini($place);
 
         return $place->fresh();
@@ -78,23 +83,34 @@ class PlaceCandidateReviewService
         $candidate->update(['status' => 'rejected']);
     }
 
-    private function tryDownloadPhoto(Place $place, ?string $photoReference): void
+    /**
+     * Rejects pending candidates that duplicate a catalog place or an earlier
+     * candidate, for candidates inserted before name + distance dedup existed
+     * or before a matching place was added by hand.
+     *
+     * @return int number of candidates rejected
+     */
+    public function rejectPendingDuplicates(): int
     {
-        if ($photoReference === null) {
-            return;
-        }
+        $rejected = 0;
 
-        try {
-            $bytes = $this->detailsClient->downloadPhoto($photoReference);
-            $path = 'places/'.$place->places_id.'/'.Str::random(16).'.jpg';
-            Storage::disk('public')->put($path, $bytes);
-            $url = Storage::disk('public')->url($path);
+        PlaceCandidate::where('status', 'pending')
+            ->orderBy('place_candidates_id')
+            ->each(function (PlaceCandidate $candidate) use (&$rejected) {
+                [$id, $name, $lat, $lng] = [
+                    $candidate->external_place_id, $candidate->name, (float) $candidate->lat, (float) $candidate->lng,
+                ];
 
-            $place->update(['photo_url' => $url]);
-            PlacePhoto::create(['places_id' => $place->places_id, 'photo_url' => $url, 'sort_order' => 0]);
-        } catch (RuntimeException $e) {
-            Log::warning("Gagal download foto buat place {$place->places_id}: {$e->getMessage()}");
-        }
+                if ($this->duplicates->findPlace($id, $name, $lat, $lng) === null
+                    && $this->duplicates->findCandidate($id, $name, $lat, $lng, $candidate->place_candidates_id) === null) {
+                    return;
+                }
+
+                $this->reject($candidate);
+                $rejected++;
+            });
+
+        return $rejected;
     }
 
     private function tryEnrichWithGemini(Place $place): void

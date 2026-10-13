@@ -24,7 +24,7 @@ class ReviewTest extends TestCase
     {
         return Place::create(array_merge([
             'name' => 'Pantai Melur', 'type' => 'attraction', 'lat' => 1.15, 'lng' => 104.05,
-            'address' => 'Nongsa, Batam', 'source' => 'google', 'google_place_id' => uniqid('gp-'),
+            'address' => 'Nongsa, Batam', 'source' => 'google', 'external_place_id' => uniqid('gp-'),
         ], $overrides));
     }
 
@@ -137,7 +137,7 @@ class ReviewTest extends TestCase
     {
         $user = User::factory()->create();
         $place = $this->makePlace();
-        $otherPlace = $this->makePlace(['name' => 'Tempat Lain', 'google_place_id' => 'gp-other']);
+        $otherPlace = $this->makePlace(['name' => 'Tempat Lain', 'external_place_id' => 'gp-other']);
         $trip = Trip::create([
             'users_id' => $user->users_id, 'title' => 'Trip', 'num_days' => 1,
             'budget_total' => 500000, 'start_date' => now()->addWeek()->toDateString(),

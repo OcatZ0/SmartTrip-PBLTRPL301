@@ -30,7 +30,7 @@ class WishlistTest extends TestCase
     {
         return Place::create(array_merge([
             'name' => 'Pantai Melur', 'type' => 'attraction', 'lat' => 1.15, 'lng' => 104.05,
-            'address' => 'Nongsa', 'source' => 'google', 'google_place_id' => uniqid('gp-'),
+            'address' => 'Nongsa', 'source' => 'google', 'external_place_id' => uniqid('gp-'),
             'estimated_visit_minutes' => 90,
         ], $overrides));
     }

@@ -7,7 +7,7 @@ use App\Models\Place;
 use Illuminate\Database\Seeder;
 
 /**
- * Starter catalog for local development while Google Places is unavailable.
+ * Starter catalog for local development.
  *
  * Names and coordinates are real, taken from OpenStreetMap on 2026-10-13
  * (Overpass API, data (c) OpenStreetMap contributors, ODbL); the OSM element
@@ -76,8 +76,15 @@ class PlaceSeeder extends Seeder
                     'is_outdoor' => $row['outdoor'],
                     'category_tags_reviewed' => $row['categories'] !== [],
                     'types' => ['osm:'.$row['osm']],
+                    'external_place_id' => 'osm:'.$row['osm'],
                 ]
             );
+
+            // Rows seeded before the id was filled in get it here, so
+            // Discovery skips them by id, not only by name and distance.
+            if ($place->external_place_id === null) {
+                $place->update(['external_place_id' => 'osm:'.$row['osm']]);
+            }
 
             $place->categories()->syncWithoutDetaching(
                 collect($row['categories'])->map(fn ($slug) => $categoryIds[$slug])->all()

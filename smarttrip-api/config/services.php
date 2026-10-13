@@ -31,8 +31,11 @@ return [
     'google' => [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
-        'places_api_key' => env('GOOGLE_PLACES_API_KEY'),
-        'places_monthly_quota' => env('GOOGLE_PLACES_MONTHLY_QUOTA', 1000),
+    ],
+
+    'geoapify' => [
+        'api_key' => env('GEOAPIFY_API_KEY'),
+        'daily_credits' => env('GEOAPIFY_DAILY_CREDITS', 3000),
     ],
 
     'openrouteservice' => [
@@ -43,7 +46,7 @@ return [
         'api_key' => env('GEMINI_API_KEY'),
         // An alias, so a retired version (gemini-2.0-flash returned 404 in
         // 2026-10) does not break enrichment again.
-        'model' => env('GEMINI_MODEL', 'gemini-flash-latest'),
+        'model' => env('GEMINI_MODEL', 'gemini-flash-lite-latest'),
     ],
 
     'slack' => [

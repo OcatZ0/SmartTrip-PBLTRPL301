@@ -28,7 +28,7 @@
     <div class="mb-3">
         <label class="form-label">Deskripsi (Override, Bahasa Indonesia)</label>
         <textarea name="description_override" class="form-control">{{ old('description_override', $place->description_override) }}</textarea>
-        <div class="form-text">Kosongkan supaya tetap pakai deskripsi asli dari Google: {{ $place->description }}</div>
+        <div class="form-text">Kosongkan supaya tetap pakai deskripsi asli dari sumber data: {{ $place->description }}</div>
     </div>
     <div class="mb-3">
         <label class="form-label">Deskripsi (Inggris)</label>

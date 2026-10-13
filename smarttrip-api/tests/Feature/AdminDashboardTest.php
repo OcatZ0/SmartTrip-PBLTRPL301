@@ -9,6 +9,7 @@ use App\Models\Trip;
 use App\Models\TripWishlistPlace;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
 
 class AdminDashboardTest extends TestCase
@@ -59,8 +60,8 @@ class AdminDashboardTest extends TestCase
     public function test_it_shows_the_number_of_pending_candidates(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
-        PlaceCandidate::create(['google_place_id' => 'gp-1', 'name' => 'A', 'type' => 'attraction', 'lat' => 1.1, 'lng' => 104.1, 'search_area' => 'Nongsa', 'status' => 'pending']);
-        PlaceCandidate::create(['google_place_id' => 'gp-2', 'name' => 'B', 'type' => 'attraction', 'lat' => 1.1, 'lng' => 104.1, 'search_area' => 'Nongsa', 'status' => 'rejected']);
+        PlaceCandidate::create(['external_place_id' => 'gp-1', 'name' => 'A', 'type' => 'attraction', 'lat' => 1.1, 'lng' => 104.1, 'search_area' => 'Nongsa', 'status' => 'pending']);
+        PlaceCandidate::create(['external_place_id' => 'gp-2', 'name' => 'B', 'type' => 'attraction', 'lat' => 1.1, 'lng' => 104.1, 'search_area' => 'Nongsa', 'status' => 'rejected']);
 
         $response = $this->actingAs($admin)->get('/admin/dashboard');
 
@@ -71,7 +72,7 @@ class AdminDashboardTest extends TestCase
     public function test_it_shows_the_last_discovery_timestamp_from_the_newest_candidate(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
-        $candidate = PlaceCandidate::create(['google_place_id' => 'gp-1', 'name' => 'A', 'type' => 'attraction', 'lat' => 1.1, 'lng' => 104.1, 'search_area' => 'Nongsa', 'status' => 'pending']);
+        $candidate = PlaceCandidate::create(['external_place_id' => 'gp-1', 'name' => 'A', 'type' => 'attraction', 'lat' => 1.1, 'lng' => 104.1, 'search_area' => 'Nongsa', 'status' => 'pending']);
         $candidate->forceFill(['created_at' => '2026-05-10 08:00:00'])->save();
 
         $response = $this->actingAs($admin)->get('/admin/dashboard');
@@ -83,10 +84,10 @@ class AdminDashboardTest extends TestCase
     public function test_it_shows_the_last_enrichment_timestamp_from_the_newest_google_sourced_place(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
-        $place = $this->makePlace(['source' => 'google', 'google_place_id' => 'gp-1']);
+        $place = $this->makePlace(['source' => 'google', 'external_place_id' => 'gp-1']);
         $place->forceFill(['created_at' => '2026-06-15 10:00:00'])->save();
         // Manual place tidak dihitung sebagai enrichment.
-        $manual = $this->makePlace(['source' => 'manual', 'google_place_id' => null]);
+        $manual = $this->makePlace(['source' => 'manual', 'external_place_id' => null]);
         $manual->forceFill(['created_at' => '2026-08-01 10:00:00'])->save();
 
         $response = $this->actingAs($admin)->get('/admin/dashboard');
@@ -98,22 +99,17 @@ class AdminDashboardTest extends TestCase
 
     // --- quota ---
 
-    public function test_it_counts_google_sourced_places_created_this_month_toward_the_quota(): void
+    public function test_it_shows_the_geoapify_credits_spent_today_against_the_daily_limit(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
-        $inThisMonth = $this->makePlace(['source' => 'google', 'google_place_id' => 'gp-1']);
-        $inThisMonth->forceFill(['created_at' => now()])->save();
-
-        $lastMonth = $this->makePlace(['source' => 'google', 'google_place_id' => 'gp-2']);
-        $lastMonth->forceFill(['created_at' => now()->subMonthsNoOverflow(2)])->save();
-
-        $manualThisMonth = $this->makePlace(['source' => 'manual', 'google_place_id' => null]);
-        $manualThisMonth->forceFill(['created_at' => now()])->save();
+        Cache::put('geoapify:credits:'.now()->toDateString(), 42);
+        Cache::put('geoapify:credits:'.now()->subDay()->toDateString(), 900);
 
         $response = $this->actingAs($admin)->get('/admin/dashboard');
 
         $response->assertOk();
-        $response->assertSee('1 / 1000');
+        $response->assertSee('Kredit Geoapify Hari Ini');
+        $response->assertSee('42 / 3000');
     }
 
     // --- attention lists ---
@@ -122,7 +118,7 @@ class AdminDashboardTest extends TestCase
     {
         $admin = User::factory()->create(['role' => 'admin']);
         $this->makePlace(['name' => 'Tanpa Biaya', 'estimated_cost_idr' => null]);
-        $this->makePlace(['name' => 'Ada Biaya', 'google_place_id' => 'gp-2', 'estimated_cost_idr' => 50000]);
+        $this->makePlace(['name' => 'Ada Biaya', 'external_place_id' => 'gp-2', 'estimated_cost_idr' => 50000]);
 
         $response = $this->actingAs($admin)->get('/admin/dashboard');
 
@@ -134,7 +130,7 @@ class AdminDashboardTest extends TestCase
     {
         $admin = User::factory()->create(['role' => 'admin']);
         $this->makePlace(['name' => 'Belum Direview', 'category_tags_reviewed' => false]);
-        $this->makePlace(['name' => 'Sudah Direview', 'google_place_id' => 'gp-2', 'category_tags_reviewed' => true]);
+        $this->makePlace(['name' => 'Sudah Direview', 'external_place_id' => 'gp-2', 'category_tags_reviewed' => true]);
 
         $response = $this->actingAs($admin)->get('/admin/dashboard');
 
@@ -150,8 +146,8 @@ class AdminDashboardTest extends TestCase
         $owner = User::factory()->create();
         $trip = Trip::create(['users_id' => $owner->users_id, 'title' => 'T', 'num_days' => 1, 'budget_total' => 500000, 'start_date' => now()->addWeek()->toDateString()]);
         $popular = $this->makePlace(['name' => 'Populer']);
-        $lessPopular = $this->makePlace(['name' => 'Kurang Populer', 'google_place_id' => 'gp-2']);
-        $untouched = $this->makePlace(['name' => 'Tidak Pernah Diwishlist', 'google_place_id' => 'gp-3']);
+        $lessPopular = $this->makePlace(['name' => 'Kurang Populer', 'external_place_id' => 'gp-2']);
+        $untouched = $this->makePlace(['name' => 'Tidak Pernah Diwishlist', 'external_place_id' => 'gp-3']);
 
         $anotherTrip = Trip::create(['users_id' => $owner->users_id, 'title' => 'T2', 'num_days' => 1, 'budget_total' => 500000, 'start_date' => now()->addWeek()->toDateString()]);
         TripWishlistPlace::create(['trips_id' => $trip->trips_id, 'places_id' => $popular->places_id]);

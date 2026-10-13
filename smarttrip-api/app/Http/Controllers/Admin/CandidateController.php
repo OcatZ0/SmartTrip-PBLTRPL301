@@ -27,7 +27,7 @@ class CandidateController extends Controller
 
         return view('admin.candidates.index', [
             'candidates' => $candidates,
-            'areas' => PlaceDiscoveryService::AREAS,
+            'areas' => array_keys(PlaceDiscoveryService::AREAS),
             'selectedArea' => $request->string('search_area')->toString(),
             'selectedStatus' => $request->string('status')->toString(),
         ]);

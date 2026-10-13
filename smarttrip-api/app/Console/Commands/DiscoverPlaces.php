@@ -14,7 +14,7 @@ class DiscoverPlaces extends Command
 {
     protected $signature = 'places:discover';
 
-    protected $description = 'Jalankan Discovery Google Places (Text Search) untuk semua kombinasi kecamatan x kategori di Batam';
+    protected $description = 'Jalankan Discovery Geoapify Places untuk semua kombinasi kecamatan x kategori di Batam';
 
     public function handle(PlaceDiscoveryService $service): int
     {

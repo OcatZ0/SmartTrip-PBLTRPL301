@@ -26,7 +26,7 @@ class SwapTest extends TestCase
     {
         return Place::create(array_merge([
             'name' => 'Tempat', 'type' => 'attraction', 'lat' => 1.15, 'lng' => 104.05,
-            'address' => 'Batam', 'source' => 'google', 'google_place_id' => uniqid('gp-'),
+            'address' => 'Batam', 'source' => 'google', 'external_place_id' => uniqid('gp-'),
             'estimated_visit_minutes' => 60, 'rating' => 4.0,
         ], $overrides));
     }
@@ -72,10 +72,10 @@ class SwapTest extends TestCase
         $category = Category::create(['name_id' => 'Pantai', 'name_en' => 'Beach', 'slug' => 'pantai']);
         $trip->interestCategories()->attach($category->categories_id);
 
-        $hotel = $this->makePlace(['type' => 'lodging', 'name' => 'Hotel', 'lat' => 1.1300, 'lng' => 104.0300, 'google_place_id' => 'gp-hotel']);
+        $hotel = $this->makePlace(['type' => 'lodging', 'name' => 'Hotel', 'lat' => 1.1300, 'lng' => 104.0300, 'external_place_id' => 'gp-hotel']);
         $trip->update(['hotel_places_id' => $hotel->places_id]);
 
-        $original = $this->makePlace(['name' => 'Tempat Asli', 'lat' => 1.1310, 'lng' => 104.0310, 'google_place_id' => 'gp-original']);
+        $original = $this->makePlace(['name' => 'Tempat Asli', 'lat' => 1.1310, 'lng' => 104.0310, 'external_place_id' => 'gp-original']);
         $original->categories()->attach($category->categories_id);
 
         $day = ItineraryDay::create([
@@ -98,9 +98,9 @@ class SwapTest extends TestCase
         $user = User::factory()->create();
         ['item' => $item, 'category' => $category] = $this->tripWithOneItem($user);
 
-        $alt1 = $this->makePlace(['name' => 'Alternatif Bagus', 'lat' => 1.1311, 'lng' => 104.0311, 'google_place_id' => 'gp-alt1', 'rating' => 4.8]);
+        $alt1 = $this->makePlace(['name' => 'Alternatif Bagus', 'lat' => 1.1311, 'lng' => 104.0311, 'external_place_id' => 'gp-alt1', 'rating' => 4.8]);
         $alt1->categories()->attach($category->categories_id);
-        $lodgingNoise = $this->makePlace(['type' => 'lodging', 'name' => 'Hotel Lain', 'google_place_id' => 'gp-lodging-noise']);
+        $lodgingNoise = $this->makePlace(['type' => 'lodging', 'name' => 'Hotel Lain', 'external_place_id' => 'gp-lodging-noise']);
 
         $response = $this->withHeaders($this->authHeader($user))
             ->getJson("/api/itinerary-items/{$item->itinerary_items_id}/swap-candidates");
@@ -116,7 +116,7 @@ class SwapTest extends TestCase
         $user = User::factory()->create();
         ['trip' => $trip, 'item' => $item, 'day' => $day, 'hotel' => $hotel] = $this->tripWithOneItem($user);
 
-        $usedElsewhere = $this->makePlace(['name' => 'Sudah Dipakai', 'lat' => 1.1312, 'lng' => 104.0312, 'google_place_id' => 'gp-used']);
+        $usedElsewhere = $this->makePlace(['name' => 'Sudah Dipakai', 'lat' => 1.1312, 'lng' => 104.0312, 'external_place_id' => 'gp-used']);
         ItineraryItem::create([
             'itinerary_days_id' => $day->itinerary_days_id, 'places_id' => $usedElsewhere->places_id,
             'visit_order' => 2, 'topsis_score' => 0.5, 'source' => 'recommended',
@@ -173,7 +173,7 @@ class SwapTest extends TestCase
     {
         $user = User::factory()->create();
         ['trip' => $trip, 'item' => $item, 'category' => $category] = $this->tripWithOneItem($user);
-        $alt = $this->makePlace(['name' => 'Alternatif', 'lat' => 1.1311, 'lng' => 104.0311, 'google_place_id' => 'gp-alt']);
+        $alt = $this->makePlace(['name' => 'Alternatif', 'lat' => 1.1311, 'lng' => 104.0311, 'external_place_id' => 'gp-alt']);
         $alt->categories()->attach($category->categories_id);
         $this->fakeRoutes();
 
@@ -192,7 +192,7 @@ class SwapTest extends TestCase
         ['trip' => $trip, 'item' => $item] = $this->tripWithOneItem($user);
         // A lodging is never part of the (attraction) swap-candidate pool -
         // stands in for "picked via full manual catalog search".
-        $manualPick = $this->makePlace(['type' => 'lodging', 'name' => 'Hasil Cari Manual', 'lat' => 1.4000, 'lng' => 104.4000, 'google_place_id' => 'gp-manual']);
+        $manualPick = $this->makePlace(['type' => 'lodging', 'name' => 'Hasil Cari Manual', 'lat' => 1.4000, 'lng' => 104.4000, 'external_place_id' => 'gp-manual']);
         $this->fakeRoutes();
 
         $response = $this->withHeaders($this->authHeader($user))
@@ -209,7 +209,7 @@ class SwapTest extends TestCase
         $user = User::factory()->create();
         ['trip' => $trip, 'item' => $item, 'category' => $category] = $this->tripWithOneItem($user);
         $item->update(['visited_at' => now()]);
-        $alt = $this->makePlace(['name' => 'Alternatif', 'lat' => 1.1311, 'lng' => 104.0311, 'google_place_id' => 'gp-alt']);
+        $alt = $this->makePlace(['name' => 'Alternatif', 'lat' => 1.1311, 'lng' => 104.0311, 'external_place_id' => 'gp-alt']);
         $alt->categories()->attach($category->categories_id);
         $this->fakeRoutes();
 
@@ -225,13 +225,13 @@ class SwapTest extends TestCase
         $user = User::factory()->create();
         ['trip' => $trip, 'item' => $item, 'day' => $day, 'category' => $category] = $this->tripWithOneItem($user);
 
-        $otherPlace = $this->makePlace(['name' => 'Stop Lain', 'lat' => 1.1315, 'lng' => 104.0315, 'google_place_id' => 'gp-other']);
+        $otherPlace = $this->makePlace(['name' => 'Stop Lain', 'lat' => 1.1315, 'lng' => 104.0315, 'external_place_id' => 'gp-other']);
         $otherItem = ItineraryItem::create([
             'itinerary_days_id' => $day->itinerary_days_id, 'places_id' => $otherPlace->places_id,
             'visit_order' => 2, 'topsis_score' => 0.6, 'source' => 'recommended', 'visited_at' => now(),
         ]);
 
-        $alt = $this->makePlace(['name' => 'Alternatif', 'lat' => 1.1311, 'lng' => 104.0311, 'google_place_id' => 'gp-alt']);
+        $alt = $this->makePlace(['name' => 'Alternatif', 'lat' => 1.1311, 'lng' => 104.0311, 'external_place_id' => 'gp-alt']);
         $alt->categories()->attach($category->categories_id);
         $this->fakeRoutes();
 
@@ -246,7 +246,7 @@ class SwapTest extends TestCase
     {
         $user = User::factory()->create();
         ['trip' => $trip, 'item' => $item, 'category' => $category] = $this->tripWithOneItem($user);
-        $alt = $this->makePlace(['name' => 'Alternatif', 'lat' => 1.1311, 'lng' => 104.0311, 'google_place_id' => 'gp-alt']);
+        $alt = $this->makePlace(['name' => 'Alternatif', 'lat' => 1.1311, 'lng' => 104.0311, 'external_place_id' => 'gp-alt']);
         $alt->categories()->attach($category->categories_id);
         $this->fakeRoutes();
 
@@ -268,7 +268,7 @@ class SwapTest extends TestCase
         $user = User::factory()->create();
         ['trip' => $trip, 'item' => $item, 'category' => $category, 'hotel' => $hotel] = $this->tripWithOneItem($user);
 
-        $otherDayPlace = $this->makePlace(['name' => 'Hari Lain', 'lat' => 1.5000, 'lng' => 104.5000, 'google_place_id' => 'gp-otherday']);
+        $otherDayPlace = $this->makePlace(['name' => 'Hari Lain', 'lat' => 1.5000, 'lng' => 104.5000, 'external_place_id' => 'gp-otherday']);
         $otherDay = ItineraryDay::create([
             'trips_id' => $trip->trips_id, 'day_number' => 2,
             'start_places_id' => $hotel->places_id, 'end_places_id' => $hotel->places_id,
@@ -278,7 +278,7 @@ class SwapTest extends TestCase
             'visit_order' => 1, 'topsis_score' => 0.7, 'source' => 'wishlist', 'polyline_to_here' => 'untouchedPolyline',
         ]);
 
-        $alt = $this->makePlace(['name' => 'Alternatif', 'lat' => 1.1311, 'lng' => 104.0311, 'google_place_id' => 'gp-alt']);
+        $alt = $this->makePlace(['name' => 'Alternatif', 'lat' => 1.1311, 'lng' => 104.0311, 'external_place_id' => 'gp-alt']);
         $alt->categories()->attach($category->categories_id);
         $this->fakeRoutes();
 
@@ -301,7 +301,7 @@ class SwapTest extends TestCase
             'custom_name' => 'Rumah Saudara', 'custom_lat' => 1.1320, 'custom_lng' => 104.0320,
             'custom_visit_minutes' => 30,
         ]);
-        $alternative = $this->makePlace(['name' => 'Kuliner', 'type' => 'culinary', 'lat' => 1.1330, 'lng' => 104.0330, 'google_place_id' => 'gp-alt']);
+        $alternative = $this->makePlace(['name' => 'Kuliner', 'type' => 'culinary', 'lat' => 1.1330, 'lng' => 104.0330, 'external_place_id' => 'gp-alt']);
         $alternative->categories()->attach($category->categories_id);
         $this->fakeRoutes();
 
@@ -325,7 +325,7 @@ class SwapTest extends TestCase
         $user = User::factory()->create();
         ['trip' => $trip, 'item' => $item, 'day' => $day] = $this->tripWithOneItem($user);
 
-        $usedElsewhere = $this->makePlace(['name' => 'Sudah Dipakai', 'lat' => 1.1312, 'lng' => 104.0312, 'google_place_id' => 'gp-used']);
+        $usedElsewhere = $this->makePlace(['name' => 'Sudah Dipakai', 'lat' => 1.1312, 'lng' => 104.0312, 'external_place_id' => 'gp-used']);
         ItineraryItem::create([
             'itinerary_days_id' => $day->itinerary_days_id, 'places_id' => $usedElsewhere->places_id,
             'visit_order' => 2, 'topsis_score' => 0.5, 'source' => 'recommended',
@@ -342,7 +342,7 @@ class SwapTest extends TestCase
         $owner = User::factory()->create();
         $stranger = User::factory()->create();
         ['item' => $item, 'category' => $category] = $this->tripWithOneItem($owner);
-        $alt = $this->makePlace(['name' => 'Alternatif', 'google_place_id' => 'gp-alt']);
+        $alt = $this->makePlace(['name' => 'Alternatif', 'external_place_id' => 'gp-alt']);
 
         $response = $this->withHeaders($this->authHeader($stranger))
             ->patchJson("/api/itinerary-items/{$item->itinerary_items_id}", ['places_id' => $alt->places_id]);
@@ -356,7 +356,7 @@ class SwapTest extends TestCase
         $viewer = User::factory()->create();
         ['trip' => $trip, 'item' => $item] = $this->tripWithOneItem($owner);
         $trip->viewers()->attach($viewer->users_id, ['added_at' => now()]);
-        $alt = $this->makePlace(['name' => 'Alternatif', 'google_place_id' => 'gp-alt']);
+        $alt = $this->makePlace(['name' => 'Alternatif', 'external_place_id' => 'gp-alt']);
 
         $response = $this->withHeaders($this->authHeader($viewer))
             ->patchJson("/api/itinerary-items/{$item->itinerary_items_id}", ['places_id' => $alt->places_id]);
@@ -368,7 +368,7 @@ class SwapTest extends TestCase
     {
         $user = User::factory()->create();
         ['item' => $item, 'category' => $category] = $this->tripWithOneItem($user);
-        $alt = $this->makePlace(['name' => 'Alternatif', 'lat' => 1.1311, 'lng' => 104.0311, 'google_place_id' => 'gp-alt']);
+        $alt = $this->makePlace(['name' => 'Alternatif', 'lat' => 1.1311, 'lng' => 104.0311, 'external_place_id' => 'gp-alt']);
         $alt->categories()->attach($category->categories_id);
         Http::fake(['api.openrouteservice.org/*' => Http::response(['error' => 'boom'], 403)]);
 
@@ -388,8 +388,8 @@ class SwapTest extends TestCase
         $user = User::factory()->create();
         ['day' => $day] = $this->tripWithOneItem($user);
 
-        $near = $this->makePlace(['name' => 'Dekat', 'lat' => 1.1311, 'lng' => 104.0311, 'google_place_id' => 'gp-near']);
-        $far = $this->makePlace(['name' => 'Jauh', 'lat' => 1.9000, 'lng' => 104.9000, 'google_place_id' => 'gp-far']);
+        $near = $this->makePlace(['name' => 'Dekat', 'lat' => 1.1311, 'lng' => 104.0311, 'external_place_id' => 'gp-near']);
+        $far = $this->makePlace(['name' => 'Jauh', 'lat' => 1.9000, 'lng' => 104.9000, 'external_place_id' => 'gp-far']);
 
         $response = $this->getJson("/api/places?near_itinerary_day={$day->itinerary_days_id}");
 

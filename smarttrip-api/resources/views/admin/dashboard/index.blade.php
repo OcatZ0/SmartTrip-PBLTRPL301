@@ -29,7 +29,7 @@
     <div class="col-md-4">
         <div class="card">
             <div class="card-body">
-                <h2 class="h6 text-muted">Kuota Google Places (Enterprise) Bulan Ini</h2>
+                <h2 class="h6 text-muted">Kredit Geoapify Hari Ini</h2>
                 <p class="display-6 mb-0">{{ $quotaUsed }} / {{ $quotaLimit }}</p>
             </div>
         </div>

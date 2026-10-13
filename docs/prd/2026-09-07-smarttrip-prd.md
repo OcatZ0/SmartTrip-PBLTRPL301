@@ -4,7 +4,7 @@
 
 **Type:** Full PRD
 **Status:** In progress — backend (`smarttrip-api`) and mobile (`smarttrip-mobile`) scaffolds exist with most F001-F024 implemented; see Sections 15 and 19
-**Version:** 1.24
+**Version:** 1.26
 **Last Updated:** 2026-10-13
 **Source of truth for implementation detail:** `docs/superpowers/specs/2026-09-07-smarttrip-itinerary-recommendation-design.md` (this PRD is a reformatted, audience-oriented view of the same decisions — where they ever conflict, the design spec wins, since it carries finer-grained rationale)
 
@@ -33,6 +33,8 @@
 | 1.20 | 2026-10-04 | Resolved the `users.email`/`users.google_id` open decision from 1.19: partial unique index (`WHERE deleted_at IS NULL`) so a deactivated account's email can be re-registered; migration and the account-deactivation feature itself are not implemented yet |
 | 1.21 | 2026-10-04 | Implemented the 1.20 decision in `smarttrip-api`: migration converting `users.email`/`users.google_id` to partial unique indexes (`WHERE deleted_at IS NULL`) plus 3 `AuthTest` cases; full backend suite green (273 tests) |
 | 1.22 | 2026-10-10 | PRD audit (data model + consistency), fixes applied in docs AND `smarttrip-api`: (1) `ON DELETE RESTRICT` never protected soft-deleted categories (soft delete is an UPDATE), so `CategoryController::destroy` now refuses a category still referenced by `place_category`/`trip_interest_category`/`user_default_interest_category`; (2) trip-history relations (`itinerary_items.places_id`, `itinerary_days.start/end_places_id`, `trips.hotel_places_id`, `trip_wishlist_places.places_id`) now use `withTrashed()` so a soft-deleted place no longer vanishes from existing itineraries, while generate/swap/catalog still exclude it; (3) documented `itinerary_days.start/end_places_id` as nullable (migration `2026_09_29_071806`, custom-pin hotel) and `places.rating` as nullable with a new 3-tier rating fallback (`PlaceRatingEstimator`: blend, median of same type, neutral 3.5) replacing the old silent `?? 0.0`; (4) added `PATCH /api/trips/{id}` (owner-only edit; changing `num_days`/`budget_total`/daily times clears the existing itinerary, client calls generate again); (5) added DB uniques `trip_wishlist_places(trips_id, places_id)`, `itinerary_days(trips_id, day_number)`, `itinerary_items(itinerary_days_id, places_id)`, `place_photos(places_id, sort_order)` (migration `2026_10_10_000000`); (6) documented FK `ON DELETE` policy per table, framework-owned tables (`personal_access_tokens`, `password_reset_tokens`, `sessions`), the `activity_log.attribute_changes` column, review orphaning on regenerate, and `GET /api/user` + web reset-password routes; (7) consistency fixes: duplicate `users.email`/`google_id` validation rows removed, Section 9 component table un-split and its admin cross-reference corrected to Section 8, Figma link added, Section 15 file structure updated to what exists, sync status noted as part of the Dashboard. Backend suite 290 tests green |
+| 1.26 | 2026-10-13 | Place dedup, applied in docs AND code: (1) `external_place_id` now holds the OpenStreetMap element behind a Geoapify result (`osm:n123`, `osm:w123`, `osm:r123`) instead of Geoapify's `place_id`, because that id embeds coordinates and name, so search and details return different ids for the same place and it changes whenever OSM moves a node; Place Details is fetched with `osm_type`/`osm_id`, and the seeded places get their id from `PlaceSeeder`'s OSM column; (2) Discovery also skips a result whose name overlaps (whole words, e.g. "Ocarina" and "Pantai Ocarina") with a place (incl. soft-deleted) or candidate (any status) within 100 m (`PlaceDuplicateFinder`), since hand-entered places have no id and OSM often maps one venue twice (node and way); (3) approve refuses a candidate already in the catalog before spending a Geoapify credit; (4) `php artisan places:reject-duplicates` rejects pending candidates that duplicate a place or an earlier candidate (24 on the local data: 19 seeded places found again, 5 node/way pairs) |
+| 1.25 | 2026-10-13 | Place data moved from Google Places to Geoapify (OpenStreetMap based, free 3,000 credits/day, no credit card), since the Google project still cannot enable billing: Discovery searches a circle around each of the 12 kecamatan per category (`GeoapifyPlacesClient`, `GEOAPIFY_API_KEY`), approve fetches Geoapify Place Details then the same Gemini enrichment, and `places.source` gains `geoapify` (migration `2026_10_13_000001`). Geoapify has no ratings and no photos: rating stays null (PlaceRatingEstimator fallback plus in-app reviews), photos are added by the admin. The F024 dashboard card now shows Geoapify credits spent today against the daily limit. The candidate/place id column `google_place_id` is renamed to `external_place_id` on both `places` and `place_candidates` (migration `2026_10_13_000002`, unique indexes renamed with it), since it now holds the Geoapify place id. The default Gemini model becomes `gemini-flash-lite-latest` (about 3.5 s per enrichment, while `gemini-flash-latest` timed out at 60 s on every retry). The F018 requirement title is kept as written for the course documents; the provider behind it is now Geoapify. Google is no longer needed for anything that requires billing (only Gemini and Google Sign-In remain, both free) |
 | 1.24 | 2026-10-13 | Provider switch and F008 fixes, applied in docs AND code: (1) the Google Cloud project could not enable billing (free trial requires a prepayment), so road routing moved from the Google Routes API to OpenRouteService (free Standard plan, 2,000 directions/day, no credit card; `OpenRouteServiceClient`, `ORS_API_KEY`) and map rendering moved from `google_maps_flutter` to `flutter_map` with OpenStreetMap tiles (no key). `polyline_to_here` keeps the Google encoded polyline format, so stored data and the mobile decoder are unchanged. Google Places (discovery/details/photos) stays as designed until billing is sorted; a starter catalog of 31 real Batam places (names/coordinates from OpenStreetMap) plus 10 categories is seeded by `PlaceSeeder`/`CategorySeeder` for local development; (2) `itinerary_items.places_id` is now nullable with a pin snapshot (`custom_name`, `custom_lat`, `custom_lng`, `custom_visit_minutes`, pgsql CHECK `itinerary_items_place_or_pin_check`), because a custom-pin wishlist item could not be inserted and made generate fail; (3) new public `GET /api/categories`, `GET /api/places?type=`, and `GET /api/trips/{id}` now includes each stop's place and the hotel; (4) Gemini model is configurable (`GEMINI_MODEL`, default alias `gemini-flash-latest`, since `gemini-2.0-flash` was retired) with retries on 429/5xx/timeouts. Mobile F008/F012/F013 screens (C1-C5, D1, E1) built |
 | 1.23 | 2026-10-11 | Table minimisation: dropped the six unused Laravel infrastructure tables (`sessions`, `cache`, `cache_locks`, `jobs`, `job_batches`, `failed_jobs`) via migration `2026_10_11_000000_drop_unused_framework_tables`; drivers switched to `SESSION_DRIVER=file`, `CACHE_STORE=file`, `QUEUE_CONNECTION=sync` (also the new defaults in `config/`). Schema goes from 25 to 19 tables. `password_reset_tokens` and `personal_access_tokens` kept, reasons in Section 10 |
 
@@ -278,10 +280,10 @@ Laravel Blade + Bootstrap, its own login (`/admin/login`, session-based, not the
 Backend is Laravel/Eloquent (not TypeScript) — schema shown as field lists per the design spec's Data Model section (full authoritative version there; summarized here for cross-reference):
 
 ```
-places(places_id, google_place_id?, name, type[attraction|culinary|lodging], lat, lng, address,
+places(places_id, external_place_id?, name, type[attraction|culinary|lodging], lat, lng, address,
   kecamatan?, price_level?, rating?, review_count, opening_hours[json], photo_url?, description?,
   phone?, website?, business_status[operational|closed_temporarily|closed_permanently],
-  types[json], source[google|manual],
+  types[json], source[google|geoapify|manual],
   category_tags_reviewed[bool], estimated_visit_minutes,
   is_outdoor[bool], estimated_cost_idr?, description_override?, description_en?,
   timestamps, deleted_at?[soft delete])
@@ -289,11 +291,12 @@ places(places_id, google_place_id?, name, type[attraction|culinary|lodging], lat
   -- (category_tags_reviewed..description_en, kecamatan) WAJIB diproteksi lewat whitelist-update di kode saat
   -- re-sync dari Google, bukan lewat pemisahan tabel lagi -- lihat design spec Section 4
   -- kategori sekarang lewat pivot place_category (lihat bawah), bukan kolom json lagi
-  -- PK/FK renamed to {table}_id convention (revisi 2026-09-22, see note below) -- google_place_id
-  -- is Google's own external ID, not a reference to our places_id, so it kept its name
+  -- PK/FK renamed to {table}_id convention (revisi 2026-09-22, see note below) -- external_place_id
+  -- is the OpenStreetMap element behind the Geoapify result (osm:n123 / osm:w123 / osm:r123, since v1.26), not a
+  -- reference to our places_id (renamed from google_place_id 2026-10-13)
   -- kecamatan added 2026-09-22: copied from place_candidates.search_area at promotion, admin-editable,
   -- powers GET /api/places?kecamatan= filter -- zero extra API cost, data already collected by Discovery
-  -- google_maps_uri REMOVED 2026-09-22: not stored -- built on the fly from lat/lng (or google_place_id)
+  -- google_maps_uri REMOVED 2026-09-22: not stored -- built on the fly from lat/lng
   -- instead, so it never goes stale if an admin later corrects the coordinates
   -- rating is NULLABLE (documented 2026-10-10): source=manual places have no Google rating, so the TOPSIS
   -- rating criterion uses a 3-tier fallback (PlaceRatingEstimator): Bayesian blend if any rating exists,
@@ -313,7 +316,7 @@ trip_interest_category(trips_id FK, categories_id FK[ON DELETE RESTRICT], unique
 user_default_interest_category(users_id FK, categories_id FK[ON DELETE RESTRICT], unique[users_id, categories_id])
   -- revisi 2026-09-22, ganti users.default_interest_category_ids json array
 
-place_candidates(place_candidates_id, google_place_id[unique], name, type, lat, lng, search_area,
+place_candidates(place_candidates_id, external_place_id[unique], name, type, lat, lng, search_area,
   status[pending|approved|rejected], timestamps)
 
 place_photos(place_photos_id, places_id FK, photo_url, sort_order, unique[places_id, sort_order])
@@ -405,9 +408,9 @@ password_reset_tokens(email PK, token, created_at)
 
 > Full field-level rationale for every table lives in the design spec Section 4 — this is a cross-reference summary, not the source of truth.
 
-**PK/FK naming convention (added 2026-09-22):** every primary key is now explicit `{table_name}_id` instead of a generic `id` (`places_id`, `categories_id`, `users_id`, `trips_id`, etc.), so a column name is self-describing even outside JOIN context (`trips.users_id` reads as "this trip references a `users` row" on its own). Foreign keys follow the same target name (`place_id`→`places_id`, `category_id`→`categories_id`, `user_id`→`users_id`, `trip_id`→`trips_id`, `itinerary_day_id`→`itinerary_days_id`, `itinerary_item_id`→`itinerary_items_id`); role-prefixed FKs keep their prefix (`hotel_place_id`→`hotel_places_id`, `start_place_id`/`end_place_id`→`start_places_id`/`end_places_id`). **3 deliberate exceptions:** `google_place_id`/`google_id` (Google's own external IDs, not references to our tables — coincidentally similar-looking names only), `activity_log`'s `id`/`subject_id`/`causer_id` (owned by the `spatie/laravel-activitylog` package's stock migration), and the `{id}` path parameter in API routes (Section 11 — a REST resource-identifier convention, not a database column name; `trip_viewers_id` follows the standard convention, added 2026-09-23).
+**PK/FK naming convention (added 2026-09-22):** every primary key is now explicit `{table_name}_id` instead of a generic `id` (`places_id`, `categories_id`, `users_id`, `trips_id`, etc.), so a column name is self-describing even outside JOIN context (`trips.users_id` reads as "this trip references a `users` row" on its own). Foreign keys follow the same target name (`place_id`→`places_id`, `category_id`→`categories_id`, `user_id`→`users_id`, `trip_id`→`trips_id`, `itinerary_day_id`→`itinerary_days_id`, `itinerary_item_id`→`itinerary_items_id`); role-prefixed FKs keep their prefix (`hotel_place_id`→`hotel_places_id`, `start_place_id`/`end_place_id`→`start_places_id`/`end_places_id`). **3 deliberate exceptions:** `external_place_id` (named `google_place_id` until 2026-10-13) and `google_id` (external provider IDs, not references to our tables - coincidentally similar-looking names only), `activity_log`'s `id`/`subject_id`/`causer_id` (owned by the `spatie/laravel-activitylog` package's stock migration), and the `{id}` path parameter in API routes (Section 11 - a REST resource-identifier convention, not a database column name; `trip_viewers_id` follows the standard convention, added 2026-09-23).
 
-**Soft delete policy (added 2026-09-22, extended 2026-09-23):** `deleted_at` only on tables with an independent delete feature worth preserving history for — `places`, `users`, `trips`, `place_reviews`, `categories`. Deliberately excluded from pure pivot tables (`place_category`, `trip_interest_category`, `user_default_interest_category`, `trip_wishlist_places`, `trip_viewers` — Eloquent's `sync()`/`detach()` expect hard delete; revoking viewer access is a hard delete of that `trip_viewers` row), pure child/detail rows with no independent delete feature (`place_photos`, `itinerary_days`, `itinerary_items`), and `place_candidates` (its `status` column already serves this purpose via `rejected`). **Unique constraints on soft-deletable tables (added 2026-10-04, found during backend implementation):** a plain UNIQUE also counts soft-deleted rows, so values that must be reusable after a soft delete use a partial index `WHERE deleted_at IS NULL` (`place_reviews (users_id, places_id)`, `categories.slug`, and since 2026-10-04 `users.email`/`users.google_id`); `places.google_place_id` stays plain unique on purpose. See the Key Validation Rules table below and design spec Section 4 ("Aturan unique + soft delete").
+**Soft delete policy (added 2026-09-22, extended 2026-09-23):** `deleted_at` only on tables with an independent delete feature worth preserving history for - `places`, `users`, `trips`, `place_reviews`, `categories`. Deliberately excluded from pure pivot tables (`place_category`, `trip_interest_category`, `user_default_interest_category`, `trip_wishlist_places`, `trip_viewers` - Eloquent's `sync()`/`detach()` expect hard delete; revoking viewer access is a hard delete of that `trip_viewers` row), pure child/detail rows with no independent delete feature (`place_photos`, `itinerary_days`, `itinerary_items`), and `place_candidates` (its `status` column already serves this purpose via `rejected`). **Unique constraints on soft-deletable tables (added 2026-10-04, found during backend implementation):** a plain UNIQUE also counts soft-deleted rows, so values that must be reusable after a soft delete use a partial index `WHERE deleted_at IS NULL` (`place_reviews (users_id, places_id)`, `categories.slug`, and since 2026-10-04 `users.email`/`users.google_id`); `places.external_place_id` stays plain unique on purpose. See the Key Validation Rules table below and design spec Section 4 ("Aturan unique + soft delete").
 
 **Soft delete, FK and history rules (added 2026-10-10 after the PRD audit):**
 - **`ON DELETE RESTRICT` does not protect soft deletes.** A soft delete is an `UPDATE deleted_at`, so the FK RESTRICT from the three category pivots never fires for it. The earlier claim that "the database refuses to delete a category still in use" was wrong for soft delete; `CategoryController::destroy` now checks `place_category`, `trip_interest_category` and `user_default_interest_category` (including rows of soft-deleted places/trips) and refuses with a flash error instead. Same reasoning applies to any future soft-deletable table: usage checks live in code.
@@ -434,11 +437,11 @@ password_reset_tokens(email PK, token, created_at)
 | `place_reviews.rating` | integer, 1–5 inclusive |
 | `place_reviews` | unique(users_id, places_id) as a **partial index `WHERE deleted_at IS NULL`** - one active review per user per place; a plain unique would block re-reviewing after deleting your own review (soft-deleted row still counted) |
 | `categories.slug` | string, unique as a **partial index `WHERE deleted_at IS NULL`** (so a soft-deleted category's slug can be reused), lowercase-slug format (enforced to prevent near-duplicate tags like "kuliner" vs "wisata-kuliner") |
-| `places.google_place_id` | plain unique, **deliberately not partial** - a soft-deleted place must still block re-insertion; Discovery's idempotency check uses `withTrashed()` (design spec Section 3 step 1a) |
+| `places.external_place_id` | plain unique, **deliberately not partial** - a soft-deleted place must still block re-insertion; Discovery's idempotency check uses `withTrashed()` (design spec Section 3 step 1a) |
 | `users.email` / `users.google_id` | unique as a **partial index `WHERE deleted_at IS NULL`** (decided 2026-10-04), so a soft-deactivated account's email can be re-registered as a new account; every lookup by email/google_id must ignore soft-deleted rows (`User` already uses `SoftDeletes`, so plain Eloquent queries are safe). **Implemented** via migration `2026_10_04_000000_make_users_unique_indexes_ignore_soft_deletes` and covered by `AuthTest`; no account-deactivation feature exists yet, so it is not triggered in practice |
 | `users.email` | valid email format (uniqueness: see the partial-index row above) |
 | `users` | CHECK: `password IS NOT NULL OR google_id IS NOT NULL` |
-| `place_candidates.google_place_id` | unique — this is the idempotency key preventing duplicate Discovery inserts (design spec Section 3) |
+| `place_candidates.external_place_id` | unique - the id half of Discovery's dedup; the other half is name overlap within 100 m (`PlaceDuplicateFinder`, design spec Section 3 step 1a) |
 | `trip_viewers` | unique(trips_id, users_id) - no duplicate invites; invited email must belong to an existing registered user, no invite-by-email-for-non-users flow |
 | `trip_wishlist_places` | unique(trips_id, places_id) (added 2026-10-10) - a catalog place at most once per trip; custom pins (`places_id` NULL) are unaffected because NULLs never collide |
 | `itinerary_days` | unique(trips_id, day_number) (added 2026-10-10) |
@@ -479,7 +482,7 @@ Full endpoint list is design spec Section 12 — summarized by group:
 **Share Itinerary is a fully separate, unrelated mechanism (added 2026-09-23):** `GET /api/shared-itinerary/{share_token}` has no authorization check at all — it's not "owner or viewer," it's genuinely public. See design spec Section 10 for the strict response field whitelist that keeps this safe (no `visited_at`, no owner identity, no `budget_total`).
 
 **External integrations:**
-- Google Places API (New) — Nearby/Text Search (Pro SKU) + Place Details (Enterprise SKU) for place data
+- Geoapify Places + Place Details for place data (OpenStreetMap based, free 3,000 credits/day; replaced Google Places API (New) in v1.25, no ratings or photos)
 - OpenRouteService directions (`driving-car`) - real road polylines, free Standard plan (2,000/day); replaced Google Routes API in v1.24
 - `flutter_map` with OpenStreetMap tiles - map rendering, no API key; replaced `google_maps_flutter` in v1.24
 - Gemini API — bilingual content + AI category tagging + visit-duration estimation + is_outdoor inference, one combined call per place (Gemini chosen for its genuine free tier)
@@ -496,7 +499,7 @@ Full endpoint list is design spec Section 12 — summarized by group:
 
 **`place_candidates.status`**
 ```
-pending --(admin approves)--> approved --(triggers Place Details fetch + photo download +
+pending --(admin approves)--> approved --(triggers Place Details fetch +
                                             Gemini enrichment, promoted into `places`)--> [terminal]
 pending --(admin rejects)-----> rejected --[terminal; row stays to prevent re-discovery
                                              from re-inserting it as a duplicate candidate]
@@ -573,7 +576,7 @@ row exists --(60 min elapse without click)--> [deleted on next verification atte
 | Auth | Laravel Sanctum (API tokens) + Google Sign-In | First-party, easy revocation, sufficient at this scale (chosen over JWT after explicit comparison) |
 | Maps | `flutter_map` + OpenStreetMap tiles | No API key or billing account (v1.24, Google Maps SDK needed billing) |
 | Routing | OpenRouteService | Real road-following polylines, 2,000 free directions/day without a credit card (v1.24, replaced Google Routes API) |
-| Place data | Google Places API (New) | Only source; no scraping (ToS/legal risk explicitly rejected) |
+| Place data | Geoapify (OpenStreetMap) | Free without billing (v1.25, replaced Google Places API (New)); no scraping (ToS/legal risk explicitly rejected) |
 | AI enrichment | Gemini API (Flash/Flash-Lite) | Genuinely free ongoing tier vs. OpenAI/Claude's one-time trial credits |
 | Notifications | `flutter_local_notifications` | Fully client-side, no Firebase needed - covers day-start reminders, next-stop-approaching alerts, and the weather-window-opened alert (US15) |
 | Geofencing | `geofence_service` (or equivalent native wrapper) | OS-level, survives app kill, battery-efficient |
@@ -686,11 +689,13 @@ SmartTrip-Batam/
 - [ ] A submitted review is reflected in that place's Bayesian-blended rating on the next TOPSIS scoring run
 
 **US11 — Trigger discovery (Admin)**
-- [ ] Discovery re-runs do not re-insert `google_place_id`s already present in `places` or `place_candidates`, in any status (including `rejected`)
+- [ ] Discovery re-runs do not re-insert `external_place_id`s already present in `places` or `place_candidates`, in any status (including `rejected`)
+- [ ] Discovery also skips a result with a different or missing id when its name overlaps (whole words) with a place or candidate within 100 m; a same-named branch farther away is kept
+- [ ] Approving a candidate that is already in the catalog is refused with the existing place's name, without calling Geoapify; `php artisan places:reject-duplicates` rejects pending duplicates and keeps the first candidate of each pair
 - [ ] `categories` must be seeded before the first Discovery/Enrichment run — documented setup order, not a runtime technical block
 
 **US12 — Review & approve/reject candidates (Admin)**
-- [ ] Approving a candidate triggers, in one flow: full Place Details fetch, photo download to local storage, and a single Gemini call (translation + category tags + visit duration)
+- [ ] Approving a candidate triggers, in one flow: full Place Details fetch and a single Gemini call (translation + category tags + visit duration); photos are added by the admin since v1.25 (Geoapify has none)
 - [ ] Rejecting a candidate sets `status = rejected` and it is excluded from future Discovery re-inserts (see US11)
 
 **US13 — Admin lengkapi data**

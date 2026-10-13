@@ -31,7 +31,7 @@ class ItineraryGenerationTest extends TestCase
     {
         return Place::create(array_merge([
             'name' => 'Tempat', 'type' => 'attraction', 'lat' => 1.15, 'lng' => 104.05,
-            'address' => 'Batam', 'source' => 'google', 'google_place_id' => uniqid('gp-'),
+            'address' => 'Batam', 'source' => 'google', 'external_place_id' => uniqid('gp-'),
             'estimated_visit_minutes' => 60, 'rating' => 4.0,
         ], $overrides));
     }
@@ -149,11 +149,11 @@ class ItineraryGenerationTest extends TestCase
         ]);
         $this->makePlace([
             'type' => 'lodging', 'name' => 'Hotel Jauh', 'lat' => 1.500, 'lng' => 104.500,
-            'estimated_cost_idr' => 900000, 'rating' => 2.5, 'google_place_id' => 'gp-far',
+            'estimated_cost_idr' => 900000, 'rating' => 2.5, 'external_place_id' => 'gp-far',
         ]);
         $this->makePlace([
             'type' => 'attraction', 'name' => 'Wishlist Anchor', 'lat' => 1.151, 'lng' => 104.051,
-            'google_place_id' => 'gp-anchor',
+            'external_place_id' => 'gp-anchor',
         ]);
         $anchor = Place::where('name', 'Wishlist Anchor')->first();
         $trip->wishlistPlaces()->create(['places_id' => $anchor->places_id]);
@@ -227,7 +227,7 @@ class ItineraryGenerationTest extends TestCase
         $category = Category::create(['name_id' => 'Pantai', 'name_en' => 'Beach', 'slug' => 'pantai']);
         $hotel = $this->makePlace([
             'type' => 'lodging', 'name' => 'Hotel Batam', 'lat' => 1.1300, 'lng' => 104.0300,
-            'google_place_id' => 'gp-hotel',
+            'external_place_id' => 'gp-hotel',
         ]);
         $trip->interestCategories()->attach($category->categories_id);
         $trip->update([
@@ -244,12 +244,12 @@ class ItineraryGenerationTest extends TestCase
         $trip = $this->readyTrip($user, 2);
         $category = $trip->interestCategories()->first();
 
-        $wishlistA = $this->makePlace(['name' => 'Wishlist A', 'lat' => 1.1301, 'lng' => 104.0301, 'google_place_id' => 'gp-wa']);
-        $wishlistB = $this->makePlace(['name' => 'Wishlist B', 'lat' => 1.4800, 'lng' => 104.4800, 'google_place_id' => 'gp-wb']);
+        $wishlistA = $this->makePlace(['name' => 'Wishlist A', 'lat' => 1.1301, 'lng' => 104.0301, 'external_place_id' => 'gp-wa']);
+        $wishlistB = $this->makePlace(['name' => 'Wishlist B', 'lat' => 1.4800, 'lng' => 104.4800, 'external_place_id' => 'gp-wb']);
         $trip->wishlistPlaces()->create(['places_id' => $wishlistA->places_id]);
         $trip->wishlistPlaces()->create(['places_id' => $wishlistB->places_id]);
 
-        $recommended = $this->makePlace(['name' => 'Rekomendasi', 'lat' => 1.1305, 'lng' => 104.0305, 'google_place_id' => 'gp-rec']);
+        $recommended = $this->makePlace(['name' => 'Rekomendasi', 'lat' => 1.1305, 'lng' => 104.0305, 'external_place_id' => 'gp-rec']);
         $recommended->categories()->attach($category->categories_id);
 
         $this->fakeRoutes();
@@ -306,10 +306,10 @@ class ItineraryGenerationTest extends TestCase
         $trip = $this->readyTrip($user, 2);
 
         // Two tight clusters far apart from each other.
-        $clusterA1 = $this->makePlace(['name' => 'A1', 'lat' => 1.1300, 'lng' => 104.0300, 'google_place_id' => 'gp-a1']);
-        $clusterA2 = $this->makePlace(['name' => 'A2', 'lat' => 1.1310, 'lng' => 104.0310, 'google_place_id' => 'gp-a2']);
-        $clusterB1 = $this->makePlace(['name' => 'B1', 'lat' => 1.5000, 'lng' => 104.5000, 'google_place_id' => 'gp-b1']);
-        $clusterB2 = $this->makePlace(['name' => 'B2', 'lat' => 1.5010, 'lng' => 104.5010, 'google_place_id' => 'gp-b2']);
+        $clusterA1 = $this->makePlace(['name' => 'A1', 'lat' => 1.1300, 'lng' => 104.0300, 'external_place_id' => 'gp-a1']);
+        $clusterA2 = $this->makePlace(['name' => 'A2', 'lat' => 1.1310, 'lng' => 104.0310, 'external_place_id' => 'gp-a2']);
+        $clusterB1 = $this->makePlace(['name' => 'B1', 'lat' => 1.5000, 'lng' => 104.5000, 'external_place_id' => 'gp-b1']);
+        $clusterB2 = $this->makePlace(['name' => 'B2', 'lat' => 1.5010, 'lng' => 104.5010, 'external_place_id' => 'gp-b2']);
 
         foreach ([$clusterA1, $clusterA2, $clusterB1, $clusterB2] as $place) {
             $trip->wishlistPlaces()->create(['places_id' => $place->places_id]);
@@ -335,7 +335,7 @@ class ItineraryGenerationTest extends TestCase
     {
         $user = User::factory()->create();
         $trip = $this->readyTrip($user, 1);
-        $wishlist = $this->makePlace(['name' => 'Wishlist', 'lat' => 1.1301, 'lng' => 104.0301, 'google_place_id' => 'gp-w']);
+        $wishlist = $this->makePlace(['name' => 'Wishlist', 'lat' => 1.1301, 'lng' => 104.0301, 'external_place_id' => 'gp-w']);
         $trip->wishlistPlaces()->create(['places_id' => $wishlist->places_id]);
 
         $this->fakeRoutes();
@@ -355,7 +355,7 @@ class ItineraryGenerationTest extends TestCase
     {
         $user = User::factory()->create();
         $trip = $this->readyTrip($user, 1);
-        $wishlist = $this->makePlace(['name' => 'Wishlist', 'lat' => 1.1301, 'lng' => 104.0301, 'google_place_id' => 'gp-w']);
+        $wishlist = $this->makePlace(['name' => 'Wishlist', 'lat' => 1.1301, 'lng' => 104.0301, 'external_place_id' => 'gp-w']);
         $trip->wishlistPlaces()->create(['places_id' => $wishlist->places_id]);
         $this->fakeRoutes();
 
@@ -391,7 +391,7 @@ class ItineraryGenerationTest extends TestCase
     {
         $user = User::factory()->create();
         $trip = $this->readyTrip($user, 1);
-        $wishlist = $this->makePlace(['name' => 'Wishlist', 'lat' => 1.1301, 'lng' => 104.0301, 'google_place_id' => 'gp-w']);
+        $wishlist = $this->makePlace(['name' => 'Wishlist', 'lat' => 1.1301, 'lng' => 104.0301, 'external_place_id' => 'gp-w']);
         $trip->wishlistPlaces()->create(['places_id' => $wishlist->places_id]);
         $this->fakeRoutes();
 

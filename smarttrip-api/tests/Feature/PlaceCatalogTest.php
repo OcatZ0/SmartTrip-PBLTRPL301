@@ -18,7 +18,7 @@ class PlaceCatalogTest extends TestCase
     {
         return Place::create(array_merge([
             'name' => 'Pantai Melur', 'type' => 'attraction', 'lat' => 1.15, 'lng' => 104.05,
-            'address' => 'Nongsa, Batam', 'source' => 'google', 'google_place_id' => uniqid('gp-'),
+            'address' => 'Nongsa, Batam', 'source' => 'google', 'external_place_id' => uniqid('gp-'),
         ], $overrides));
     }
 
@@ -27,7 +27,7 @@ class PlaceCatalogTest extends TestCase
     public function test_the_catalog_is_public_and_lists_places(): void
     {
         $this->makePlace(['name' => 'Pantai Melur']);
-        $this->makePlace(['name' => 'Kafe Tepi Laut', 'google_place_id' => 'gp-2']);
+        $this->makePlace(['name' => 'Kafe Tepi Laut', 'external_place_id' => 'gp-2']);
 
         $response = $this->getJson('/api/places');
 
@@ -50,7 +50,7 @@ class PlaceCatalogTest extends TestCase
     public function test_the_catalog_can_be_searched_by_name_case_insensitively(): void
     {
         $this->makePlace(['name' => 'Pantai Melur']);
-        $this->makePlace(['name' => 'Kafe Tepi Laut', 'google_place_id' => 'gp-2']);
+        $this->makePlace(['name' => 'Kafe Tepi Laut', 'external_place_id' => 'gp-2']);
 
         $response = $this->getJson('/api/places?search=PANTAI');
 
@@ -67,7 +67,7 @@ class PlaceCatalogTest extends TestCase
         $beachPlace = $this->makePlace(['name' => 'Pantai Melur']);
         $beachPlace->categories()->attach($beach->categories_id);
 
-        $cafePlace = $this->makePlace(['name' => 'Kafe Tepi Laut', 'google_place_id' => 'gp-2']);
+        $cafePlace = $this->makePlace(['name' => 'Kafe Tepi Laut', 'external_place_id' => 'gp-2']);
         $cafePlace->categories()->attach($culinary->categories_id);
 
         $response = $this->getJson('/api/places?category=pantai');
@@ -80,7 +80,7 @@ class PlaceCatalogTest extends TestCase
     public function test_the_catalog_can_be_filtered_by_kecamatan(): void
     {
         $this->makePlace(['name' => 'A', 'kecamatan' => 'Nongsa']);
-        $this->makePlace(['name' => 'B', 'kecamatan' => 'Batam Kota', 'google_place_id' => 'gp-2']);
+        $this->makePlace(['name' => 'B', 'kecamatan' => 'Batam Kota', 'external_place_id' => 'gp-2']);
 
         $response = $this->getJson('/api/places?kecamatan=nongsa');
 
@@ -92,7 +92,7 @@ class PlaceCatalogTest extends TestCase
     public function test_the_catalog_can_be_filtered_by_type(): void
     {
         $this->makePlace(['name' => 'Hotel Harbour Bay', 'type' => 'lodging']);
-        $this->makePlace(['name' => 'Pantai Melur', 'google_place_id' => 'gp-2']);
+        $this->makePlace(['name' => 'Pantai Melur', 'external_place_id' => 'gp-2']);
 
         $response = $this->getJson('/api/places?type=lodging');
 
@@ -116,7 +116,7 @@ class PlaceCatalogTest extends TestCase
     public function test_the_catalog_is_paginated(): void
     {
         for ($i = 0; $i < 25; $i++) {
-            $this->makePlace(['name' => "Tempat $i", 'google_place_id' => "gp-$i"]);
+            $this->makePlace(['name' => "Tempat $i", 'external_place_id' => "gp-$i"]);
         }
 
         $response = $this->getJson('/api/places?per_page=10');

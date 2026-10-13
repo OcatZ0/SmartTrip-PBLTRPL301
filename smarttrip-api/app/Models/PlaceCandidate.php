@@ -12,7 +12,7 @@ class PlaceCandidate extends Model
     protected $primaryKey = 'place_candidates_id';
 
     protected $fillable = [
-        'google_place_id',
+        'external_place_id',
         'name',
         'type',
         'lat',

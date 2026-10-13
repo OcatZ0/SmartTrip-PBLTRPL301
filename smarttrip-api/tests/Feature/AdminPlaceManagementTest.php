@@ -17,7 +17,7 @@ class AdminPlaceManagementTest extends TestCase
         return Place::create(array_merge([
             'name' => 'Pantai Melur', 'type' => 'attraction', 'lat' => 1.15, 'lng' => 104.05,
             'address' => 'Nongsa, Batam', 'kecamatan' => 'Nongsa', 'source' => 'google',
-            'google_place_id' => uniqid('gp-'), 'business_status' => 'operational',
+            'external_place_id' => uniqid('gp-'), 'business_status' => 'operational',
         ], $overrides));
     }
 
@@ -45,7 +45,7 @@ class AdminPlaceManagementTest extends TestCase
     {
         $admin = User::factory()->create(['role' => 'admin']);
         $this->makePlace(['name' => 'Dari Google', 'source' => 'google']);
-        $this->makePlace(['name' => 'Dari Manual', 'source' => 'manual', 'google_place_id' => null]);
+        $this->makePlace(['name' => 'Dari Manual', 'source' => 'manual', 'external_place_id' => null]);
 
         $response = $this->actingAs($admin)->get('/admin/places');
 
@@ -58,7 +58,7 @@ class AdminPlaceManagementTest extends TestCase
     {
         $admin = User::factory()->create(['role' => 'admin']);
         $this->makePlace(['name' => 'Pantai Melur']);
-        $this->makePlace(['name' => 'Kafe Tepi Laut', 'google_place_id' => 'gp-2']);
+        $this->makePlace(['name' => 'Kafe Tepi Laut', 'external_place_id' => 'gp-2']);
 
         $response = $this->actingAs($admin)->get('/admin/places?search=pantai');
 
@@ -71,7 +71,7 @@ class AdminPlaceManagementTest extends TestCase
     {
         $admin = User::factory()->create(['role' => 'admin']);
         $this->makePlace(['name' => 'Nongsa Punya', 'kecamatan' => 'Nongsa']);
-        $this->makePlace(['name' => 'Sekupang Punya', 'kecamatan' => 'Sekupang', 'google_place_id' => 'gp-2']);
+        $this->makePlace(['name' => 'Sekupang Punya', 'kecamatan' => 'Sekupang', 'external_place_id' => 'gp-2']);
 
         $response = $this->actingAs($admin)->get('/admin/places?kecamatan=Sekupang');
 
@@ -93,7 +93,7 @@ class AdminPlaceManagementTest extends TestCase
 
         $response->assertRedirect();
         $this->assertDatabaseHas('places', [
-            'name' => 'Warung Baru', 'source' => 'manual', 'business_status' => 'operational', 'google_place_id' => null,
+            'name' => 'Warung Baru', 'source' => 'manual', 'business_status' => 'operational', 'external_place_id' => null,
         ]);
     }
 

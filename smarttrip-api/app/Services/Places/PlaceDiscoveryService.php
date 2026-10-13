@@ -2,34 +2,51 @@
 
 namespace App\Services\Places;
 
-use App\Models\Place;
 use App\Models\PlaceCandidate;
 use RuntimeException;
 
 /**
  * F018 (docs/prd design spec Section 3 fase 1) - loop area x kategori,
- * satu trigger = satu operasi bootstrap penuh (bukan satu API call). PRD
- * tidak menyebutkan daftar kecamatan secara eksplisit ("sekitar belasan
- * area") - 12 kecamatan resmi Kota Batam dipakai sebagai asumsi.
+ * satu trigger = satu operasi bootstrap penuh (bukan satu API call). Sejak
+ * 2026-10-13 lewat Geoapify, yang mencari di dalam lingkaran, bukan nama
+ * area: tiap kecamatan diwakili titik tengah + radius kira-kira (bukan batas
+ * administratif resmi), cukup untuk mengelompokkan kandidat buat review.
  */
 class PlaceDiscoveryService
 {
+    /** @var array<string, array{lat: float, lng: float, radius: int}> */
     public const AREAS = [
-        'Batu Ampar', 'Lubuk Baja', 'Sekupang', 'Nongsa', 'Batam Kota',
-        'Sagulung', 'Bengkong', 'Sungai Beduk', 'Batu Aji', 'Bulang',
-        'Galang', 'Belakang Padang',
+        'Batu Ampar' => ['lat' => 1.163, 'lng' => 104.003, 'radius' => 3000],
+        'Lubuk Baja' => ['lat' => 1.143, 'lng' => 104.010, 'radius' => 2500],
+        'Sekupang' => ['lat' => 1.118, 'lng' => 103.948, 'radius' => 5000],
+        'Nongsa' => ['lat' => 1.165, 'lng' => 104.105, 'radius' => 7000],
+        'Batam Kota' => ['lat' => 1.128, 'lng' => 104.052, 'radius' => 4000],
+        'Sagulung' => ['lat' => 1.045, 'lng' => 103.960, 'radius' => 4000],
+        'Bengkong' => ['lat' => 1.153, 'lng' => 104.033, 'radius' => 2500],
+        'Sungai Beduk' => ['lat' => 1.075, 'lng' => 104.045, 'radius' => 5000],
+        'Batu Aji' => ['lat' => 1.050, 'lng' => 103.985, 'radius' => 3500],
+        'Bulang' => ['lat' => 1.000, 'lng' => 103.880, 'radius' => 8000],
+        'Galang' => ['lat' => 0.760, 'lng' => 104.200, 'radius' => 10000],
+        'Belakang Padang' => ['lat' => 1.160, 'lng' => 103.895, 'radius' => 4000],
     ];
-
-    public const CATEGORY_QUERIES = [
-        'attraction' => 'tempat wisata',
-        'culinary' => 'tempat kuliner',
-        'lodging' => 'hotel',
-    ];
-
-    public function __construct(private readonly GooglePlacesDiscoveryClient $client) {}
 
     /**
-     * Kegagalan di satu kombinasi (misal 403 sementara dari Google) tidak
+     * Geoapify category keys per places.type. leisure.park is left out on
+     * purpose: in Batam it mostly returns residential fields and playgrounds.
+     */
+    public const CATEGORY_QUERIES = [
+        'attraction' => 'tourism.attraction,tourism.sights,entertainment.museum,beach,commercial.shopping_mall',
+        'culinary' => 'catering.restaurant,catering.cafe',
+        'lodging' => 'accommodation.hotel',
+    ];
+
+    public function __construct(
+        private readonly GeoapifyPlacesClient $client,
+        private readonly PlaceDuplicateFinder $duplicates,
+    ) {}
+
+    /**
+     * Kegagalan di satu kombinasi (misal 403 sementara dari Geoapify) tidak
      * menggagalkan seluruh batch - kandidat yang sudah ke-insert dari
      * kombinasi sebelumnya tetap tersimpan (tiap PlaceCandidate::create()
      * langsung commit, tidak dibungkus satu transaksi besar), dan sisa
@@ -44,10 +61,10 @@ class PlaceDiscoveryService
         $skipped = 0;
         $failed = [];
 
-        foreach (self::AREAS as $area) {
-            foreach (self::CATEGORY_QUERIES as $type => $queryLabel) {
+        foreach (self::AREAS as $area => $circle) {
+            foreach (self::CATEGORY_QUERIES as $type => $categories) {
                 try {
-                    $result = $this->discoverOne($area, $type, $queryLabel);
+                    $result = $this->discoverOne($area, $circle, $type, $categories);
                     $inserted += $result['inserted'];
                     $skipped += $result['skipped_existing'];
                 } catch (RuntimeException $e) {
@@ -67,22 +84,22 @@ class PlaceDiscoveryService
     /**
      * @return array{inserted: int, skipped_existing: int}
      */
-    private function discoverOne(string $area, string $type, string $queryLabel): array
+    private function discoverOne(string $area, array $circle, string $type, string $categories): array
     {
-        $results = $this->client->textSearch("{$queryLabel} di {$area}, Batam, Indonesia");
+        $results = $this->client->search($circle['lat'], $circle['lng'], $circle['radius'], $categories);
 
         $inserted = 0;
         $skipped = 0;
 
         foreach ($results as $result) {
-            if ($this->alreadyKnown($result['google_place_id'])) {
+            if ($this->alreadyKnown($result)) {
                 $skipped++;
 
                 continue;
             }
 
             PlaceCandidate::create([
-                'google_place_id' => $result['google_place_id'],
+                'external_place_id' => $result['external_place_id'],
                 'name' => $result['name'],
                 'type' => $type,
                 'lat' => $result['lat'],
@@ -99,11 +116,18 @@ class PlaceDiscoveryService
     /**
      * Idempotensi (Section 3, 1a): dicek terhadap places DAN place_candidates
      * di status apapun termasuk rejected - supaya tempat yang sudah pernah
-     * ditolak admin tidak terus muncul lagi tiap Discovery di-re-run.
+     * ditolak admin tidak terus muncul lagi tiap Discovery di-re-run. Selain
+     * ID, dicek juga nama + jarak (PlaceDuplicateFinder), karena tempat seed
+     * atau input manual bisa tanpa ID dan OSM sering memetakan satu tempat
+     * dua kali.
+     *
+     * @param  array{external_place_id: string, name: string, lat: float, lng: float}  $result
      */
-    private function alreadyKnown(string $googlePlaceId): bool
+    private function alreadyKnown(array $result): bool
     {
-        return Place::withTrashed()->where('google_place_id', $googlePlaceId)->exists()
-            || PlaceCandidate::where('google_place_id', $googlePlaceId)->exists();
+        [$id, $name, $lat, $lng] = [$result['external_place_id'], $result['name'], $result['lat'], $result['lng']];
+
+        return $this->duplicates->findPlace($id, $name, $lat, $lng) !== null
+            || $this->duplicates->findCandidate($id, $name, $lat, $lng) !== null;
     }
 }

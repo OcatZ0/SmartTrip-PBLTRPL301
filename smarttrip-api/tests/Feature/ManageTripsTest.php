@@ -34,12 +34,12 @@ class ManageTripsTest extends TestCase
         $user = User::factory()->create();
         $hotel = Place::create([
             'name' => 'Hotel Harbour Bay', 'type' => 'lodging', 'lat' => 1.16, 'lng' => 104.0,
-            'address' => 'Batu Ampar', 'source' => 'google', 'google_place_id' => 'gp-hotel',
+            'address' => 'Batu Ampar', 'source' => 'google', 'external_place_id' => 'gp-hotel',
         ]);
         $trip = $this->makeTrip($user, ['hotel_places_id' => $hotel->places_id]);
         $place = Place::create([
             'name' => 'Pantai Melur', 'type' => 'attraction', 'lat' => 1.15, 'lng' => 104.05,
-            'address' => 'Barelang', 'source' => 'google', 'google_place_id' => 'gp-1',
+            'address' => 'Barelang', 'source' => 'google', 'external_place_id' => 'gp-1',
             'estimated_visit_minutes' => 90, 'is_outdoor' => true,
         ]);
         $day = ItineraryDay::create(['trips_id' => $trip->trips_id, 'day_number' => 1]);

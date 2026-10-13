@@ -27,7 +27,7 @@ class VisitTrackingTest extends TestCase
         ]);
         $place = Place::create([
             'name' => 'Tempat', 'type' => 'attraction', 'lat' => 1.15, 'lng' => 104.05,
-            'address' => 'Batam', 'source' => 'google', 'google_place_id' => uniqid('gp-'),
+            'address' => 'Batam', 'source' => 'google', 'external_place_id' => uniqid('gp-'),
             'estimated_visit_minutes' => 60, 'rating' => 4.0,
         ]);
         $day = ItineraryDay::create(['trips_id' => $trip->trips_id, 'day_number' => 1]);

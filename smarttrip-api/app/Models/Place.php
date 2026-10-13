@@ -23,7 +23,7 @@ class Place extends Model
      * payload penuh dari Google di service sync nanti.
      */
     protected $fillable = [
-        'google_place_id',
+        'external_place_id',
         'name',
         'type',
         'lat',

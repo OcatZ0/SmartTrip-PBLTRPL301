@@ -7,7 +7,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
  * F005 - kartu katalog (PlaceCard). Sengaja tidak mengekspos kolom
- * internal admin/sync (google_place_id, source, category_tags_reviewed).
+ * internal admin/sync (external_place_id, source, category_tags_reviewed).
  */
 class PlaceResource extends JsonResource
 {

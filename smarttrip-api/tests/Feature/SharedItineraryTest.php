@@ -115,7 +115,7 @@ class SharedItineraryTest extends TestCase
         $trip = $this->makeTrip($owner, ['share_token' => 'publictoken', 'title' => 'Liburan Batam']);
         $place = Place::create([
             'name' => 'Pantai Melur', 'type' => 'attraction', 'lat' => 1.15, 'lng' => 104.05,
-            'address' => 'Nongsa, Batam', 'source' => 'google', 'google_place_id' => uniqid('gp-'),
+            'address' => 'Nongsa, Batam', 'source' => 'google', 'external_place_id' => uniqid('gp-'),
             'estimated_visit_minutes' => 60, 'photo_url' => 'foto.jpg',
         ]);
         $day = ItineraryDay::create(['trips_id' => $trip->trips_id, 'day_number' => 1]);
@@ -146,7 +146,7 @@ class SharedItineraryTest extends TestCase
         $trip = $this->makeTrip($owner, ['share_token' => 'publictoken', 'budget_total' => 9999999]);
         $place = Place::create([
             'name' => 'Pantai', 'type' => 'attraction', 'lat' => 1.15, 'lng' => 104.05,
-            'address' => 'Batam', 'source' => 'google', 'google_place_id' => uniqid('gp-'),
+            'address' => 'Batam', 'source' => 'google', 'external_place_id' => uniqid('gp-'),
         ]);
         $day = ItineraryDay::create(['trips_id' => $trip->trips_id, 'day_number' => 1]);
         ItineraryItem::create([
@@ -192,7 +192,7 @@ class SharedItineraryTest extends TestCase
         $owner = User::factory()->create();
         $hotel = Place::create([
             'name' => 'Hotel Harmoni', 'type' => 'lodging', 'lat' => 1.13, 'lng' => 104.03,
-            'address' => 'Batam Kota', 'source' => 'google', 'google_place_id' => uniqid('gp-'),
+            'address' => 'Batam Kota', 'source' => 'google', 'external_place_id' => uniqid('gp-'),
         ]);
         $trip = $this->makeTrip($owner, ['share_token' => 'publictoken', 'hotel_places_id' => $hotel->places_id]);
 

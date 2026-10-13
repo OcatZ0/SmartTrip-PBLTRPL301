@@ -41,12 +41,12 @@ class SchemaIntegrityTest extends TestCase
         ]);
         $cafe = Place::create([
             'name' => 'Kafe Tepi Laut', 'type' => 'culinary', 'lat' => 1.1401, 'lng' => 104.0601,
-            'address' => 'Jl. Pantai No.2', 'source' => 'google', 'google_place_id' => 'gp-1',
+            'address' => 'Jl. Pantai No.2', 'source' => 'google', 'external_place_id' => 'gp-1',
             'is_outdoor' => true, 'estimated_cost_idr' => 75000,
         ]);
         $beachSpot = Place::create([
             'name' => 'Pantai Melur', 'type' => 'attraction', 'lat' => 1.1501, 'lng' => 104.0701,
-            'address' => 'Nongsa', 'source' => 'google', 'google_place_id' => 'gp-2', 'is_outdoor' => true,
+            'address' => 'Nongsa', 'source' => 'google', 'external_place_id' => 'gp-2', 'is_outdoor' => true,
         ]);
 
         $cafe->categories()->attach($culinary->categories_id);
@@ -55,7 +55,7 @@ class SchemaIntegrityTest extends TestCase
         PlacePhoto::create(['places_id' => $cafe->places_id, 'photo_url' => 'cafe-1.jpg', 'sort_order' => 0]);
 
         PlaceCandidate::create([
-            'google_place_id' => 'gp-candidate-1', 'name' => 'Warung Baru', 'type' => 'restaurant',
+            'external_place_id' => 'gp-candidate-1', 'name' => 'Warung Baru', 'type' => 'restaurant',
             'lat' => 1.1, 'lng' => 104.0, 'search_area' => 'Nongsa',
         ]);
 

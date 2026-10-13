@@ -17,8 +17,14 @@ class AppRoutes {
   static String trip(int tripsId) => '/trips/$tripsId';
   static String liveMap(int tripsId, int dayNumber) => '/trips/$tripsId/days/$dayNumber/map';
 
+  /// B2 Detail Tempat (F006).
+  static String place(int placesId) => '/places/$placesId';
+
   /// Reachable without being logged in (PRD Section 8: browsing is public).
   static const publicPaths = {catalog, login, register, forgotPassword};
+
+  /// Place details are public too, like the catalog they open from.
+  static bool isPublic(String location) => publicPaths.contains(location) || location.startsWith('/places/');
 
   /// Only reachable while logged out.
   static const guestOnlyPaths = {login, register, forgotPassword};

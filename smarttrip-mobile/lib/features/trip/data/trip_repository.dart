@@ -145,6 +145,29 @@ class TripRepository {
     return GenerateResult.fromJson(body);
   }
 
+  /// The user's own trips, newest first (first page is plenty for a picker).
+  Future<List<TripSummary>> fetchMyTrips() async {
+    final body = await _call(() => _dio.get<Map<String, dynamic>>('/trips', queryParameters: {'per_page': 50}));
+    return (body['data'] as List? ?? const [])
+        .cast<Map<String, dynamic>>()
+        .map(TripSummary.fromJson)
+        .toList();
+  }
+
+  /// Adds a catalog place to a trip's wishlist; false when it was already
+  /// there (the API answers 200 instead of 201).
+  Future<bool> addPlaceToTripWishlist(int tripsId, int placesId) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/trips/$tripsId/wishlist',
+        data: {'places_id': placesId},
+      );
+      return response.statusCode == 201;
+    } on DioException catch (error) {
+      throw ApiFailure.fromDioException(error);
+    }
+  }
+
   Future<Trip> fetchTrip(int tripsId) async {
     final body = await _call(() => _dio.get<Map<String, dynamic>>('/trips/$tripsId'));
     return Trip.fromJson(body);

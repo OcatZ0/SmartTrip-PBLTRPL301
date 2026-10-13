@@ -768,4 +768,108 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get notificationArrivedBody =>
       'Kunjunganmu otomatis ditandai. Selamat menikmati!';
+
+  @override
+  String get detailTitle => 'Detail Destinasi';
+
+  @override
+  String get detailClosedTemporarily => 'Tutup sementara';
+
+  @override
+  String get detailFactTicket => 'Tiket masuk';
+
+  @override
+  String get detailFactVisit => 'Lama kunjungan';
+
+  @override
+  String get detailFactHours => 'Jam buka';
+
+  @override
+  String get detailFactDistance => 'Jarak';
+
+  @override
+  String detailVisitMinutes(int minutes) {
+    return '±$minutes menit';
+  }
+
+  @override
+  String detailVisitHours(String hours) {
+    return '±$hours jam';
+  }
+
+  @override
+  String get detailAbout => 'Tentang';
+
+  @override
+  String get detailReadMore => 'Baca selengkapnya';
+
+  @override
+  String get detailReadLess => 'Tampilkan lebih sedikit';
+
+  @override
+  String get detailOpenMaps => 'Buka Maps';
+
+  @override
+  String get detailReviews => 'Ulasan';
+
+  @override
+  String get detailSeeAllReviews => 'Lihat semua';
+
+  @override
+  String get detailShowFewerReviews => 'Lebih sedikit';
+
+  @override
+  String detailReviewCount(String count) {
+    return '$count ulasan';
+  }
+
+  @override
+  String get detailNoReviews => 'Belum ada ulasan untuk tempat ini.';
+
+  @override
+  String get detailToday => 'Hari ini';
+
+  @override
+  String get detailYesterday => 'Kemarin';
+
+  @override
+  String detailDaysAgo(int days) {
+    return '$days hari lalu';
+  }
+
+  @override
+  String get detailAddToTrip => 'Tambah ke Trip';
+
+  @override
+  String get detailChooseTrip => 'Tambah ke trip mana?';
+
+  @override
+  String detailTripMeta(int days, String date) {
+    return '$days hari · $date';
+  }
+
+  @override
+  String get detailNoTrips =>
+      'Kamu belum punya trip. Buat dulu, lalu tempat ini bisa ditambahkan.';
+
+  @override
+  String get detailNewTrip => 'Buat trip baru';
+
+  @override
+  String detailAddedToTrip(String title) {
+    return 'Ditambahkan ke wishlist $title.';
+  }
+
+  @override
+  String detailAddedNeedsRegenerate(String title) {
+    return 'Ditambahkan ke wishlist $title. Buat ulang itinerary-nya supaya tempat ini ikut dihitung.';
+  }
+
+  @override
+  String detailAlreadyInTrip(String title) {
+    return 'Sudah ada di wishlist $title.';
+  }
+
+  @override
+  String get detailLoadFailed => 'Detail tempat gagal dimuat.';
 }

@@ -361,5 +361,93 @@
       }
     }
   },
-  "notificationArrivedBody": "Kunjunganmu otomatis ditandai. Selamat menikmati!"
+  "notificationArrivedBody": "Kunjunganmu otomatis ditandai. Selamat menikmati!",
+  "detailTitle": "Detail Destinasi",
+  "detailClosedTemporarily": "Tutup sementara",
+  "detailFactTicket": "Tiket masuk",
+  "detailFactVisit": "Lama kunjungan",
+  "detailFactHours": "Jam buka",
+  "detailFactDistance": "Jarak",
+  "detailVisitMinutes": "±{minutes} menit",
+  "@detailVisitMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "detailVisitHours": "±{hours} jam",
+  "@detailVisitHours": {
+    "placeholders": {
+      "hours": {
+        "type": "String"
+      }
+    }
+  },
+  "detailAbout": "Tentang",
+  "detailReadMore": "Baca selengkapnya",
+  "detailReadLess": "Tampilkan lebih sedikit",
+  "detailOpenMaps": "Buka Maps",
+  "detailReviews": "Ulasan",
+  "detailSeeAllReviews": "Lihat semua",
+  "detailShowFewerReviews": "Lebih sedikit",
+  "detailReviewCount": "{count} ulasan",
+  "@detailReviewCount": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "detailNoReviews": "Belum ada ulasan untuk tempat ini.",
+  "detailToday": "Hari ini",
+  "detailYesterday": "Kemarin",
+  "detailDaysAgo": "{days} hari lalu",
+  "@detailDaysAgo": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "detailAddToTrip": "Tambah ke Trip",
+  "detailChooseTrip": "Tambah ke trip mana?",
+  "detailTripMeta": "{days} hari · {date}",
+  "@detailTripMeta": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "detailNoTrips": "Kamu belum punya trip. Buat dulu, lalu tempat ini bisa ditambahkan.",
+  "detailNewTrip": "Buat trip baru",
+  "detailAddedToTrip": "Ditambahkan ke wishlist {title}.",
+  "@detailAddedToTrip": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "detailAddedNeedsRegenerate": "Ditambahkan ke wishlist {title}. Buat ulang itinerary-nya supaya tempat ini ikut dihitung.",
+  "@detailAddedNeedsRegenerate": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "detailAlreadyInTrip": "Sudah ada di wishlist {title}.",
+  "@detailAlreadyInTrip": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "detailLoadFailed": "Detail tempat gagal dimuat."
 }

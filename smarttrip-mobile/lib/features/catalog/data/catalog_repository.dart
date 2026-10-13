@@ -36,6 +36,15 @@ class CatalogRepository {
       throw ApiFailure.fromDioException(error);
     }
   }
+
+  Future<PlaceDetail> fetchPlaceDetail(int placesId) async {
+    try {
+      final response = await _apiClient.dio.get<Map<String, dynamic>>('/places/$placesId');
+      return PlaceDetail.fromJson(response.data?['data'] as Map<String, dynamic>? ?? const {});
+    } on DioException catch (error) {
+      throw ApiFailure.fromDioException(error);
+    }
+  }
 }
 
 final catalogRepositoryProvider = Provider<CatalogRepository>((ref) {

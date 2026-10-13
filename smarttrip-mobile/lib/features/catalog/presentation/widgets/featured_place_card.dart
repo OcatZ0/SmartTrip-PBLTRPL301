@@ -7,7 +7,13 @@ import 'catalog_style.dart';
 import 'place_bits.dart';
 
 class FeaturedPlaceCard extends StatelessWidget {
-  const FeaturedPlaceCard({super.key, required this.place, required this.isSaved, required this.onToggleSaved});
+  const FeaturedPlaceCard({
+    super.key,
+    required this.place,
+    required this.isSaved,
+    required this.onToggleSaved,
+    this.onTap,
+  });
 
   static const width = 248.0;
   static const height = 168.0;
@@ -15,6 +21,9 @@ class FeaturedPlaceCard extends StatelessWidget {
   final CatalogPlace place;
   final bool isSaved;
   final VoidCallback onToggleSaved;
+
+  /// Opens the place detail (B2).
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -39,6 +48,13 @@ class FeaturedPlaceCard extends StatelessWidget {
                   colors: [Color(0xD90A2440), Color(0x000A2440)],
                   stops: [0, 0.65],
                 ),
+              ),
+            ),
+            // Below the heart, so the heart keeps its own tap.
+            Positioned.fill(
+              child: Material(
+                type: MaterialType.transparency,
+                child: InkWell(onTap: onTap),
               ),
             ),
             Positioned(

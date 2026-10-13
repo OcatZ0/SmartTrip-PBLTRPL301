@@ -41,6 +41,8 @@ class PlaceDetailResource extends JsonResource
             'price_level' => $this->price_level,
             'estimated_cost_idr' => $this->estimated_cost_idr,
             'is_outdoor' => $this->is_outdoor,
+            // B2 "Lama kunjungan" fact; the same estimate the generator uses.
+            'estimated_visit_minutes' => $this->estimated_visit_minutes,
             'categories' => $this->whenLoaded('categories', fn () => $this->categories->map(fn ($category) => [
                 'categories_id' => $category->categories_id,
                 'name_id' => $category->name_id,

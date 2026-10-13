@@ -1483,6 +1483,180 @@ abstract class AppLocalizations {
   /// In id, this message translates to:
   /// **'Kunjunganmu otomatis ditandai. Selamat menikmati!'**
   String get notificationArrivedBody;
+
+  /// No description provided for @detailTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Detail Destinasi'**
+  String get detailTitle;
+
+  /// No description provided for @detailClosedTemporarily.
+  ///
+  /// In id, this message translates to:
+  /// **'Tutup sementara'**
+  String get detailClosedTemporarily;
+
+  /// No description provided for @detailFactTicket.
+  ///
+  /// In id, this message translates to:
+  /// **'Tiket masuk'**
+  String get detailFactTicket;
+
+  /// No description provided for @detailFactVisit.
+  ///
+  /// In id, this message translates to:
+  /// **'Lama kunjungan'**
+  String get detailFactVisit;
+
+  /// No description provided for @detailFactHours.
+  ///
+  /// In id, this message translates to:
+  /// **'Jam buka'**
+  String get detailFactHours;
+
+  /// No description provided for @detailFactDistance.
+  ///
+  /// In id, this message translates to:
+  /// **'Jarak'**
+  String get detailFactDistance;
+
+  /// No description provided for @detailVisitMinutes.
+  ///
+  /// In id, this message translates to:
+  /// **'±{minutes} menit'**
+  String detailVisitMinutes(int minutes);
+
+  /// No description provided for @detailVisitHours.
+  ///
+  /// In id, this message translates to:
+  /// **'±{hours} jam'**
+  String detailVisitHours(String hours);
+
+  /// No description provided for @detailAbout.
+  ///
+  /// In id, this message translates to:
+  /// **'Tentang'**
+  String get detailAbout;
+
+  /// No description provided for @detailReadMore.
+  ///
+  /// In id, this message translates to:
+  /// **'Baca selengkapnya'**
+  String get detailReadMore;
+
+  /// No description provided for @detailReadLess.
+  ///
+  /// In id, this message translates to:
+  /// **'Tampilkan lebih sedikit'**
+  String get detailReadLess;
+
+  /// No description provided for @detailOpenMaps.
+  ///
+  /// In id, this message translates to:
+  /// **'Buka Maps'**
+  String get detailOpenMaps;
+
+  /// No description provided for @detailReviews.
+  ///
+  /// In id, this message translates to:
+  /// **'Ulasan'**
+  String get detailReviews;
+
+  /// No description provided for @detailSeeAllReviews.
+  ///
+  /// In id, this message translates to:
+  /// **'Lihat semua'**
+  String get detailSeeAllReviews;
+
+  /// No description provided for @detailShowFewerReviews.
+  ///
+  /// In id, this message translates to:
+  /// **'Lebih sedikit'**
+  String get detailShowFewerReviews;
+
+  /// No description provided for @detailReviewCount.
+  ///
+  /// In id, this message translates to:
+  /// **'{count} ulasan'**
+  String detailReviewCount(String count);
+
+  /// No description provided for @detailNoReviews.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada ulasan untuk tempat ini.'**
+  String get detailNoReviews;
+
+  /// No description provided for @detailToday.
+  ///
+  /// In id, this message translates to:
+  /// **'Hari ini'**
+  String get detailToday;
+
+  /// No description provided for @detailYesterday.
+  ///
+  /// In id, this message translates to:
+  /// **'Kemarin'**
+  String get detailYesterday;
+
+  /// No description provided for @detailDaysAgo.
+  ///
+  /// In id, this message translates to:
+  /// **'{days} hari lalu'**
+  String detailDaysAgo(int days);
+
+  /// No description provided for @detailAddToTrip.
+  ///
+  /// In id, this message translates to:
+  /// **'Tambah ke Trip'**
+  String get detailAddToTrip;
+
+  /// No description provided for @detailChooseTrip.
+  ///
+  /// In id, this message translates to:
+  /// **'Tambah ke trip mana?'**
+  String get detailChooseTrip;
+
+  /// No description provided for @detailTripMeta.
+  ///
+  /// In id, this message translates to:
+  /// **'{days} hari · {date}'**
+  String detailTripMeta(int days, String date);
+
+  /// No description provided for @detailNoTrips.
+  ///
+  /// In id, this message translates to:
+  /// **'Kamu belum punya trip. Buat dulu, lalu tempat ini bisa ditambahkan.'**
+  String get detailNoTrips;
+
+  /// No description provided for @detailNewTrip.
+  ///
+  /// In id, this message translates to:
+  /// **'Buat trip baru'**
+  String get detailNewTrip;
+
+  /// No description provided for @detailAddedToTrip.
+  ///
+  /// In id, this message translates to:
+  /// **'Ditambahkan ke wishlist {title}.'**
+  String detailAddedToTrip(String title);
+
+  /// No description provided for @detailAddedNeedsRegenerate.
+  ///
+  /// In id, this message translates to:
+  /// **'Ditambahkan ke wishlist {title}. Buat ulang itinerary-nya supaya tempat ini ikut dihitung.'**
+  String detailAddedNeedsRegenerate(String title);
+
+  /// No description provided for @detailAlreadyInTrip.
+  ///
+  /// In id, this message translates to:
+  /// **'Sudah ada di wishlist {title}.'**
+  String detailAlreadyInTrip(String title);
+
+  /// No description provided for @detailLoadFailed.
+  ///
+  /// In id, this message translates to:
+  /// **'Detail tempat gagal dimuat.'**
+  String get detailLoadFailed;
 }
 
 class _AppLocalizationsDelegate

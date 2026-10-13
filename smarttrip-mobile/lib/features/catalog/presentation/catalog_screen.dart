@@ -161,6 +161,7 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
                             place: place,
                             isSaved: savedIds.contains(place.placesId),
                             onToggleSaved: () => _toggleSaved(place.placesId),
+                            onTap: () => context.push(AppRoutes.place(place.placesId)),
                           );
                         },
                       ),
@@ -242,6 +243,7 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
               place: place,
               isSaved: savedIds.contains(place.placesId),
               onToggleSaved: () => _toggleSaved(place.placesId),
+              onTap: () => context.push(AppRoutes.place(place.placesId)),
             );
           },
         ),

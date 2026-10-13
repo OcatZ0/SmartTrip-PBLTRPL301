@@ -791,4 +791,108 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get notificationArrivedBody =>
       'Your visit was marked automatically. Enjoy!';
+
+  @override
+  String get detailTitle => 'Place Details';
+
+  @override
+  String get detailClosedTemporarily => 'Temporarily closed';
+
+  @override
+  String get detailFactTicket => 'Entry ticket';
+
+  @override
+  String get detailFactVisit => 'Visit length';
+
+  @override
+  String get detailFactHours => 'Opening hours';
+
+  @override
+  String get detailFactDistance => 'Distance';
+
+  @override
+  String detailVisitMinutes(int minutes) {
+    return '±$minutes min';
+  }
+
+  @override
+  String detailVisitHours(String hours) {
+    return '±$hours h';
+  }
+
+  @override
+  String get detailAbout => 'About';
+
+  @override
+  String get detailReadMore => 'Read more';
+
+  @override
+  String get detailReadLess => 'Show less';
+
+  @override
+  String get detailOpenMaps => 'Open Maps';
+
+  @override
+  String get detailReviews => 'Reviews';
+
+  @override
+  String get detailSeeAllReviews => 'See all';
+
+  @override
+  String get detailShowFewerReviews => 'Show fewer';
+
+  @override
+  String detailReviewCount(String count) {
+    return '$count reviews';
+  }
+
+  @override
+  String get detailNoReviews => 'No reviews for this place yet.';
+
+  @override
+  String get detailToday => 'Today';
+
+  @override
+  String get detailYesterday => 'Yesterday';
+
+  @override
+  String detailDaysAgo(int days) {
+    return '$days days ago';
+  }
+
+  @override
+  String get detailAddToTrip => 'Add to Trip';
+
+  @override
+  String get detailChooseTrip => 'Add to which trip?';
+
+  @override
+  String detailTripMeta(int days, String date) {
+    return '$days days · $date';
+  }
+
+  @override
+  String get detailNoTrips =>
+      'You don\'t have a trip yet. Create one first, then add this place.';
+
+  @override
+  String get detailNewTrip => 'Create a new trip';
+
+  @override
+  String detailAddedToTrip(String title) {
+    return 'Added to $title\'s wishlist.';
+  }
+
+  @override
+  String detailAddedNeedsRegenerate(String title) {
+    return 'Added to $title\'s wishlist. Generate its itinerary again to include this place.';
+  }
+
+  @override
+  String detailAlreadyInTrip(String title) {
+    return 'Already in $title\'s wishlist.';
+  }
+
+  @override
+  String get detailLoadFailed => 'Couldn\'t load this place.';
 }

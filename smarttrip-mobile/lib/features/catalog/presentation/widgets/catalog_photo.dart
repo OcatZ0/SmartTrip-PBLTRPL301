@@ -3,10 +3,14 @@ import 'package:flutter/material.dart';
 import '../../data/catalog_models.dart';
 
 class CatalogPhoto extends StatelessWidget {
-  const CatalogPhoto({super.key, required this.place, this.iconSize = 28});
+  const CatalogPhoto({super.key, required this.place, this.iconSize = 28, this.iconAlignment = Alignment.center});
 
   final CatalogPlace place;
   final double iconSize;
+
+  /// Where the placeholder icon sits, e.g. higher up on the detail hero so
+  /// the title over the bottom of the photo does not cover it.
+  final Alignment iconAlignment;
 
   @override
   Widget build(BuildContext context) {
@@ -18,7 +22,10 @@ class CatalogPhoto extends StatelessWidget {
           colors: _palette(place),
         ),
       ),
-      child: Center(child: Icon(_icon(place), size: iconSize, color: Colors.white.withValues(alpha: 0.55))),
+      child: Align(
+        alignment: iconAlignment,
+        child: Icon(_icon(place), size: iconSize, color: Colors.white.withValues(alpha: 0.55)),
+      ),
     );
 
     final url = place.photoUrl;

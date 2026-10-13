@@ -75,3 +75,116 @@ class CatalogPage {
 
   bool get hasMore => currentPage < lastPage;
 }
+
+/// A review on the B2 detail screen, newest first from the API.
+class PlaceReview {
+  const PlaceReview({
+    required this.placeReviewsId,
+    required this.userName,
+    required this.rating,
+    this.usersId,
+    this.comment,
+    this.createdAt,
+  });
+
+  factory PlaceReview.fromJson(Map<String, dynamic> json) {
+    return PlaceReview(
+      placeReviewsId: json['place_reviews_id'] as int,
+      usersId: json['users_id'] as int?,
+      userName: json['user_name'] as String? ?? '',
+      rating: (json['rating'] as num?)?.toInt() ?? 0,
+      comment: json['comment'] as String?,
+      createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '')?.toLocal(),
+    );
+  }
+
+  final int placeReviewsId;
+  final int? usersId;
+  final String userName;
+  final int rating;
+  final String? comment;
+  final DateTime? createdAt;
+}
+
+/// B2 Detail Tempat, from `GET /api/places/{id}` (PlaceDetailResource).
+class PlaceDetail {
+  const PlaceDetail({
+    required this.summary,
+    required this.lat,
+    required this.lng,
+    this.address,
+    this.mapsUrl,
+    this.photos = const [],
+    this.descriptionId,
+    this.descriptionEn,
+    this.openingHours,
+    this.businessStatus = 'operational',
+    this.estimatedVisitMinutes,
+    this.reviews = const [],
+  });
+
+  factory PlaceDetail.fromJson(Map<String, dynamic> json) {
+    return PlaceDetail(
+      summary: CatalogPlace.fromJson(json),
+      lat: (json['lat'] as num?)?.toDouble() ?? 0,
+      lng: (json['lng'] as num?)?.toDouble() ?? 0,
+      address: json['address'] as String?,
+      mapsUrl: json['maps_url'] as String?,
+      photos: (json['photos'] as List? ?? const [])
+          .map((url) => AppConfig.resolveMediaUrl(url?.toString()))
+          .whereType<String>()
+          .toList(),
+      descriptionId: json['description_id'] as String?,
+      descriptionEn: json['description_en'] as String?,
+      openingHours: _openingHours(json['opening_hours']),
+      businessStatus: json['business_status'] as String? ?? 'operational',
+      estimatedVisitMinutes: (json['estimated_visit_minutes'] as num?)?.toInt(),
+      reviews: (json['reviews'] as List? ?? const [])
+          .cast<Map<String, dynamic>>()
+          .map(PlaceReview.fromJson)
+          .toList(),
+    );
+  }
+
+  /// Card fields (name, rating, price, categories) shared with the catalog.
+  final CatalogPlace summary;
+  final double lat;
+  final double lng;
+  final String? address;
+  final String? mapsUrl;
+  final List<String> photos;
+  final String? descriptionId;
+  final String? descriptionEn;
+
+  /// Human-readable hours, e.g. the OSM "Mo-Su 08:00-21:00" from Geoapify.
+  final String? openingHours;
+  final String businessStatus;
+  final int? estimatedVisitMinutes;
+  final List<PlaceReview> reviews;
+
+  String? description(String languageCode) {
+    final preferred = languageCode == 'en' ? descriptionEn : descriptionId;
+    final fallback = languageCode == 'en' ? descriptionId : descriptionEn;
+    return _nonEmpty(preferred) ?? _nonEmpty(fallback);
+  }
+
+  /// Hero photo: the gallery's first photo, else the catalog thumbnail.
+  String? get heroPhotoUrl => photos.isNotEmpty ? photos.first : summary.photoUrl;
+
+  static String? _nonEmpty(String? value) => value == null || value.trim().isEmpty ? null : value.trim();
+
+  // Geoapify places store {'osm': 'Mo-Su 08:00-21:00'}; places imported from
+  // Google kept its weekday_descriptions list.
+  static String? _openingHours(Object? value) {
+    if (value is String) return _nonEmpty(value);
+    if (value is! Map) return null;
+
+    final osm = value['osm'];
+    if (osm is String) return _nonEmpty(osm);
+
+    final weekdays = value['weekday_descriptions'] ?? value['weekdayDescriptions'];
+    if (weekdays is List && weekdays.isNotEmpty) return weekdays.join('\n');
+
+    return null;
+  }
+}

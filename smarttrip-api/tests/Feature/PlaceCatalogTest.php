@@ -185,6 +185,7 @@ class PlaceCatalogTest extends TestCase
         $place = $this->makePlace([
             'name' => 'Pantai Melur', 'description' => 'Deskripsi asli Google',
             'description_override' => 'Deskripsi versi admin', 'description_en' => 'Admin English description',
+            'estimated_visit_minutes' => 90,
         ]);
         $place->categories()->attach($category->categories_id);
         PlacePhoto::create(['places_id' => $place->places_id, 'photo_url' => 'foto-2.jpg', 'sort_order' => 1]);
@@ -198,6 +199,7 @@ class PlaceCatalogTest extends TestCase
         $response->assertJsonPath('data.description_en', 'Admin English description');
         $response->assertJsonPath('data.photos', ['foto-1.jpg', 'foto-2.jpg']);
         $response->assertJsonPath('data.categories.0.slug', 'pantai');
+        $response->assertJsonPath('data.estimated_visit_minutes', 90);
     }
 
     public function test_the_detail_description_falls_back_to_the_google_description_without_admin_override(): void

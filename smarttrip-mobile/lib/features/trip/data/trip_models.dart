@@ -44,6 +44,36 @@ class TripCategory {
   String localizedName(String languageCode) => languageCode == 'en' ? nameEn : nameId;
 }
 
+/// One row of `GET /api/trips`, for picking a trip to add a place to.
+class TripSummary {
+  const TripSummary({
+    required this.tripsId,
+    required this.title,
+    required this.numDays,
+    this.startDate,
+    this.hasItinerary = false,
+  });
+
+  factory TripSummary.fromJson(Map<String, dynamic> json) {
+    return TripSummary(
+      tripsId: json['trips_id'] as int,
+      title: json['title'] as String? ?? '',
+      numDays: (json['num_days'] as num?)?.toInt() ?? 0,
+      startDate: _toDate(json['start_date']),
+      hasItinerary: ((json['days_count'] as num?) ?? 0) > 0,
+    );
+  }
+
+  final int tripsId;
+  final String title;
+  final int numDays;
+  final DateTime? startDate;
+
+  /// A place added after generating only counts once the itinerary is
+  /// generated again.
+  final bool hasItinerary;
+}
+
 /// Profile defaults (`GET /api/profile/preferences`) used to pre-fill step 3.
 class PreferenceDefaults {
   const PreferenceDefaults({required this.categoryIds, required this.weights});

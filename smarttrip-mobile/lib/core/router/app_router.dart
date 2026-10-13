@@ -6,6 +6,7 @@ import '../../features/auth/presentation/forgot_password_screen.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/register_screen.dart';
 import '../../features/catalog/presentation/catalog_screen.dart';
+import '../../features/catalog/presentation/place_detail_screen.dart';
 import '../../features/live_trip/presentation/live_map_screen.dart';
 import '../../features/onboarding/onboarding_screen.dart';
 import '../../features/splash/splash_screen.dart';
@@ -47,7 +48,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
 
       if (location == AppRoutes.splash) return AppRoutes.login;
-      if (!AppRoutes.publicPaths.contains(location)) return AppRoutes.login;
+      if (!AppRoutes.isPublic(location)) return AppRoutes.login;
       return null;
     },
     routes: [
@@ -58,6 +59,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.catalog,
         builder: (context, state) => const CatalogScreen(),
+      ),
+      GoRoute(
+        path: '/places/:placesId',
+        builder: (context, state) => PlaceDetailScreen(placesId: int.parse(state.pathParameters['placesId']!)),
       ),
       GoRoute(
         path: AppRoutes.login,

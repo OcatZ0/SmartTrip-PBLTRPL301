@@ -17,8 +17,12 @@ class Category extends Model
 
     protected $fillable = [
         'name_id',
+        'subtitle_id',
         'name_en',
         'slug',
+        'icon_symbol',
+        'ai_keywords',
+        'visibility_onboarding',
     ];
 
     /**
@@ -28,7 +32,14 @@ class Category extends Model
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['name_id', 'name_en', 'slug'])
+            ->logOnly([
+                'name_id',
+                'subtitle_id',
+                'name_en',
+                'slug',
+                'icon_symbol',
+                'ai_keywords',
+            ])
             ->logOnlyDirty()
             ->dontLogEmptyChanges();
     }

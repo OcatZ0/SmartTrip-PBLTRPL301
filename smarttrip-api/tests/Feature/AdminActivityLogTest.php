@@ -85,7 +85,7 @@ class AdminActivityLogTest extends TestCase
 
     // --- categories ---
 
-    public function test_the_category_edit_page_shows_the_creation_and_update_entries(): void
+    public function test_the_category_history_shows_the_creation_and_update_entries(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
         $category = Category::create(['name_id' => 'Pantai', 'name_en' => 'Beach', 'slug' => 'pantai']);
@@ -94,13 +94,17 @@ class AdminActivityLogTest extends TestCase
             'name_id' => 'Pantai & Laut', 'name_en' => 'Beach & Sea', 'slug' => 'pantai',
         ])->assertRedirect();
 
-        $response = $this->actingAs($admin)->get("/admin/categories/{$category->categories_id}/edit");
+        // The category edit popup on the list loads its history from here.
+        $response = $this->actingAs($admin)->getJson("/admin/categories/{$category->categories_id}/activities");
 
         $response->assertOk();
-        $response->assertSee('Riwayat Perubahan');
-        $response->assertSee('Pantai & Laut');
-        $response->assertSee('created');
-        $response->assertSee('updated');
+        $response->assertJsonPath('subject', 'Pantai & Laut');
+        // Both entries share a timestamp here, so their order is not fixed.
+        $activities = collect($response->json('activities'));
+        $this->assertEqualsCanonicalizing(['created', 'updated'], $activities->pluck('event')->all());
+        $updated = $activities->firstWhere('event', 'updated');
+        $this->assertSame('Pantai', $updated['old']['name_id']);
+        $this->assertSame('Pantai & Laut', $updated['attributes']['name_id']);
     }
 
     public function test_a_non_admin_cannot_view_a_places_edit_page_or_its_history(): void

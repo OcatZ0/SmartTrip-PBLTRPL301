@@ -17,6 +17,8 @@ import '../../features/trip/presentation/trip_hotel_screen.dart';
 import '../../features/trip/presentation/trip_preferences_screen.dart';
 import '../../features/trip/presentation/trip_setup_screen.dart';
 import '../../features/wishlist/presentation/wishlist_step_screen.dart';
+import '../../features/place_reviews/review_form_screen.dart';
+import '../../features/trip_management/trip_tersimpan_screen.dart';
 import '../auth/session_controller.dart';
 import 'app_routes.dart';
 
@@ -67,6 +69,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => PlaceDetailScreen(
           placesId: int.parse(state.pathParameters['placesId']!),
         ),
+      ),
+      GoRoute(
+        path: AppRoutes.trips,
+        builder: (context, state) => const TripTersimpanScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.review,
+        builder: (context, state) => const ReviewFormScreen(),
       ),
       GoRoute(
         path: AppRoutes.login,

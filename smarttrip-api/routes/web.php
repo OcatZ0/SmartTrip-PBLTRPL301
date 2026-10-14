@@ -46,6 +46,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/places/create', [AdminPlaceController::class, 'create'])->name('places.create');
         Route::post('/places', [AdminPlaceController::class, 'store'])->name('places.store');
         Route::get('/places/{place}/edit', [AdminPlaceController::class, 'edit'])->name('places.edit');
+        Route::get('/places/{place}/activities', [AdminPlaceController::class, 'activities'])->name('places.activities');
         Route::put('/places/{place}', [AdminPlaceController::class, 'update'])->name('places.update');
         Route::delete('/places/{place}', [AdminPlaceController::class, 'destroy'])->name('places.destroy');
 
@@ -53,6 +54,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/categories/create', [AdminCategoryController::class, 'create'])->name('categories.create');
         Route::post('/categories', [AdminCategoryController::class, 'store'])->name('categories.store');
         Route::get('/categories/{category}/edit', [AdminCategoryController::class, 'edit'])->name('categories.edit');
+        Route::get('/categories/{category}/activities', [AdminCategoryController::class, 'activities'])->name('categories.activities');
         Route::put('/categories/{category}', [AdminCategoryController::class, 'update'])->name('categories.update');
         Route::delete('/categories/{category}', [AdminCategoryController::class, 'destroy'])->name('categories.destroy');
     });

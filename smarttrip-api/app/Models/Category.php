@@ -6,8 +6,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Spatie\Activitylog\Models\Concerns\LogsActivity;
-use Spatie\Activitylog\Support\LogOptions;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class Category extends Model
 {
@@ -17,8 +17,12 @@ class Category extends Model
 
     protected $fillable = [
         'name_id',
+        'subtitle_id',
         'name_en',
         'slug',
+        'icon_symbol',
+        'ai_keywords',
+        'visibility_onboarding',
     ];
 
     /**
@@ -28,9 +32,21 @@ class Category extends Model
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['name_id', 'name_en', 'slug'])
+            ->logOnly([
+                'name_id',
+                'subtitle_id',
+                'name_en',
+                'slug',
+                'icon_symbol',
+                'ai_keywords',
+            ])
             ->logOnlyDirty()
-            ->dontLogEmptyChanges();
+            ->dontSubmitEmptyLogs();
+    }
+
+    public function activitiesAsSubject()
+    {
+        return \Spatie\Activitylog\Models\Activity::forSubject($this);
     }
 
     public function places(): BelongsToMany

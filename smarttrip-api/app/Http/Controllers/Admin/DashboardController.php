@@ -12,18 +12,21 @@ use Illuminate\Support\Carbon;
 
 /**
  * F024 (US14, docs/prd design spec Section 14) - status sinkronisasi
- * (kapan discovery/enrichment terakhir jalan, kandidat pending, kredit
- * Geoapify hari ini) + dashboard analitik (tempat paling di-wishlist,
- * rata-rata rating in-app, volume trip, tempat butuh perhatian).
+ * (kapan discovery terakhir jalan, kandidat pending, kredit Geoapify hari
+ * ini), ringkasan (volume trip, rata-rata rating in-app), dan tiga kolom
+ * kerja: kandidat baru, tempat tanpa harga, dan tag hasil AI yang belum
+ * dicek admin.
  *
- * "Kapan discovery/enrichment terakhir jalan" tidak punya tabel log
- * tersendiri di skema (PRD tidak memintanya) - diturunkan dari timestamp
- * data yang sudah ada: MAX(place_candidates.created_at) buat discovery,
- * MAX(places.created_at WHERE source dari provider) buat enrichment
- * (places itu cuma dibuat lewat alur approve/enrichment, F019).
+ * "Kapan discovery terakhir jalan" tidak punya tabel log tersendiri di
+ * skema (PRD tidak memintanya) - diturunkan dari MAX(place_candidates.created_at).
  */
 class DashboardController extends Controller
 {
+    /**
+     * How many items each work column on the dashboard previews.
+     */
+    private const COLUMN_PREVIEW = 3;
+
     public function index()
     {
         return view('admin.dashboard.index', [
@@ -31,19 +34,25 @@ class DashboardController extends Controller
             // max() adalah query agregat mentah - tidak lewat hydration
             // model, jadi hasilnya string biasa dari DB, bukan Carbon.
             'lastDiscoveryAt' => self::toCarbon(PlaceCandidate::max('created_at')),
-            'lastEnrichmentAt' => self::toCarbon(Place::whereIn('source', ['google', 'geoapify'])->max('created_at')),
             'quotaUsed' => GeoapifyPlacesClient::creditsUsedToday(),
             'quotaLimit' => (int) config('services.geoapify.daily_credits'),
-            'mostWishlistedPlaces' => Place::withCount('wishlistedIn')
-                ->orderByDesc('wishlisted_in_count')
-                ->take(5)
-                ->get()
-                ->filter(fn ($place) => $place->wishlisted_in_count > 0)
-                ->values(),
             'averageInAppRating' => PlaceReview::avg('rating'),
             'tripVolume' => Trip::count(),
             'placesMissingCost' => Place::whereNull('estimated_cost_idr')->count(),
             'placesTagsNotReviewed' => Place::where('category_tags_reviewed', false)->count(),
+            'recentCandidates' => PlaceCandidate::where('status', 'pending')
+                ->latest()
+                ->take(self::COLUMN_PREVIEW)
+                ->get(),
+            'missingCostList' => Place::whereNull('estimated_cost_idr')
+                ->orderBy('name')
+                ->take(self::COLUMN_PREVIEW)
+                ->get(),
+            'untaggedList' => Place::where('category_tags_reviewed', false)
+                ->with('categories')
+                ->latest()
+                ->take(self::COLUMN_PREVIEW)
+                ->get(),
         ]);
     }
 

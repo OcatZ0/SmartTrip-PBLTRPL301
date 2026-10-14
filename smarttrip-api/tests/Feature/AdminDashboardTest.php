@@ -2,11 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Models\Category;
 use App\Models\Place;
 use App\Models\PlaceCandidate;
 use App\Models\PlaceReview;
 use App\Models\Trip;
-use App\Models\TripWishlistPlace;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
@@ -51,50 +51,49 @@ class AdminDashboardTest extends TestCase
         $response = $this->actingAs($admin)->get('/admin/dashboard');
 
         $response->assertOk();
-        $response->assertSee('Belum pernah dijalankan');
-        $response->assertSee('Belum ada data wishlist.');
+        $response->assertSee('Discovery belum pernah dijalankan');
+        $response->assertSee('Tidak ada yang perlu dikerjakan.');
     }
 
     // --- pending candidates + sync status ---
 
-    public function test_it_shows_the_number_of_pending_candidates(): void
+    public function test_it_lists_pending_candidates_and_counts_them(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
-        PlaceCandidate::create(['external_place_id' => 'gp-1', 'name' => 'A', 'type' => 'attraction', 'lat' => 1.1, 'lng' => 104.1, 'search_area' => 'Nongsa', 'status' => 'pending']);
-        PlaceCandidate::create(['external_place_id' => 'gp-2', 'name' => 'B', 'type' => 'attraction', 'lat' => 1.1, 'lng' => 104.1, 'search_area' => 'Nongsa', 'status' => 'rejected']);
+        PlaceCandidate::create(['external_place_id' => 'osm:n1', 'name' => 'Kandidat Pending', 'type' => 'culinary', 'lat' => 1.1, 'lng' => 104.1, 'search_area' => 'Nongsa', 'status' => 'pending']);
+        PlaceCandidate::create(['external_place_id' => 'osm:n2', 'name' => 'Kandidat Ditolak', 'type' => 'attraction', 'lat' => 1.1, 'lng' => 104.1, 'search_area' => 'Nongsa', 'status' => 'rejected']);
 
         $response = $this->actingAs($admin)->get('/admin/dashboard');
 
         $response->assertOk();
-        $response->assertSee('1', false);
+        $response->assertSeeInOrder(['Kandidat menunggu', '1', 'Perlu direview']);
+        $response->assertSeeInOrder(['Kandidat baru', 'Kandidat Pending', 'Nongsa · dari Geoapify', 'Kuliner', 'Review']);
+        $response->assertDontSee('Kandidat Ditolak');
     }
 
     public function test_it_shows_the_last_discovery_timestamp_from_the_newest_candidate(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
-        $candidate = PlaceCandidate::create(['external_place_id' => 'gp-1', 'name' => 'A', 'type' => 'attraction', 'lat' => 1.1, 'lng' => 104.1, 'search_area' => 'Nongsa', 'status' => 'pending']);
+        $candidate = PlaceCandidate::create(['external_place_id' => 'osm:n1', 'name' => 'A', 'type' => 'attraction', 'lat' => 1.1, 'lng' => 104.1, 'search_area' => 'Nongsa', 'status' => 'pending']);
         $candidate->forceFill(['created_at' => '2026-05-10 08:00:00'])->save();
 
         $response = $this->actingAs($admin)->get('/admin/dashboard');
 
         $response->assertOk();
-        $response->assertSee('2026-05-10');
+        $response->assertSee('Discovery terakhir '.$candidate->fresh()->created_at->translatedFormat('j M Y, H.i'));
     }
 
-    public function test_it_shows_the_last_enrichment_timestamp_from_the_newest_google_sourced_place(): void
+    public function test_the_candidate_column_links_to_all_candidates_when_more_are_waiting(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
-        $place = $this->makePlace(['source' => 'google', 'external_place_id' => 'gp-1']);
-        $place->forceFill(['created_at' => '2026-06-15 10:00:00'])->save();
-        // Manual place tidak dihitung sebagai enrichment.
-        $manual = $this->makePlace(['source' => 'manual', 'external_place_id' => null]);
-        $manual->forceFill(['created_at' => '2026-08-01 10:00:00'])->save();
+        foreach (range(1, 4) as $i) {
+            PlaceCandidate::create(['external_place_id' => "osm:n{$i}", 'name' => "Kandidat {$i}", 'type' => 'attraction', 'lat' => 1.1, 'lng' => 104.1, 'search_area' => 'Nongsa', 'status' => 'pending']);
+        }
 
         $response = $this->actingAs($admin)->get('/admin/dashboard');
 
         $response->assertOk();
-        $response->assertSee('2026-06-15');
-        $response->assertDontSee('2026-08-01');
+        $response->assertSee('Lihat semua');
     }
 
     // --- quota ---
@@ -102,64 +101,48 @@ class AdminDashboardTest extends TestCase
     public function test_it_shows_the_geoapify_credits_spent_today_against_the_daily_limit(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
+        config(['services.geoapify.daily_credits' => 3000]);
         Cache::put('geoapify:credits:'.now()->toDateString(), 42);
         Cache::put('geoapify:credits:'.now()->subDay()->toDateString(), 900);
 
         $response = $this->actingAs($admin)->get('/admin/dashboard');
 
         $response->assertOk();
-        $response->assertSee('Kredit Geoapify Hari Ini');
-        $response->assertSee('42 / 3000');
+        $response->assertSeeInOrder(['Kredit Geoapify', '42', 'dari 3.000 hari ini']);
     }
 
-    // --- attention lists ---
+    // --- work columns ---
 
-    public function test_it_counts_places_missing_estimated_cost(): void
+    public function test_it_lists_places_missing_estimated_cost(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
-        $this->makePlace(['name' => 'Tanpa Biaya', 'estimated_cost_idr' => null]);
-        $this->makePlace(['name' => 'Ada Biaya', 'external_place_id' => 'gp-2', 'estimated_cost_idr' => 50000]);
+        $missing = $this->makePlace(['name' => 'Tanpa Biaya', 'type' => 'lodging', 'kecamatan' => 'Batam Kota', 'estimated_cost_idr' => null]);
+        $this->makePlace(['name' => 'Ada Biaya', 'external_place_id' => 'gp-2', 'category_tags_reviewed' => true, 'estimated_cost_idr' => 50000]);
 
         $response = $this->actingAs($admin)->get('/admin/dashboard');
 
         $response->assertOk();
-        $response->assertSee('1 belum ada estimasi biaya');
+        $response->assertSeeInOrder(['Belum ada harga', 'Tanpa Biaya', 'Batam Kota · Hotel', 'Harga kamar', 'Lengkapi']);
+        $response->assertSee(route('admin.places.edit', $missing), false);
+        $response->assertDontSee('Ada Biaya');
     }
 
-    public function test_it_counts_places_with_unreviewed_category_tags(): void
+    public function test_it_lists_places_with_unreviewed_category_tags(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
-        $this->makePlace(['name' => 'Belum Direview', 'category_tags_reviewed' => false]);
-        $this->makePlace(['name' => 'Sudah Direview', 'external_place_id' => 'gp-2', 'category_tags_reviewed' => true]);
+        $beach = Category::create(['name_id' => 'Pantai', 'name_en' => 'Beach', 'slug' => 'pantai']);
+        $unreviewed = $this->makePlace(['name' => 'Belum Direview', 'category_tags_reviewed' => false, 'estimated_cost_idr' => 0]);
+        $unreviewed->categories()->attach($beach->categories_id);
+        $this->makePlace(['name' => 'Sudah Direview', 'external_place_id' => 'gp-2', 'category_tags_reviewed' => true, 'estimated_cost_idr' => 0]);
 
         $response = $this->actingAs($admin)->get('/admin/dashboard');
 
         $response->assertOk();
-        $response->assertSee('1 hasil AI (deskripsi/tag) belum direview');
+        $response->assertSeeInOrder(['Tag belum dicek', 'Belum Direview', 'Usulan: Pantai', '1 tag', 'Cek tag']);
+        $response->assertDontSee('Sudah Direview');
     }
 
-    // --- analytics ---
-
-    public function test_it_lists_the_most_wishlisted_places_in_order(): void
-    {
-        $admin = User::factory()->create(['role' => 'admin']);
-        $owner = User::factory()->create();
-        $trip = Trip::create(['users_id' => $owner->users_id, 'title' => 'T', 'num_days' => 1, 'budget_total' => 500000, 'start_date' => now()->addWeek()->toDateString()]);
-        $popular = $this->makePlace(['name' => 'Populer']);
-        $lessPopular = $this->makePlace(['name' => 'Kurang Populer', 'external_place_id' => 'gp-2']);
-        $untouched = $this->makePlace(['name' => 'Tidak Pernah Diwishlist', 'external_place_id' => 'gp-3']);
-
-        $anotherTrip = Trip::create(['users_id' => $owner->users_id, 'title' => 'T2', 'num_days' => 1, 'budget_total' => 500000, 'start_date' => now()->addWeek()->toDateString()]);
-        TripWishlistPlace::create(['trips_id' => $trip->trips_id, 'places_id' => $popular->places_id]);
-        TripWishlistPlace::create(['trips_id' => $anotherTrip->trips_id, 'places_id' => $popular->places_id]);
-        TripWishlistPlace::create(['trips_id' => $trip->trips_id, 'places_id' => $lessPopular->places_id]);
-
-        $response = $this->actingAs($admin)->get('/admin/dashboard');
-
-        $response->assertOk();
-        $response->assertSeeInOrder(['Populer', 'Kurang Populer']);
-        $response->assertDontSee('Tidak Pernah Diwishlist');
-    }
+    // --- summary ---
 
     public function test_it_shows_the_average_in_app_rating(): void
     {
@@ -171,7 +154,7 @@ class AdminDashboardTest extends TestCase
         $response = $this->actingAs($admin)->get('/admin/dashboard');
 
         $response->assertOk();
-        $response->assertSee('4.00');
+        $response->assertSeeInOrder(['Rata-rata rating', '4,0', 'Dari ulasan di aplikasi']);
     }
 
     public function test_it_shows_the_trip_volume(): void
@@ -184,6 +167,6 @@ class AdminDashboardTest extends TestCase
         $response = $this->actingAs($admin)->get('/admin/dashboard');
 
         $response->assertOk();
-        $response->assertSee('2', false);
+        $response->assertSeeInOrder(['Trip dibuat', '2', 'Total semua pengguna']);
     }
 }

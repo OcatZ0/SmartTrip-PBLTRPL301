@@ -1,7 +1,6 @@
 @extends('admin.layout')
 
 @section('title', 'Kelola Tempat')
-@section('breadcrumb', 'Manajemen Destinasi')
 
 @push('styles')
 <style>
@@ -1047,7 +1046,7 @@
                                 <h5 class="modal-title fw-bold fs-5 mb-0 text-slate-900">Tambah Tempat Manual</h5>
                                 <span class="badge-mode">Mode Kurator</span>
                             </div>
-                            <p class="mb-0 text-slate-500" style="font-size: 12.5px;">Kurasi entitas destinasi langsung ke database SmartTrip Batam.</p>
+                            <p class="mb-0 text-slate-500" style="font-size: 12.5px;">Kurasi entitas destinasi langsung ke database SmartTrip.</p>
                         </div>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -1200,7 +1199,7 @@
                                 <h5 class="modal-title fw-bold fs-5 mb-0 text-slate-900" id="modalEditPlaceTitle">Edit Destinasi Kurasi</h5>
                                 <span class="badge-mode">Edit Tempat</span>
                             </div>
-                            <p class="mb-0 text-slate-500" style="font-size: 12.5px;">Perbarui data tempat wisata dan kurasi rekomendasi SmartTrip Batam.</p>
+                            <p class="mb-0 text-slate-500" style="font-size: 12.5px;">Perbarui data tempat wisata dan kurasi rekomendasi SmartTrip.</p>
                         </div>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -1355,7 +1354,7 @@
                 </div>
                 <h3 class="fw-bold text-slate-900 fs-4 mb-2">Hapus Tempat Wisata?</h3>
                 <p class="text-slate-500 mb-4" style="font-size: 13.5px;">
-                    Data yang dipilih (<strong id="deletePlaceName">Tempat Wisata</strong>) akan dihapus secara permanen dari katalog SmartTrip Batam.
+                    Data yang dipilih (<strong id="deletePlaceName">Tempat Wisata</strong>) akan dihapus secara permanen dari katalog SmartTrip.
                 </p>
 
                 <form id="formDeletePlaceModal" method="POST" action="">

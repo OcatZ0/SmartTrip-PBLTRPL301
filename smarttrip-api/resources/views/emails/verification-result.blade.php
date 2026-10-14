@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Verifikasi Akun - SmartTrip Batam</title>
+    <title>Verifikasi Akun - SmartTrip</title>
 </head>
 <body style="font-family: sans-serif; text-align: center; padding-top: 4rem;">
     <h1>{{ $success ? 'Verifikasi Berhasil' : 'Verifikasi Gagal' }}</h1>

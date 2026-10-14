@@ -1,7 +1,6 @@
 @extends('admin.layout')
 
 @section('title', 'Kelola Kategori')
-@section('breadcrumb', 'Manajemen Destinasi')
 
 @push('styles')
 <style>
@@ -681,7 +680,7 @@
     <div class="d-flex align-items-center justify-content-between mb-4">
         <div>
             <h1 class="page-title mb-1">Kelola Kategori</h1>
-            <p class="page-subtitle mb-0">Atur taksonomi destinasi & minat personalisasi rekomendasi SmartTrip Batam</p>
+            <p class="page-subtitle mb-0">Atur taksonomi destinasi & minat personalisasi rekomendasi SmartTrip</p>
         </div>
 
         <button class="btn-add-category" onclick="openCreateModal()">

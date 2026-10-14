@@ -7,6 +7,7 @@ use App\Models\Place;
 use App\Models\PlaceCandidate;
 use App\Models\PlaceReview;
 use App\Models\Trip;
+use App\Models\TripWishlistPlace;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
@@ -52,7 +53,23 @@ class AdminDashboardTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('Discovery belum pernah dijalankan');
+        $response->assertSee('Data belum pernah dilengkapi');
         $response->assertSee('Tidak ada yang perlu dikerjakan.');
+        $response->assertSee('Belum ada tempat yang masuk wishlist.');
+    }
+
+    public function test_every_admin_page_shares_the_nav_rail_with_the_skppl_menu_names(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        foreach (['/admin/dashboard', '/admin/candidates', '/admin/places', '/admin/categories'] as $url) {
+            $response = $this->actingAs($admin)->get($url);
+
+            $response->assertOk();
+            $response->assertSee('aria-label="Navigasi admin"', false);
+            $response->assertSeeInOrder(['Dashboard', 'Kandidat Tempat', 'Kelola Tempat', 'Kelola Kategori']);
+            $response->assertDontSee('SmartTrip Batam');
+        }
     }
 
     // --- pending candidates + sync status ---
@@ -81,6 +98,22 @@ class AdminDashboardTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('Discovery terakhir '.$candidate->fresh()->created_at->translatedFormat('j M Y, H.i'));
+    }
+
+    public function test_it_shows_the_last_enrichment_timestamp_from_the_newest_provider_sourced_place(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $place = $this->makePlace(['source' => 'google', 'external_place_id' => 'gp-1']);
+        $place->forceFill(['created_at' => '2026-06-15 10:00:00'])->save();
+        // Manual place tidak dihitung sebagai pelengkapan data.
+        $manual = $this->makePlace(['source' => 'manual', 'external_place_id' => null]);
+        $manual->forceFill(['created_at' => '2026-08-01 10:00:00'])->save();
+
+        $response = $this->actingAs($admin)->get('/admin/dashboard');
+
+        $response->assertOk();
+        $response->assertSee('Pelengkapan data terakhir '.$place->fresh()->created_at->translatedFormat('j M Y, H.i'));
+        $response->assertDontSee($manual->fresh()->created_at->translatedFormat('j M Y, H.i'));
     }
 
     public function test_the_candidate_column_links_to_all_candidates_when_more_are_waiting(): void
@@ -168,5 +201,25 @@ class AdminDashboardTest extends TestCase
 
         $response->assertOk();
         $response->assertSeeInOrder(['Trip dibuat', '2', 'Total semua pengguna']);
+    }
+
+    public function test_it_lists_the_most_wishlisted_places_in_order(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $owner = User::factory()->create();
+        $trip = Trip::create(['users_id' => $owner->users_id, 'title' => 'T', 'num_days' => 1, 'budget_total' => 500000, 'start_date' => now()->addWeek()->toDateString()]);
+        $anotherTrip = Trip::create(['users_id' => $owner->users_id, 'title' => 'T2', 'num_days' => 1, 'budget_total' => 500000, 'start_date' => now()->addWeek()->toDateString()]);
+        $popular = $this->makePlace(['name' => 'Populer', 'estimated_cost_idr' => 0, 'category_tags_reviewed' => true]);
+        $lessPopular = $this->makePlace(['name' => 'Kurang Populer', 'external_place_id' => 'gp-2', 'estimated_cost_idr' => 0, 'category_tags_reviewed' => true]);
+        $this->makePlace(['name' => 'Tidak Pernah Diwishlist', 'external_place_id' => 'gp-3', 'estimated_cost_idr' => 0, 'category_tags_reviewed' => true]);
+        TripWishlistPlace::create(['trips_id' => $trip->trips_id, 'places_id' => $popular->places_id]);
+        TripWishlistPlace::create(['trips_id' => $anotherTrip->trips_id, 'places_id' => $popular->places_id]);
+        TripWishlistPlace::create(['trips_id' => $trip->trips_id, 'places_id' => $lessPopular->places_id]);
+
+        $response = $this->actingAs($admin)->get('/admin/dashboard');
+
+        $response->assertOk();
+        $response->assertSeeInOrder(['Paling banyak di-wishlist', 'Populer', '2 wishlist', 'Kurang Populer', '1 wishlist']);
+        $response->assertDontSee('Tidak Pernah Diwishlist');
     }
 }

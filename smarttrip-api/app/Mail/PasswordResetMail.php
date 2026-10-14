@@ -17,7 +17,7 @@ class PasswordResetMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Atur Ulang Kata Sandi - SmartTrip Batam',
+            subject: 'Atur Ulang Kata Sandi - SmartTrip',
         );
     }
 

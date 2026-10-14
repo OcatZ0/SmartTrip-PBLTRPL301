@@ -1,11 +1,4 @@
 @php
-    $nav = [
-        ['label' => 'Dashboard', 'route' => 'admin.dashboard', 'pattern' => 'admin.dashboard', 'd' => 'M3 3h7v9H3zM14 3h7v5h-7zM14 12h7v9h-7zM3 16h7v5H3z'],
-        ['label' => 'Review kandidat', 'route' => 'admin.candidates.index', 'pattern' => 'admin.candidates.*', 'd' => 'M9 11l3 3 8-8M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9'],
-        ['label' => 'Kelola tempat', 'route' => 'admin.places.index', 'pattern' => 'admin.places.*', 'd' => 'M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21zM12 7a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z'],
-        ['label' => 'Kategori', 'route' => 'admin.categories.index', 'pattern' => 'admin.categories.*', 'd' => 'M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8zM7.5 7.5h.01'],
-    ];
-
     $idNumber = fn ($n) => number_format((float) $n, 0, ',', '.');
     $typeLabel = fn ($type) => match ($type) { 'culinary' => 'Kuliner', 'lodging' => 'Hotel', default => 'Wisata' };
 
@@ -52,6 +45,13 @@
         ],
     ];
 
+    $formatTime = fn ($time) => $time->translatedFormat('j M Y, H.i');
+    $syncStatus = collect([
+        $lastDiscoveryAt ? 'Discovery terakhir ' . $formatTime($lastDiscoveryAt) : 'Discovery belum pernah dijalankan',
+        $lastEnrichmentAt ? 'Pelengkapan data terakhir ' . $formatTime($lastEnrichmentAt) : 'Data belum pernah dilengkapi',
+        $idNumber($pendingCandidates) . ' kandidat menunggu',
+    ])->join(' · ');
+
     $cables = collect([412, 1012])->flatMap(fn ($x) => collect(range(1, 6))->map(fn ($k) => "M{$x} 175L" . ($x - $k * 48) . " 372M{$x} 175L" . ($x + $k * 48) . ' 372'))->join('');
 @endphp
 <!doctype html>
@@ -59,32 +59,14 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Dashboard · SmartTrip Batam Admin</title>
+    <title>Dashboard · SmartTrip Admin</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="m-0 bg-[#f5f7fb] font-['Plus_Jakarta_Sans',system-ui,sans-serif] text-[#14212f] antialiased">
 <div class="flex min-h-screen">
-    <nav aria-label="Navigasi admin" class="sticky top-0 flex h-screen w-[76px] shrink-0 flex-col items-center gap-2 bg-[#0a2440] py-5">
-        <a href="{{ route('admin.dashboard') }}" class="mb-4 flex h-11 w-11 items-center justify-center rounded-[14px] bg-white">
-            <img src="{{ asset('images/logo.png') }}" alt="SmartTrip Batam" class="h-6 w-6">
-        </a>
-        @foreach ($nav as $item)
-            @php $active = request()->routeIs($item['pattern']); @endphp
-            <a href="{{ route($item['route']) }}" aria-label="{{ $item['label'] }}" title="{{ $item['label'] }}" @if ($active) aria-current="page" @endif
-               class="flex h-12 w-12 items-center justify-center rounded-[14px] transition {{ $active ? 'bg-[#2b6fab] text-white' : 'text-white/70 hover:bg-white/10 hover:text-white' }}">
-                <svg class="h-[21px] w-[21px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ $item['d'] }}"/></svg>
-            </a>
-        @endforeach
-        <form method="POST" action="{{ route('admin.logout') }}" class="mt-auto">
-            @csrf
-            <button type="submit" title="Keluar" aria-label="Keluar ({{ auth()->user()->name }})"
-                    class="flex h-10 w-10 items-center justify-center rounded-full border-0 bg-[#2b6fab] text-[13px] font-extrabold text-white">
-                {{ \Illuminate\Support\Str::of(auth()->user()->name)->explode(' ')->take(2)->map(fn ($w) => mb_substr($w, 0, 1))->join('') }}
-            </button>
-        </form>
-    </nav>
+    @include('admin.partials.nav')
 
     <div class="flex min-w-0 flex-1 flex-col">
         <header class="relative h-[230px] overflow-hidden bg-[#0a2440] text-white">
@@ -106,13 +88,7 @@
                 <div class="flex flex-col gap-1.5">
                     <span class="text-xs font-bold tracking-[0.08em] text-[#f6b03c]">PANEL KURASI</span>
                     <h1 class="m-0 text-[30px] font-extrabold leading-9 tracking-[-0.02em]">Dashboard</h1>
-                    <p class="m-0 text-sm text-white/85">
-                        @if ($lastDiscoveryAt)
-                            Discovery terakhir {{ $lastDiscoveryAt->translatedFormat('j M Y, H.i') }} · {{ $pendingCandidates }} kandidat menunggu
-                        @else
-                            Discovery belum pernah dijalankan
-                        @endif
-                    </p>
+                    <p class="m-0 text-sm text-white/85">{{ $syncStatus }}</p>
                 </div>
                 <form method="POST" action="{{ route('admin.candidates.discover') }}" class="self-start">
                     @csrf
@@ -164,6 +140,21 @@
                     </section>
                 @endforeach
             </div>
+            <section class="flex flex-col gap-1 rounded-[20px] bg-white p-5 shadow-[0_18px_40px_-16px_rgba(10,36,64,0.18)]">
+                <h2 class="m-0 mb-2 text-[15px] font-bold leading-[22px]">Paling banyak di-wishlist</h2>
+                @forelse ($mostWishlistedPlaces as $place)
+                    <div class="flex items-center gap-3 border-t border-[#eef2f8] py-2.5 first-of-type:border-t-0">
+                        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#dceaf6] text-xs font-extrabold text-[#16476d]">{{ $loop->iteration }}</span>
+                        <div class="flex min-w-0 flex-1 flex-col">
+                            <a href="{{ route('admin.places.edit', $place) }}" class="truncate text-sm font-bold text-[#14212f] no-underline hover:text-[#1f5f99]">{{ $place->name }}</a>
+                            <span class="text-xs text-[#5d6b7c]">{{ ($place->kecamatan ?: '-') . ' · ' . $typeLabel($place->type) }}</span>
+                        </div>
+                        <span class="shrink-0 text-[13px] font-bold">{{ $idNumber($place->wishlisted_in_count) }} wishlist</span>
+                    </div>
+                @empty
+                    <p class="m-0 text-[13px] text-[#5d6b7c]">Belum ada tempat yang masuk wishlist.</p>
+                @endforelse
+            </section>
         </main>
     </div>
 </div>

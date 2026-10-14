@@ -1,7 +1,6 @@
 @extends('admin.layout')
 
 @section('title', 'Edit Kategori Wisata')
-@section('breadcrumb', 'Edit Kategori Wisata')
 
 @push('styles')
 <style>

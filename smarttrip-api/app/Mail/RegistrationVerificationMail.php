@@ -17,7 +17,7 @@ class RegistrationVerificationMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Verifikasi Akun SmartTrip Batam',
+            subject: 'Verifikasi Akun SmartTrip',
         );
     }
 

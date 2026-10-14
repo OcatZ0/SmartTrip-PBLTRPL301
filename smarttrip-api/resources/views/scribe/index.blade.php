@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta content="IE=edge,chrome=1" http-equiv="X-UA-Compatible">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-    <title>SmartTrip Batam API Documentation</title>
+    <title>SmartTrip API Documentation</title>
 
     <link href="https://fonts.googleapis.com/css?family=Open+Sans&display=swap" rel="stylesheet">
 
@@ -234,11 +234,11 @@ identitasnya.</a>
     <div class="dark-box"></div>
     <div class="content">
         <h1 id="introduction">Introduction</h1>
-<p>REST API untuk aplikasi mobile SmartTrip Batam (Flutter) - autentikasi, katalog tempat, wishlist, generate itinerary otomatis, swap, live tracking, review, dan share trip.</p>
+<p>REST API untuk aplikasi mobile SmartTrip (Flutter) - autentikasi, katalog tempat, wishlist, generate itinerary otomatis, swap, live tracking, review, dan share trip.</p>
 <aside>
     <strong>Base URL</strong>: <code>http://localhost:8000</code>
 </aside>
-<pre><code>Dokumentasi ini mencakup seluruh endpoint `/api/*` yang dikonsumsi mobile app SmartTrip Batam lewat Laravel Sanctum bearer token.
+<pre><code>Dokumentasi ini mencakup seluruh endpoint `/api/*` yang dikonsumsi mobile app SmartTrip lewat Laravel Sanctum bearer token.
 
 Panel admin (`/admin/*`, session auth `guard:web`, Laravel Blade + Bootstrap) sengaja **tidak** termasuk di sini - itu bukan REST API, cuma HTML form biasa buat kurasi data.
 

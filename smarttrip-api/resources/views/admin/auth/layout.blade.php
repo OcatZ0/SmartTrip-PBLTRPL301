@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>@yield('title') · SmartTrip Batam Admin</title>
+    <title>@yield('title') · SmartTrip Admin</title>
     <link rel="icon" type="image/svg+xml" href="{{ asset('images/logo.svg') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -32,7 +32,7 @@
         <span class="flex h-10 w-10 items-center justify-center rounded-full bg-white">
             <img src="{{ asset('images/logo.svg') }}" alt="" class="h-6 w-6">
         </span>
-        <span class="text-[17px] font-extrabold">SmartTrip Batam</span>
+        <span class="text-[17px] font-extrabold">SmartTrip</span>
         <span class="rounded-full border border-white/30 bg-white/15 px-2.5 py-0.5 text-xs font-bold">Admin</span>
     </header>
 
@@ -40,7 +40,7 @@
         @yield('content')
     </main>
 
-    <footer class="relative pb-5 text-center text-xs text-white/70">© {{ date('Y') }} SmartTrip Batam</footer>
+    <footer class="relative pb-5 text-center text-xs text-white/70">© {{ date('Y') }} SmartTrip</footer>
 </div>
 </body>
 </html>

@@ -11,14 +11,14 @@ use function Knuckles\Scribe\Config\removeStrategies;
 
 return [
     // The HTML <title> for the generated documentation.
-    'title' => 'SmartTrip Batam API Documentation',
+    'title' => 'SmartTrip API Documentation',
 
     // A short description of your API. Will be included in the docs webpage, Postman collection and OpenAPI spec.
-    'description' => 'REST API untuk aplikasi mobile SmartTrip Batam (Flutter) - autentikasi, katalog tempat, wishlist, generate itinerary otomatis, swap, live tracking, review, dan share trip.',
+    'description' => 'REST API untuk aplikasi mobile SmartTrip (Flutter) - autentikasi, katalog tempat, wishlist, generate itinerary otomatis, swap, live tracking, review, dan share trip.',
 
     // Text to place in the "Introduction" section, right after the `description`. Markdown and HTML are supported.
     'intro_text' => <<<'INTRO'
-            Dokumentasi ini mencakup seluruh endpoint `/api/*` yang dikonsumsi mobile app SmartTrip Batam lewat Laravel Sanctum bearer token.
+            Dokumentasi ini mencakup seluruh endpoint `/api/*` yang dikonsumsi mobile app SmartTrip lewat Laravel Sanctum bearer token.
 
             Panel admin (`/admin/*`, session auth `guard:web`, Laravel Blade + Bootstrap) sengaja **tidak** termasuk di sini - itu bukan REST API, cuma HTML form biasa buat kurasi data.
 

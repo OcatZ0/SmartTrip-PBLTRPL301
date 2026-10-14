@@ -1,7 +1,6 @@
 @extends('admin.layout')
 
 @section('title', 'Edit Destinasi Kurasi - ' . $place->name)
-@section('breadcrumb', 'Manajemen Destinasi')
 
 @push('styles')
 <style>
@@ -544,7 +543,7 @@
                 <div class="edit-card">
                     <div class="section-accent-title">
                         <div class="accent-bar-blue"></div>
-                        <span>Kurasi Khusus Rekomendasi SmartTrip Batam</span>
+                        <span>Kurasi Khusus Rekomendasi SmartTrip</span>
                     </div>
 
                     <!-- Estimasi Biaya & Lama Kunjungan Ideal -->

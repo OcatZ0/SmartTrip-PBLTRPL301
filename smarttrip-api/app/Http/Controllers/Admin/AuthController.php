@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -42,6 +43,26 @@ class AuthController extends Controller
         $request->session()->regenerate();
 
         return redirect()->route('admin.dashboard');
+    }
+
+    public function showForgotPassword()
+    {
+        return view('admin.auth.forgot-password');
+    }
+
+    /**
+     * Sends the same reset link as the mobile app (POST /api/auth/forgot-password),
+     * which opens the web form at /auth/reset-password. The reply is the same
+     * whether or not the email exists, so the form cannot be used to check
+     * which emails are registered.
+     */
+    public function sendResetLink(Request $request)
+    {
+        $request->validate(['email' => ['required', 'string', 'email']]);
+
+        Password::sendResetLink($request->only('email'));
+
+        return back()->with('status', 'Jika email terdaftar, tautan atur ulang kata sandi telah dikirim.');
     }
 
     public function logout(Request $request)

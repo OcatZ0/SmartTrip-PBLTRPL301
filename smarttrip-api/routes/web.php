@@ -30,6 +30,10 @@ Route::post('/auth/reset-password', [AuthController::class, 'submitResetPassword
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/login', [AdminAuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AdminAuthController::class, 'login'])->name('login.attempt');
+    Route::get('/forgot-password', [AdminAuthController::class, 'showForgotPassword'])->name('password.request');
+    Route::post('/forgot-password', [AdminAuthController::class, 'sendResetLink'])
+        ->middleware('throttle:5,1')
+        ->name('password.email');
     Route::post('/logout', [AdminAuthController::class, 'logout'])->name('logout');
 
     Route::middleware(['auth', 'admin'])->group(function () {

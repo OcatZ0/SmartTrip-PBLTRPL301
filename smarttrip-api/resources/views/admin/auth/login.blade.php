@@ -1,42 +1,52 @@
-@extends('admin.layout')
+@extends('admin.auth.layout')
 
-@section('title', 'Login')
+@section('title', 'Masuk')
 
 @section('content')
-<div class="row justify-content-center mt-5">
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-body">
-                <h1 class="h4 mb-3 text-center">SmartTrip Admin</h1>
+<h1 class="auth-title">Selamat Datang Kembali</h1>
+<p class="auth-subtitle">Kelola destinasi dan rekomendasi wisata Batam</p>
 
-                @if ($errors->any())
-                    <div class="alert alert-danger">
-                        <ul class="mb-0">
-                            @foreach ($errors->all() as $error)
-                                <li>{{ $error }}</li>
-                            @endforeach
-                        </ul>
-                    </div>
-                @endif
+@if (session('status'))
+    <div class="alert alert-success auth-alert">{{ session('status') }}</div>
+@endif
 
-                <form method="POST" action="{{ route('admin.login.attempt') }}">
-                    @csrf
-                    <div class="mb-3">
-                        <label class="form-label" for="email">Email</label>
-                        <input type="email" class="form-control" id="email" name="email" value="{{ old('email') }}" required autofocus>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label" for="password">Kata Sandi</label>
-                        <input type="password" class="form-control" id="password" name="password" required>
-                    </div>
-                    <div class="mb-3 form-check">
-                        <input type="checkbox" class="form-check-input" id="remember" name="remember">
-                        <label class="form-check-label" for="remember">Ingat saya</label>
-                    </div>
-                    <button type="submit" class="btn btn-primary w-100">Masuk</button>
-                </form>
-            </div>
-        </div>
+<form method="POST" action="{{ route('admin.login.attempt') }}" novalidate>
+    @csrf
+
+    <label class="auth-label" for="email">Email</label>
+    <div class="auth-field">
+        <i class="bi bi-envelope"></i>
+        <input type="email" class="auth-input @error('email') is-invalid @enderror" id="email" name="email"
+               value="{{ old('email') }}" placeholder="nama@gmail.com" autocomplete="username" required autofocus>
     </div>
-</div>
+    @error('email')
+        <div class="auth-error-text">{{ $message }}</div>
+    @enderror
+
+    <div class="auth-label-row">
+        <label class="auth-label" for="password">Kata Sandi</label>
+        <a class="auth-link" href="{{ route('admin.password.request') }}">Lupa kata sandi?</a>
+    </div>
+    <div class="auth-field">
+        <i class="bi bi-lock"></i>
+        <input type="password" class="auth-input @error('password') is-invalid @enderror" id="password" name="password"
+               placeholder="Masukkan kata sandi" autocomplete="current-password" required>
+        <button type="button" class="auth-eye" data-toggle-password="password" aria-label="Tampilkan kata sandi">
+            <i class="bi bi-eye"></i>
+        </button>
+    </div>
+    @error('password')
+        <div class="auth-error-text">{{ $message }}</div>
+    @enderror
+
+    <label class="auth-check">
+        <input type="checkbox" name="remember" value="1" @checked(old('remember'))>
+        <span>Ingat saya</span>
+    </label>
+
+    <button type="submit" class="auth-submit">
+        <span>Masuk</span>
+        <i class="bi bi-arrow-right"></i>
+    </button>
+</form>
 @endsection

@@ -117,6 +117,84 @@ class AdminPlacePhotoTest extends TestCase
             ->assertJsonPath('message', 'Openverse gagal (503).');
     }
 
+    private function linkPayload(array $overrides = []): array
+    {
+        // A public IP literal, so the address check needs no DNS lookup in tests.
+        return array_merge([
+            'image_url' => 'http://93.184.216.34/masjid.jpg',
+            'source_url' => 'https://www.flickr.com/photos/someone/123',
+            'credit' => 'Budi Santoso',
+            'license' => 'CC BY 2.0',
+            'license_checked' => '1',
+        ], $overrides);
+    }
+
+    public function test_a_photo_from_a_link_is_saved_with_the_credit_and_license_the_admin_checked(): void
+    {
+        Http::fake(['93.184.216.34/*' => Http::response($this->jpegBytes(1000, 700))]);
+
+        $response = $this->actingAs($this->admin)->post(route('admin.places.photos.link.store', $this->place), $this->linkPayload());
+
+        $response->assertRedirect()->assertSessionHas('status');
+        $photo = $this->place->photos()->sole();
+        $this->assertSame('Budi Santoso', $photo->credit);
+        $this->assertSame('CC BY 2.0', $photo->license);
+        $this->assertSame('https://creativecommons.org/licenses/by/2.0/', $photo->license_url);
+        $this->assertSame('https://www.flickr.com/photos/someone/123', $photo->source_url);
+        $this->assertSame($photo->photo_url, $this->place->fresh()->photo_url);
+    }
+
+    public function test_a_photo_from_a_link_needs_the_license_confirmation_and_an_allowed_license(): void
+    {
+        Http::fake();
+
+        $response = $this->actingAs($this->admin)->post(
+            route('admin.places.photos.link.store', $this->place),
+            $this->linkPayload(['license_checked' => null, 'license' => 'CC BY-NC 2.0', 'credit' => '']),
+        );
+
+        $response->assertSessionHasErrors(['license_checked', 'license', 'credit']);
+        Http::assertNothingSent();
+        $this->assertSame(0, $this->place->photos()->count());
+    }
+
+    public function test_a_photo_link_to_this_machine_or_the_local_network_is_refused(): void
+    {
+        Http::fake();
+
+        foreach (['http://127.0.0.1/a.jpg', 'http://192.168.200.150/a.jpg', 'http://localhost/a.jpg', 'http://[::1]/a.jpg'] as $url) {
+            $this->actingAs($this->admin)
+                ->post(route('admin.places.photos.link.store', $this->place), $this->linkPayload(['image_url' => $url]))
+                ->assertRedirect()
+                ->assertSessionHas('error', 'Alamat gambar harus dari internet, bukan jaringan lokal.');
+        }
+
+        Http::assertNothingSent();
+        $this->assertSame(0, $this->place->photos()->count());
+    }
+
+    public function test_a_photo_link_that_is_not_an_image_is_reported(): void
+    {
+        Http::fake(['93.184.216.34/*' => Http::response('<html>bukan gambar</html>')]);
+
+        $this->actingAs($this->admin)
+            ->post(route('admin.places.photos.link.store', $this->place), $this->linkPayload())
+            ->assertRedirect()
+            ->assertSessionHas('error', 'File bukan gambar JPG, PNG, atau WebP yang bisa dibaca.');
+
+        $this->assertSame(0, $this->place->photos()->count());
+    }
+
+    public function test_the_edit_page_links_to_google_images_with_the_creative_commons_filter(): void
+    {
+        $this->actingAs($this->admin)
+            ->get(route('admin.places.edit', $this->place))
+            ->assertOk()
+            ->assertSee('Cari di Google Gambar')
+            ->assertSee('https://www.google.com/search?q=Masjid+Agung+Batam&amp;tbm=isch&amp;tbs=il%3Acl', false)
+            ->assertSee('Tambah dari tautan');
+    }
+
     public function test_picking_an_openverse_photo_saves_it_with_credit_from_openverse_itself(): void
     {
         Http::fake([

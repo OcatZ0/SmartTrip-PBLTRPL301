@@ -54,6 +54,78 @@
             <div class="form-text">JPG, PNG, atau WebP, maksimal 8 MB per foto, sampai 10 foto sekaligus. Foto dikecilkan otomatis.</div>
         </form>
 
+        @php
+            $photoQuery = str_contains(mb_strtolower($place->name), 'batam') ? $place->name : $place->name.' Batam';
+            // tbs=il:cl turns on Google's "Creative Commons licenses" filter.
+            $googleImagesUrl = 'https://www.google.com/search?'.http_build_query(['q' => $photoQuery, 'tbm' => 'isch', 'tbs' => 'il:cl']);
+            $linkFormOpen = $errors->hasAny(['image_url', 'source_url', 'credit', 'license', 'license_checked']) || old('image_url');
+        @endphp
+        <h2 class="h6">Tambah dari Google Gambar</h2>
+        <p class="small text-muted mb-2">
+            Filter lisensi Creative Commons Google hanya membaca keterangan di halaman, jadi bisa keliru. Buka halaman sumber fotonya
+            dan pastikan sendiri lisensinya. Lisensi NC (non-komersial) dan ND tidak bisa dipakai.
+        </p>
+        <div class="d-flex flex-wrap gap-2 mb-3">
+            <a href="{{ $googleImagesUrl }}" target="_blank" rel="noopener" class="btn btn-outline-primary">
+                <i class="bi bi-google" aria-hidden="true"></i> Cari di Google Gambar
+            </a>
+            <button type="button" class="btn btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#photo-link-form"
+                aria-expanded="{{ $linkFormOpen ? 'true' : 'false' }}" aria-controls="photo-link-form">
+                Tambah dari tautan
+            </button>
+        </div>
+        <form method="POST" action="{{ route('admin.places.photos.link.store', $place) }}" id="photo-link-form"
+            class="collapse {{ $linkFormOpen ? 'show' : '' }} border rounded-3 p-3 mb-4 bg-light">
+            @csrf
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="photoLinkImage" class="form-label small fw-semibold">Alamat gambar</label>
+                    <input type="url" name="image_url" id="photoLinkImage" class="form-control @error('image_url') is-invalid @enderror"
+                        value="{{ old('image_url') }}" maxlength="2000" required placeholder="https://.../foto.jpg">
+                    <div class="form-text">Klik kanan gambarnya di halaman sumber, lalu "Salin alamat gambar".</div>
+                    @error('image_url')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+                <div class="col-md-6">
+                    <label for="photoLinkSource" class="form-label small fw-semibold">Halaman sumber</label>
+                    <input type="url" name="source_url" id="photoLinkSource" class="form-control @error('source_url') is-invalid @enderror"
+                        value="{{ old('source_url') }}" maxlength="2000" required placeholder="https://...">
+                    <div class="form-text">Halaman tempat lisensinya tertulis. Dibuka saat kredit foto diketuk di aplikasi.</div>
+                    @error('source_url')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+                <div class="col-md-6">
+                    <label for="photoLinkCredit" class="form-label small fw-semibold">Nama pembuat</label>
+                    <input type="text" name="credit" id="photoLinkCredit" class="form-control @error('credit') is-invalid @enderror"
+                        value="{{ old('credit') }}" maxlength="255" required>
+                    <div class="form-text">Tulis persis seperti di halaman sumber.</div>
+                    @error('credit')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+                <div class="col-md-6">
+                    <label for="photoLinkLicense" class="form-label small fw-semibold">Lisensi</label>
+                    <select name="license" id="photoLinkLicense" class="form-select @error('license') is-invalid @enderror" required>
+                        <option value="">Pilih lisensi</option>
+                        @foreach (array_keys(\App\Services\Places\PlacePhotoStore::LINK_LICENSES) as $license)
+                            <option value="{{ $license }}" @selected(old('license') === $license)>{{ $license }}</option>
+                        @endforeach
+                    </select>
+                    <div class="form-text">"Izin dari pemilik" hanya kalau pemilik foto sudah mengizinkan secara tertulis.</div>
+                    @error('license')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+                <div class="col-12">
+                    <div class="form-check">
+                        <input type="checkbox" name="license_checked" value="1" id="photoLinkChecked"
+                            class="form-check-input @error('license_checked') is-invalid @enderror" @checked(old('license_checked')) required>
+                        <label for="photoLinkChecked" class="form-check-label small">
+                            Saya sudah membuka halaman sumber dan memastikan foto ini memang {{ $place->name }} dan lisensinya sesuai pilihan di atas.
+                        </label>
+                        @error('license_checked')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">Simpan foto</button>
+                </div>
+            </div>
+        </form>
+
         <h2 class="h6">Cari foto berlisensi bebas (Openverse)</h2>
         <p class="small text-muted mb-2">
             Foto Creative Commons dari Flickr, Wikimedia, dan lainnya. Hasil pencarian bisa keliru, jadi pilih hanya foto yang
@@ -61,7 +133,7 @@
         </p>
         <form id="openverse-search" action="{{ route('admin.places.photos.openverse', $place) }}" class="input-group mb-3">
             <input type="text" name="q" class="form-control" maxlength="100" required
-                value="{{ str_contains(mb_strtolower($place->name), 'batam') ? $place->name : $place->name.' Batam' }}">
+                value="{{ $photoQuery }}">
             <button type="submit" class="btn btn-outline-secondary">Cari</button>
         </form>
         <div id="openverse-results" class="row g-3"></div>

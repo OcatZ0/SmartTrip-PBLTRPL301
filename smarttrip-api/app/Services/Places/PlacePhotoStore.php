@@ -29,6 +29,22 @@ class PlacePhotoStore
 
     private const MAX_DOWNLOAD_BYTES = 15 * 1024 * 1024;
 
+    /**
+     * Licenses an admin may pick for a photo added from a link (label => license deed).
+     * NC and ND are left out: the app is a public service and every photo is resized.
+     */
+    public const LINK_LICENSES = [
+        'CC0 1.0' => 'https://creativecommons.org/publicdomain/zero/1.0/',
+        'Public Domain' => 'https://creativecommons.org/publicdomain/mark/1.0/',
+        'CC BY 2.0' => 'https://creativecommons.org/licenses/by/2.0/',
+        'CC BY 3.0' => 'https://creativecommons.org/licenses/by/3.0/',
+        'CC BY 4.0' => 'https://creativecommons.org/licenses/by/4.0/',
+        'CC BY-SA 2.0' => 'https://creativecommons.org/licenses/by-sa/2.0/',
+        'CC BY-SA 3.0' => 'https://creativecommons.org/licenses/by-sa/3.0/',
+        'CC BY-SA 4.0' => 'https://creativecommons.org/licenses/by-sa/4.0/',
+        'Izin dari pemilik' => null,
+    ];
+
     public function storeUpload(Place $place, UploadedFile $file): PlacePhoto
     {
         return $this->save($place, (string) file_get_contents($file->getRealPath()), []);
@@ -65,6 +81,44 @@ class PlacePhotoStore
             'license' => $image['license'],
             'license_url' => $image['license_url'],
             'source_url' => $image['source_url'],
+        ]);
+    }
+
+    /**
+     * A photo the admin found (e.g. through Google Images) and whose license
+     * they checked on the source page themselves.
+     */
+    public function storeFromLink(Place $place, string $imageUrl, string $sourceUrl, string $credit, string $license): PlacePhoto
+    {
+        $this->assertPublicUrl($imageUrl);
+
+        try {
+            $response = Http::timeout(60)
+                ->withHeaders(['User-Agent' => OpenverseClient::USER_AGENT])
+                ->withOptions(['allow_redirects' => [
+                    'max' => 3,
+                    'protocols' => ['http', 'https'],
+                    'on_redirect' => fn ($request, $response, $uri) => $this->assertPublicUrl((string) $uri),
+                ]])
+                ->get($imageUrl);
+        } catch (ConnectionException $e) {
+            throw new RuntimeException('Gambar tidak bisa diunduh dari alamat itu. Pastikan alamatnya mengarah langsung ke file gambar.', 0, $e);
+        }
+
+        if ($response->failed()) {
+            throw new RuntimeException('Gambar tidak bisa diunduh ('.$response->status().'). Pastikan alamatnya mengarah langsung ke file gambar.');
+        }
+
+        $bytes = $response->body();
+        if (strlen($bytes) > self::MAX_DOWNLOAD_BYTES) {
+            throw new RuntimeException('Gambar lebih dari 15 MB, pilih ukuran yang lebih kecil.');
+        }
+
+        return $this->save($place, $bytes, [
+            'credit' => $credit,
+            'license' => $license,
+            'license_url' => self::LINK_LICENSES[$license] ?? null,
+            'source_url' => $sourceUrl,
         ]);
     }
 
@@ -147,6 +201,32 @@ class PlacePhotoStore
         imagejpeg($canvas, null, self::JPEG_QUALITY);
 
         return (string) ob_get_clean();
+    }
+
+    /**
+     * The server fetches an admin-typed URL, so it must never reach this
+     * machine or the internal network (checked again on every redirect).
+     */
+    private function assertPublicUrl(string $url): void
+    {
+        $parts = parse_url($url);
+        $scheme = strtolower($parts['scheme'] ?? '');
+        $host = trim($parts['host'] ?? '', '[]');
+
+        if (! in_array($scheme, ['http', 'https'], true) || $host === '') {
+            throw new RuntimeException('Alamat gambar harus diawali http:// atau https://.');
+        }
+
+        $ips = filter_var($host, FILTER_VALIDATE_IP) ? [$host] : (gethostbynamel($host) ?: []);
+        if ($ips === []) {
+            throw new RuntimeException('Alamat gambar tidak ditemukan. Periksa lagi tautannya.');
+        }
+
+        foreach ($ips as $ip) {
+            if (! filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
+                throw new RuntimeException('Alamat gambar harus dari internet, bukan jaringan lokal.');
+            }
+        }
     }
 
     private function syncThumbnail(Place $place): void

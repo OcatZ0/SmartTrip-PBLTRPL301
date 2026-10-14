@@ -68,9 +68,23 @@ class AdminDashboardTest extends TestCase
             $response->assertOk();
             $response->assertSee('aria-label="Navigasi admin"', false);
             $response->assertSee('class="admin-rail-toggle" aria-controls="admin-rail"', false);
+            $response->assertSee('<header class="admin-topbar">', false);
+            $response->assertSee('class="admin-topbar-scene"', false);
             $response->assertSeeInOrder(['Dashboard', 'Kandidat Tempat', 'Kelola Tempat', 'Kelola Kategori']);
             $response->assertDontSee('SmartTrip Batam');
         }
+    }
+
+    public function test_nested_admin_pages_show_their_title_and_a_back_link_in_the_topbar(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $place = $this->makePlace(['name' => 'Pantai & Bukit']);
+
+        $response = $this->actingAs($admin)->get(route('admin.places.edit', $place));
+
+        $response->assertOk();
+        $response->assertSeeInOrder(['admin-topbar-back', 'Kelola Tempat', 'admin-topbar-title', 'Pantai &amp; Bukit'], false);
+        $response->assertDontSee('&amp;amp;', false);
     }
 
     // --- pending candidates + sync status ---

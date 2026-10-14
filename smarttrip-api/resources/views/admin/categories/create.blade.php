@@ -1,9 +1,10 @@
 @extends('admin.layout')
 
 @section('title', 'Tambah Kategori')
+@section('back_url', route('admin.categories.index'))
+@section('back_label', 'Kelola Kategori')
 
 @section('content')
-<h1 class="h3 mb-4">Tambah Kategori</h1>
 
 @if ($errors->any())
     <div class="alert alert-danger">

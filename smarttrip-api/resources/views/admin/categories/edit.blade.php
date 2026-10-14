@@ -1,6 +1,10 @@
 @extends('admin.layout')
 
-@section('title', 'Edit Kategori Wisata')
+@section('title', 'Edit ' . $category->name_id)
+@section('heading', $category->name_id)
+@section('subtitle', 'Atur simbol, nama, dan parameter rekomendasi kategori ini.')
+@section('back_url', route('admin.categories.index'))
+@section('back_label', 'Kelola Kategori')
 
 @push('styles')
 <style>
@@ -12,14 +16,6 @@
         margin: 0 auto;
         overflow: hidden;
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
-    }
-
-    .edit-card-header {
-        padding: 24px 32px 18px 32px;
-        border-bottom: 1px solid #F1F5F9;
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
     }
 
     .edit-card-body {
@@ -157,15 +153,6 @@
 
 @section('content')
 <div class="edit-category-card">
-    <!-- Header -->
-    <div class="edit-card-header">
-        <div>
-            <h2 class="fw-bold fs-4 mb-1 text-slate-900">Edit Kategori Wisata</h2>
-            <p class="text-slate-500 mb-0" style="font-size: 13px;">Konfigurasi representasi visual dan parameter rekomendasi traveler.</p>
-        </div>
-        <a href="{{ route('admin.categories.index') }}" class="btn-close" aria-label="Close"></a>
-    </div>
-
     <!-- Form -->
     <form method="POST" action="{{ route('admin.categories.update', $category) }}">
         @csrf

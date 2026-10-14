@@ -2,14 +2,16 @@
 
 @section('title', 'Kandidat Tempat')
 
-@section('content')
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h1 class="h3 mb-0">Kandidat Tempat</h1>
+@section('subtitle', 'Tinjau tempat baru hasil Discovery sebelum masuk katalog.')
+
+@section('topbar_actions')
     <form method="POST" action="{{ route('admin.candidates.discover') }}">
         @csrf
-        <button type="submit" class="btn btn-primary">Trigger Discovery</button>
+        <button type="submit" class="admin-topbar-action">Jalankan Discovery</button>
     </form>
-</div>
+@endsection
+
+@section('content')
 
 @if (session('status'))
     <div class="alert alert-success">{{ session('status') }}</div>

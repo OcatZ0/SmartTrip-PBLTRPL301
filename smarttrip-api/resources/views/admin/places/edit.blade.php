@@ -1,48 +1,13 @@
 @extends('admin.layout')
 
-@section('title', 'Edit Destinasi Kurasi - ' . $place->name)
+@section('title', 'Edit ' . $place->name)
+@section('heading', $place->name)
+@section('subtitle', 'Edit data, harga, kategori, dan foto tempat ini.')
+@section('back_url', route('admin.places.index'))
+@section('back_label', 'Kelola Tempat')
 
 @push('styles')
 <style>
-    .page-title {
-        font-size: 22px;
-        font-weight: 800;
-        color: #0F172A;
-        letter-spacing: -0.3px;
-    }
-
-    .badge-live-catalog {
-        background-color: #E0F2FE;
-        color: #0284C7;
-        font-size: 11.5px;
-        font-weight: 700;
-        padding: 4px 12px;
-        border-radius: 14px;
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-    }
-
-    .btn-back-daftar {
-        background-color: #FFFFFF;
-        border: 1px solid #CBD5E1;
-        color: #334155;
-        font-weight: 700;
-        font-size: 13px;
-        padding: 8px 16px;
-        border-radius: 10px;
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        text-decoration: none;
-        transition: all 0.15s ease;
-    }
-
-    .btn-back-daftar:hover {
-        background-color: #F8FAFC;
-        color: #0F172A;
-        border-color: #94A3B8;
-    }
 
     /* Cards Base */
     .edit-card {
@@ -470,27 +435,6 @@
         </ul>
     </div>
 @endif
-
-    <!-- Top Navigation Path & Actions Bar -->
-    <div class="d-flex align-items-center justify-content-between mb-4">
-        <div>
-            <div class="d-flex align-items-center gap-2 mb-1">
-                <h1 class="page-title mb-0">Edit Destinasi Kurasi</h1>
-                <span class="badge-live-catalog">
-                    <i class="bi bi-circle-fill" style="font-size: 7px;"></i>
-                    <span>Live di Katalog</span>
-                </span>
-            </div>
-            <div class="text-slate-500" style="font-size: 12.5px;">
-                Kelola Tempat &nbsp;/&nbsp; Edit Data &nbsp;/&nbsp; <span class="fw-bold text-slate-800">{{ $place->name }}</span>
-            </div>
-        </div>
-
-        <a href="{{ route('admin.places.index') }}" class="btn-back-daftar">
-            <i class="bi bi-arrow-left"></i>
-            <span>Kembali ke Daftar</span>
-        </a>
-    </div>
 
     <!-- Main Edit Form -->
     <form method="POST" action="{{ route('admin.places.update', $place) }}" id="formEditPlace">

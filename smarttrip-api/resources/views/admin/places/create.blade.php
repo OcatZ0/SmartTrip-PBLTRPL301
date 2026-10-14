@@ -1,9 +1,11 @@
 @extends('admin.layout')
 
 @section('title', 'Tambah Tempat')
+@section('heading', 'Tambah Tempat Manual')
+@section('back_url', route('admin.places.index'))
+@section('back_label', 'Kelola Tempat')
 
 @section('content')
-<h1 class="h3 mb-4">Tambah Tempat Manual</h1>
 
 @if ($errors->any())
     <div class="alert alert-danger">

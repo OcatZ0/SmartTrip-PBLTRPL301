@@ -37,12 +37,24 @@
             min-height: 100vh;
         }
 
-        .content-area {
+        .admin-page {
             flex: 1;
             min-width: 0;
-            padding: 28px 24px 24px;
             display: flex;
             flex-direction: column;
+        }
+
+        .content-area {
+            flex: 1;
+            padding: 24px 32px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        @media (max-width: 640px) {
+            .content-area {
+                padding: 20px 16px;
+            }
         }
 
         /* Scrollbar */
@@ -64,9 +76,20 @@
     <div class="admin-shell">
         @include('admin.partials.nav')
 
-        <main class="content-area">
-            @yield('content')
-        </main>
+        <div class="admin-page">
+            {{-- Short @section values arrive already escaped, so wrap them to avoid double escaping in the component. --}}
+            <x-admin.topbar
+                :title="new \Illuminate\Support\HtmlString($__env->hasSection('heading') ? $__env->yieldContent('heading') : $__env->yieldContent('title', 'Admin'))"
+                :subtitle="new \Illuminate\Support\HtmlString($__env->yieldContent('subtitle'))"
+                :back-url="$__env->yieldContent('back_url') ?: null"
+                :back-label="new \Illuminate\Support\HtmlString($__env->yieldContent('back_label'))">
+                @yield('topbar_actions')
+            </x-admin.topbar>
+
+            <main class="content-area">
+                @yield('content')
+            </main>
+        </div>
     </div>
 
     <!-- jQuery: used by the place photo manager (admin/places/photos) -->

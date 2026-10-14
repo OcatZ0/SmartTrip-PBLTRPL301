@@ -2,42 +2,17 @@
 
 @section('title', 'Kelola Tempat')
 
+@section('subtitle', $totalPlacesCount . ' tempat terdaftar di Batam')
+
+@section('topbar_actions')
+    <button type="button" class="admin-topbar-action" data-bs-toggle="modal" data-bs-target="#modalTambahTempat">
+        <i class="bi bi-plus-lg" aria-hidden="true"></i>
+        <span>Tambah Tempat Manual</span>
+    </button>
+@endsection
+
 @push('styles')
 <style>
-    /* Global Font (Plus Jakarta Sans) */
-    .page-title {
-        font-size: 20px;
-        font-weight: 800;
-        color: #0F172A;
-        letter-spacing: -0.3px;
-    }
-
-    .page-subtitle {
-        font-size: 13px;
-        color: #64748B;
-        font-weight: 500;
-    }
-
-    /* Primary Add Button */
-    .btn-add-place {
-        background-color: #1672B8;
-        border: 1px solid #1672B8;
-        color: #FFFFFF;
-        font-weight: 700;
-        font-size: 13px;
-        padding: 8px 16px;
-        border-radius: 8px;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        transition: background-color 0.15s ease;
-    }
-
-    .btn-add-place:hover {
-        background-color: #0F5C97;
-        border-color: #0F5C97;
-        color: #FFFFFF;
-    }
 
     /* Filter Card */
     .filter-card {
@@ -831,19 +806,6 @@
 
 @section('content')
 
-    <!-- Header Section -->
-    <div class="d-flex align-items-center justify-content-between mb-3">
-        <div>
-            <h1 class="page-title mb-0">Kelola Tempat</h1>
-            <p class="page-subtitle mb-0">Basis data lengkap {{ $totalPlacesCount }} destinasi terdaftar di Pulau Batam</p>
-        </div>
-
-        <button class="btn-add-place" data-bs-toggle="modal" data-bs-target="#modalTambahTempat">
-            <i class="bi bi-plus-lg"></i>
-            <span>Tambah Tempat Manual</span>
-        </button>
-    </div>
-
     <!-- Filter Card -->
     <div class="filter-card">
         <form method="GET" action="{{ route('admin.places.index') }}" class="filter-input-group">
@@ -1027,7 +989,6 @@
             </div>
         </div>
     </div>
-
 
     <!-- ─────────────────────────────────────────────────────────────────── -->
     <!-- MODAL TAMBAH TEMPAT MANUAL (SCROLLABLE WITH VISIBLE BLUE SCROLLBAR) -->

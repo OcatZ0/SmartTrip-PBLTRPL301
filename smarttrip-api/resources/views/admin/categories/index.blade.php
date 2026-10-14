@@ -2,39 +2,17 @@
 
 @section('title', 'Kelola Kategori')
 
+@section('subtitle', 'Kategori dipakai untuk filter katalog dan minat wisatawan.')
+
+@section('topbar_actions')
+    <button type="button" class="admin-topbar-action" onclick="openCreateModal()">
+        <i class="bi bi-plus-lg" aria-hidden="true"></i>
+        <span>Tambah Kategori</span>
+    </button>
+@endsection
+
 @push('styles')
 <style>
-    .page-title {
-        font-size: 22px;
-        font-weight: 800;
-        color: #0F172A;
-        letter-spacing: -0.3px;
-    }
-
-    .page-subtitle {
-        font-size: 13px;
-        color: #64748B;
-        font-weight: 500;
-    }
-
-    .btn-add-category {
-        background-color: #1672B8;
-        border: 1px solid #1672B8;
-        color: #FFFFFF;
-        font-weight: 700;
-        font-size: 13px;
-        padding: 8px 18px;
-        border-radius: 10px;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        transition: background-color 0.15s ease;
-    }
-
-    .btn-add-category:hover {
-        background-color: #0F5C97;
-        color: #FFFFFF;
-    }
 
     /* Table Card */
     .categories-table-card {
@@ -676,19 +654,6 @@
 @if (session('error'))
     <div class="alert alert-danger text-white">{{ session('error') }}</div>
 @endif
-    <!-- Header Section -->
-    <div class="d-flex align-items-center justify-content-between mb-4">
-        <div>
-            <h1 class="page-title mb-1">Kelola Kategori</h1>
-            <p class="page-subtitle mb-0">Atur taksonomi destinasi & minat personalisasi rekomendasi SmartTrip</p>
-        </div>
-
-        <button class="btn-add-category" onclick="openCreateModal()">
-            <i class="bi bi-plus-lg"></i>
-            <span>Tambah Kategori</span>
-        </button>
-    </div>
-
     <!-- Table Card -->
     <div class="categories-table-card mb-4">
         <!-- Table Header Bar -->
@@ -802,7 +767,6 @@
             <span>{{ $totalCategoriesCount }} Kategori Aktif • {{ $totalRelationsCount ?? 177 }} Relasi Tempat Wisata</span>
         </div>
     </div>
-
 
     <!-- ─────────────────────────────────────────────────────────────────── -->
     <!-- MODAL EDIT / TAMBAH KATEGORI                                        -->
@@ -928,7 +892,6 @@
             </div>
         </div>
     </div>
-
 
     <!-- ─────────────────────────────────────────────────────────────────── -->
     <!-- MODAL CONFIRMATION HAPUS KATEGORI                                   -->

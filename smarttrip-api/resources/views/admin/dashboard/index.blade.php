@@ -46,13 +46,12 @@
     ];
 
     $formatTime = fn ($time) => $time->translatedFormat('j M Y, H.i');
-    $syncStatus = collect([
+    $syncStatus = [
         $lastDiscoveryAt ? 'Discovery terakhir ' . $formatTime($lastDiscoveryAt) : 'Discovery belum pernah dijalankan',
         $lastEnrichmentAt ? 'Pelengkapan data terakhir ' . $formatTime($lastEnrichmentAt) : 'Data belum pernah dilengkapi',
         $idNumber($pendingCandidates) . ' kandidat menunggu',
-    ])->join(' · ');
+    ];
 
-    $cables = collect([412, 1012])->flatMap(fn ($x) => collect(range(1, 6))->map(fn ($k) => "M{$x} 175L" . ($x - $k * 48) . " 372M{$x} 175L" . ($x + $k * 48) . ' 372'))->join('');
 @endphp
 <!doctype html>
 <html lang="id">
@@ -69,43 +68,18 @@
     @include('admin.partials.nav')
 
     <div class="flex min-w-0 flex-1 flex-col">
-        <header class="relative h-[230px] overflow-hidden bg-[#0a2440] text-white">
-            <svg viewBox="0 0 1440 600" preserveAspectRatio="xMidYMax slice" aria-hidden="true" class="absolute inset-0 h-full w-full">
-                <defs>
-                    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0a2440"/><stop offset="0.55" stop-color="#16476d"/><stop offset="1" stop-color="#4f8fb8"/></linearGradient>
-                    <radialGradient id="glow" cx="1240" cy="440" r="520" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#f6b03c" stop-opacity="0.55"/><stop offset="1" stop-color="#f6b03c" stop-opacity="0"/></radialGradient>
-                    <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#16476d"/><stop offset="1" stop-color="#0a2440"/></linearGradient>
-                </defs>
-                <rect width="1440" height="440" fill="url(#sky)"/>
-                <rect width="1440" height="440" fill="url(#glow)"/>
-                <circle cx="1240" cy="440" r="70" fill="#f6b03c"/>
-                <rect y="440" width="1440" height="160" fill="url(#sea)"/>
-                <g fill="#0a2440"><rect x="-20" y="372" width="1480" height="10"/><rect x="160" y="382" width="12" height="58"/><rect x="706" y="382" width="12" height="58"/><rect x="1240" y="382" width="12" height="58"/><rect x="404" y="150" width="16" height="290"/><rect x="1004" y="150" width="16" height="290"/></g>
-                <path d="{{ $cables }}" stroke="#0a2440" stroke-width="2" fill="none"/>
-            </svg>
-            <div class="absolute inset-0 bg-gradient-to-r from-[#0a2440]/85 to-[#0a2440]/20"></div>
-            <div class="relative flex flex-wrap justify-between gap-4 px-6 pt-8 sm:px-8">
-                <div class="flex flex-col gap-1.5">
-                    <span class="text-xs font-bold tracking-[0.08em] text-[#f6b03c]">PANEL KURASI</span>
-                    <h1 class="m-0 text-[30px] font-extrabold leading-9 tracking-[-0.02em]">Dashboard</h1>
-                    <p class="m-0 text-sm text-white/85">{{ $syncStatus }}</p>
-                </div>
-                <form method="POST" action="{{ route('admin.candidates.discover') }}" class="self-start">
-                    @csrf
-                    <button type="submit" class="flex h-11 items-center gap-2 rounded-xl border-0 bg-[#f6b03c] px-4 text-sm font-bold text-[#0a2440] transition hover:bg-[#f8bf5c] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#f6b03c]/40">
-                        <svg class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-                        Jalankan Discovery
-                    </button>
-                </form>
-            </div>
-        </header>
+        <x-admin.topbar title="Dashboard" :subtitle="$syncStatus">
+            <form method="POST" action="{{ route('admin.candidates.discover') }}">
+                @csrf
+                <button type="submit" class="admin-topbar-action">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+                    Jalankan Discovery
+                </button>
+            </form>
+        </x-admin.topbar>
 
         <main class="flex flex-col gap-7 px-6 pb-10 sm:px-8">
-            @if (session('status'))
-                <div role="status" class="relative z-10 mt-4 rounded-xl bg-[#e3f6ec] px-4 py-3 text-sm font-semibold text-[#1d7a55]">{{ session('status') }}</div>
-            @endif
-
-            <div class="relative -mt-14 grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4">
+            <div class="relative -mt-12 grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4">
                 @foreach ($kpis as $kpi)
                     <div class="flex flex-col gap-1 rounded-[18px] bg-white px-5 py-[18px] shadow-[0_18px_40px_-16px_rgba(10,36,64,0.3)]">
                         <span class="text-[13px] font-semibold text-[#5d6b7c]">{{ $kpi['label'] }}</span>
@@ -114,6 +88,10 @@
                     </div>
                 @endforeach
             </div>
+
+            @if (session('status'))
+                <div role="status" class="rounded-xl bg-[#e3f6ec] px-4 py-3 text-sm font-semibold text-[#1d7a55]">{{ session('status') }}</div>
+            @endif
 
             <div class="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] items-start gap-5">
                 @foreach ($columns as $col)

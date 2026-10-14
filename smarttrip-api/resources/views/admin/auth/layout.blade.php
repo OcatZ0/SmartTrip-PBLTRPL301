@@ -1,232 +1,46 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@yield('title') - SmartTrip Admin</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>@yield('title') · SmartTrip Batam Admin</title>
     <link rel="icon" type="image/svg+xml" href="{{ asset('images/logo.svg') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-    <style>
-        :root {
-            --auth-primary: #005A92;
-            --auth-primary-hover: #004A78;
-            --auth-title: #0B4F80;
-            --auth-link: #1672B8;
-            --auth-ink: #1E293B;
-            --auth-muted: #64748B;
-            --auth-field: #EEF4FD;
-            --auth-badge: #D6E6F7;
-            --auth-line: #E2E8F0;
-        }
-
-        body {
-            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-            background-color: #FFFFFF;
-            color: var(--auth-ink);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 24px 16px;
-        }
-
-        .auth-card {
-            width: 100%;
-            max-width: 462px;
-            background: #FFFFFF;
-            border-radius: 16px;
-            box-shadow: 0 2px 6px rgba(15, 23, 42, 0.10), 0 0 1px rgba(15, 23, 42, 0.08);
-            padding: 64px 38px 72px;
-        }
-
-        .auth-brand { text-align: center; }
-        .auth-brand img { width: 56px; height: auto; }
-        .auth-brand-name {
-            margin-top: 10px;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 14px;
-            color: var(--auth-ink);
-        }
-        .auth-badge {
-            background: var(--auth-badge);
-            color: var(--auth-title);
-            font-size: 13px;
-            font-weight: 500;
-            padding: 2px 8px;
-            border-radius: 999px;
-        }
-
-        .auth-title {
-            margin: 10px 0 4px;
-            text-align: center;
-            color: var(--auth-title);
-            font-size: 18px;
-            font-weight: 500;
-        }
-        .auth-title-lg { font-size: 22px; font-weight: 700; }
-        .auth-subtitle {
-            text-align: center;
-            font-size: 13px;
-            color: var(--auth-ink);
-            margin-bottom: 26px;
-        }
-
-        .auth-label {
-            font-size: 13px;
-            font-weight: 500;
-            color: var(--auth-ink);
-            margin-bottom: 6px;
-        }
-        .auth-label-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: baseline;
-        }
-        .auth-link {
-            color: var(--auth-link);
-            font-size: 13px;
-            text-decoration: none;
-        }
-        .auth-link:hover { text-decoration: underline; color: var(--auth-link); }
-
-        .auth-field {
-            position: relative;
-            margin-bottom: 18px;
-        }
-        .auth-field > .bi {
-            position: absolute;
-            left: 14px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #475569;
-            font-size: 16px;
-            pointer-events: none;
-        }
-        .auth-input {
-            width: 100%;
-            height: 42px;
-            border: 1px solid transparent;
-            border-radius: 6px;
-            background: var(--auth-field);
-            padding: 0 42px 0 42px;
-            font-size: 13px;
-            color: var(--auth-ink);
-            outline: none;
-            transition: border-color 0.15s ease, box-shadow 0.15s ease;
-        }
-        .auth-input::placeholder { color: #8A94A6; }
-        .auth-input:focus {
-            border-color: var(--auth-link);
-            box-shadow: 0 0 0 3px rgba(22, 114, 184, 0.15);
-            background: #FFFFFF;
-        }
-        .auth-input.is-invalid { border-color: #DC2626; }
-        .auth-eye {
-            position: absolute;
-            right: 8px;
-            top: 50%;
-            transform: translateY(-50%);
-            border: 0;
-            background: transparent;
-            color: #475569;
-            padding: 4px 6px;
-            line-height: 1;
-        }
-
-        .auth-check {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 13px;
-            color: var(--auth-ink);
-            margin: 4px 0 16px;
-        }
-        .auth-check input {
-            width: 18px;
-            height: 18px;
-            margin: 0;
-            accent-color: var(--auth-primary);
-        }
-
-        .auth-submit {
-            width: 100%;
-            height: 42px;
-            border: 0;
-            border-radius: 6px;
-            background: var(--auth-primary);
-            color: #FFFFFF;
-            font-size: 14px;
-            font-weight: 500;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            box-shadow: 0 1px 3px rgba(0, 90, 146, 0.35);
-            transition: background-color 0.15s ease;
-        }
-        .auth-submit:hover { background: var(--auth-primary-hover); }
-
-        .auth-footer {
-            border-top: 1px solid var(--auth-line);
-            margin-top: 24px;
-            padding-top: 18px;
-            text-align: center;
-            font-size: 13px;
-            color: var(--auth-ink);
-        }
-        .auth-copyright {
-            margin-top: 8px;
-            color: var(--auth-muted);
-            font-size: 13px;
-        }
-
-        .auth-alert {
-            font-size: 13px;
-            border-radius: 8px;
-            padding: 10px 12px;
-            margin-bottom: 18px;
-        }
-        .auth-error-text {
-            color: #DC2626;
-            font-size: 12px;
-            margin: -12px 0 14px;
-        }
-    </style>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body>
-    <main class="auth-card">
-        <div class="auth-brand">
-            <img src="{{ asset('images/logo.svg') }}" alt="SmartTrip">
-            <div>
-                <span class="auth-brand-name">SmartTrip <span class="auth-badge">BATAM</span></span>
-            </div>
-        </div>
+<body class="m-0 font-['Plus_Jakarta_Sans',system-ui,sans-serif] antialiased">
+<div class="relative flex min-h-screen flex-col overflow-hidden bg-[#0a2440] text-white">
+    {{-- Barelang bridge at dusk, the same scene as the mobile login. --}}
+    <svg viewBox="0 0 1440 600" preserveAspectRatio="xMidYMax slice" aria-hidden="true" class="absolute inset-0 h-full w-full">
+        <defs>
+            <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0a2440"/><stop offset="0.55" stop-color="#16476d"/><stop offset="1" stop-color="#4f8fb8"/></linearGradient>
+            <radialGradient id="glow" cx="1240" cy="440" r="520" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#f6b03c" stop-opacity="0.55"/><stop offset="1" stop-color="#f6b03c" stop-opacity="0"/></radialGradient>
+            <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#16476d"/><stop offset="1" stop-color="#0a2440"/></linearGradient>
+        </defs>
+        <rect width="1440" height="440" fill="url(#sky)"/>
+        <rect width="1440" height="440" fill="url(#glow)"/>
+        <circle cx="1240" cy="440" r="70" fill="#f6b03c"/>
+        <path d="M0 440 V420 Q120 400 240 414 Q360 398 480 418 Q600 404 720 424 Q780 432 840 440 Z" fill="#16476d" opacity="0.85"/>
+        <rect y="440" width="1440" height="160" fill="url(#sea)"/>
+        <g fill="#f6b03c"><rect x="1150" y="452" width="180" height="5" rx="2.5" opacity="0.7"/><rect x="1180" y="468" width="120" height="5" rx="2.5" opacity="0.5"/><rect x="1205" y="484" width="70" height="5" rx="2.5" opacity="0.35"/></g>
+        <g fill="#0a2440"><rect x="-20" y="372" width="1480" height="10"/><rect x="160" y="382" width="12" height="58"/><rect x="706" y="382" width="12" height="58"/><rect x="1240" y="382" width="12" height="58"/><rect x="404" y="150" width="16" height="290"/><rect x="1004" y="150" width="16" height="290"/></g>
+        <path d="M412 175L364 372M412 175L460 372M412 175L316 372M412 175L508 372M412 175L268 372M412 175L556 372M412 175L220 372M412 175L604 372M412 175L172 372M412 175L652 372M412 175L124 372M412 175L700 372M1012 175L964 372M1012 175L1060 372M1012 175L916 372M1012 175L1108 372M1012 175L868 372M1012 175L1156 372M1012 175L820 372M1012 175L1204 372M1012 175L772 372M1012 175L1252 372M1012 175L724 372M1012 175L1300 372" stroke="#0a2440" stroke-width="2" fill="none"/>
+    </svg>
 
+    <header class="relative flex items-center gap-3 px-6 py-6 sm:px-10">
+        <span class="flex h-10 w-10 items-center justify-center rounded-full bg-white">
+            <img src="{{ asset('images/logo.svg') }}" alt="" class="h-6 w-6">
+        </span>
+        <span class="text-[17px] font-extrabold">SmartTrip Batam</span>
+        <span class="rounded-full border border-white/30 bg-white/15 px-2.5 py-0.5 text-xs font-bold">Admin</span>
+    </header>
+
+    <main class="relative flex flex-1 items-center justify-center px-4 pb-16 pt-6">
         @yield('content')
-
-        <div class="auth-footer">
-            {{-- No contact page exists yet, so this stays plain text. --}}
-            <div>Belum punya akses? <span style="color: var(--auth-link);">Hubungi Admin Utama</span></div>
-            <div class="auth-copyright">&copy; {{ date('Y') }} SmartTrip Batam. All rights reserved.</div>
-        </div>
     </main>
 
-    <script>
-        document.querySelectorAll('[data-toggle-password]').forEach(function (button) {
-            button.addEventListener('click', function () {
-                var input = document.getElementById(button.dataset.togglePassword);
-                var show = input.type === 'password';
-                input.type = show ? 'text' : 'password';
-                button.querySelector('.bi').className = show ? 'bi bi-eye-slash' : 'bi bi-eye';
-                button.setAttribute('aria-label', show ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi');
-            });
-        });
-    </script>
+    <footer class="relative pb-5 text-center text-xs text-white/70">© {{ date('Y') }} SmartTrip Batam</footer>
+</div>
 </body>
 </html>

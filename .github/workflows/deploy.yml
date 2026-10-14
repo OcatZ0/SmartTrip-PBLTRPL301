@@ -62,6 +62,23 @@ jobs:
             Write-Host 'composer.lock unchanged - skipping composer install'
           }
 
+      # The admin login pages use Tailwind through @vite, which needs
+      # public/build (gitignored). Built here so the release copy includes it;
+      # without it those pages throw "Vite manifest not found".
+      - name: Build frontend assets
+        if: ${{ github.event.inputs.rollback != 'true' }}
+        shell: powershell
+        working-directory: smarttrip-api
+        run: |
+          if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
+            Write-Error 'Node.js/npm is not installed on the runner - install Node.js LTS on the server'
+            exit 1
+          }
+          npm ci --no-audit --no-fund
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          npm run build
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
       - name: Deploy
         shell: powershell
         env:

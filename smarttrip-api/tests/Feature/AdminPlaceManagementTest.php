@@ -170,6 +170,42 @@ class AdminPlaceManagementTest extends TestCase
         $this->assertTrue($place->fresh()->category_tags_reviewed);
     }
 
+    public function test_the_edit_page_checkbox_can_leave_the_category_tags_unreviewed(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $place = $this->makePlace(['category_tags_reviewed' => false]);
+
+        $this->actingAs($admin)->put("/admin/places/{$place->places_id}", ['category_tags_reviewed' => '0'])->assertRedirect();
+
+        $this->assertFalse($place->fresh()->category_tags_reviewed);
+    }
+
+    public function test_emptying_the_description_falls_back_to_the_generated_one(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $place = $this->makePlace(['description_override' => 'Teks admin lama', 'description_en' => 'Old English text']);
+
+        $this->actingAs($admin)->put("/admin/places/{$place->places_id}", ['description_override' => '', 'description_en' => ''])->assertRedirect();
+
+        $place->refresh();
+        $this->assertNull($place->description_override);
+        $this->assertNull($place->description_en);
+    }
+
+    public function test_the_edit_page_shows_the_curation_form_completeness_and_save_bar(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $place = $this->makePlace(['name' => 'Jembatan Barelang', 'estimated_cost_idr' => 0, 'estimated_visit_minutes' => 60, 'category_tags_reviewed' => false]);
+
+        $response = $this->actingAs($admin)->get(route('admin.places.edit', $place));
+
+        $response->assertOk();
+        $response->assertSeeInOrder(['Edit tempat', 'Aktif di katalog', 'Jembatan Barelang', 'Data kurasi', 'Biaya masuk per orang', 'Kategori', 'Deskripsi']);
+        $response->assertSeeInOrder(['Kelengkapan', '2 / 5', 'Gratis', '60 menit', 'Belum', 'Popularitas', 'Disimpan ke wishlist', 'Masuk itinerary']);
+        $response->assertSee('name="category_tags_reviewed"', false);
+        $response->assertSeeInOrder(['class="pe-savebar"', 'Hapus dari katalog', 'Batal', 'form="formEditPlace"', 'Simpan perubahan'], false);
+    }
+
     public function test_editing_a_place_without_category_ids_clears_its_categories(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);

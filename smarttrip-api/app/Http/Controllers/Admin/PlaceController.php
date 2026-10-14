@@ -152,6 +152,7 @@ class PlaceController extends Controller
     public function edit(Place $place)
     {
         $place->load(['categories', 'photos' => fn ($query) => $query->orderBy('sort_order')]);
+        $place->loadCount(['wishlistedIn', 'itineraryItems']);
 
         return view('admin.places.edit', [
             'place' => $place,
@@ -177,6 +178,7 @@ class PlaceController extends Controller
             'estimated_cost_idr' => ['nullable', 'integer', 'min:0'],
             'estimated_visit_minutes' => ['nullable', 'integer', 'min:1'],
             'is_outdoor' => ['sometimes', 'boolean'],
+            'category_tags_reviewed' => ['sometimes', 'boolean'],
             'category_ids' => ['sometimes', 'array'],
             'category_ids.*' => ['integer', Rule::exists('categories', 'categories_id')->whereNull('deleted_at')],
         ]);
@@ -195,12 +197,14 @@ class PlaceController extends Controller
             'lng' => $data['lng'] ?? $place->lng,
             'address' => $data['address'] ?? $place->address,
             'photo_url' => $photoUrl,
-            'description_override' => $data['description_override'] ?? $place->description_override,
-            'description_en' => $data['description_en'] ?? $place->description_en,
+            // A sent but emptied description clears the override, so the app falls back to the generated one.
+            'description_override' => array_key_exists('description_override', $data) ? $data['description_override'] : $place->description_override,
+            'description_en' => array_key_exists('description_en', $data) ? $data['description_en'] : $place->description_en,
             'estimated_cost_idr' => $data['estimated_cost_idr'] ?? $place->estimated_cost_idr,
             'estimated_visit_minutes' => $data['estimated_visit_minutes'] ?? $place->estimated_visit_minutes,
             'is_outdoor' => $request->has('is_outdoor') ? $request->boolean('is_outdoor') : $place->is_outdoor,
-            'category_tags_reviewed' => true,
+            // The list popup has no checkbox, so saving there still counts as reviewing the tags.
+            'category_tags_reviewed' => $request->has('category_tags_reviewed') ? $request->boolean('category_tags_reviewed') : true,
         ];
 
         if (isset($data['name'])) {

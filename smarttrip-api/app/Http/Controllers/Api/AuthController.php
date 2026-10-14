@@ -166,7 +166,11 @@ class AuthController extends Controller
 
         $payload = $response->json();
 
-        if (($payload['aud'] ?? null) !== config('services.google.client_id')) {
+        // GOOGLE_CLIENT_ID boleh berisi beberapa Web client ID dipisah koma,
+        // supaya build dengan client ID berbeda tetap bisa login.
+        $clientIds = array_filter(array_map('trim', explode(',', (string) config('services.google.client_id'))));
+
+        if (! in_array($payload['aud'] ?? null, $clientIds, true)) {
             throw ValidationException::withMessages([
                 'id_token' => ['Token Google tidak valid.'],
             ]);

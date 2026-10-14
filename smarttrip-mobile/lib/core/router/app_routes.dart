@@ -7,6 +7,8 @@ class AppRoutes {
   static const register = '/register';
   static const forgotPassword = '/forgot-password';
   static const onboarding = '/onboarding';
+  static const profile = '/profile';
+
   static const newTrip = '/trips/new';
 
   /// Trip setup steps 2-4, the generate screen and the itinerary (C2-D1).
@@ -15,7 +17,8 @@ class AppRoutes {
   static String tripHotel(int tripsId) => '/trips/$tripsId/hotel';
   static String tripGenerate(int tripsId) => '/trips/$tripsId/generate';
   static String trip(int tripsId) => '/trips/$tripsId';
-  static String liveMap(int tripsId, int dayNumber) => '/trips/$tripsId/days/$dayNumber/map';
+  static String liveMap(int tripsId, int dayNumber) =>
+      '/trips/$tripsId/days/$dayNumber/map';
 
   /// B2 Detail Tempat (F006).
   static String place(int placesId) => '/places/$placesId';
@@ -24,7 +27,8 @@ class AppRoutes {
   static const publicPaths = {catalog, login, register, forgotPassword};
 
   /// Place details are public too, like the catalog they open from.
-  static bool isPublic(String location) => publicPaths.contains(location) || location.startsWith('/places/');
+  static bool isPublic(String location) =>
+      publicPaths.contains(location) || location.startsWith('/places/');
 
   /// Only reachable while logged out.
   static const guestOnlyPaths = {login, register, forgotPassword};

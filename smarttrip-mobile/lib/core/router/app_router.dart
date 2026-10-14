@@ -9,6 +9,7 @@ import '../../features/catalog/presentation/catalog_screen.dart';
 import '../../features/catalog/presentation/place_detail_screen.dart';
 import '../../features/live_trip/presentation/live_map_screen.dart';
 import '../../features/onboarding/onboarding_screen.dart';
+import '../../features/profile/profile_screen.dart';
 import '../../features/splash/splash_screen.dart';
 import '../../features/trip/presentation/generate_itinerary_screen.dart';
 import '../../features/trip/presentation/itinerary_screen.dart';
@@ -42,7 +43,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isLoggedIn = session.valueOrNull != null;
 
       if (isLoggedIn) {
-        final leavesGuestArea = location == AppRoutes.splash ||
+        final leavesGuestArea =
+            location == AppRoutes.splash ||
             AppRoutes.guestOnlyPaths.contains(location);
         return leavesGuestArea ? AppRoutes.catalog : null;
       }
@@ -62,7 +64,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/places/:placesId',
-        builder: (context, state) => PlaceDetailScreen(placesId: int.parse(state.pathParameters['placesId']!)),
+        builder: (context, state) => PlaceDetailScreen(
+          placesId: int.parse(state.pathParameters['placesId']!),
+        ),
       ),
       GoRoute(
         path: AppRoutes.login,
@@ -80,6 +84,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.onboarding,
         builder: (context, state) => const OnboardingScreen(),
       ),
+
       // Declared before '/trips/:tripsId' so "new" is not read as an id.
       GoRoute(
         path: AppRoutes.newTrip,
@@ -91,19 +96,23 @@ final routerProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(
             path: 'wishlist',
-            builder: (context, state) => WishlistStepScreen(tripsId: _tripsId(state)),
+            builder: (context, state) =>
+                WishlistStepScreen(tripsId: _tripsId(state)),
           ),
           GoRoute(
             path: 'preferences',
-            builder: (context, state) => TripPreferencesScreen(tripsId: _tripsId(state)),
+            builder: (context, state) =>
+                TripPreferencesScreen(tripsId: _tripsId(state)),
           ),
           GoRoute(
             path: 'hotel',
-            builder: (context, state) => TripHotelScreen(tripsId: _tripsId(state)),
+            builder: (context, state) =>
+                TripHotelScreen(tripsId: _tripsId(state)),
           ),
           GoRoute(
             path: 'generate',
-            builder: (context, state) => GenerateItineraryScreen(tripsId: _tripsId(state)),
+            builder: (context, state) =>
+                GenerateItineraryScreen(tripsId: _tripsId(state)),
           ),
           GoRoute(
             path: 'days/:dayNumber/map',
@@ -114,8 +123,13 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
         ],
       ),
+      GoRoute(
+        path: AppRoutes.profile,
+        builder: (context, state) => const ProfileScreen(),
+      ),
     ],
   );
 });
 
-int _tripsId(GoRouterState state) => int.parse(state.pathParameters['tripsId']!);
+int _tripsId(GoRouterState state) =>
+    int.parse(state.pathParameters['tripsId']!);

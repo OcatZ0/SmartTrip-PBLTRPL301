@@ -77,7 +77,7 @@ class ReviewController extends Controller
 
         $review->delete();
 
-        return response()->json(['message' => 'Review dihapus.']);
+        return response()->json(['message' => 'Ulasan dihapus.']);
     }
 
     /**

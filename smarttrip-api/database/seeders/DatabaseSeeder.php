@@ -16,7 +16,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         User::factory()->create([
-            'name' => 'Admin SmartTrip',
+            'name' => 'Dian Pratama',
             'email' => 'admin@smarttrip.test',
             'role' => 'admin',
         ]);
@@ -25,5 +25,7 @@ class DatabaseSeeder extends Seeder
             'name' => 'Test User',
             'email' => 'test@example.com',
         ]);
+
+        $this->call(PlaceSeeder::class);
     }
 }

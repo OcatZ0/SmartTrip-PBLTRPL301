@@ -67,6 +67,7 @@ class AdminDashboardTest extends TestCase
 
             $response->assertOk();
             $response->assertSee('aria-label="Navigasi admin"', false);
+            $response->assertSee('class="admin-rail-toggle" aria-controls="admin-rail"', false);
             $response->assertSeeInOrder(['Dashboard', 'Kandidat Tempat', 'Kelola Tempat', 'Kelola Kategori']);
             $response->assertDontSee('SmartTrip Batam');
         }

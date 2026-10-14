@@ -9,9 +9,8 @@ use App\Http\Controllers\Admin\PlacePhotoController;
 use App\Http\Controllers\Api\AuthController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+// The site root is the admin panel's way in; the Flutter app only uses /api.
+Route::redirect('/', '/admin/login');
 
 // Public registration/account-link verification link opened from the email
 // client (see AuthController::register / verifyRegistration).

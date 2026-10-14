@@ -11,7 +11,7 @@ class SmartTripApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp.router(
-      title: 'SmartTrip Batam',
+      title: 'SmartTrip',
       theme: AppTheme.light(),
       routerConfig: ref.watch(routerProvider),
       localizationsDelegates: AppLocalizations.localizationsDelegates,

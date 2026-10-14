@@ -51,7 +51,7 @@ class _ShareTripReadonlyScreenState extends State<ShareTripReadonlyScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'SmartTrip Batam',
+                  'SmartTrip',
                   style: TextStyle(
                     fontFamily: 'PlusJakartaSans',
                     fontSize: 14.5,

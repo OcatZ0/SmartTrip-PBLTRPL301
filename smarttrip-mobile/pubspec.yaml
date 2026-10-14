@@ -77,6 +77,10 @@ dependencies:
   # Opens Google Maps turn-by-turn navigation from the live map (E1)
   url_launcher: ^6.3.2
 
+  # Material motion screen transitions (fade through, shared axis,
+  # container transform)
+  animations: ^3.0.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

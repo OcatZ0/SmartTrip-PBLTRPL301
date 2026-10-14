@@ -36,7 +36,7 @@
   "registerTerms": "Syarat & Ketentuan",
   "registerTermsAnd": " serta ",
   "registerPrivacy": "Kebijakan Privasi",
-  "registerTermsSuffix": " SmartTrip Batam.",
+  "registerTermsSuffix": " SmartTrip.",
   "registerSubmit": "Daftar Akun",
   "registerAlreadyHaveAccount": "Sudah punya akun?",
   "registerSignIn": "Masuk",
@@ -341,7 +341,7 @@
   },
   "itineraryUnknownPlace": "Tempat tidak tersedia",
   "liveMapTitle": "Pelacakan Trip",
-  "liveMapSubtitle": "SmartTrip Batam • Hari {day}",
+  "liveMapSubtitle": "SmartTrip • Hari {day}",
   "@liveMapSubtitle": {
     "placeholders": {
       "day": {

@@ -112,7 +112,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   return null;
                 },
               ),
-              const SizedBox(height: 14),
               GlassField(
                 label: l10n.loginPasswordLabel,
                 controller: _passwordController,
@@ -132,7 +131,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                 ),
               ),
-              const SizedBox(height: 8),
               Row(
                 children: [
                   // Takes the free space so "Lupa kata sandi?" sits at the

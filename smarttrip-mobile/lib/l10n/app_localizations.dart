@@ -317,7 +317,7 @@ abstract class AppLocalizations {
   /// No description provided for @registerTermsSuffix.
   ///
   /// In id, this message translates to:
-  /// **' SmartTrip Batam.'**
+  /// **' SmartTrip.'**
   String get registerTermsSuffix;
 
   /// No description provided for @registerSubmit.
@@ -1385,7 +1385,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveMapSubtitle.
   ///
   /// In id, this message translates to:
-  /// **'SmartTrip Batam • Hari {day}'**
+  /// **'SmartTrip • Hari {day}'**
   String liveMapSubtitle(int day);
 
   /// No description provided for @liveMapStartDay.

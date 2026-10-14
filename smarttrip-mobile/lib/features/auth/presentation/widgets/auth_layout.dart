@@ -1,5 +1,4 @@
 import 'dart:math' as math;
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -33,20 +32,16 @@ TextStyle authText(double size, FontWeight weight, Color color, {double? height,
 }
 
 /// Shared frame of the login and register screens: the Barelang dusk
-/// panorama, the logo bar with "Lewati", a glass [card] and a [footer].
+/// panorama, the logo bar with "Lewati", a glass [card] and a [footer]. None
+/// of them is fixed: they scroll together as one page.
 ///
-/// It never scrolls. The gap over the panorama plus the card are laid out at
-/// a comfortable width and scaled down together when the screen is too short
-/// or narrow. When the keyboard opens the page keeps its size and slides up
-/// just far enough for the focused field to stay visible (like Android's
-/// adjustPan).
-class AuthScaffold extends StatefulWidget {
-  const AuthScaffold({
-    super.key,
-    required this.card,
-    required this.footer,
-    this.panoramaGap = 128,
-  });
+/// The card is never scaled, so login and register share the same width (the
+/// screen width, up to [_maxCardWidth]); when the page is taller than the
+/// screen it scrolls. When the keyboard opens the page keeps its size and
+/// slides up just far enough for the focused field to stay visible (like Android's
+/// adjustPan), see [_KeyboardLift].
+class AuthScaffold extends StatelessWidget {
+  const AuthScaffold({super.key, required this.card, required this.footer, this.panoramaGap = 80});
 
   final Widget card;
   final Widget footer;
@@ -54,15 +49,77 @@ class AuthScaffold extends StatefulWidget {
   /// Space between the top bar and the card where the panorama shows.
   final double panoramaGap;
 
-  @override
-  State<AuthScaffold> createState() => _AuthScaffoldState();
-}
-
-class _AuthScaffoldState extends State<AuthScaffold> {
   static const _panoramaHeight = 300.0;
-  static const _minCardWidth = 320.0;
   static const _maxCardWidth = 440.0;
 
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final topInset = MediaQuery.paddingOf(context).top;
+
+    return Scaffold(
+      backgroundColor: AuthColors.navy900,
+      resizeToAvoidBottomInset: false,
+      body: _KeyboardLift(
+        child: Stack(
+          children: [
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              height: _panoramaHeight + topInset,
+              // Static, so it is rastered once instead of with every repaint
+              // of the form above it.
+              child: RepaintBoundary(
+                child: SvgPicture.asset(
+                  'assets/images/login_panorama.svg',
+                  fit: BoxFit.cover,
+                  alignment: Alignment.bottomCenter,
+                ),
+              ),
+            ),
+            SafeArea(
+              child: SingleChildScrollView(
+                physics: const ClampingScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _TopBar(skipLabel: l10n.loginBrowseWithoutLogin),
+                    SizedBox(height: panoramaGap),
+                    Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: _maxCardWidth),
+                        child: RepaintBoundary(child: card),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    footer,
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Slides [child] up while the keyboard covers the focused field. Only this
+/// widget rebuilds on focus changes and on every frame of the keyboard
+/// animation; [child] is the same instance each time, so the page under it is
+/// not rebuilt.
+class _KeyboardLift extends StatefulWidget {
+  const _KeyboardLift({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_KeyboardLift> createState() => _KeyboardLiftState();
+}
+
+class _KeyboardLiftState extends State<_KeyboardLift> {
   /// Space kept between the focused text line and the keyboard; it also
   /// covers the field's own bottom padding and border.
   static const _keyboardClearance = 28.0;
@@ -101,67 +158,8 @@ class _AuthScaffoldState extends State<AuthScaffold> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final topInset = MediaQuery.paddingOf(context).top;
     _lift = _liftFor(MediaQuery.viewInsetsOf(context).bottom);
-
-    return Scaffold(
-      backgroundColor: AuthColors.navy900,
-      resizeToAvoidBottomInset: false,
-      body: Transform.translate(
-        offset: Offset(0, -_lift),
-        child: Stack(
-          children: [
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              height: _panoramaHeight + topInset,
-              child: SvgPicture.asset(
-                'assets/images/login_panorama.svg',
-                fit: BoxFit.cover,
-                alignment: Alignment.bottomCenter,
-              ),
-            ),
-            SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _TopBar(skipLabel: l10n.loginBrowseWithoutLogin),
-                    Expanded(
-                      child: LayoutBuilder(
-                        builder: (context, constraints) => Align(
-                          alignment: Alignment.topCenter,
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            alignment: Alignment.topCenter,
-                            child: SizedBox(
-                              width: constraints.maxWidth.clamp(_minCardWidth, _maxCardWidth),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  SizedBox(height: widget.panoramaGap),
-                                  widget.card,
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    widget.footer,
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+    return Transform.translate(offset: Offset(0, -_lift), child: widget.child);
   }
 }
 
@@ -182,14 +180,11 @@ class _TopBar extends StatelessWidget {
           child: SvgPicture.asset('assets/images/logo.svg'),
         ),
         const SizedBox(width: 8),
-        Flexible(
-          child: Text(
-            'SmartTrip Batam',
-            overflow: TextOverflow.ellipsis,
-            style: authText(16, FontWeight.w700, Colors.white),
-          ),
+        // Expanded, not Flexible + Spacer: those two split the free space in
+        // half, leaving the unused part of the text's half after "Lewati".
+        Expanded(
+          child: Text('SmartTrip', overflow: TextOverflow.ellipsis, style: authText(16, FontWeight.w700, Colors.white)),
         ),
-        const Spacer(),
         Material(
           color: Colors.white.withValues(alpha: 0.16),
           shape: StadiumBorder(side: BorderSide(color: Colors.white.withValues(alpha: 0.28))),
@@ -219,12 +214,11 @@ class GlassCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(24),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+      child: RepaintBoundary(
         child: Container(
           padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
           decoration: BoxDecoration(
-            color: AuthColors.navy900.withValues(alpha: 0.78),
+            color: AuthColors.navy900.withValues(alpha: 0.88),
             borderRadius: BorderRadius.circular(24),
             border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
           ),
@@ -287,9 +281,9 @@ class GlassField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     OutlineInputBorder border(Color color, [double width = 1]) => OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: color, width: width),
-        );
+      borderRadius: BorderRadius.circular(14),
+      borderSide: BorderSide(color: color, width: width),
+    );
     final labelText = Text(
       label,
       style: authText(13, FontWeight.w600, Colors.white.withValues(alpha: 0.9), height: 18 / 13),
@@ -330,7 +324,13 @@ class GlassField extends StatelessWidget {
             contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 14),
             prefixIcon: Icon(icon, color: Colors.white.withValues(alpha: 0.8), size: 20),
             suffixIcon: suffix,
-            errorStyle: authText(12, FontWeight.w400, AuthColors.error),
+            // The error line is always reserved (an empty helper line in its
+            // place), so an error showing up never changes the card height.
+            helperText: ' ',
+            helperStyle: authText(12, FontWeight.w400, AuthColors.error, height: 16 / 12),
+            helperMaxLines: 1,
+            errorStyle: authText(12, FontWeight.w400, AuthColors.error, height: 16 / 12),
+            errorMaxLines: 1,
             enabledBorder: border(Colors.white.withValues(alpha: 0.24)),
             disabledBorder: border(Colors.white.withValues(alpha: 0.12)),
             focusedBorder: border(AuthColors.sun400, 1.5),
@@ -383,10 +383,7 @@ class GlassCheckbox extends StatelessWidget {
         onChanged: onChanged == null ? null : (checked) => onChanged!(checked ?? false),
         activeColor: AuthColors.sun400,
         checkColor: AuthColors.navy900,
-        side: BorderSide(
-          color: hasError ? AuthColors.error : Colors.white.withValues(alpha: 0.7),
-          width: 1.5,
-        ),
+        side: BorderSide(color: hasError ? AuthColors.error : Colors.white.withValues(alpha: 0.7), width: 1.5),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
       ),
     );

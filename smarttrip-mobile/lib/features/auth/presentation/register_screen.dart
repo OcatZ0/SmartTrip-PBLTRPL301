@@ -32,10 +32,17 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   bool _obscureConfirmPassword = true;
   bool _agreedToTerms = false;
   bool _showTermsError = false;
-  String _password = '';
+
+  // Fields, not created in build: a recognizer has to be disposed.
+  late final _termsRecognizer = TapGestureRecognizer()
+    ..onTap = () => _showInfoDialog(AppLocalizations.of(context).registerTerms, 'Syarat & Ketentuan SmartTrip.');
+  late final _privacyRecognizer = TapGestureRecognizer()
+    ..onTap = () => _showInfoDialog(AppLocalizations.of(context).registerPrivacy, 'Kebijakan Privasi SmartTrip.');
 
   @override
   void dispose() {
+    _termsRecognizer.dispose();
+    _privacyRecognizer.dispose();
     _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
@@ -178,7 +185,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 onChanged: (_) => _clearServerError(),
                 validator: (value) => (value?.trim() ?? '').isEmpty ? l10n.validationNameRequired : null,
               ),
-              const SizedBox(height: 14),
               GlassField(
                 label: l10n.registerEmailLabel,
                 controller: _emailController,
@@ -197,7 +203,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   return null;
                 },
               ),
-              const SizedBox(height: 14),
               GlassField(
                 label: l10n.registerPasswordLabel,
                 labelTrailing: Row(
@@ -219,10 +224,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 autofillHints: const [AutofillHints.newPassword],
                 enabled: !isLoading,
                 forceErrorText: validationFailure?.firstError('password'),
-                onChanged: (value) {
-                  setState(() => _password = value);
-                  _clearServerError();
-                },
+                onChanged: (_) => _clearServerError(),
                 validator: (value) {
                   if (value == null || value.isEmpty) return l10n.validationPasswordRequired;
                   if (value.length < 8) return l10n.validationPasswordMinLength;
@@ -234,8 +236,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                 ),
               ),
-              const SizedBox(height: 10),
-              PasswordStrengthMeter(password: _password),
+              // Only the meter rebuilds while typing, not the whole page.
+              ValueListenableBuilder<TextEditingValue>(
+                valueListenable: _passwordController,
+                builder: (context, value, _) => PasswordStrengthMeter(password: value.text),
+              ),
               const SizedBox(height: 14),
               GlassField(
                 label: l10n.registerConfirmPasswordLabel,
@@ -259,7 +264,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
                 ),
               ),
-              const SizedBox(height: 14),
               InkWell(
                 borderRadius: BorderRadius.circular(8),
                 onTap: isLoading
@@ -294,21 +298,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             TextSpan(
                               text: l10n.registerTerms,
                               style: linkStyle,
-                              recognizer: TapGestureRecognizer()
-                                ..onTap = () => _showInfoDialog(
-                                      l10n.registerTerms,
-                                      'Syarat & Ketentuan SmartTrip Batam.',
-                                    ),
+                              recognizer: _termsRecognizer,
                             ),
                             TextSpan(text: l10n.registerTermsAnd),
                             TextSpan(
                               text: l10n.registerPrivacy,
                               style: linkStyle,
-                              recognizer: TapGestureRecognizer()
-                                ..onTap = () => _showInfoDialog(
-                                      l10n.registerPrivacy,
-                                      'Kebijakan Privasi SmartTrip Batam.',
-                                    ),
+                              recognizer: _privacyRecognizer,
                             ),
                             TextSpan(text: l10n.registerTermsSuffix),
                           ],
@@ -318,13 +314,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   ],
                 ),
               ),
-              if (_showTermsError) ...[
-                const SizedBox(height: 6),
-                Padding(
+              const SizedBox(height: 6),
+              // Space kept even when hidden, so the card height never changes.
+              Visibility.maintain(
+                visible: _showTermsError,
+                child: Padding(
                   padding: const EdgeInsets.only(left: 30),
                   child: Text(l10n.validationTermsRequired, style: authText(12, FontWeight.w400, AuthColors.error)),
                 ),
-              ],
+              ),
               const SizedBox(height: 18),
               AuthSubmitButton(label: l10n.registerSubmit, isLoading: isLoading, onPressed: _submit),
             ],

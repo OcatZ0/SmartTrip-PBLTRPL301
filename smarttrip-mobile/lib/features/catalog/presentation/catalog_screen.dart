@@ -20,6 +20,7 @@ import 'catalog_controller.dart';
 import 'widgets/catalog_style.dart';
 import 'widgets/featured_place_card.dart';
 import 'widgets/place_list_tile.dart';
+import 'widgets/place_open_container.dart';
 
 class CatalogScreen extends ConsumerStatefulWidget {
   const CatalogScreen({super.key});
@@ -45,7 +46,6 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
   }
 
   void _onSearchChanged(String value) {
-    setState(() {});
     _debounce?.cancel();
     _debounce = Timer(_searchDebounce, () => ref.read(catalogControllerProvider.notifier).search(value));
   }
@@ -53,7 +53,6 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
   void _clearSearch() {
     _debounce?.cancel();
     _searchController.clear();
-    setState(() {});
     ref.read(catalogControllerProvider.notifier).search('');
   }
 
@@ -167,12 +166,16 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
                         separatorBuilder: (_, __) => const SizedBox(width: 12),
                         itemBuilder: (_, index) {
                           final place = featured[index];
-                          return FeaturedPlaceCard(
+                          return PlaceOpenContainer(
                             key: ValueKey(place.placesId),
-                            place: place,
-                            isSaved: savedIds.contains(place.placesId),
-                            onToggleSaved: () => _toggleSaved(place.placesId),
-                            onTap: () => context.push(AppRoutes.place(place.placesId)),
+                            placesId: place.placesId,
+                            radius: 20,
+                            builder: (open) => FeaturedPlaceCard(
+                              place: place,
+                              isSaved: savedIds.contains(place.placesId),
+                              onToggleSaved: () => _toggleSaved(place.placesId),
+                              onTap: open,
+                            ),
                           );
                         },
                       ),
@@ -254,12 +257,22 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
           separatorBuilder: (_, __) => const SizedBox(height: 10),
           itemBuilder: (context, index) {
             final place = places[index];
-            return PlaceListTile(
+            // The shadow sits outside the container, which clips its closed
+            // child to the card shape.
+            return DecoratedBox(
               key: ValueKey(place.placesId),
-              place: place,
-              isSaved: savedIds.contains(place.placesId),
-              onToggleSaved: () => _toggleSaved(place.placesId),
-              onTap: () => context.push(AppRoutes.place(place.placesId)),
+              decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), boxShadow: CatalogColors.cardShadow),
+              child: PlaceOpenContainer(
+                placesId: place.placesId,
+                radius: 16,
+                closedColor: Colors.white,
+                builder: (open) => PlaceListTile(
+                  place: place,
+                  isSaved: savedIds.contains(place.placesId),
+                  onToggleSaved: () => _toggleSaved(place.placesId),
+                  onTap: open,
+                ),
+              ),
             );
           },
         ),
@@ -428,12 +441,18 @@ class _SearchField extends StatelessWidget {
               ),
             ),
           ),
-          if (controller.text.isNotEmpty)
-            IconButton(
-              tooltip: l10n.catalogClearSearch,
-              onPressed: onClear,
-              icon: const Icon(Icons.close, size: 18, color: CatalogColors.inkMuted),
-            ),
+          // Listens to the field itself, so typing does not rebuild the
+          // whole catalog just to show or hide this button.
+          ValueListenableBuilder<TextEditingValue>(
+            valueListenable: controller,
+            builder: (context, value, _) => value.text.isEmpty
+                ? const SizedBox.shrink()
+                : IconButton(
+                    tooltip: l10n.catalogClearSearch,
+                    onPressed: onClear,
+                    icon: const Icon(Icons.close, size: 18, color: CatalogColors.inkMuted),
+                  ),
+          ),
         ],
       ),
     );

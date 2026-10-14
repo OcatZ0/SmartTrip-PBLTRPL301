@@ -118,7 +118,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get registerPrivacy => 'Kebijakan Privasi';
 
   @override
-  String get registerTermsSuffix => ' SmartTrip Batam.';
+  String get registerTermsSuffix => ' SmartTrip.';
 
   @override
   String get registerSubmit => 'Daftar Akun';
@@ -712,7 +712,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String liveMapSubtitle(int day) {
-    return 'SmartTrip Batam • Hari $day';
+    return 'SmartTrip • Hari $day';
   }
 
   @override

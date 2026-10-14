@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../features/auth/presentation/forgot_password_screen.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/register_screen.dart';
+import '../../features/auth/presentation/widgets/auth_layout.dart';
 import '../../features/catalog/presentation/catalog_screen.dart';
 import '../../features/catalog/presentation/place_detail_screen.dart';
 import '../../features/live_trip/presentation/live_map_screen.dart';
@@ -22,6 +23,7 @@ import '../../features/share_trip_readonly/share_trip_readonly_screen.dart';
 import '../../features/trip_management/trip_tersimpan_screen.dart';
 import '../auth/session_controller.dart';
 import 'app_routes.dart';
+import 'page_transitions.dart';
 
 class _SessionRefreshListenable extends ChangeNotifier {
   void refresh() => notifyListeners();
@@ -31,6 +33,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   final refreshListenable = _SessionRefreshListenable();
   ref.onDispose(refreshListenable.dispose);
   ref.listen(sessionControllerProvider, (_, __) => refreshListenable.refresh());
+  ref.listen(splashFinishedProvider, (_, __) => refreshListenable.refresh());
 
   return GoRouter(
     initialLocation: AppRoutes.splash,
@@ -41,6 +44,11 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       if (session.isLoading) {
         return location == AppRoutes.splash ? null : AppRoutes.splash;
+      }
+
+      // Let the launch animation finish before leaving the splash.
+      if (location == AppRoutes.splash && !ref.read(splashFinishedProvider)) {
+        return null;
       }
 
       final isLoggedIn = session.valueOrNull != null;
@@ -63,7 +71,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRoutes.catalog,
-        builder: (context, state) => const CatalogScreen(),
+        pageBuilder: (context, state) =>
+            PageTransitions.fadeThrough(state, const CatalogScreen()),
       ),
       GoRoute(
         path: '/places/:placesId',
@@ -73,7 +82,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRoutes.trips,
-        builder: (context, state) => const TripTersimpanScreen(),
+        pageBuilder: (context, state) =>
+            PageTransitions.fadeThrough(state, const TripTersimpanScreen()),
       ),
       GoRoute(
         path: AppRoutes.review,
@@ -85,25 +95,39 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRoutes.login,
-        builder: (context, state) => const LoginScreen(),
+        pageBuilder: (context, state) => PageTransitions.softFade(
+          state,
+          const LoginScreen(),
+          fillColor: AuthColors.navy900,
+        ),
       ),
       GoRoute(
         path: AppRoutes.register,
-        builder: (context, state) => const RegisterScreen(),
+        pageBuilder: (context, state) => PageTransitions.sharedAxis(
+          state,
+          const RegisterScreen(),
+          fillColor: AuthColors.navy900,
+        ),
       ),
       GoRoute(
         path: AppRoutes.forgotPassword,
-        builder: (context, state) => const ForgotPasswordScreen(),
+        pageBuilder: (context, state) => PageTransitions.sharedAxis(
+          state,
+          const ForgotPasswordScreen(),
+          fillColor: AuthColors.navy900,
+        ),
       ),
       GoRoute(
         path: AppRoutes.onboarding,
-        builder: (context, state) => const OnboardingScreen(),
+        pageBuilder: (context, state) =>
+            PageTransitions.sharedAxis(state, const OnboardingScreen()),
       ),
 
       // Declared before '/trips/:tripsId' so "new" is not read as an id.
       GoRoute(
         path: AppRoutes.newTrip,
-        builder: (context, state) => const TripSetupScreen(),
+        pageBuilder: (context, state) =>
+            PageTransitions.sharedAxis(state, const TripSetupScreen()),
       ),
       GoRoute(
         path: '/trips/:tripsId',
@@ -111,23 +135,31 @@ final routerProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(
             path: 'wishlist',
-            builder: (context, state) =>
-                WishlistStepScreen(tripsId: _tripsId(state)),
+            pageBuilder: (context, state) => PageTransitions.sharedAxis(
+              state,
+              WishlistStepScreen(tripsId: _tripsId(state)),
+            ),
           ),
           GoRoute(
             path: 'preferences',
-            builder: (context, state) =>
-                TripPreferencesScreen(tripsId: _tripsId(state)),
+            pageBuilder: (context, state) => PageTransitions.sharedAxis(
+              state,
+              TripPreferencesScreen(tripsId: _tripsId(state)),
+            ),
           ),
           GoRoute(
             path: 'hotel',
-            builder: (context, state) =>
-                TripHotelScreen(tripsId: _tripsId(state)),
+            pageBuilder: (context, state) => PageTransitions.sharedAxis(
+              state,
+              TripHotelScreen(tripsId: _tripsId(state)),
+            ),
           ),
           GoRoute(
             path: 'generate',
-            builder: (context, state) =>
-                GenerateItineraryScreen(tripsId: _tripsId(state)),
+            pageBuilder: (context, state) => PageTransitions.sharedAxis(
+              state,
+              GenerateItineraryScreen(tripsId: _tripsId(state)),
+            ),
           ),
           GoRoute(
             path: 'days/:dayNumber/map',
@@ -140,7 +172,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRoutes.profile,
-        builder: (context, state) => const ProfileScreen(),
+        pageBuilder: (context, state) =>
+            PageTransitions.fadeThrough(state, const ProfileScreen()),
       ),
     ],
   );

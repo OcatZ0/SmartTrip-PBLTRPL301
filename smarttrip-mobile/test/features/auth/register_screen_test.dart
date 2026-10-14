@@ -6,6 +6,7 @@ import 'package:smarttrip_mobile/core/api/providers.dart';
 import 'package:smarttrip_mobile/core/error/api_failure.dart';
 import 'package:smarttrip_mobile/features/auth/data/auth_repository.dart';
 import 'package:smarttrip_mobile/features/auth/data/google_auth_service.dart';
+import 'package:smarttrip_mobile/features/auth/presentation/widgets/auth_layout.dart';
 
 import '../../helpers/test_doubles.dart';
 
@@ -211,7 +212,7 @@ void main() {
     );
   });
 
-  group('layout fits without scrolling', () {
+  group('layout', () {
     const screens = {
       'small phone 320x568': Size(320, 568),
       'medium phone 412x915': Size(412, 915),
@@ -219,18 +220,19 @@ void main() {
     };
 
     for (final entry in screens.entries) {
-      testWidgets('${entry.key}: everything is on screen and nothing scrolls', (tester) async {
+      testWidgets('${entry.key}: the card keeps the login card width and the footer is reachable', (tester) async {
         await _pumpApp(tester, tokenStorage: tokenStorage, repository: repository);
         tester.view.physicalSize = entry.value * 2;
         await tester.pumpAndSettle();
 
         expect(tester.takeException(), isNull);
-        expect(find.byWidgetPredicate((w) => w is ScrollView || w is SingleChildScrollView), findsNothing);
-        for (final text in ['Buat Akun Baru', _submit, 'Sudah punya akun?']) {
-          final rect = tester.getRect(find.text(text));
-          expect(rect.top, greaterThanOrEqualTo(0), reason: text);
-          expect(rect.bottom, lessThanOrEqualTo(entry.value.height), reason: text);
-        }
+        // Never scaled, so it matches the login card; a tall card scrolls.
+        final expectedWidth = (entry.value.width - 32).clamp(0, 440).toDouble();
+        expect(tester.getSize(find.byType(GlassCard)).width, expectedWidth);
+        // The footer sits under the card and scrolls with it.
+        await tester.ensureVisible(find.text('Sudah punya akun?'));
+        await tester.pumpAndSettle();
+        expect(tester.getRect(find.text('Sudah punya akun?')).bottom, lessThanOrEqualTo(entry.value.height));
       });
     }
 

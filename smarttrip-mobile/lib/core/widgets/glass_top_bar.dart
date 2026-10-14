@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -25,11 +23,10 @@ class GlassTopBar extends ConsumerWidget {
     final userName = ref.watch(sessionControllerProvider).valueOrNull?.name;
 
     return ClipRect(
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+      child: RepaintBoundary(
         child: DecoratedBox(
           decoration: BoxDecoration(
-            color: _navy.withValues(alpha: 0.72),
+            color: _navy.withValues(alpha: 0.92),
             border: Border(bottom: BorderSide(color: Colors.white.withValues(alpha: 0.12))),
           ),
           child: SafeArea(

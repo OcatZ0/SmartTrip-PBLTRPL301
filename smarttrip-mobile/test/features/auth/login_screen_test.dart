@@ -8,6 +8,7 @@ import 'package:smarttrip_mobile/core/api/providers.dart';
 import 'package:smarttrip_mobile/core/error/api_failure.dart';
 import 'package:smarttrip_mobile/features/auth/data/auth_repository.dart';
 import 'package:smarttrip_mobile/features/auth/data/google_auth_service.dart';
+import 'package:smarttrip_mobile/features/auth/presentation/widgets/auth_layout.dart';
 
 import '../../helpers/catalog_doubles.dart';
 import '../../helpers/test_doubles.dart';
@@ -298,28 +299,33 @@ void main() {
     expect(adapter.requests.single.path, '/user');
   });
 
-  group('layout fits without scrolling', () {
-    // Logical sizes from a small phone up to a tablet.
+  group('layout', () {
+    // Logical sizes from a small phone up to a tablet, with whether the card
+    // fits without scrolling.
     const screens = {
-      'small phone 320x568': Size(320, 568),
-      'medium phone 412x915': Size(412, 915),
-      'tablet 800x1280': Size(800, 1280),
+      'small phone 320x568': (Size(320, 568), false),
+      'phone 360x800': (Size(360, 800), true),
+      'medium phone 412x915': (Size(412, 915), true),
+      'tablet 800x1280': (Size(800, 1280), true),
     };
 
     for (final entry in screens.entries) {
-      testWidgets('${entry.key}: everything is on screen and nothing scrolls', (tester) async {
+      final (size, fits) = entry.value;
+      testWidgets('${entry.key}: the card keeps its full width${fits ? ' and nothing scrolls' : ''}', (tester) async {
         await _pumpApp(tester, tokenStorage: tokenStorage, repository: repository);
-        tester.view.physicalSize = entry.value * 2;
+        tester.view.physicalSize = size * 2;
         await tester.pumpAndSettle();
 
         expect(tester.takeException(), isNull);
-        // Text fields keep their own internal Scrollable; the page itself
-        // must not be a scroll view.
-        expect(find.byWidgetPredicate((w) => w is ScrollView || w is SingleChildScrollView), findsNothing);
-        for (final text in ['Selamat Datang Kembali', 'Masuk', 'Daftar sekarang']) {
-          final rect = tester.getRect(find.text(text).last);
-          expect(rect.top, greaterThanOrEqualTo(0), reason: text);
-          expect(rect.bottom, lessThanOrEqualTo(entry.value.height), reason: text);
+        // Never scaled: the screen width minus the 16px side padding, up to
+        // 440 (the same width as the register card).
+        final expectedWidth = (size.width - 32).clamp(0, 440).toDouble();
+        expect(tester.getSize(find.byType(GlassCard)).width, expectedWidth);
+        if (fits) {
+          final scrollable = tester.state<ScrollableState>(
+            find.descendant(of: find.byType(SingleChildScrollView), matching: find.byType(Scrollable)).first,
+          );
+          expect(scrollable.position.maxScrollExtent, 0);
         }
       });
     }
@@ -350,7 +356,6 @@ void main() {
       final screenHeight = tester.view.physicalSize.height / tester.view.devicePixelRatio;
       expect(tester.getSize(find.text('Selamat Datang Kembali')), titleSize);
       expect(tester.getRect(password).bottom, lessThanOrEqualTo(screenHeight - keyboardHeight));
-      expect(find.byWidgetPredicate((w) => w is ScrollView || w is SingleChildScrollView), findsNothing);
     });
 
     testWidgets('"Ingat saya" sits at the left edge and "Lupa kata sandi?" at the right edge', (tester) async {

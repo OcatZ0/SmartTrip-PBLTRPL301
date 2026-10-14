@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../data/catalog_models.dart';
@@ -31,11 +33,36 @@ class CatalogPhoto extends StatelessWidget {
     final url = place.photoUrl;
     if (url == null) return placeholder;
 
-    return Image.network(
-      url,
-      fit: BoxFit.cover,
-      errorBuilder: (_, __, ___) => placeholder,
-      loadingBuilder: (_, child, progress) => progress == null ? child : placeholder,
+    return network(url, placeholder: placeholder);
+  }
+
+  /// A place photo decoded at about the size it is shown, not at full
+  /// resolution (source photos are often 2000-4000px wide, which makes the
+  /// list stutter while they decode). The placeholder shows until the first
+  /// frame, without a rebuild for every downloaded chunk.
+  static Widget network(String url, {required Widget placeholder}) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final pixelRatio = MediaQuery.devicePixelRatioOf(context);
+        // BoxFit.cover crops: width * 1.8 leaves room for landscape photos up
+        // to about 16:9 in a box taller than the photo's own shape.
+        final width = constraints.hasBoundedWidth ? constraints.maxWidth : null;
+        final height = constraints.hasBoundedHeight ? constraints.maxHeight : null;
+        final target = [if (width != null) width, if (height != null) height * 1.8];
+        final cacheWidth = target.isEmpty ? null : (target.reduce(math.max) * pixelRatio).round();
+
+        return Image.network(
+          url,
+          fit: BoxFit.cover,
+          width: double.infinity,
+          height: double.infinity,
+          cacheWidth: cacheWidth,
+          gaplessPlayback: true,
+          errorBuilder: (_, __, ___) => placeholder,
+          frameBuilder: (_, child, frame, wasSynchronouslyLoaded) =>
+              wasSynchronouslyLoaded || frame != null ? child : placeholder,
+        );
+      },
     );
   }
 

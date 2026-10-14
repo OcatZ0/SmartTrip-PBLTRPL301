@@ -117,7 +117,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get registerPrivacy => 'Privacy Policy';
 
   @override
-  String get registerTermsSuffix => ' of SmartTrip Batam.';
+  String get registerTermsSuffix => ' of SmartTrip.';
 
   @override
   String get registerSubmit => 'Register Account';
@@ -735,7 +735,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String liveMapSubtitle(int day) {
-    return 'SmartTrip Batam • Day $day';
+    return 'SmartTrip • Day $day';
   }
 
   @override

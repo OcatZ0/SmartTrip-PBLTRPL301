@@ -62,7 +62,7 @@ class ScreenHeader extends ConsumerWidget implements PreferredSizeWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'SmartTrip Batam',
+                            'SmartTrip',
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontSize: 18,
                               fontWeight: FontWeight.w700,

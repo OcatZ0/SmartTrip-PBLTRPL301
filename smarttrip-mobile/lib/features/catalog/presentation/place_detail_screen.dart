@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -162,12 +160,7 @@ class _HeroState extends State<_Hero> {
     final placeholder = CatalogPhoto(place: detail.summary, iconSize: 96, iconAlignment: const Alignment(0, -0.35));
     final belowBar = MediaQuery.paddingOf(context).top + GlassTopBar.height + 8;
 
-    Widget image(String url) => Image.network(
-      url,
-      fit: BoxFit.cover,
-      errorBuilder: (_, __, ___) => placeholder,
-      loadingBuilder: (_, child, progress) => progress == null ? child : placeholder,
-    );
+    Widget image(String url) => CatalogPhoto.network(url, placeholder: placeholder);
 
     final heroUrl = detail.heroPhotoUrl;
     final current = photos.isEmpty ? null : photos[_page.clamp(0, photos.length - 1)];
@@ -504,42 +497,45 @@ class _LocationCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            SizedBox(
-              height: 140,
-              child: FlutterMap(
-                options: MapOptions(
-                  initialCenter: point,
-                  initialZoom: 15,
-                  interactionOptions: const InteractionOptions(flags: InteractiveFlag.none),
-                ),
-                children: [
-                  osmTileLayer(),
-                  MarkerLayer(
-                    markers: [
-                      Marker(
-                        point: point,
-                        width: 40,
-                        height: 40,
-                        alignment: Alignment.topCenter,
-                        child: const Icon(Icons.location_on, size: 40, color: CatalogColors.sun400),
-                      ),
-                    ],
+            // The map tiles repaint on their own layer, not with the page scroll.
+            RepaintBoundary(
+              child: SizedBox(
+                height: 140,
+                child: FlutterMap(
+                  options: MapOptions(
+                    initialCenter: point,
+                    initialZoom: 15,
+                    interactionOptions: const InteractionOptions(flags: InteractiveFlag.none),
                   ),
-                  // flutter_map's SimpleAttributionWidget overflows a card
-                  // this narrow; OSM only asks that the credit stays visible.
-                  Align(
-                    alignment: Alignment.bottomRight,
-                    child: Container(
-                      margin: const EdgeInsets.all(4),
-                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                      color: Colors.white.withValues(alpha: 0.8),
-                      child: Text(
-                        '© OpenStreetMap contributors',
-                        style: catalogText(9, FontWeight.w500, CatalogColors.ink),
+                  children: [
+                    osmTileLayer(),
+                    MarkerLayer(
+                      markers: [
+                        Marker(
+                          point: point,
+                          width: 40,
+                          height: 40,
+                          alignment: Alignment.topCenter,
+                          child: const Icon(Icons.location_on, size: 40, color: CatalogColors.sun400),
+                        ),
+                      ],
+                    ),
+                    // flutter_map's SimpleAttributionWidget overflows a card
+                    // this narrow; OSM only asks that the credit stays visible.
+                    Align(
+                      alignment: Alignment.bottomRight,
+                      child: Container(
+                        margin: const EdgeInsets.all(4),
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                        color: Colors.white.withValues(alpha: 0.8),
+                        child: Text(
+                          '© OpenStreetMap contributors',
+                          style: catalogText(9, FontWeight.w500, CatalogColors.ink),
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
             Padding(
@@ -671,12 +667,11 @@ class _ActionBar extends ConsumerWidget {
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(22),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+      child: RepaintBoundary(
         child: Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: CatalogColors.navy900.withValues(alpha: 0.82),
+            color: CatalogColors.navy900.withValues(alpha: 0.94),
             borderRadius: BorderRadius.circular(22),
             border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
           ),

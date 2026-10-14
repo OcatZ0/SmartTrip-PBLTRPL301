@@ -27,7 +27,7 @@ class ReviewController extends Controller
 
         if ($existing) {
             return response()->json([
-                'message' => 'Kamu sudah pernah mereview tempat ini. Edit review yang sudah ada.',
+                'message' => 'Kamu sudah pernah memberi ulasan untuk tempat ini. Ubah ulasan yang sudah ada.',
                 'errors' => ['place_reviews_id' => [$existing->place_reviews_id]],
             ], 422);
         }

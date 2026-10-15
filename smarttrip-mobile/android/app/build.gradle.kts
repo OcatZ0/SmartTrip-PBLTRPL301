@@ -31,6 +31,17 @@ android {
         versionName = flutter.versionName
     }
 
+    // A shared debug keystore in the repo gives every developer's build the same SHA-1,
+    // so Google Sign-In works without registering each laptop's fingerprint.
+    signingConfigs {
+        getByName("debug") {
+            storeFile = file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
     buildTypes {
         release {
             // TODO: Add your own signing config for the release build.

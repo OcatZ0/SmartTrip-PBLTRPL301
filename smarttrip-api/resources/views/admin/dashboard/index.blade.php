@@ -1,5 +1,5 @@
 @php
-    $idNumber = fn ($n) => number_format((float) $n, 0, ',', '.');
+    $idNumber = fn ($number) => number_format((float) $number, 0, ',', '.');
     $typeLabel = fn ($type) => match ($type) { 'culinary' => 'Kuliner', 'lodging' => 'Hotel', default => 'Wisata' };
 
     $kpis = [
@@ -16,9 +16,9 @@
             'total' => $pendingCandidates,
             'action' => 'Review',
             'tag' => 'bg-[#dceaf6] text-[#16476d]',
-            'meta' => fn ($c) => ($c->search_area ?: '-') . ' · dari Geoapify',
-            'chip' => fn ($c) => $typeLabel($c->type),
-            'url' => fn ($c) => route('admin.candidates.index'),
+            'meta' => fn ($candidate) => ($candidate->search_area ?: '-') . ' · dari Geoapify',
+            'chip' => fn ($candidate) => $typeLabel($candidate->type),
+            'url' => fn ($candidate) => route('admin.candidates.index'),
             'all' => route('admin.candidates.index'),
         ],
         [
@@ -27,9 +27,9 @@
             'total' => $placesMissingCost,
             'action' => 'Lengkapi',
             'tag' => 'bg-[#fff4df] text-[#7a4b00]',
-            'meta' => fn ($p) => ($p->kecamatan ?: '-') . ' · ' . $typeLabel($p->type),
-            'chip' => fn ($p) => match ($p->type) { 'culinary' => 'Biaya makan', 'lodging' => 'Harga kamar', default => 'Tiket masuk' },
-            'url' => fn ($p) => route('admin.places.edit', $p),
+            'meta' => fn ($place) => ($place->kecamatan ?: '-') . ' · ' . $typeLabel($place->type),
+            'chip' => fn ($place) => match ($place->type) { 'culinary' => 'Biaya makan', 'lodging' => 'Harga kamar', default => 'Tiket masuk' },
+            'url' => fn ($place) => route('admin.places.edit', $place),
             'all' => route('admin.places.index'),
         ],
         [
@@ -38,9 +38,9 @@
             'total' => $placesTagsNotReviewed,
             'action' => 'Cek tag',
             'tag' => 'bg-[#eef2f8] text-[#14212f]',
-            'meta' => fn ($p) => 'Usulan: ' . ($p->categories->pluck('name_id')->join(', ') ?: '-'),
-            'chip' => fn ($p) => $p->categories->count() . ' tag',
-            'url' => fn ($p) => route('admin.places.edit', $p),
+            'meta' => fn ($place) => 'Usulan: ' . ($place->categories->pluck('name_id')->join(', ') ?: '-'),
+            'chip' => fn ($place) => $place->categories->count() . ' tag',
+            'url' => fn ($place) => route('admin.places.edit', $place),
             'all' => route('admin.places.index'),
         ],
     ];

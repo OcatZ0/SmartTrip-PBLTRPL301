@@ -1,7 +1,7 @@
 @props(['title', 'subtitle' => null, 'backUrl' => null, 'backLabel' => null])
 @php
     $subtitleItems = collect(is_array($subtitle) ? $subtitle : [$subtitle])->filter(fn ($item) => filled((string) $item));
-    $cables = collect([640, 960])->flatMap(fn ($x) => collect(range(1, 7))->map(fn ($k) => sprintf('M%d %dL%d 168M%d %dL%d 168', $x, 58 + $k * 4, $x - $k * 22, $x, 58 + $k * 4, $x + $k * 22)))->join('');
+    $cables = collect([640, 960])->flatMap(fn ($pylonX) => collect(range(1, 7))->map(fn ($cable) => sprintf('M%d %dL%d 168M%d %dL%d 168', $pylonX, 58 + $cable * 4, $pylonX - $cable * 22, $pylonX, 58 + $cable * 4, $pylonX + $cable * 22)))->join('');
 @endphp
 {{-- Plain CSS so the topbar renders the same on the Tailwind dashboard and the Bootstrap pages. --}}
 <style>

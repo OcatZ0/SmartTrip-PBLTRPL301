@@ -96,12 +96,12 @@ class PlaceCandidateReviewService
         PlaceCandidate::where('status', 'pending')
             ->orderBy('place_candidates_id')
             ->each(function (PlaceCandidate $candidate) use (&$rejected) {
-                [$id, $name, $lat, $lng] = [
+                [$externalPlaceId, $name, $lat, $lng] = [
                     $candidate->external_place_id, $candidate->name, (float) $candidate->lat, (float) $candidate->lng,
                 ];
 
-                if ($this->duplicates->findPlace($id, $name, $lat, $lng) === null
-                    && $this->duplicates->findCandidate($id, $name, $lat, $lng, $candidate->place_candidates_id) === null) {
+                if ($this->duplicates->findPlace($externalPlaceId, $name, $lat, $lng) === null
+                    && $this->duplicates->findCandidate($externalPlaceId, $name, $lat, $lng, $candidate->place_candidates_id) === null) {
                     return;
                 }
 
@@ -116,8 +116,8 @@ class PlaceCandidateReviewService
     {
         try {
             $this->enrichment->enrich($place);
-        } catch (RuntimeException $e) {
-            Log::warning("Gagal enrichment Gemini buat place {$place->places_id}: {$e->getMessage()}");
+        } catch (RuntimeException $exception) {
+            Log::warning("Gagal enrichment Gemini buat place {$place->places_id}: {$exception->getMessage()}");
         }
     }
 }

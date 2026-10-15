@@ -67,8 +67,8 @@ class PlaceDiscoveryService
                     $result = $this->discoverOne($area, $circle, $type, $categories);
                     $inserted += $result['inserted'];
                     $skipped += $result['skipped_existing'];
-                } catch (RuntimeException $e) {
-                    $failed[] = "{$area} x {$type}: {$e->getMessage()}";
+                } catch (RuntimeException $exception) {
+                    $failed[] = "{$area} x {$type}: {$exception->getMessage()}";
                 }
             }
         }
@@ -125,9 +125,9 @@ class PlaceDiscoveryService
      */
     private function alreadyKnown(array $result): bool
     {
-        [$id, $name, $lat, $lng] = [$result['external_place_id'], $result['name'], $result['lat'], $result['lng']];
+        [$externalPlaceId, $name, $lat, $lng] = [$result['external_place_id'], $result['name'], $result['lat'], $result['lng']];
 
-        return $this->duplicates->findPlace($id, $name, $lat, $lng) !== null
-            || $this->duplicates->findCandidate($id, $name, $lat, $lng) !== null;
+        return $this->duplicates->findPlace($externalPlaceId, $name, $lat, $lng) !== null
+            || $this->duplicates->findCandidate($externalPlaceId, $name, $lat, $lng) !== null;
     }
 }

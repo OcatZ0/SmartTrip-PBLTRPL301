@@ -152,12 +152,12 @@ class GeoapifyPlacesClient
 
         try {
             $response = Http::timeout(self::TIMEOUT_SECONDS)->get($url, [...$query, 'apiKey' => $apiKey]);
-        } catch (ConnectionException $e) {
+        } catch (ConnectionException $exception) {
             // cURL errors quote the full URL; keep the key out of logs and
             // the admin flash message.
-            $message = $apiKey === '' ? $e->getMessage() : str_replace($apiKey, '***', $e->getMessage());
+            $message = $apiKey === '' ? $exception->getMessage() : str_replace($apiKey, '***', $exception->getMessage());
 
-            throw new RuntimeException("{$label} tidak bisa dihubungi: {$message}", 0, $e);
+            throw new RuntimeException("{$label} tidak bisa dihubungi: {$message}", 0, $exception);
         }
 
         if ($response->failed()) {

@@ -59,8 +59,8 @@ class PlacePhotoStore
             $response = Http::timeout(60)
                 ->withHeaders(['User-Agent' => OpenverseClient::USER_AGENT])
                 ->get($image['url']);
-        } catch (ConnectionException $e) {
-            throw new RuntimeException('Foto Openverse tidak bisa diunduh: '.$e->getMessage(), 0, $e);
+        } catch (ConnectionException $exception) {
+            throw new RuntimeException('Foto Openverse tidak bisa diunduh: '.$exception->getMessage(), 0, $exception);
         }
 
         if ($response->status() === 429) {
@@ -101,8 +101,8 @@ class PlacePhotoStore
                     'on_redirect' => fn ($request, $response, $uri) => $this->assertPublicUrl((string) $uri),
                 ]])
                 ->get($imageUrl);
-        } catch (ConnectionException $e) {
-            throw new RuntimeException('Gambar tidak bisa diunduh dari alamat itu. Pastikan alamatnya mengarah langsung ke file gambar.', 0, $e);
+        } catch (ConnectionException $exception) {
+            throw new RuntimeException('Gambar tidak bisa diunduh dari alamat itu. Pastikan alamatnya mengarah langsung ke file gambar.', 0, $exception);
         }
 
         if ($response->failed()) {
@@ -222,8 +222,8 @@ class PlacePhotoStore
             throw new RuntimeException('Alamat gambar tidak ditemukan. Periksa lagi tautannya.');
         }
 
-        foreach ($ips as $ip) {
-            if (! filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
+        foreach ($ips as $address) {
+            if (! filter_var($address, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
                 throw new RuntimeException('Alamat gambar harus dari internet, bukan jaringan lokal.');
             }
         }

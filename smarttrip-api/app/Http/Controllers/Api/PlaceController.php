@@ -43,7 +43,7 @@ class PlaceController extends Controller
             })
             ->when($request->filled('category'), function ($query) use ($request) {
                 $slug = $request->string('category')->trim();
-                $query->whereHas('categories', fn ($q) => $q->where('slug', $slug));
+                $query->whereHas('categories', fn ($categoryQuery) => $categoryQuery->where('slug', $slug));
             })
             ->when($request->filled('type'), fn ($query) => $query->where('type', $request->string('type')->trim()))
             ->when($request->filled('kecamatan'), function ($query) use ($request) {
@@ -130,7 +130,7 @@ class PlaceController extends Controller
     {
         $place->loadAvg('reviews', 'rating')
             ->loadCount('reviews')
-            ->load(['categories', 'photos', 'reviews' => fn ($q) => $q->with('user:users_id,name')->latest()]);
+            ->load(['categories', 'photos', 'reviews' => fn ($reviewQuery) => $reviewQuery->with('user:users_id,name')->latest()]);
 
         return new PlaceDetailResource($place);
     }

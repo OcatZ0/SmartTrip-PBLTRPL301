@@ -31,11 +31,11 @@ class SwapCandidateFinder
             ->get();
 
         $centroid = $otherStops->isNotEmpty()
-            ? KMeans::centroid($otherStops->map(fn (ItineraryItem $i) => $i->coordinates())->all())
+            ? KMeans::centroid($otherStops->map(fn (ItineraryItem $otherStop) => $otherStop->coordinates())->all())
             : $start;
 
         $usedElsewhereInTrip = ItineraryItem::query()
-            ->whereHas('day', fn ($q) => $q->where('trips_id', $trip->trips_id))
+            ->whereHas('day', fn ($dayQuery) => $dayQuery->where('trips_id', $trip->trips_id))
             ->whereNotNull('places_id')
             ->pluck('places_id')
             ->all();
@@ -44,8 +44,8 @@ class SwapCandidateFinder
             // A custom wishlist pin has no type; any sight or eatery can replace it.
             ->when(
                 $item->place !== null,
-                fn ($q) => $q->where('type', $item->place->type),
-                fn ($q) => $q->whereIn('type', ['attraction', 'culinary'])
+                fn ($placeQuery) => $placeQuery->where('type', $item->place->type),
+                fn ($placeQuery) => $placeQuery->whereIn('type', ['attraction', 'culinary'])
             )
             ->where('business_status', '!=', 'closed_permanently')
             ->whereNotIn('places_id', $usedElsewhereInTrip)
@@ -95,7 +95,7 @@ class SwapCandidateFinder
      */
     public function scoreFor(ItineraryItem $item, Place $newPlace): ?float
     {
-        $match = $this->rankedCandidates($item)->firstWhere(fn ($c) => $c['place']->places_id === $newPlace->places_id);
+        $match = $this->rankedCandidates($item)->firstWhere(fn ($candidate) => $candidate['place']->places_id === $newPlace->places_id);
 
         return $match['topsis_score'] ?? null;
     }

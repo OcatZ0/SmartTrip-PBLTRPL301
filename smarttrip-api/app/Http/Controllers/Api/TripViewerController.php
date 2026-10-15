@@ -153,7 +153,7 @@ class TripViewerController extends Controller
             $trip->viewers()->attach($user->users_id, ['added_at' => now()]);
         }
 
-        $trip->load(['days' => fn ($q) => $q->orderBy('day_number'), 'days.items' => fn ($q) => $q->orderBy('visit_order')]);
+        $trip->load(['days' => fn ($dayQuery) => $dayQuery->orderBy('day_number'), 'days.items' => fn ($itemQuery) => $itemQuery->orderBy('visit_order')]);
 
         return response()->json($trip);
     }

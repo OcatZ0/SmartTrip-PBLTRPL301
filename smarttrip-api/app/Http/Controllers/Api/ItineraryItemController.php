@@ -59,7 +59,7 @@ class ItineraryItemController extends Controller
         ]);
 
         $usedElsewhere = ItineraryItem::query()
-            ->whereHas('day', fn ($q) => $q->where('trips_id', $trip->trips_id))
+            ->whereHas('day', fn ($dayQuery) => $dayQuery->where('trips_id', $trip->trips_id))
             ->where('itinerary_items_id', '!=', $itineraryItem->itinerary_items_id)
             ->where('places_id', $data['places_id'])
             ->exists();
@@ -89,11 +89,11 @@ class ItineraryItemController extends Controller
 
                 $generator->resequenceDay($trip, $day);
             });
-        } catch (RuntimeException $e) {
-            throw ValidationException::withMessages(['places_id' => [$e->getMessage()]]);
+        } catch (RuntimeException $exception) {
+            throw ValidationException::withMessages(['places_id' => [$exception->getMessage()]]);
         }
 
-        $day->load(['items' => fn ($q) => $q->orderBy('visit_order')]);
+        $day->load(['items' => fn ($itemQuery) => $itemQuery->orderBy('visit_order')]);
 
         return response()->json([
             'itinerary_days_id' => $day->itinerary_days_id,

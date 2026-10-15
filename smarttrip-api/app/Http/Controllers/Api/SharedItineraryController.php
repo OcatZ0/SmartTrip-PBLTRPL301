@@ -26,7 +26,7 @@ class SharedItineraryController extends Controller
             abort(404);
         }
 
-        $trip->load(['days' => fn ($q) => $q->orderBy('day_number'), 'days.items' => fn ($q) => $q->orderBy('visit_order'), 'days.items.place']);
+        $trip->load(['days' => fn ($dayQuery) => $dayQuery->orderBy('day_number'), 'days.items' => fn ($itemQuery) => $itemQuery->orderBy('visit_order'), 'days.items.place']);
 
         return response()->json([
             'title' => $trip->title,

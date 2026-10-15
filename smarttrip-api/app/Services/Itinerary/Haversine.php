@@ -14,10 +14,10 @@ class Haversine
         $dLat = deg2rad($lat2 - $lat1);
         $dLng = deg2rad($lng2 - $lng1);
 
-        $a = sin($dLat / 2) ** 2
+        $haversineTerm = sin($dLat / 2) ** 2
             + cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * sin($dLng / 2) ** 2;
 
-        return self::EARTH_RADIUS_KM * 2 * atan2(sqrt($a), sqrt(1 - $a));
+        return self::EARTH_RADIUS_KM * 2 * atan2(sqrt($haversineTerm), sqrt(1 - $haversineTerm));
     }
 
     /**
@@ -33,8 +33,8 @@ class Haversine
         float $detourFactor = 1.35,
         float $averageSpeedKmh = 27.5
     ): float {
-        $km = self::km($lat1, $lng1, $lat2, $lng2) * $detourFactor;
+        $roadKm = self::km($lat1, $lng1, $lat2, $lng2) * $detourFactor;
 
-        return ($km / $averageSpeedKmh) * 60;
+        return ($roadKm / $averageSpeedKmh) * 60;
     }
 }

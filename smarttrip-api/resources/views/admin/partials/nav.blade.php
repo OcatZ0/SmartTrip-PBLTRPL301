@@ -6,7 +6,7 @@
         ['label' => 'Kelola Kategori', 'route' => 'admin.categories.index', 'pattern' => 'admin.categories.*', 'd' => 'M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8zM7.5 7.5h.01'],
     ];
     $userName = auth()->user()->name;
-    $initials = \Illuminate\Support\Str::of($userName)->explode(' ')->take(2)->map(fn ($w) => mb_substr($w, 0, 1))->join('');
+    $initials = \Illuminate\Support\Str::of($userName)->explode(' ')->take(2)->map(fn ($word) => mb_substr($word, 0, 1))->join('');
 @endphp
 {{-- Plain CSS instead of Tailwind or Bootstrap classes, since the rail is shared by the Tailwind dashboard and the Bootstrap pages. --}}
 <style>

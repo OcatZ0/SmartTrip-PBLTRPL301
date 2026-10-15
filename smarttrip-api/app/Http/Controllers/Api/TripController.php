@@ -91,8 +91,8 @@ class TripController extends Controller
         $placeColumns = 'places_id,name,type,lat,lng,address,kecamatan,photo_url,estimated_visit_minutes,is_outdoor';
 
         $trip->load([
-            'days' => fn ($q) => $q->orderBy('day_number'),
-            'days.items' => fn ($q) => $q->orderBy('visit_order'),
+            'days' => fn ($dayQuery) => $dayQuery->orderBy('day_number'),
+            'days.items' => fn ($itemQuery) => $itemQuery->orderBy('visit_order'),
             "days.items.place:{$placeColumns}",
             "hotelPlace:{$placeColumns}",
         ]);
@@ -195,8 +195,8 @@ class TripController extends Controller
 
         try {
             $options = $recommender->topThree($trip);
-        } catch (RuntimeException $e) {
-            throw ValidationException::withMessages(['hotel' => [$e->getMessage()]]);
+        } catch (RuntimeException $exception) {
+            throw ValidationException::withMessages(['hotel' => [$exception->getMessage()]]);
         }
 
         return response()->json([
@@ -224,8 +224,8 @@ class TripController extends Controller
 
         try {
             $result = $generator->generate($trip);
-        } catch (RuntimeException $e) {
-            throw ValidationException::withMessages(['trip' => [$e->getMessage()]]);
+        } catch (RuntimeException $exception) {
+            throw ValidationException::withMessages(['trip' => [$exception->getMessage()]]);
         }
 
         return response()->json([

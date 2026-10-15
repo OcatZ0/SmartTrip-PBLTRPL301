@@ -8,13 +8,13 @@ namespace App\Services\Itinerary;
 class JaccardSimilarity
 {
     /**
-     * @param  array<int, int>  $a
-     * @param  array<int, int>  $b
+     * @param  array<int, int>  $firstIds
+     * @param  array<int, int>  $secondIds
      */
-    public static function of(array $a, array $b): float
+    public static function of(array $firstIds, array $secondIds): float
     {
-        $setA = array_unique($a);
-        $setB = array_unique($b);
+        $setA = array_unique($firstIds);
+        $setB = array_unique($secondIds);
 
         $union = array_unique(array_merge($setA, $setB));
         if ($union === []) {

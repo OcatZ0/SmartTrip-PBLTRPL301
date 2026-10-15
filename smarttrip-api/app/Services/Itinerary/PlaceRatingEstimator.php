@@ -32,7 +32,7 @@ class PlaceRatingEstimator
         // Tingkat 2: median blend tempat lain di `type` yang sama yang datanya ada.
         $resolved = $this->places
             ->where('type', $place->type)
-            ->map(fn (Place $p) => $p->ratingBlend())
+            ->map(fn (Place $place) => $place->ratingBlend())
             ->filter(fn ($rating) => $rating !== null)
             ->values();
 

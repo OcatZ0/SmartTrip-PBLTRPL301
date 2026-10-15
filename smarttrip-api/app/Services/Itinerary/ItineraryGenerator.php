@@ -182,7 +182,7 @@ class ItineraryGenerator
         $places = Place::query()
             ->whereIn('type', ['attraction', 'culinary'])
             ->where('business_status', '!=', 'closed_permanently')
-            ->when($excludedIds !== [], fn ($q) => $q->whereNotIn('places_id', $excludedIds))
+            ->when($excludedIds !== [], fn ($placeQuery) => $placeQuery->whereNotIn('places_id', $excludedIds))
             ->with('categories')
             ->withAvg('reviews', 'rating')
             ->withCount('reviews')
@@ -233,8 +233,8 @@ class ItineraryGenerator
     private function clusterIntoDays(int $numDays, Collection $wishlistStops): array
     {
         $buckets = [];
-        for ($i = 0; $i < $numDays; $i++) {
-            $buckets[$i] = ['stops' => [], 'centroid' => null];
+        for ($dayIndex = 0; $dayIndex < $numDays; $dayIndex++) {
+            $buckets[$dayIndex] = ['stops' => [], 'centroid' => null];
         }
 
         if ($wishlistStops->isEmpty()) {
@@ -253,7 +253,7 @@ class ItineraryGenerator
         foreach ($byCluster as $stops) {
             $buckets[$dayNumber]['stops'] = $stops;
             $buckets[$dayNumber]['centroid'] = KMeans::centroid(array_map(
-                fn ($s) => ['lat' => $s['lat'], 'lng' => $s['lng']],
+                fn ($stop) => ['lat' => $stop['lat'], 'lng' => $stop['lng']],
                 $stops
             ));
             $dayNumber++;
@@ -275,8 +275,8 @@ class ItineraryGenerator
 
         while ($stops !== [] && $this->projectedMinutes($stops, $start) > $windowMinutes) {
             $reference = $centroid ?? $start;
-            usort($stops, fn ($a, $b) => Haversine::km($reference['lat'], $reference['lng'], $a['lat'], $a['lng'])
-                <=> Haversine::km($reference['lat'], $reference['lng'], $b['lat'], $b['lng']));
+            usort($stops, fn ($left, $right) => Haversine::km($reference['lat'], $reference['lng'], $left['lat'], $left['lng'])
+                <=> Haversine::km($reference['lat'], $reference['lng'], $right['lat'], $right['lng']));
             $overflow[] = array_pop($stops);
         }
 
@@ -317,8 +317,8 @@ class ItineraryGenerator
         }
 
         $keyed = [];
-        foreach ($stops as $i => $stop) {
-            $keyed[$i] = ['lat' => $stop['lat'], 'lng' => $stop['lng']];
+        foreach ($stops as $stopIndex => $stop) {
+            $keyed[$stopIndex] = ['lat' => $stop['lat'], 'lng' => $stop['lng']];
         }
         $order = NearestNeighborRoute::order($start, $keyed);
 
@@ -335,9 +335,9 @@ class ItineraryGenerator
         return $visitMinutes + $travelMinutes;
     }
 
-    private function legMinutes(array $a, array $b): float
+    private function legMinutes(array $from, array $to): float
     {
-        return Haversine::estimatedTravelMinutes($a['lat'], $a['lng'], $b['lat'], $b['lng'], self::DETOUR_FACTOR, self::AVERAGE_SPEED_KMH);
+        return Haversine::estimatedTravelMinutes($from['lat'], $from['lng'], $to['lat'], $to['lng'], self::DETOUR_FACTOR, self::AVERAGE_SPEED_KMH);
     }
 
     /**
@@ -366,10 +366,10 @@ class ItineraryGenerator
 
         $visitMinutesByItem = $items->keyBy('itinerary_items_id');
 
-        foreach ($order as $i => $itemId) {
+        foreach ($order as $position => $itemId) {
             $visitMinutesByItem[$itemId]->update([
-                'visit_order' => $i + 1,
-                'polyline_to_here' => $legs[$i]['polyline'] ?? null,
+                'visit_order' => $position + 1,
+                'polyline_to_here' => $legs[$position]['polyline'] ?? null,
             ]);
         }
 
@@ -389,7 +389,7 @@ class ItineraryGenerator
 
         $order = $stops === [] ? [] : NearestNeighborRoute::order(
             $start,
-            collect($stops)->mapWithKeys(fn ($stop, $i) => [$i => ['lat' => $stop['lat'], 'lng' => $stop['lng']]])->all()
+            collect($stops)->mapWithKeys(fn ($stop, $stopIndex) => [$stopIndex => ['lat' => $stop['lat'], 'lng' => $stop['lng']]])->all()
         );
 
         $orderedStops = array_map(fn ($key) => $stops[$key], $order);
@@ -401,19 +401,19 @@ class ItineraryGenerator
             'end_places_id' => $trip->hotel_places_id,
         ]);
 
-        $waypoints = array_merge([$start], array_map(fn ($s) => ['lat' => $s['lat'], 'lng' => $s['lng']], $orderedStops), [$start]);
+        $waypoints = array_merge([$start], array_map(fn ($stop) => ['lat' => $stop['lat'], 'lng' => $stop['lng']], $orderedStops), [$start]);
 
         $legs = $orderedStops === [] ? [] : $this->routesClient->computeRoute($waypoints);
 
         $items = [];
-        foreach ($orderedStops as $i => $stop) {
+        foreach ($orderedStops as $position => $stop) {
             $items[] = ItineraryItem::create([
                 'itinerary_days_id' => $itineraryDay->itinerary_days_id,
                 'places_id' => $stop['places_id'],
-                'visit_order' => $i + 1,
+                'visit_order' => $position + 1,
                 'topsis_score' => $stop['topsis_score'],
                 'source' => $stop['source'],
-                'polyline_to_here' => $legs[$i]['polyline'] ?? null,
+                'polyline_to_here' => $legs[$position]['polyline'] ?? null,
                 ...($stop['places_id'] === null ? [
                     'custom_name' => $stop['label'],
                     'custom_lat' => $stop['lat'],

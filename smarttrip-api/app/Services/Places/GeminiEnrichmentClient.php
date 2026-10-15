@@ -82,16 +82,16 @@ class GeminiEnrichmentClient
                 'x-goog-api-key' => config('services.gemini.api_key'),
             ])
                 ->timeout(self::TIMEOUT_SECONDS)
-                ->retry(self::RETRY_TIMES, self::RETRY_SLEEP_MS, fn ($e) => $e instanceof ConnectionException
-                    || ($e instanceof RequestException && in_array($e->response->status(), self::RETRYABLE_STATUSES, true)), throw: false)
+                ->retry(self::RETRY_TIMES, self::RETRY_SLEEP_MS, fn ($exception) => $exception instanceof ConnectionException
+                    || ($exception instanceof RequestException && in_array($exception->response->status(), self::RETRYABLE_STATUSES, true)), throw: false)
                 ->post("https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent", [
                     'contents' => [['parts' => [['text' => $prompt]]]],
                     'generationConfig' => ['responseMimeType' => 'application/json'],
                 ]);
-        } catch (ConnectionException $e) {
+        } catch (ConnectionException $exception) {
             // Callers only expect RuntimeException (PlaceCandidateReviewService
             // keeps the place promoted without enrichment).
-            throw new RuntimeException('Gemini API tidak bisa dihubungi: '.$e->getMessage(), 0, $e);
+            throw new RuntimeException('Gemini API tidak bisa dihubungi: '.$exception->getMessage(), 0, $exception);
         }
 
         if ($response->failed()) {

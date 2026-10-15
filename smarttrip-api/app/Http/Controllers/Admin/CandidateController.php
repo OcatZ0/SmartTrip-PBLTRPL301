@@ -18,9 +18,9 @@ class CandidateController extends Controller
     public function index(Request $request)
     {
         $candidates = PlaceCandidate::query()
-            ->when($request->filled('search_area'), fn ($q) => $q->where('search_area', $request->string('search_area')))
-            ->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')))
-            ->when(! $request->filled('status'), fn ($q) => $q->where('status', 'pending'))
+            ->when($request->filled('search_area'), fn ($candidateQuery) => $candidateQuery->where('search_area', $request->string('search_area')))
+            ->when($request->filled('status'), fn ($candidateQuery) => $candidateQuery->where('status', $request->string('status')))
+            ->when(! $request->filled('status'), fn ($candidateQuery) => $candidateQuery->where('status', 'pending'))
             ->orderByDesc('created_at')
             ->paginate(25)
             ->withQueryString();
@@ -47,8 +47,8 @@ class CandidateController extends Controller
     {
         try {
             $service->approve($candidate);
-        } catch (RuntimeException $e) {
-            return back()->with('error', "Gagal approve \"{$candidate->name}\": {$e->getMessage()}");
+        } catch (RuntimeException $exception) {
+            return back()->with('error', "Gagal approve \"{$candidate->name}\": {$exception->getMessage()}");
         }
 
         return back()->with('status', "\"{$candidate->name}\" disetujui dan dipromosikan ke katalog.");

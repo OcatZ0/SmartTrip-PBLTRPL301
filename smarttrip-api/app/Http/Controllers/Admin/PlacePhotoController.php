@@ -30,8 +30,8 @@ class PlacePhotoController extends Controller
             foreach ($request->file('photos') as $file) {
                 $store->storeUpload($place, $file);
             }
-        } catch (RuntimeException $e) {
-            return back()->with('error', $e->getMessage());
+        } catch (RuntimeException $exception) {
+            return back()->with('error', $exception->getMessage());
         }
 
         return back()->with('status', count($request->file('photos')).' foto diunggah.');
@@ -46,8 +46,8 @@ class PlacePhotoController extends Controller
 
         try {
             return response()->json(['results' => $openverse->search($data['q'])]);
-        } catch (RuntimeException $e) {
-            return response()->json(['message' => $e->getMessage()], 502);
+        } catch (RuntimeException $exception) {
+            return response()->json(['message' => $exception->getMessage()], 502);
         }
     }
 
@@ -57,8 +57,8 @@ class PlacePhotoController extends Controller
 
         try {
             $store->storeFromOpenverse($place, $openverse->find($data['openverse_id']));
-        } catch (RuntimeException $e) {
-            return back()->with('error', $e->getMessage());
+        } catch (RuntimeException $exception) {
+            return back()->with('error', $exception->getMessage());
         }
 
         return back()->with('status', 'Foto dari Openverse ditambahkan beserta kredit dan lisensinya.');
@@ -85,8 +85,8 @@ class PlacePhotoController extends Controller
 
         try {
             $store->storeFromLink($place, $data['image_url'], $data['source_url'], $data['credit'], $data['license']);
-        } catch (RuntimeException $e) {
-            return back()->withInput()->with('error', $e->getMessage());
+        } catch (RuntimeException $exception) {
+            return back()->withInput()->with('error', $exception->getMessage());
         }
 
         return back()->with('status', 'Foto dari tautan ditambahkan beserta kredit dan lisensinya.');

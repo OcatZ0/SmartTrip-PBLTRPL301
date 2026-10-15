@@ -25,8 +25,8 @@ class PlaceController extends Controller
 
         if (! empty($search)) {
             $term = '%'.mb_strtolower($search).'%';
-            $query->where(function ($q) use ($term) {
-                $q->whereRaw('LOWER(name) LIKE ?', [$term])
+            $query->where(function ($searchQuery) use ($term) {
+                $searchQuery->whereRaw('LOWER(name) LIKE ?', [$term])
                     ->orWhereRaw('LOWER(address) LIKE ?', [$term])
                     ->orWhereRaw('LOWER(external_place_id) LIKE ?', [$term]);
             });

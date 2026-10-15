@@ -14,46 +14,46 @@ class KMeans
      * @param  array<int, array{lat: float, lng: float}>  $points
      * @return array<int, int> index cluster (0-based) per titik, urutan sama seperti $points
      */
-    public static function cluster(array $points, int $k, int $maxIterations = 100): array
+    public static function cluster(array $points, int $clusterCount, int $maxIterations = 100): array
     {
-        $n = count($points);
+        $pointCount = count($points);
 
-        if ($n === 0) {
+        if ($pointCount === 0) {
             return [];
         }
 
-        $k = min($k, $n);
-        if ($k <= 1) {
-            return array_fill(0, $n, 0);
+        $clusterCount = min($clusterCount, $pointCount);
+        if ($clusterCount <= 1) {
+            return array_fill(0, $pointCount, 0);
         }
 
         $sorted = $points;
-        usort($sorted, fn ($a, $b) => $a['lat'] <=> $b['lat'] ?: $a['lng'] <=> $b['lng']);
+        usort($sorted, fn ($left, $right) => $left['lat'] <=> $right['lat'] ?: $left['lng'] <=> $right['lng']);
 
         $centroids = [];
-        for ($i = 0; $i < $k; $i++) {
-            $index = (int) floor($i * ($n - 1) / max($k - 1, 1));
-            $centroids[$i] = $sorted[$index];
+        for ($clusterIndex = 0; $clusterIndex < $clusterCount; $clusterIndex++) {
+            $index = (int) floor($clusterIndex * ($pointCount - 1) / max($clusterCount - 1, 1));
+            $centroids[$clusterIndex] = $sorted[$index];
         }
 
-        $assignments = array_fill(0, $n, -1);
+        $assignments = array_fill(0, $pointCount, -1);
 
         for ($iteration = 0; $iteration < $maxIterations; $iteration++) {
             $changed = false;
 
-            foreach ($points as $i => $point) {
+            foreach ($points as $pointIndex => $point) {
                 $bestCluster = 0;
                 $bestDistance = null;
-                foreach ($centroids as $c => $centroid) {
+                foreach ($centroids as $clusterIndex => $centroid) {
                     $distance = Haversine::km($point['lat'], $point['lng'], $centroid['lat'], $centroid['lng']);
                     if ($bestDistance === null || $distance < $bestDistance) {
                         $bestDistance = $distance;
-                        $bestCluster = $c;
+                        $bestCluster = $clusterIndex;
                     }
                 }
 
-                if ($assignments[$i] !== $bestCluster) {
-                    $assignments[$i] = $bestCluster;
+                if ($assignments[$pointIndex] !== $bestCluster) {
+                    $assignments[$pointIndex] = $bestCluster;
                     $changed = true;
                 }
             }
@@ -62,12 +62,12 @@ class KMeans
                 break;
             }
 
-            for ($c = 0; $c < $k; $c++) {
-                $members = array_filter($points, fn ($_, $i) => $assignments[$i] === $c, ARRAY_FILTER_USE_BOTH);
+            for ($clusterIndex = 0; $clusterIndex < $clusterCount; $clusterIndex++) {
+                $members = array_filter($points, fn ($pointIndex) => $assignments[$pointIndex] === $clusterIndex, ARRAY_FILTER_USE_KEY);
                 if ($members === []) {
                     continue;
                 }
-                $centroids[$c] = [
+                $centroids[$clusterIndex] = [
                     'lat' => array_sum(array_column($members, 'lat')) / count($members),
                     'lng' => array_sum(array_column($members, 'lng')) / count($members),
                 ];

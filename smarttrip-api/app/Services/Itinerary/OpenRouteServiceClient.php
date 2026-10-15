@@ -42,8 +42,8 @@ class OpenRouteServiceClient
                     // ORS takes [lng, lat], the reverse of everything else here.
                     'coordinates' => array_map(fn (array $point) => [$point['lng'], $point['lat']], $waypoints),
                 ]);
-        } catch (ConnectionException $e) {
-            throw new RuntimeException('OpenRouteService tidak bisa dihubungi: '.$e->getMessage(), 0, $e);
+        } catch (ConnectionException $exception) {
+            throw new RuntimeException('OpenRouteService tidak bisa dihubungi: '.$exception->getMessage(), 0, $exception);
         }
 
         if ($response->failed()) {
@@ -56,9 +56,9 @@ class OpenRouteServiceClient
         $wayPoints = $route['properties']['way_points'] ?? [];
 
         $legs = [];
-        foreach ($segments as $i => $segment) {
-            $from = $wayPoints[$i] ?? null;
-            $to = $wayPoints[$i + 1] ?? null;
+        foreach ($segments as $segmentIndex => $segment) {
+            $from = $wayPoints[$segmentIndex] ?? null;
+            $to = $wayPoints[$segmentIndex + 1] ?? null;
             $legCoordinates = $from === null || $to === null ? [] : array_slice($coordinates, $from, $to - $from + 1);
 
             $legs[] = [

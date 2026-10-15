@@ -1,7 +1,7 @@
 @extends('admin.layout')
 
 @php
-    $idNumber = fn ($n) => number_format((float) $n, 0, ',', '.');
+    $idNumber = fn ($number) => number_format((float) $number, 0, ',', '.');
     $typeLabel = match ($place->type) { 'culinary' => 'Kuliner', 'lodging' => 'Hotel', default => 'Wisata' };
     [$costLabel, $costHint] = match ($place->type) {
         'culinary' => ['Biaya makan per orang', 'Perkiraan sekali makan.'],
@@ -61,7 +61,7 @@
             return 'mengubah ' . $fieldLabels[$field] . ' ' . $formatValue($field, $old->get($field)) . ' → ' . $formatValue($field, $new->get($field));
         }
 
-        return 'mengubah ' . ($fields->map(fn ($f) => $fieldLabels[$f] ?? $f)->join(', ') ?: 'data');
+        return 'mengubah ' . ($fields->map(fn ($field) => $fieldLabels[$field] ?? $field)->join(', ') ?: 'data');
     };
 @endphp
 

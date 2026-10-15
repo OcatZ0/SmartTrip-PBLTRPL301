@@ -109,14 +109,14 @@ class Place extends Model
      * dekat ke rating Google saat review in-app masih sedikit/nol, makin
      * condong ke rata-rata in-app seiring jumlah review in-app bertambah
      * (mencegah 1 review 5 bintang baru mengalahkan tempat dengan ribuan
-     * review Google). PRD tidak menetapkan angka `$m` (ambang "cukup
+     * review Google). PRD tidak menetapkan angka `$priorWeight` (ambang "cukup
      * review") secara eksplisit - 10 dipilih sebagai asumsi wajar.
      *
      * Butuh `reviews_avg_rating`/`reviews_count` sudah di-load lewat
      * withAvg('reviews','rating')/withCount('reviews') di query pemanggil,
      * supaya tidak N+1.
      */
-    public function ratingBlend(int $m = 10): ?float
+    public function ratingBlend(int $priorWeight = 10): ?float
     {
         $googleRating = $this->rating !== null ? (float) $this->rating : null;
         $inAppCount = (int) ($this->reviews_count ?? 0);
@@ -134,6 +134,6 @@ class Place extends Model
             return round($googleRating, 2);
         }
 
-        return round(($inAppCount / ($inAppCount + $m)) * $inAppAvg + ($m / ($inAppCount + $m)) * $googleRating, 2);
+        return round(($inAppCount / ($inAppCount + $priorWeight)) * $inAppAvg + ($priorWeight / ($inAppCount + $priorWeight)) * $googleRating, 2);
     }
 }

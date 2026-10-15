@@ -80,7 +80,7 @@ class HotelRecommender
         $candidates = Place::query()
             ->whereIn('type', ['attraction', 'culinary'])
             ->where('business_status', '!=', 'closed_permanently')
-            ->when($categoryIds !== [], fn ($q) => $q->whereHas('categories', fn ($q2) => $q2->whereIn('categories.categories_id', $categoryIds)))
+            ->when($categoryIds !== [], fn ($hotelQuery) => $hotelQuery->whereHas('categories', fn ($categoryQuery) => $categoryQuery->whereIn('categories.categories_id', $categoryIds)))
             ->orderByDesc('rating')
             ->limit(5)
             ->get();
@@ -98,7 +98,7 @@ class HotelRecommender
             throw new RuntimeException('Tidak ada data tempat sama sekali - tidak bisa hitung rekomendasi hotel.');
         }
 
-        return KMeans::centroid($candidates->map(fn (Place $p) => ['lat' => (float) $p->lat, 'lng' => (float) $p->lng])->all());
+        return KMeans::centroid($candidates->map(fn (Place $hotel) => ['lat' => (float) $hotel->lat, 'lng' => (float) $hotel->lng])->all());
     }
 
     /**

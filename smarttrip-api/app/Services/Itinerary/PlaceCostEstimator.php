@@ -48,7 +48,7 @@ class PlaceCostEstimator
         // Tingkat 3: median tempat lain di `type` yang sama yang datanya ada.
         $resolved = $this->places
             ->where('type', $place->type)
-            ->map(fn (Place $p) => $this->resolveWithoutMedian($p))
+            ->map(fn (Place $place) => $this->resolveWithoutMedian($place))
             ->filter(fn ($cost) => $cost !== null)
             ->values();
 

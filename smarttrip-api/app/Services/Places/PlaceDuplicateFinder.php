@@ -46,7 +46,7 @@ class PlaceDuplicateFinder
         ?int $olderThanId = null,
     ): ?PlaceCandidate {
         $query = PlaceCandidate::query()
-            ->when($olderThanId !== null, fn (Builder $q) => $q->where('place_candidates_id', '<', $olderThanId));
+            ->when($olderThanId !== null, fn (Builder $candidateQuery) => $candidateQuery->where('place_candidates_id', '<', $olderThanId));
 
         return $this->find($query, $externalPlaceId, $name, $lat, $lng);
     }
@@ -68,16 +68,16 @@ class PlaceDuplicateFinder
                 && Haversine::km($lat, $lng, (float) $other->lat, (float) $other->lng) * 1000 <= self::RADIUS_METERS);
     }
 
-    private function sameName(string $a, string $b): bool
+    private function sameName(string $firstName, string $secondName): bool
     {
-        $a = $this->normalize($a);
-        $b = $this->normalize($b);
+        $firstName = $this->normalize($firstName);
+        $secondName = $this->normalize($secondName);
 
-        if ($a === '' || $b === '') {
+        if ($firstName === '' || $secondName === '') {
             return false;
         }
 
-        return str_contains(" {$a} ", " {$b} ") || str_contains(" {$b} ", " {$a} ");
+        return str_contains(" {$firstName} ", " {$secondName} ") || str_contains(" {$secondName} ", " {$firstName} ");
     }
 
     private function normalize(string $name): string

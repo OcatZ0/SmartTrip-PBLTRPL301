@@ -23,8 +23,8 @@ class CategoryController extends Controller
 
         if (! empty($search)) {
             $term = '%'.mb_strtolower($search).'%';
-            $query->where(function ($q) use ($term) {
-                $q->whereRaw('LOWER(name_id) LIKE ?', [$term])
+            $query->where(function ($searchQuery) use ($term) {
+                $searchQuery->whereRaw('LOWER(name_id) LIKE ?', [$term])
                     ->orWhereRaw('LOWER(name_en) LIKE ?', [$term])
                     ->orWhereRaw('LOWER(subtitle_id) LIKE ?', [$term])
                     ->orWhereRaw('LOWER(ai_keywords) LIKE ?', [$term]);

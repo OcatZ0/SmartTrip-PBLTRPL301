@@ -93,8 +93,8 @@ class OpenverseClient
             $response = Http::timeout(self::TIMEOUT_SECONDS)
                 ->withHeaders(['User-Agent' => self::USER_AGENT])
                 ->get($url, $query);
-        } catch (ConnectionException $e) {
-            throw new RuntimeException('Openverse tidak bisa dihubungi: '.$e->getMessage(), 0, $e);
+        } catch (ConnectionException $exception) {
+            throw new RuntimeException('Openverse tidak bisa dihubungi: '.$exception->getMessage(), 0, $exception);
         }
 
         if ($response->failed()) {

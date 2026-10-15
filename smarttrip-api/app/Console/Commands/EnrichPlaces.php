@@ -24,7 +24,7 @@ class EnrichPlaces extends Command
     public function handle(PlaceEnrichmentService $enrichment): int
     {
         $places = Place::query()
-            ->when($this->option('place'), fn ($query, $id) => $query->whereKey($id))
+            ->when($this->option('place'), fn ($query, $placeId) => $query->whereKey($placeId))
             ->orderBy('places_id')
             ->get()
             ->filter(fn (Place $place) => $enrichment->needsEnrichment($place))
@@ -49,10 +49,10 @@ class EnrichPlaces extends Command
             try {
                 $filled = $enrichment->enrich($place);
                 $rows[] = [$place->places_id, $place->name, $filled === [] ? '-' : implode(', ', $filled)];
-            } catch (RuntimeException $e) {
+            } catch (RuntimeException $exception) {
                 $failed++;
                 // Gemini errors are multi-line JSON; keep the table one row per place.
-                $message = preg_replace('/\s+/', ' ', $e->getMessage());
+                $message = preg_replace('/\s+/', ' ', $exception->getMessage());
                 $rows[] = [$place->places_id, $place->name, 'GAGAL: '.mb_strimwidth($message, 0, 80, '...')];
             }
         }

@@ -66,11 +66,9 @@ class PlacePhotoController extends Controller
     {
         $data = $request->validate([
             'image_url' => ['required', 'url:http,https', 'max:2000'],
-            'license_checked' => ['accepted'],
         ], [
             'image_url.required' => 'Isi alamat gambarnya.',
             'image_url.url' => 'Alamat gambar harus berupa tautan http:// atau https://.',
-            'license_checked.accepted' => 'Centang konfirmasi bahwa foto ini memang tempatnya.',
         ]);
 
         try {

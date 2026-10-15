@@ -15,7 +15,9 @@ use RuntimeException;
  * estimated_visit_minutes, dan is_outdoor. Sejak 2026-10-13 juga menulis
  * deskripsi singkat Bahasa Indonesia kalau sumber data tidak punya (Geoapify
  * dan tempat seed memang kosong); teks itu buatan AI, jadi pemanggil
- * menandainya untuk direview admin.
+ * menandainya untuk direview admin. Sejak 2026-10-15 juga perkiraan biaya
+ * (estimated_cost_idr) dari pengetahuan model, tanpa pencarian web; hasilnya
+ * ditandai "Perkiraan AI" sampai admin mengubahnya.
  */
 class GeminiEnrichmentClient
 {
@@ -34,7 +36,7 @@ class GeminiEnrichmentClient
     /**
      * @param  array<int, string>  $availableCategorySlugs  categories.slug yang sudah di-seed (Section 3: wajib diseed duluan)
      * @param  array{type?: string|null, kecamatan?: string|null, address?: string|null}  $context  helps Gemini tell same-named places apart
-     * @return array{description_id: string|null, description_en: string|null, category_tags: array<int, string>, estimated_visit_minutes: int|null, is_outdoor: bool|null}
+     * @return array{description_id: string|null, description_en: string|null, category_tags: array<int, string>, estimated_visit_minutes: int|null, is_outdoor: bool|null, estimated_cost_idr: int|null}
      */
     public function enrich(string $name, ?string $descriptionId, array $availableCategorySlugs, array $context = []): array
     {
@@ -55,6 +57,12 @@ class GeminiEnrichmentClient
                 .'jam buka, nomor telepon, atau fasilitas yang tidak pasti. Kalau tidak yakin tempat persisnya, '
                 .'deskripsikan secara umum sesuai jenis tempatnya.';
 
+        $costMeaning = match ($context['type'] ?? null) {
+            'lodging' => 'harga kamar standar per malam',
+            'culinary' => 'biaya sekali makan per orang',
+            default => 'harga tiket masuk per orang, 0 kalau gratis',
+        };
+
         $descriptionIdField = $hasDescription
             ? '"description_id": null,'
             : '"description_id": "deskripsi singkat Bahasa Indonesia yang kamu tulis",';
@@ -72,7 +80,8 @@ class GeminiEnrichmentClient
               "description_en": "terjemahan Inggris dari deskripsi Bahasa Indonesia di atas",
               "category_tags": ["slug1", "slug2"],
               "estimated_visit_minutes": angka perkiraan lama kunjungan wajar dalam menit,
-              "is_outdoor": true atau false, apakah tempat ini sensitif cuaca/kegiatan luar ruangan
+              "is_outdoor": true atau false, apakah tempat ini sensitif cuaca/kegiatan luar ruangan,
+              "estimated_cost_idr": angka bulat perkiraan {$costMeaning} dalam Rupiah, atau null kalau kamu tidak punya gambaran sama sekali
             }
             PROMPT;
 
@@ -116,6 +125,19 @@ class GeminiEnrichmentClient
             'category_tags' => array_values(array_intersect($parsed['category_tags'] ?? [], $availableCategorySlugs)),
             'estimated_visit_minutes' => isset($parsed['estimated_visit_minutes']) ? (int) $parsed['estimated_visit_minutes'] : null,
             'is_outdoor' => isset($parsed['is_outdoor']) ? (bool) $parsed['is_outdoor'] : null,
+            'estimated_cost_idr' => $this->cost($parsed['estimated_cost_idr'] ?? null),
         ];
+    }
+
+    /**
+     * Anything outside 0 to Rp 50 juta is a misread, not a price.
+     */
+    private function cost(mixed $value): ?int
+    {
+        if (! is_numeric($value) || $value < 0 || $value > 50_000_000) {
+            return null;
+        }
+
+        return (int) round($value);
     }
 }

@@ -38,6 +38,7 @@ class PlaceEnrichmentTest extends TestCase
                             'category_tags' => ['pantai', 'bukan-kategori'],
                             'estimated_visit_minutes' => 90,
                             'is_outdoor' => true,
+                            'estimated_cost_idr' => 15000,
                         ], $answer)),
                     ]]],
                 ]],
@@ -75,7 +76,7 @@ class PlaceEnrichmentTest extends TestCase
         $this->assertSame(['pantai'], $place->categories->pluck('slug')->all());
         $this->assertFalse($place->category_tags_reviewed);
         $this->assertEqualsCanonicalizing(
-            ['description', 'description_en', 'estimated_visit_minutes', 'is_outdoor', 'categories'],
+            ['description', 'description_en', 'estimated_visit_minutes', 'is_outdoor', 'categories', 'estimated_cost_idr'],
             $filled
         );
         Http::assertSent(fn ($request) => str_contains($request['contents'][0]['parts'][0]['text'], 'belum punya deskripsi')
@@ -110,7 +111,7 @@ class PlaceEnrichmentTest extends TestCase
         $filled = $this->enrich($place);
 
         $place->refresh();
-        $this->assertSame(['description', 'description_en'], $filled);
+        $this->assertSame(['description', 'description_en', 'estimated_cost_idr'], $filled);
         $this->assertSame(45, $place->estimated_visit_minutes);
         $this->assertFalse($place->is_outdoor);
         $this->assertSame(['sejarah'], $place->categories->pluck('slug')->all());
@@ -126,7 +127,7 @@ class PlaceEnrichmentTest extends TestCase
         $filled = $this->enrich($place);
 
         $place->refresh();
-        $this->assertSame(['description', 'description_en', 'is_outdoor'], $filled);
+        $this->assertSame(['description', 'description_en', 'is_outdoor', 'estimated_cost_idr'], $filled);
         $this->assertNull($place->estimated_visit_minutes);
         $this->assertSame(0, $place->categories()->count());
     }
@@ -144,6 +145,55 @@ class PlaceEnrichmentTest extends TestCase
         }
     }
 
+    public function test_a_missing_cost_gets_a_gemini_estimate_marked_as_ai(): void
+    {
+        $this->fakeGemini();
+        $place = $this->makePlace();
+
+        $this->assertContains('estimated_cost_idr', $this->enrich($place));
+
+        $place->refresh();
+        $this->assertSame(15000, $place->estimated_cost_idr);
+        $this->assertTrue($place->estimated_cost_is_ai);
+    }
+
+    public function test_an_admin_cost_is_never_replaced_by_the_estimate(): void
+    {
+        $this->fakeGemini();
+        $place = $this->makePlace(['estimated_cost_idr' => 0]);
+
+        $this->assertNotContains('estimated_cost_idr', $this->enrich($place));
+
+        $place->refresh();
+        $this->assertSame(0, $place->estimated_cost_idr);
+        $this->assertFalse($place->estimated_cost_is_ai);
+    }
+
+    public function test_a_cost_only_estimate_keeps_the_tag_review(): void
+    {
+        $this->fakeGemini();
+        $place = $this->makePlace([
+            'description' => 'Ada.', 'description_en' => 'There.', 'estimated_visit_minutes' => 60,
+            'is_outdoor' => true, 'category_tags_reviewed' => true,
+        ]);
+        $place->categories()->attach($this->pantai->categories_id);
+
+        $this->assertSame(['estimated_cost_idr'], $this->enrich($place));
+        $this->assertTrue($place->fresh()->category_tags_reviewed);
+    }
+
+    public function test_an_unusable_cost_from_gemini_is_ignored(): void
+    {
+        foreach (['mahal', -5000, 99_000_000] as $answer) {
+            $this->fakeGemini(['estimated_cost_idr' => $answer]);
+            $place = $this->makePlace();
+
+            $this->enrich($place);
+
+            $this->assertNull($place->fresh()->estimated_cost_idr);
+        }
+    }
+
     public function test_the_command_enriches_only_places_with_gaps(): void
     {
         $this->fakeGemini();
@@ -151,6 +201,7 @@ class PlaceEnrichmentTest extends TestCase
         $complete = $this->makePlace([
             'name' => 'Sudah Lengkap', 'description' => 'Ada.', 'description_en' => 'There.',
             'estimated_visit_minutes' => 60, 'is_outdoor' => true, 'category_tags_reviewed' => true,
+            'estimated_cost_idr' => 0,
         ]);
         $complete->categories()->attach($this->pantai->categories_id);
 
@@ -171,6 +222,7 @@ class PlaceEnrichmentTest extends TestCase
         $this->makePlace([
             'name' => 'Mercure Batam', 'type' => 'lodging', 'description' => 'Hotel.',
             'description_en' => 'Hotel.', 'is_outdoor' => false, 'category_tags_reviewed' => false,
+            'estimated_cost_idr' => 650000,
         ]);
 
         $this->artisan('places:enrich', ['--sleep' => 0])

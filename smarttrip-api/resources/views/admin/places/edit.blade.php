@@ -24,7 +24,8 @@
 
     $checks = [
         ['label' => 'Biaya', 'done' => $place->estimated_cost_idr !== null,
-            'state' => $place->estimated_cost_idr === null ? 'Belum' : ($place->estimated_cost_idr == 0 ? 'Gratis' : 'Rp ' . $idNumber($place->estimated_cost_idr))],
+            'state' => ($place->estimated_cost_idr === null ? 'Belum' : ($place->estimated_cost_idr == 0 ? 'Gratis' : 'Rp ' . $idNumber($place->estimated_cost_idr)))
+                . ($place->estimated_cost_is_ai ? ' (AI)' : '')],
         ['label' => 'Lama kunjungan', 'done' => (bool) $place->estimated_visit_minutes,
             'state' => $place->estimated_visit_minutes ? $place->estimated_visit_minutes . ' menit' : 'Belum'],
         ['label' => 'Tag kategori dicek', 'done' => $place->category_tags_reviewed, 'state' => $place->category_tags_reviewed ? 'Sudah' : 'Belum'],
@@ -34,7 +35,7 @@
     $doneCount = collect($checks)->where('done', true)->count();
 
     $fieldLabels = [
-        'name' => 'nama', 'kecamatan' => 'kecamatan', 'address' => 'alamat', 'estimated_cost_idr' => 'biaya',
+        'name' => 'nama', 'type' => 'jenis', 'kecamatan' => 'kecamatan', 'address' => 'alamat', 'estimated_cost_idr' => 'biaya',
         'estimated_visit_minutes' => 'lama kunjungan', 'is_outdoor' => 'area', 'category_tags_reviewed' => 'status tag',
         'description_override' => 'deskripsi', 'description_en' => 'deskripsi English', 'photo_url' => 'foto utama',
     ];
@@ -168,8 +169,41 @@
     .pe-page #photos { border: 0; border-radius: 20px; box-shadow: 0 4px 16px rgba(10, 36, 64, .06); overflow: hidden; margin-top: 0 !important; }
     .pe-page #photos > .card-header { padding: 18px 22px 0; border: 0; background: #fff; font-size: 17px; font-weight: 700; }
     .pe-page #photos > .card-body { padding: 16px 22px 22px; }
-    .pe-history > div { margin-top: 0 !important; }
-    .pe-history h2 { margin-bottom: 12px; }
+    .pe-ai-badge { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; background: #f3ecfd; color: #6a3fb5; }
+    .pe-price-button { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1px solid var(--pe-line); border-radius: 10px; background: #fff; font-size: 13px; font-weight: 600; color: var(--pe-link); }
+    .pe-price-button:hover { background: var(--pe-fill); }
+    .pe-price-button:disabled { opacity: .6; }
+    .pe-price-result { display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; border-radius: 14px; background: var(--pe-fill); font-size: 14px; }
+    .pe-price-result p { margin: 0; white-space: pre-line; }
+    .pe-price-result.is-error { background: #fdecea; color: #b42318; }
+    .pe-price-sources { margin: 0; padding-left: 18px; font-size: 13px; }
+    .pe-price-note { font-size: 12px; color: var(--pe-muted); }
+    .pe-timeline { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+    .pe-entry { position: relative; display: flex; gap: 14px; padding-bottom: 20px; }
+    .pe-entry:last-child { padding-bottom: 0; }
+    .pe-entry:not(:last-child)::before { content: ""; position: absolute; left: 15px; top: 34px; bottom: 2px; width: 2px; background: var(--pe-line); }
+    .pe-entry-icon { width: 32px; height: 32px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 14px; background: var(--pe-fill); color: var(--pe-blue); }
+    .pe-entry.is-created .pe-entry-icon { background: #e3f6ec; color: #1d7a55; }
+    .pe-entry.is-deleted .pe-entry-icon { background: #fdecea; color: #b42318; }
+    .pe-entry-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px; padding-top: 5px; }
+    .pe-entry-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 14px; }
+    .pe-entry-head time { margin-left: auto; font-size: 12px; color: var(--pe-muted); white-space: nowrap; }
+    .pe-entry-badge { padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; background: var(--pe-fill); color: var(--pe-blue); }
+    .pe-entry.is-created .pe-entry-badge { background: #e3f6ec; color: #1d7a55; }
+    .pe-entry.is-deleted .pe-entry-badge { background: #fdecea; color: #b42318; }
+    .pe-fields { margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; }
+    .pe-fields > div { padding: 8px 12px; border-radius: 10px; background: var(--pe-fill); min-width: 0; }
+    .pe-fields dt { font-size: 11px; font-weight: 600; color: var(--pe-muted); text-transform: uppercase; letter-spacing: .04em; }
+    .pe-fields dd { margin: 2px 0 0; font-size: 13px; color: var(--pe-ink); overflow-wrap: anywhere; }
+    .pe-diffs { list-style: none; margin: 0; padding: 0; border: 1px solid var(--pe-line); border-radius: 12px; overflow: hidden; }
+    .pe-diffs li { display: flex; gap: 12px; padding: 10px 14px; font-size: 13px; }
+    .pe-diffs li + li { border-top: 1px solid var(--pe-line); }
+    .pe-diff-field { flex: 0 0 140px; font-weight: 600; color: var(--pe-soft); }
+    .pe-diff-values { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+    .pe-diff-values .bi { color: var(--pe-muted); }
+    .pe-diff-old, .pe-diff-new { padding: 1px 6px; border-radius: 6px; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+    .pe-diff-old { background: #fdecea; color: #8a2a20; text-decoration: line-through; text-decoration-color: rgba(138, 42, 32, .4); }
+    .pe-diff-new { background: #e3f6ec; color: #17603f; }
 
     .pe-savebar { position: fixed; left: 76px; right: 0; bottom: 0; z-index: 900; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 14px 32px; background: rgba(255, 255, 255, .94); border-top: 1px solid #dbe2ec; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); transition: left .2s ease; }
     .admin-shell:has(.admin-rail.is-expanded) .pe-savebar { left: 240px; }
@@ -256,6 +290,12 @@
                                 value="{{ old('estimated_cost_idr', $place->estimated_cost_idr) }}">
                         </div>
                         <span class="pe-hint">{{ $costHint }}</span>
+                        @if ($place->estimated_cost_is_ai)
+                            <span class="pe-ai-badge"><i class="bi bi-stars" aria-hidden="true"></i> Perkiraan AI, ubah kalau sudah tahu harga sebenarnya</span>
+                        @endif
+                        <button type="button" id="pePriceSearch" class="pe-price-button" data-url="{{ route('admin.places.price-search', $place) }}">
+                            <i class="bi bi-search" aria-hidden="true"></i> Cari harga di Google
+                        </button>
                     </div>
                     <div class="pe-field">
                         <label for="peMinutes" class="pe-label">Lama kunjungan</label>
@@ -277,6 +317,7 @@
                         <span class="pe-hint">Outdoor ikut peringatan cuaca.</span>
                     </fieldset>
                 </div>
+                <div id="pePriceResult" class="pe-price-result" hidden aria-live="polite"></div>
             </section>
 
             <section class="pe-card">
@@ -389,7 +430,12 @@
     @include('admin.places.photos', ['place' => $place])
 
     <section class="pe-card pe-history" id="riwayat">
-        @include('admin.partials.activity-log', ['activities' => $activities])
+        @include('admin.partials.activity-log', [
+            'activities' => $activities,
+            'fieldLabels' => $fieldLabels,
+            'formatValue' => $formatValue,
+            'describeActivity' => $describeActivity,
+        ])
     </section>
 </div>
 
@@ -488,6 +534,62 @@
                 e.preventDefault();
                 e.returnValue = '';
             }
+        });
+
+        var priceButton = document.getElementById('pePriceSearch');
+        var priceResult = document.getElementById('pePriceResult');
+        function priceMessage(text, isError) {
+            var paragraph = document.createElement('p');
+            paragraph.textContent = text;
+            priceResult.classList.toggle('is-error', isError);
+            priceResult.replaceChildren(paragraph);
+            priceResult.hidden = false;
+        }
+        // Built with textContent only; the Search Suggestions are Google's own
+        // markup, shown unaltered as the Gemini terms require, in a shadow root
+        // so their styles stay apart from the page.
+        function showPrice(body) {
+            priceMessage(body.text || 'Gemini tidak memberi jawaban, coba lagi.', false);
+            if (body.sources && body.sources.length) {
+                var list = document.createElement('ol');
+                list.className = 'pe-price-sources';
+                body.sources.forEach(function (source) {
+                    var link = document.createElement('a');
+                    link.href = source.url;
+                    link.target = '_blank';
+                    link.rel = 'noopener';
+                    link.textContent = source.title;
+                    var item = document.createElement('li');
+                    item.appendChild(link);
+                    list.appendChild(item);
+                });
+                priceResult.appendChild(list);
+            }
+            if (body.search_suggestions) {
+                var host = document.createElement('div');
+                host.attachShadow({ mode: 'open' }).innerHTML = body.search_suggestions;
+                priceResult.appendChild(host);
+            }
+            var note = document.createElement('span');
+            note.className = 'pe-price-note';
+            note.textContent = 'Jawaban ini tidak disimpan. Ketik sendiri harganya di kolom di atas.';
+            priceResult.appendChild(note);
+        }
+        priceButton.addEventListener('click', function () {
+            priceButton.disabled = true;
+            priceResult.classList.remove('is-error');
+            priceResult.innerHTML = '<p><span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Mencari harga...</p>';
+            priceResult.hidden = false;
+            fetch(priceButton.dataset.url, { headers: { Accept: 'application/json' } })
+                .then(function (response) {
+                    return response.json().then(function (body) {
+                        if (!response.ok) throw new Error(body.message || 'Pencarian harga gagal, coba lagi.');
+                        return body;
+                    });
+                })
+                .then(showPrice)
+                .catch(function (error) { priceMessage(error.message || 'Pencarian harga gagal, coba lagi.', true); })
+                .finally(function () { priceButton.disabled = false; });
         });
 
         document.getElementById('peDelete').addEventListener('click', function () {

@@ -27,7 +27,7 @@ class AdminActivityLogTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('Riwayat Perubahan');
-        $response->assertSee('created');
+        $response->assertSee('Ditambahkan');
         $response->assertSee('Pantai Melur');
     }
 
@@ -46,7 +46,7 @@ class AdminActivityLogTest extends TestCase
         $response->assertOk();
         $response->assertSee('Nongsa');
         $response->assertSee('Batam Kota');
-        $response->assertSee('updated');
+        $response->assertSee('Diubah');
     }
 
     public function test_the_place_edit_page_shows_which_admin_made_the_change(): void

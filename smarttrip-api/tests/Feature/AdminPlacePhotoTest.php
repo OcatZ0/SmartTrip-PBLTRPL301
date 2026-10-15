@@ -171,13 +171,11 @@ class AdminPlacePhotoTest extends TestCase
         $this->assertSame(0, $this->place->photos()->count());
     }
 
-
     private function linkPayload(array $overrides = []): array
     {
         // A public IP literal, so the address check needs no DNS lookup in tests.
         return array_merge([
             'image_url' => 'http://93.184.216.34/masjid.jpg',
-            'license_checked' => '1',
         ], $overrides);
     }
 
@@ -192,16 +190,16 @@ class AdminPlacePhotoTest extends TestCase
         $this->assertSame($photo->photo_url, $this->place->fresh()->photo_url);
     }
 
-    public function test_a_photo_from_a_link_needs_the_license_confirmation(): void
+    public function test_a_photo_from_a_link_needs_an_image_url(): void
     {
         Http::fake();
 
         $response = $this->actingAs($this->admin)->post(
             route('admin.places.photos.link.store', $this->place),
-            $this->linkPayload(['license_checked' => null]),
+            $this->linkPayload(['image_url' => '']),
         );
 
-        $response->assertSessionHasErrors(['license_checked']);
+        $response->assertSessionHasErrors(['image_url']);
         Http::assertNothingSent();
         $this->assertSame(0, $this->place->photos()->count());
     }

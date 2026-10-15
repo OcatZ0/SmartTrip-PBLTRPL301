@@ -14,7 +14,9 @@ use RuntimeException;
  * Only empty fields are written: an admin's description_override and
  * anything the admin already confirmed (category_tags_reviewed) are left
  * alone. Whatever Gemini writes puts the place back on the dashboard's
- * "needs attention" list, because an AI description can be wrong.
+ * "needs attention" list, because an AI description can be wrong. A cost
+ * guessed by Gemini is only written when the admin left it empty, and is
+ * marked estimated_cost_is_ai instead.
  */
 class PlaceEnrichmentService
 {
@@ -25,7 +27,7 @@ class PlaceEnrichmentService
      */
     public function needsEnrichment(Place $place): bool
     {
-        if ($this->sourceDescription($place) === null || blank($place->description_en)) {
+        if ($this->sourceDescription($place) === null || blank($place->description_en) || $place->estimated_cost_idr === null) {
             return true;
         }
 
@@ -99,6 +101,16 @@ class PlaceEnrichmentService
 
         if ($filled !== []) {
             $updates['category_tags_reviewed'] = false;
+        }
+
+        // Has its own "Perkiraan AI" mark, so it does not reopen the tag review.
+        if ($place->estimated_cost_idr === null && $result['estimated_cost_idr'] !== null) {
+            $updates['estimated_cost_idr'] = $result['estimated_cost_idr'];
+            $updates['estimated_cost_is_ai'] = true;
+            $filled[] = 'estimated_cost_idr';
+        }
+
+        if ($updates !== []) {
             $place->update($updates);
         }
 

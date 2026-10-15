@@ -9,7 +9,7 @@ use RuntimeException;
 
 /**
  * F020 - isi celah data tempat yang sudah ada di katalog lewat Gemini
- * (deskripsi ID/EN, tag kategori, durasi, is_outdoor). Approve kandidat
+ * (deskripsi ID/EN, tag kategori, durasi, is_outdoor, perkiraan biaya). Approve kandidat
  * sudah menjalankan enrichment sendiri; perintah ini untuk tempat seed,
  * input manual, atau yang enrichment-nya dulu gagal.
  */
@@ -19,7 +19,7 @@ class EnrichPlaces extends Command
         {--place= : Hanya satu places_id}
         {--sleep=4 : Jeda detik antar panggilan Gemini (batas kuota per menit)}';
 
-    protected $description = 'Isi field kosong tempat di katalog (deskripsi, tag kategori, durasi, is_outdoor) lewat Gemini';
+    protected $description = 'Isi field kosong tempat di katalog (deskripsi, tag kategori, durasi, is_outdoor, perkiraan biaya) lewat Gemini';
 
     public function handle(PlaceEnrichmentService $enrichment): int
     {

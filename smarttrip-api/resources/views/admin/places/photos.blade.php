@@ -46,7 +46,7 @@
 
         @php
             $photoQuery = str_contains(mb_strtolower($place->name), 'batam') ? $place->name : $place->name.' Batam';
-            $linkFormOpen = $errors->hasAny(['image_url', 'license_checked']) || old('image_url');
+            $linkFormOpen = $errors->has('image_url') || old('image_url');
         @endphp
         <h2 class="h6">Cari di Google Gambar</h2>
         <p class="small text-muted mb-2">
@@ -73,16 +73,6 @@
                         value="{{ old('image_url') }}" maxlength="2000" required placeholder="https://.../foto.jpg">
                     <div class="form-text">Klik kanan gambarnya di halaman sumber, lalu "Salin alamat gambar".</div>
                     @error('image_url')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                </div>
-                <div class="col-12">
-                    <div class="form-check">
-                        <input type="checkbox" name="license_checked" value="1" id="photoLinkChecked"
-                            class="form-check-input @error('license_checked') is-invalid @enderror" @checked(old('license_checked')) required>
-                        <label for="photoLinkChecked" class="form-check-label small">
-                            Saya sudah memastikan foto ini memang {{ $place->name }}.
-                        </label>
-                        @error('license_checked')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                    </div>
                 </div>
                 <div class="col-12">
                     <button type="submit" class="btn btn-primary">Simpan foto</button>

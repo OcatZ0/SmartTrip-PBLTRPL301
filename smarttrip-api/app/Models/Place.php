@@ -45,6 +45,7 @@ class Place extends Model
         'estimated_visit_minutes',
         'is_outdoor',
         'estimated_cost_idr',
+        'estimated_cost_is_ai',
         'description_override',
         'description_en',
     ];
@@ -59,6 +60,7 @@ class Place extends Model
             'types' => 'array',
             'category_tags_reviewed' => 'boolean',
             'is_outdoor' => 'boolean',
+            'estimated_cost_is_ai' => 'boolean',
         ];
     }
 

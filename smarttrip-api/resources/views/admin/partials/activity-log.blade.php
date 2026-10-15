@@ -39,7 +39,7 @@
                     @if ($activity->event === 'created')
                         @php $filled = $new->reject(fn ($value) => $value === null || $value === ''); @endphp
                         @if ($filled->isNotEmpty())
-                            <dl class="pe-fields">
+                            <dl class="pe-entry-fields">
                                 @foreach ($filled as $field => $value)
                                     <div>
                                         <dt>{{ $label($field) }}</dt>

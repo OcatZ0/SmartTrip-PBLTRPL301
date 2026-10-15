@@ -191,10 +191,10 @@
     .pe-entry-badge { padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; background: var(--pe-fill); color: var(--pe-blue); }
     .pe-entry.is-created .pe-entry-badge { background: #e3f6ec; color: #1d7a55; }
     .pe-entry.is-deleted .pe-entry-badge { background: #fdecea; color: #b42318; }
-    .pe-fields { margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; }
-    .pe-fields > div { padding: 8px 12px; border-radius: 10px; background: var(--pe-fill); min-width: 0; }
-    .pe-fields dt { font-size: 11px; font-weight: 600; color: var(--pe-muted); text-transform: uppercase; letter-spacing: .04em; }
-    .pe-fields dd { margin: 2px 0 0; font-size: 13px; color: var(--pe-ink); overflow-wrap: anywhere; }
+    .pe-entry-fields { margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; }
+    .pe-entry-fields > div { padding: 8px 12px; border-radius: 10px; background: var(--pe-fill); min-width: 0; }
+    .pe-entry-fields dt { font-size: 11px; font-weight: 600; color: var(--pe-muted); text-transform: uppercase; letter-spacing: .04em; }
+    .pe-entry-fields dd { margin: 2px 0 0; font-size: 13px; color: var(--pe-ink); overflow-wrap: anywhere; }
     .pe-diffs { list-style: none; margin: 0; padding: 0; border: 1px solid var(--pe-line); border-radius: 12px; overflow: hidden; }
     .pe-diffs li { display: flex; gap: 12px; padding: 10px 14px; font-size: 13px; }
     .pe-diffs li + li { border-top: 1px solid var(--pe-line); }

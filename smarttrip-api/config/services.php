@@ -51,9 +51,6 @@ return [
         // An alias, so a retired version (gemini-2.0-flash returned 404 in
         // 2026-10) does not break enrichment again.
         'model' => env('GEMINI_MODEL', 'gemini-flash-lite-latest'),
-        // Grounding with Google Search is free (500 requests a day) only on
-        // Gemini 2.5; Gemini 3 needs a paid tier.
-        'grounding_model' => env('GEMINI_GROUNDING_MODEL', 'gemini-2.5-flash-lite'),
     ],
 
     'slack' => [

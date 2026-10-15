@@ -20,7 +20,7 @@ class AdminPlacePriceTest extends TestCase
     {
         parent::setUp();
 
-        config(['services.gemini.api_key' => 'test-key', 'services.gemini.grounding_model' => 'gemini-2.5-flash-lite']);
+        config(['services.gemini.api_key' => 'test-key', 'services.gemini.model' => 'gemini-test']);
         $this->admin = User::factory()->create(['role' => 'admin']);
         $this->place = Place::create([
             'name' => 'Amaris Hotel Nagoya Hill Batam', 'type' => 'lodging', 'lat' => 1.1446, 'lng' => 104.0128,
@@ -28,45 +28,65 @@ class AdminPlacePriceTest extends TestCase
         ]);
     }
 
-    private function groundedAnswer(): array
+    private function geminiAnswer(array $answer): array
     {
-        return ['candidates' => [[
-            'content' => ['parts' => [['text' => 'Kisaran Rp 450.000 - Rp 600.000 per malam.'], ['text' => ' Sumber: Traveloka.']]],
-            'groundingMetadata' => [
-                'searchEntryPoint' => ['renderedContent' => '<style>.chip{}</style><div class="chip">amaris batam harga</div>'],
-                'groundingChunks' => [
-                    ['web' => ['uri' => 'https://vertexaisearch.cloud.google.com/grounding-api-redirect/abc', 'title' => 'traveloka.com']],
-                    ['retrievedContext' => ['uri' => 'gs://internal']],
-                ],
-            ],
-        ]]];
+        return ['candidates' => [['content' => ['parts' => [['text' => json_encode($answer)]]]]]];
     }
 
-    public function test_the_price_search_returns_gemini_answer_suggestions_and_sources(): void
+    public function test_the_price_estimate_returns_gemini_explanation_and_number(): void
     {
-        Http::fake(['generativelanguage.googleapis.com/*' => Http::response($this->groundedAnswer())]);
+        Http::fake(['generativelanguage.googleapis.com/*' => Http::response($this->geminiAnswer([
+            'estimated_cost_idr' => 520000,
+            'explanation' => 'Kisaran Rp 450.000 - Rp 600.000 per malam untuk kamar standar.',
+        ]))]);
 
         $this->actingAs($this->admin)
-            ->getJson(route('admin.places.price-search', $this->place))
+            ->getJson(route('admin.places.price-estimate', $this->place))
             ->assertOk()
-            ->assertJsonPath('text', 'Kisaran Rp 450.000 - Rp 600.000 per malam. Sumber: Traveloka.')
-            ->assertJsonPath('search_suggestions', '<style>.chip{}</style><div class="chip">amaris batam harga</div>')
-            ->assertJsonPath('sources', [['title' => 'traveloka.com', 'url' => 'https://vertexaisearch.cloud.google.com/grounding-api-redirect/abc']]);
+            ->assertExactJson([
+                'text' => 'Kisaran Rp 450.000 - Rp 600.000 per malam untuk kamar standar.',
+                'estimated_cost_idr' => 520000,
+            ]);
 
-        Http::assertSent(fn ($request) => str_contains($request->url(), 'models/gemini-2.5-flash-lite:generateContent')
-            && isset($request['tools'][0]['google_search'])
+        Http::assertSent(fn ($request) => str_contains($request->url(), 'models/gemini-test:generateContent')
+            && ! isset($request['tools'])
             && str_contains($request['contents'][0]['parts'][0]['text'], 'harga kamar standar per malam'));
     }
 
-    public function test_the_price_search_never_stores_anything(): void
+    public function test_an_unusable_estimate_number_is_dropped(): void
     {
-        Http::fake(['generativelanguage.googleapis.com/*' => Http::response($this->groundedAnswer())]);
+        Http::fake(['generativelanguage.googleapis.com/*' => Http::response($this->geminiAnswer([
+            'estimated_cost_idr' => 'mahal', 'explanation' => 'Tidak yakin.',
+        ]))]);
 
-        $this->actingAs($this->admin)->getJson(route('admin.places.price-search', $this->place))->assertOk();
+        $this->actingAs($this->admin)
+            ->getJson(route('admin.places.price-estimate', $this->place))
+            ->assertOk()
+            ->assertJsonPath('estimated_cost_idr', null)
+            ->assertJsonPath('text', 'Tidak yakin.');
+    }
+
+    public function test_the_price_estimate_never_stores_anything(): void
+    {
+        Http::fake(['generativelanguage.googleapis.com/*' => Http::response($this->geminiAnswer([
+            'estimated_cost_idr' => 520000, 'explanation' => 'x',
+        ]))]);
+
+        $this->actingAs($this->admin)->getJson(route('admin.places.price-estimate', $this->place))->assertOk();
 
         $place = $this->place->fresh();
         $this->assertNull($place->estimated_cost_idr);
         $this->assertFalse($place->estimated_cost_is_ai);
+    }
+
+    public function test_a_retired_gemini_model_is_named_in_the_error(): void
+    {
+        Http::fake(['generativelanguage.googleapis.com/*' => Http::response(['error' => ['code' => 404]], 404)]);
+
+        $this->actingAs($this->admin)
+            ->getJson(route('admin.places.price-estimate', $this->place))
+            ->assertStatus(502)
+            ->assertJsonPath('message', 'Model Gemini "gemini-test" tidak tersedia. Periksa GEMINI_MODEL di .env.');
     }
 
     public function test_a_used_up_gemini_quota_is_reported(): void
@@ -74,22 +94,22 @@ class AdminPlacePriceTest extends TestCase
         Http::fake(['generativelanguage.googleapis.com/*' => Http::response(['error' => ['code' => 429]], 429)]);
 
         $this->actingAs($this->admin)
-            ->getJson(route('admin.places.price-search', $this->place))
+            ->getJson(route('admin.places.price-estimate', $this->place))
             ->assertStatus(502)
-            ->assertJsonPath('message', 'Kuota pencarian Gemini hari ini sudah habis, coba lagi besok.');
+            ->assertJsonPath('message', 'Kuota Gemini sedang habis, coba lagi beberapa saat lagi.');
     }
 
-    public function test_the_price_search_is_admin_only(): void
+    public function test_the_price_estimate_is_admin_only(): void
     {
         Http::fake();
         $user = User::factory()->create(['role' => 'user']);
 
-        $this->actingAs($user)->getJson(route('admin.places.price-search', $this->place))->assertForbidden();
+        $this->actingAs($user)->getJson(route('admin.places.price-estimate', $this->place))->assertForbidden();
 
         Http::assertNothingSent();
     }
 
-    public function test_the_edit_page_marks_an_ai_cost_and_offers_the_price_search(): void
+    public function test_the_edit_page_marks_an_ai_cost_and_offers_the_price_estimate(): void
     {
         $this->place->update(['estimated_cost_idr' => 500000, 'estimated_cost_is_ai' => true]);
 
@@ -97,7 +117,7 @@ class AdminPlacePriceTest extends TestCase
             ->get(route('admin.places.edit', $this->place))
             ->assertOk()
             ->assertSee('Perkiraan AI')
-            ->assertSee('Cari harga di Google');
+            ->assertSee('Perkirakan harga dengan AI');
     }
 
     public function test_changing_an_ai_cost_makes_it_the_admin_cost(): void

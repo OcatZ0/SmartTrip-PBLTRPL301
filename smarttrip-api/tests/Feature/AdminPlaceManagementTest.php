@@ -82,6 +82,34 @@ class AdminPlaceManagementTest extends TestCase
 
     // --- create (manual add) ---
 
+    public function test_the_list_links_to_the_edit_page_and_confirms_deletes_in_a_modal(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $place = $this->makePlace();
+
+        $response = $this->actingAs($admin)->get('/admin/places');
+
+        $response->assertOk();
+        $response->assertSee('href="'.route('admin.places.edit', $place).'"', false);
+        $response->assertSee('data-confirm-url="'.route('admin.places.destroy', $place).'"', false);
+        $response->assertSee('id="confirmModal"', false);
+        $response->assertDontSee('modalEditTempat');
+    }
+
+    public function test_the_list_pagination_has_no_english_summary(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        foreach (range(1, 8) as $number) {
+            $this->makePlace(['name' => "Tempat {$number}"]);
+        }
+
+        $response = $this->actingAs($admin)->get('/admin/places');
+
+        $response->assertOk();
+        $response->assertSee('aria-label="Halaman berikutnya"', false);
+        $response->assertDontSee('Showing');
+    }
+
     public function test_an_admin_can_add_a_manual_place(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
@@ -204,6 +232,18 @@ class AdminPlaceManagementTest extends TestCase
         $response->assertSeeInOrder(['Kelengkapan', '2 / 5', 'Gratis', '60 menit', 'Belum', 'Popularitas', 'Disimpan ke wishlist', 'Masuk itinerary']);
         $response->assertSee('name="category_tags_reviewed"', false);
         $response->assertSeeInOrder(['class="pe-savebar"', 'Hapus dari katalog', 'Batal', 'form="formEditPlace"', 'Simpan perubahan'], false);
+    }
+
+    public function test_the_edit_page_confirms_deletes_in_the_shared_modal(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $place = $this->makePlace();
+
+        $response = $this->actingAs($admin)->get(route('admin.places.edit', $place));
+
+        $response->assertOk();
+        $response->assertSee('data-confirm-url="'.route('admin.places.destroy', $place).'"', false);
+        $response->assertSee('id="confirmModal"', false);
     }
 
     public function test_editing_a_place_without_category_ids_clears_its_categories(): void

@@ -51,7 +51,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('/places', [AdminPlaceController::class, 'store'])->name('places.store');
         Route::get('/places/{place}/edit', [AdminPlaceController::class, 'edit'])->name('places.edit');
         Route::get('/places/{place}/activities', [AdminPlaceController::class, 'activities'])->name('places.activities');
-        Route::get('/places/{place}/price-search', [AdminPlaceController::class, 'searchPrice'])->name('places.price-search');
+        Route::get('/places/{place}/price-estimate', [AdminPlaceController::class, 'estimatePrice'])->name('places.price-estimate');
         Route::put('/places/{place}', [AdminPlaceController::class, 'update'])->name('places.update');
         Route::delete('/places/{place}', [AdminPlaceController::class, 'destroy'])->name('places.destroy');
 

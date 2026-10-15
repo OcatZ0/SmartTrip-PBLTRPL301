@@ -577,19 +577,6 @@
         margin: 0 auto 18px auto;
     }
 
-    .delete-icon-circle {
-        width: 56px;
-        height: 56px;
-        border-radius: 50%;
-        background-color: #FEF2F2;
-        color: #EF4444;
-        border: 1px solid #FEE2E2;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 24px;
-        margin: 0 auto 14px auto;
-    }
 
     /* ─────────────────────────────────────────────────────────────────── */
     /* F022 AUDIT TRAIL TIMELINE STYLING                                   */
@@ -834,7 +821,7 @@
                 @endforeach
             </select>
 
-            <a href="{{ route('admin.places.index') }}" class="btn-filter-refresh" title="Reset Filter">
+            <a href="{{ route('admin.places.index') }}" class="btn-filter-refresh" title="Atur ulang filter" aria-label="Atur ulang filter">
                 <i class="bi bi-arrow-counterclockwise"></i>
             </a>
         </form>
@@ -862,7 +849,7 @@
             <table class="places-table">
                 <thead>
                     <tr>
-                        <th style="width: 70px;">Thumbnail</th>
+                        <th style="width: 70px;">Foto</th>
                         <th>Nama Tempat & ID</th>
                         <th>Tipe Wisata</th>
                         <th>Wilayah</th>
@@ -935,33 +922,18 @@
                             </td>
                             <td class="text-center">
                                 <div class="d-flex align-items-center justify-content-center gap-2">
-                                    <button type="button" class="btn-action-history" title="Riwayat Perubahan (Audit Trail)"
+                                    <button type="button" class="btn-action-history" title="Riwayat perubahan" aria-label="Riwayat perubahan {{ $place->name }}"
                                             onclick="openHistoryModal('{{ route('admin.places.activities', $place) }}', '{{ addslashes($place->name) }}')">
                                         <i class="bi bi-clock-history" style="pointer-events: none;"></i>
                                     </button>
-                                    <button type="button" class="btn-action-edit" title="Edit Tempat"
-                                            data-bs-toggle="modal" data-bs-target="#modalEditTempat"
-                                            data-id="{{ $place->places_id }}"
-                                            data-name="{{ $place->name }}"
-                                            data-cat="{{ $place->categories->first()?->categories_id ?? '' }}"
-                                            data-kecamatan="{{ $place->kecamatan ?? '' }}"
-                                            data-lat="{{ $place->lat }}"
-                                            data-lng="{{ $place->lng }}"
-                                            data-address="{{ $place->address ?? '' }}"
-                                            data-photo="{{ $place->photo_url ?? '' }}"
-                                            data-cost="{{ $place->estimated_cost_idr }}"
-                                            data-visit="{{ $place->estimated_visit_minutes }}"
-                                            data-desc-id="{{ $place->description_override ?? $place->description ?? '' }}"
-                                            data-desc-en="{{ $place->description_en ?? '' }}"
-                                            data-outdoor="{{ $place->is_outdoor ? 1 : 0 }}"
-                                            onclick="openEditPlaceModal(this)">
-                                        <i class="bi bi-pencil-fill" style="pointer-events: none;"></i>
-                                    </button>
-                                    <button type="button" class="btn-action-delete" title="Hapus Tempat"
-                                            data-delete-url="{{ route('admin.places.destroy', $place) }}"
-                                            data-name="{{ $place->name }}"
-                                            onclick="openDeletePlaceModal(this)">
-                                        <i class="bi bi-trash-fill" style="pointer-events: none;"></i>
+                                    <a href="{{ route('admin.places.edit', $place) }}" class="btn-action-edit" title="Ubah tempat" aria-label="Ubah {{ $place->name }}">
+                                        <i class="bi bi-pencil-fill" aria-hidden="true"></i>
+                                    </a>
+                                    <button type="button" class="btn-action-delete" title="Hapus tempat" aria-label="Hapus {{ $place->name }}"
+                                            data-confirm-url="{{ route('admin.places.destroy', $place) }}"
+                                            data-confirm-title="Hapus {{ $place->name }}?" data-confirm-ok="Hapus dari katalog"
+                                            data-confirm-text="Tempat ini tidak akan muncul lagi di aplikasi dan di rekomendasi itinerary.">
+                                        <i class="bi bi-trash-fill" aria-hidden="true"></i>
                                     </button>
                                 </div>
                             </td>
@@ -985,7 +957,7 @@
             </div>
 
             <div>
-                {{ $places->links('pagination::bootstrap-5') }}
+                {{ $places->links('admin.partials.pagination') }}
             </div>
         </div>
     </div>
@@ -1010,7 +982,7 @@
                             <p class="mb-0 text-slate-500" style="font-size: 12.5px;">Kurasi entitas destinasi langsung ke database SmartTrip.</p>
                         </div>
                     </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
                 </div>
 
                 <!-- Form (With Custom Scrollable Body & Sticky Footer) -->
@@ -1064,11 +1036,11 @@
                         <div class="latlng-container-box">
                             <div class="row g-3">
                                 <div class="col-md-6">
-                                    <label class="form-label-custom mb-1">Latitude (lat) <span>*</span></label>
+                                    <label class="form-label-custom mb-1">Garis lintang (lat) <span>*</span></label>
                                     <input type="number" step="any" name="lat" id="inputLat" class="form-control-custom fw-bold" value="0.865421" placeholder="0.865421" required>
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label-custom mb-1">Longitude (lng) <span>*</span></label>
+                                    <label class="form-label-custom mb-1">Garis bujur (lng) <span>*</span></label>
                                     <input type="number" step="any" name="lng" id="inputLng" class="form-control-custom fw-bold" value="104.214589" placeholder="104.214589" required>
                                 </div>
                             </div>
@@ -1082,7 +1054,7 @@
 
                         <!-- Foto Destinasi Dropzone -->
                         <div class="mb-3">
-                            <label class="form-label-custom">Foto Destinasi (place_photos / URL) <span class="fw-normal text-muted" style="font-size: 12px;">(JPG, PNG maks. 2MB)</span></label>
+                            <label class="form-label-custom">Foto Destinasi (unggah atau tautan) <span class="fw-normal text-muted" style="font-size: 12px;">(JPG, PNG maks. 2MB)</span></label>
                             <div class="file-dropzone mb-2">
                                 <div class="dropzone-file-info">
                                     <div class="dropzone-icon">
@@ -1090,7 +1062,7 @@
                                     </div>
                                     <div>
                                         <div class="fw-bold text-slate-800" style="font-size: 13px;" id="fileNamePreview">Viovio-sunset-panoramic.jpg</div>
-                                        <div class="text-slate-400" style="font-size: 11.5px;">1.2 MB • Siap diunggah ke storage</div>
+                                        <div class="text-slate-400" style="font-size: 11.5px;">1.2 MB • Siap diunggah</div>
                                     </div>
                                 </div>
                                 <div class="d-flex align-items-center gap-2">
@@ -1144,193 +1116,6 @@
     </div>
 
     <!-- ─────────────────────────────────────────────────────────────────── -->
-    <!-- MODAL EDIT TEMPAT WISATA                                            -->
-    <!-- ─────────────────────────────────────────────────────────────────── -->
-    <div class="modal fade" id="modalEditTempat" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-dialog-custom">
-            <div class="modal-content modal-content-custom">
-                <!-- Header (Fixed Top) -->
-                <div class="modal-header-custom">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="modal-header-icon" style="background-color: #EFF6FF; color: #1672B8;">
-                            <i class="bi bi-pencil-fill"></i>
-                        </div>
-                        <div>
-                            <div class="d-flex align-items-center gap-2">
-                                <h5 class="modal-title fw-bold fs-5 mb-0 text-slate-900" id="modalEditPlaceTitle">Edit Destinasi Kurasi</h5>
-                                <span class="badge-mode">Edit Tempat</span>
-                            </div>
-                            <p class="mb-0 text-slate-500" style="font-size: 12.5px;">Perbarui data tempat wisata dan kurasi rekomendasi SmartTrip.</p>
-                        </div>
-                    </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-
-                <!-- Form (With Custom Scrollable Body & Sticky Footer) -->
-                <form id="formEditPlaceModal" method="POST" action="" enctype="multipart/form-data" class="d-flex flex-column m-0 p-0" style="overflow: hidden;">
-                    @csrf
-                    @method('PUT')
-                    
-                    <div class="modal-body-scrollable">
-                        <!-- Nama Tempat / Destinasi -->
-                        <div class="mb-3">
-                            <label class="form-label-custom">Nama Tempat / Destinasi <span>*</span></label>
-                            <input type="text" name="name" id="editPlaceName" class="form-control-custom" placeholder="Nama Destinasi" required>
-                        </div>
-
-                        <!-- Kategori Wisata & Wilayah / Kecamatan -->
-                        <div class="row g-3 mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label-custom">Kategori Wisata</label>
-                                <select name="category_ids[]" id="editPlaceCategory" class="form-control-custom">
-                                    <option value="">Pilih Kategori Utama</option>
-                                    @foreach($categories as $cat)
-                                        <option value="{{ $cat->categories_id }}">{{ $cat->name_id }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label-custom">Wilayah / Kecamatan</label>
-                                <select name="kecamatan" id="editPlaceKecamatan" class="form-control-custom">
-                                    <option value="">Pilih Kecamatan</option>
-                                    @foreach($kecamatanList as $kec)
-                                        <option value="{{ $kec }}">{{ $kec }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                        </div>
-
-                        <!-- Latitude & Longitude Box -->
-                        <div class="latlng-container-box">
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <label class="form-label-custom mb-1">Latitude (lat) <span>*</span></label>
-                                    <input type="number" step="any" name="lat" id="editPlaceLat" class="form-control-custom fw-bold" placeholder="0.865421" required>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label-custom mb-1">Longitude (lng) <span>*</span></label>
-                                    <input type="number" step="any" name="lng" id="editPlaceLng" class="form-control-custom fw-bold" placeholder="104.214589" required>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Alamat Lengkap -->
-                        <div class="mb-3">
-                            <label class="form-label-custom">Alamat Lengkap &amp; Patokan <span>*</span></label>
-                            <textarea name="address" id="editPlaceAddress" class="form-control-custom" style="height: 64px; padding: 10px 14px; resize: none;" placeholder="Alamat lengkap destinasi" required></textarea>
-                        </div>
-
-                        <!-- Foto Destinasi & Preview -->
-                        <div class="mb-3">
-                            <label class="form-label-custom">Foto Destinasi (Ganti Foto / Upload File Baru) <span class="fw-normal text-muted" style="font-size: 12px;">(JPG, PNG maks. 2MB)</span></label>
-                            
-                            <!-- Preview Foto Saat Ini -->
-                            <div class="d-flex align-items-center gap-3 p-2 mb-2 bg-light rounded-3 border" id="editCurrentPhotoPreviewBox">
-                                <img id="editCurrentPhotoThumb" src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=100&h=100&fit=crop" style="width: 48px; height: 48px; object-fit: cover; border-radius: 8px; border: 1px solid #CBD5E1;">
-                                <div class="flex-grow-1">
-                                    <div class="fw-bold text-slate-800" style="font-size: 12.5px;">Foto Destinasi Saat Ini</div>
-                                    <div class="text-slate-400" style="font-size: 11px;">Unggah file baru di bawah ini untuk memperbarui gambar.</div>
-                                </div>
-                            </div>
-
-                            <div class="file-dropzone mb-2">
-                                <div class="dropzone-file-info">
-                                    <div class="dropzone-icon">
-                                        <i class="bi bi-image"></i>
-                                    </div>
-                                    <div>
-                                        <div class="fw-bold text-slate-800" style="font-size: 13px;" id="editFileNamePreview">Belum ada file baru dipilih</div>
-                                        <div class="text-slate-400" style="font-size: 11.5px;">Pilih file baru dari komputer untuk mengganti foto</div>
-                                    </div>
-                                </div>
-                                <div class="d-flex align-items-center gap-2">
-                                    <label for="inputEditPhotoFile" class="btn btn-outline-secondary btn-sm rounded-2 fw-semibold px-3" style="font-size: 12.5px; border-color: #DADCE0; color: #3C4043;">Pilih File</label>
-                                    <input type="file" name="photo_file" id="inputEditPhotoFile" class="d-none" onchange="previewEditFile(this)">
-                                    <button type="button" class="btn text-slate-400 p-0 fs-5 ms-1" onclick="clearEditFile()"><i class="bi bi-trash"></i></button>
-                                </div>
-                            </div>
-                            <input type="url" name="photo_url" id="editPlacePhotoUrl" class="form-control-custom" placeholder="Atau perbarui URL Foto (https://...)">
-                        </div>
-
-                        <!-- Estimasi Biaya & Durasi Kunjungan -->
-                        <div class="row g-3 mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label-custom">Estimasi Biaya Masuk &amp; Parkir (IDR)</label>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-white border-end-0 text-slate-500 fw-bold" style="border-radius: 10px 0 0 10px; border-color: #DADCE0;">Rp</span>
-                                    <input type="number" name="estimated_cost_idr" id="editPlaceCost" class="form-control-custom rounded-start-0 border-start-0" placeholder="10000">
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label-custom">Estimasi Durasi Kunjungan (Menit)</label>
-                                <div class="input-group">
-                                    <input type="number" name="estimated_visit_minutes" id="editPlaceVisitMinutes" class="form-control-custom rounded-end-0 border-end-0" placeholder="90">
-                                    <span class="input-group-text bg-slate-100 border-start-0 text-primary fw-bold" style="border-radius: 0 10px 10px 0; border-color: #DADCE0; font-size: 12.5px;">Menit</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Sensitif Cuaca / Outdoor -->
-                        <div class="mb-3 p-3 rounded-3 border bg-light d-flex align-items-center justify-content-between">
-                            <div>
-                                <div class="fw-bold text-slate-800" style="font-size: 13px;">Sensitif Cuaca (Wisata Outdoor / Terbuka)</div>
-                                <div class="text-slate-500" style="font-size: 11.5px;">Aktifkan peringatan cuaca BMKG otomatis saat hujan/pasang surut.</div>
-                            </div>
-                            <div class="form-check form-switch m-0">
-                                <input class="form-check-input" type="checkbox" name="is_outdoor" id="editPlaceOutdoor" value="1" style="width: 40px; height: 20px; cursor: pointer;">
-                            </div>
-                        </div>
-
-                        <!-- Deskripsi Bahasa Indonesia & Inggris -->
-                        <div class="mb-3">
-                            <label class="form-label-custom">Deskripsi Kurator (Bahasa Indonesia)</label>
-                            <textarea name="description_override" id="editPlaceDescId" class="form-control-custom" style="height: 80px; padding: 10px 14px; resize: none;" placeholder="Deskripsi kurator (Bahasa Indonesia)"></textarea>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label-custom">Deskripsi (Bahasa Inggris)</label>
-                            <textarea name="description_en" id="editPlaceDescEn" class="form-control-custom" style="height: 70px; padding: 10px 14px; resize: none;" placeholder="Deskripsi (Bahasa Inggris)"></textarea>
-                        </div>
-                    </div>
-
-                    <!-- Footer (Fixed Bottom) -->
-                    <div class="modal-footer-custom">
-                        <button type="button" class="btn btn-light rounded-2 px-4 fw-bold border" style="font-size: 13.5px; border-color: #DADCE0; color: #3C4043;" data-bs-dismiss="modal">Batal</button>
-                        <button type="submit" class="btn btn-primary rounded-2 px-4 fw-bold" style="background-color: #1672B8; border: none; font-size: 13.5px;">
-                            <i class="bi bi-check-lg me-1"></i> Simpan Perubahan
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- ─────────────────────────────────────────────────────────────────── -->
-    <!-- MODAL CONFIRMATION HAPUS TEMPAT                                     -->
-    <!-- ─────────────────────────────────────────────────────────────────── -->
-    <div class="modal fade" id="modalDeletePlace" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
-            <div class="modal-content p-4 text-center" style="border-radius: 20px; border: 1px solid #CBD5E1; box-shadow: none; background: #FFFFFF;">
-                <div class="delete-icon-circle">
-                    <i class="bi bi-trash-fill"></i>
-                </div>
-                <h3 class="fw-bold text-slate-900 fs-4 mb-2">Hapus Tempat Wisata?</h3>
-                <p class="text-slate-500 mb-4" style="font-size: 13.5px;">
-                    Data yang dipilih (<strong id="deletePlaceName">Tempat Wisata</strong>) akan dihapus secara permanen dari katalog SmartTrip.
-                </p>
-
-                <form id="formDeletePlaceModal" method="POST" action="">
-                    @csrf
-                    @method('DELETE')
-                    <div class="d-flex align-items-center justify-content-center gap-3">
-                        <button type="button" class="btn btn-outline-primary fw-bold" style="width: 48%; height: 42px; border-radius: 10px; border-color: #1672B8; color: #1672B8;" data-bs-dismiss="modal">Batal</button>
-                        <button type="submit" class="btn btn-danger fw-bold" style="width: 48%; height: 42px; border-radius: 10px; background-color: #DC2626; border: none;">Hapus</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- ─────────────────────────────────────────────────────────────────── -->
     <!-- MODAL RIWAYAT PERUBAHAN (F022 AUDIT TRAIL)                          -->
     <!-- ─────────────────────────────────────────────────────────────────── -->
     <div class="modal fade" id="modalHistory" tabindex="-1" aria-hidden="true">
@@ -1345,14 +1130,14 @@
                         <div>
                             <div class="d-flex align-items-center gap-2">
                                 <h5 class="modal-title fw-bold fs-5 mb-0" style="color: #0F172A;">Riwayat Perubahan Data</h5>
-                                <span class="badge" style="background: #F5F3FF; color: #7C3AED; font-weight: 700; font-size: 11px; border: 1px solid #DDD6FE; border-radius: 6px;">F022 Audit Trail</span>
+                                <span class="badge" style="background: #F5F3FF; color: #7C3AED; font-weight: 700; font-size: 11px; border: 1px solid #DDD6FE; border-radius: 6px;">Jejak audit</span>
                             </div>
                             <p class="mb-0 text-muted" style="font-size: 12.5px; margin-top: 2px;">
                                 Data: <strong id="historyModalSubject" style="color: #1E293B;">-</strong> • Rekam jejak seluruh penyesuaian kurator
                             </p>
                         </div>
                     </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
                 </div>
 
                 <!-- Body (Scrollable) -->
@@ -1361,7 +1146,7 @@
                         <div class="spinner-border" role="status" style="width: 2.5rem; height: 2.5rem; color: #7C3AED !important;">
                             <span class="visually-hidden">Memuat...</span>
                         </div>
-                        <p class="text-muted mt-2 mb-0" style="font-size: 13px; font-weight: 500;">Mengambil log audit data...</p>
+                        <p class="text-muted mt-2 mb-0" style="font-size: 13px; font-weight: 500;">Memuat riwayat perubahan...</p>
                     </div>
 
                     <div id="historyContentContainer" class="d-none">
@@ -1376,6 +1161,8 @@
             </div>
         </div>
     </div>
+
+    @include('admin.partials.confirm-modal')
 
     <!-- ─────────────────────────────────────────────────────────────────── -->
     <!-- SUCCESS TOAST MODAL                                                 -->
@@ -1433,83 +1220,6 @@
         document.getElementById('fileNamePreview').innerText = 'Belum ada file dipilih';
     }
 
-    function previewEditFile(input) {
-        if (input.files && input.files[0]) {
-            document.getElementById('editFileNamePreview').innerText = input.files[0].name;
-            var reader = new FileReader();
-            reader.onload = function(e) {
-                document.getElementById('editCurrentPhotoThumb').src = e.target.result;
-            }
-            reader.readAsDataURL(input.files[0]);
-        }
-    }
-
-    function clearEditFile() {
-        document.getElementById('inputEditPhotoFile').value = '';
-        document.getElementById('editFileNamePreview').innerText = 'Belum ada file baru dipilih';
-    }
-
-    function openEditPlaceModal(target) {
-        let btn = (target && target.closest) ? (target.closest('.btn-action-edit') || target) : target;
-        let ds = (btn && btn.dataset) ? btn.dataset : (btn || {});
-
-        const id = ds.id || '';
-        const name = ds.name || '';
-        const catId = ds.cat || '';
-        const kecamatan = ds.kecamatan || '';
-        const lat = ds.lat || '';
-        const lng = ds.lng || '';
-        const address = ds.address || '';
-        const photo = ds.photo || '';
-        const cost = ds.cost || '';
-        const visit = ds.visit || '';
-        const descId = ds.descId || '';
-        const descEn = ds.descEn || '';
-        const outdoor = ds.outdoor || 0;
-
-        document.getElementById('modalEditPlaceTitle').innerText = 'Edit Destinasi: ' + (name || 'Tempat Wisata');
-        document.getElementById('formEditPlaceModal').action = id ? ('/admin/places/' + id) : '';
-        document.getElementById('editPlaceName').value = name;
-        document.getElementById('editPlaceKecamatan').value = kecamatan;
-        if (document.getElementById('editPlaceCategory')) {
-            document.getElementById('editPlaceCategory').value = catId;
-        }
-        document.getElementById('editPlaceLat').value = lat;
-        document.getElementById('editPlaceLng').value = lng;
-        document.getElementById('editPlaceAddress').value = address;
-        document.getElementById('editPlacePhotoUrl').value = photo;
-        if (document.getElementById('editCurrentPhotoThumb')) {
-            document.getElementById('editCurrentPhotoThumb').src = photo || 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=100&h=100&fit=crop';
-        }
-        document.getElementById('editPlaceCost').value = cost;
-        document.getElementById('editPlaceVisitMinutes').value = visit;
-        document.getElementById('editPlaceDescId').value = descId;
-        document.getElementById('editPlaceDescEn').value = descEn;
-        document.getElementById('editPlaceOutdoor').checked = (outdoor == 1 || outdoor === 'true' || outdoor === '1');
-
-        var modalEl = document.getElementById('modalEditPlace');
-        var myModal = bootstrap.Modal.getOrCreateInstance(modalEl);
-        myModal.show();
-    }
-
-    function openDeletePlaceModal(target, nameFallback) {
-        let url = '';
-        let name = '';
-        if (typeof target === 'object' && target !== null && target.dataset) {
-            url = target.dataset.deleteUrl;
-            name = target.dataset.name;
-        } else {
-            url = target;
-            name = nameFallback || 'Tempat Wisata';
-        }
-
-        document.getElementById('formDeletePlaceModal').action = url;
-        document.getElementById('deletePlaceName').innerText = name;
-        var modalEl = document.getElementById('modalDeletePlace');
-        var myModal = bootstrap.Modal.getOrCreateInstance(modalEl);
-        myModal.show();
-    }
-
     const FIELD_METADATA = {
         'name': { label: 'Nama Tempat', icon: 'bi-geo-alt-fill' },
         'name_id': { label: 'Nama Kategori (ID)', icon: 'bi-tag-fill' },
@@ -1527,8 +1237,8 @@
         'description_override': { label: 'Deskripsi Tempat (Bahasa Indonesia)', icon: 'bi-card-text', isLong: true },
         'description_en': { label: 'Deskripsi Tempat (Bahasa Inggris)', icon: 'bi-card-text', isLong: true },
         'description': { label: 'Deskripsi Lengkap', icon: 'bi-card-text', isLong: true },
-        'lat': { label: 'Titik Koordinat (Latitude)', icon: 'bi-geo' },
-        'lng': { label: 'Titik Koordinat (Longitude)', icon: 'bi-geo' },
+        'lat': { label: 'Titik Koordinat (Garis Lintang)', icon: 'bi-geo' },
+        'lng': { label: 'Titik Koordinat (Garis Bujur)', icon: 'bi-geo' },
         'photo_url': { label: 'URL Foto Sampul', icon: 'bi-image' }
     };
 
@@ -1858,16 +1568,6 @@
     }
 
     document.addEventListener('DOMContentLoaded', function() {
-        var editModalEl = document.getElementById('modalEditTempat');
-        if (editModalEl) {
-            editModalEl.addEventListener('show.bs.modal', function (event) {
-                var button = event.relatedTarget;
-                if (button) {
-                    openEditPlaceModal(button);
-                }
-            });
-        }
-
         var successModal = document.getElementById('modalBerhasil');
         if (successModal) {
             setTimeout(function() {
@@ -1875,22 +1575,6 @@
             }, 3000);
         }
 
-        @if(request('edit_id') && ($editTarget = \App\Models\Place::with('categories')->find(request('edit_id'))))
-            openEditPlaceModal({
-                id: '{{ $editTarget->places_id }}',
-                name: '{{ addslashes($editTarget->name) }}',
-                cat: '{{ $editTarget->categories->first()?->categories_id ?? "" }}',
-                kecamatan: '{{ addslashes($editTarget->kecamatan ?? "") }}',
-                lat: '{{ $editTarget->lat }}',
-                lng: '{{ $editTarget->lng }}',
-                address: '{{ addslashes(str_replace(["\r", "\n"], " ", $editTarget->address ?? "")) }}',
-                cost: '{{ $editTarget->estimated_cost_idr }}',
-                visit: '{{ $editTarget->estimated_visit_minutes }}',
-                descId: '{{ addslashes(str_replace(["\r", "\n"], " ", $editTarget->description_override ?? $editTarget->description ?? "")) }}',
-                descEn: '{{ addslashes(str_replace(["\r", "\n"], " ", $editTarget->description_en ?? "")) }}',
-                outdoor: '{{ $editTarget->is_outdoor ? 1 : 0 }}'
-            });
-        @endif
     });
 </script>
 @endpush

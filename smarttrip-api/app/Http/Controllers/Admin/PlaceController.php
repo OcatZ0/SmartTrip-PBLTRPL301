@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Place;
 use App\Models\PlaceCandidate;
-use App\Services\Places\GeminiPriceSearchClient;
+use App\Services\Places\GeminiPriceEstimateClient;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use RuntimeException;
@@ -226,12 +226,12 @@ class PlaceController extends Controller
     }
 
     /**
-     * AJAX: Gemini with Google Search looks up the price for the admin to read.
+     * AJAX: Gemini's price estimate for the admin to use or ignore.
      */
-    public function searchPrice(Place $place, GeminiPriceSearchClient $priceSearch)
+    public function estimatePrice(Place $place, GeminiPriceEstimateClient $priceEstimate)
     {
         try {
-            return response()->json($priceSearch->search($place));
+            return response()->json($priceEstimate->estimate($place));
         } catch (RuntimeException $exception) {
             return response()->json(['message' => $exception->getMessage()], 502);
         }

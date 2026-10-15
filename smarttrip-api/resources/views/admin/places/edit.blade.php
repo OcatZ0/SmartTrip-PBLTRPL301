@@ -173,7 +173,7 @@
     .pe-price-result { display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; border-radius: 14px; background: var(--pe-fill); font-size: 14px; }
     .pe-price-result p { margin: 0; white-space: pre-line; }
     .pe-price-result.is-error { background: #fdecea; color: #b42318; }
-    .pe-price-sources { margin: 0; padding-left: 18px; font-size: 13px; }
+    .pe-price-use { align-self: flex-start; }
     .pe-price-note { font-size: 12px; color: var(--pe-muted); }
     .pe-timeline { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
     .pe-entry { position: relative; display: flex; gap: 14px; padding-bottom: 20px; }
@@ -213,15 +213,6 @@
     .pe-btn.is-quiet:hover { background: #e2e8f1; color: #14212f; }
     .pe-btn.is-primary { padding: 0 20px; background: #2b6fab; color: #fff; }
     .pe-btn.is-primary:hover { background: #245f93; }
-    .pe-btn.is-danger { background: #d92d20; color: #fff; }
-    .pe-btn.is-danger:hover { background: #b42318; }
-    .pe-btn:disabled { opacity: .7; }
-    .pe-confirm { padding: 32px 28px 24px; border: 0; border-radius: 20px; align-items: center; text-align: center; box-shadow: 0 24px 64px rgba(10, 36, 64, .22); }
-    .pe-confirm-icon { width: 64px; height: 64px; margin-bottom: 16px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: #fdecea; color: #b42318; font-size: 26px; box-shadow: 0 0 0 8px #fef5f4; }
-    .pe-confirm-title { margin: 0 0 8px; font-size: 19px; line-height: 26px; font-weight: 700; color: #14212f; overflow-wrap: anywhere; }
-    .pe-confirm-text { margin: 0 0 24px; font-size: 14px; color: #5d6b7c; }
-    .pe-confirm-actions { width: 100%; display: flex; gap: 12px; }
-    .pe-confirm-actions .pe-btn { flex: 1; }
     .pe-page button:focus-visible, .pe-savebar button:focus-visible, .pe-savebar a:focus-visible { outline: 3px solid rgba(43, 111, 171, .45); outline-offset: 2px; }
     @media (max-width: 640px) {
         .pe-savebar { padding: 12px 16px; }
@@ -299,8 +290,8 @@
                         @if ($place->estimated_cost_is_ai)
                             <span class="pe-ai-badge"><i class="bi bi-stars" aria-hidden="true"></i> Perkiraan AI, ubah kalau sudah tahu harga sebenarnya</span>
                         @endif
-                        <button type="button" id="pePriceSearch" class="pe-price-button" data-url="{{ route('admin.places.price-search', $place) }}">
-                            <i class="bi bi-search" aria-hidden="true"></i> Cari harga di Google
+                        <button type="button" id="pePriceSearch" class="pe-price-button" data-url="{{ route('admin.places.price-estimate', $place) }}">
+                            <i class="bi bi-stars" aria-hidden="true"></i> Perkirakan harga dengan AI
                         </button>
                     </div>
                     <div class="pe-field">
@@ -431,14 +422,9 @@
     </section>
 </div>
 
-<form id="formDeletePlaceAction" method="POST" action="{{ route('admin.places.destroy', $place) }}" class="d-none">
-    @csrf
-    @method('DELETE')
-</form>
-
 <div class="pe-savebar">
-    <button type="button" class="pe-delete" id="peDelete" aria-label="Hapus dari katalog" title="Hapus dari katalog"
-        data-confirm-title="Hapus {{ $place->name }}?" data-confirm-ok="Hapus dari katalog"
+    <button type="button" class="pe-delete" aria-label="Hapus dari katalog" title="Hapus dari katalog"
+        data-confirm-url="{{ route('admin.places.destroy', $place) }}" data-confirm-title="Hapus {{ $place->name }}?" data-confirm-ok="Hapus dari katalog"
         data-confirm-text="Tempat ini tidak akan muncul lagi di aplikasi dan di rekomendasi itinerary.">
         <i class="bi bi-trash3" aria-hidden="true"></i>
     </button>
@@ -447,19 +433,7 @@
     <button type="submit" form="formEditPlace" class="pe-btn is-primary"><i class="bi bi-check2" aria-hidden="true"></i>Simpan perubahan</button>
 </div>
 
-<div class="modal fade" id="peConfirm" tabindex="-1" aria-labelledby="peConfirmTitle" aria-describedby="peConfirmText" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content pe-confirm">
-            <span class="pe-confirm-icon" aria-hidden="true"><i class="bi bi-trash3"></i></span>
-            <h2 class="pe-confirm-title" id="peConfirmTitle"></h2>
-            <p class="pe-confirm-text" id="peConfirmText"></p>
-            <div class="pe-confirm-actions">
-                <button type="button" class="pe-btn is-quiet" data-bs-dismiss="modal"><i class="bi bi-x-lg" aria-hidden="true"></i>Batal</button>
-                <button type="button" class="pe-btn is-danger" id="peConfirmOk"><i class="bi bi-trash3" aria-hidden="true"></i><span id="peConfirmOkLabel">Hapus</span></button>
-            </div>
-        </div>
-    </div>
-</div>
+@include('admin.partials.confirm-modal')
 @endsection
 
 @push('scripts')
@@ -555,80 +529,50 @@
             priceResult.replaceChildren(paragraph);
             priceResult.hidden = false;
         }
-        // Built with textContent only; the Search Suggestions are Google's own
-        // markup, shown unaltered as the Gemini terms require, in a shadow root
-        // so their styles stay apart from the page.
+        // Built with textContent only: the explanation is Gemini's text.
         function showPrice(body) {
-            priceMessage(body.text || 'Gemini tidak memberi jawaban, coba lagi.', false);
-            if (body.sources && body.sources.length) {
-                var list = document.createElement('ol');
-                list.className = 'pe-price-sources';
-                body.sources.forEach(function (source) {
-                    var link = document.createElement('a');
-                    link.href = source.url;
-                    link.target = '_blank';
-                    link.rel = 'noopener';
-                    link.textContent = source.title;
-                    var item = document.createElement('li');
-                    item.appendChild(link);
-                    list.appendChild(item);
+            priceMessage(body.text || 'Gemini tidak memberi penjelasan.', false);
+            if (body.estimated_cost_idr !== null && body.estimated_cost_idr !== undefined) {
+                var use = document.createElement('button');
+                use.type = 'button';
+                use.className = 'pe-price-button pe-price-use';
+                use.innerHTML = '<i class="bi bi-check2" aria-hidden="true"></i> ';
+                use.appendChild(document.createTextNode(body.estimated_cost_idr === 0
+                    ? 'Pakai: gratis'
+                    : 'Pakai Rp ' + body.estimated_cost_idr.toLocaleString('id-ID')));
+                use.addEventListener('click', function () {
+                    var cost = document.getElementById('peCost');
+                    cost.value = body.estimated_cost_idr;
+                    cost.dispatchEvent(new Event('input', { bubbles: true }));
+                    cost.focus();
                 });
-                priceResult.appendChild(list);
-            }
-            if (body.search_suggestions) {
-                var host = document.createElement('div');
-                host.attachShadow({ mode: 'open' }).innerHTML = body.search_suggestions;
-                priceResult.appendChild(host);
+                priceResult.appendChild(use);
             }
             var note = document.createElement('span');
             note.className = 'pe-price-note';
-            note.textContent = 'Jawaban ini tidak disimpan. Ketik sendiri harganya di kolom di atas.';
+            note.textContent = 'Perkiraan dari pengetahuan AI, tanpa pencarian web, jadi bisa meleset. Harga baru tersimpan setelah Simpan perubahan.';
             priceResult.appendChild(note);
         }
         priceButton.addEventListener('click', function () {
             priceButton.disabled = true;
             priceResult.classList.remove('is-error');
-            priceResult.innerHTML = '<p><span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Mencari harga...</p>';
+            priceResult.innerHTML = '<p><span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Memperkirakan harga...</p>';
             priceResult.hidden = false;
             fetch(priceButton.dataset.url, { headers: { Accept: 'application/json' } })
                 .then(function (response) {
                     return response.json().then(function (body) {
-                        if (!response.ok) throw new Error(body.message || 'Pencarian harga gagal, coba lagi.');
+                        if (!response.ok) throw new Error(body.message || 'Perkiraan harga gagal, coba lagi.');
                         return body;
                     });
                 })
                 .then(showPrice)
-                .catch(function (error) { priceMessage(error.message || 'Pencarian harga gagal, coba lagi.', true); })
+                .catch(function (error) { priceMessage(error.message || 'Perkiraan harga gagal, coba lagi.', true); })
                 .finally(function () { priceButton.disabled = false; });
         });
 
-        var confirmModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('peConfirm'));
-        var confirmOk = document.getElementById('peConfirmOk');
-        var pendingForm = null;
-        function askConfirm(targetForm, source) {
-            pendingForm = targetForm;
-            document.getElementById('peConfirmTitle').textContent = source.dataset.confirmTitle;
-            document.getElementById('peConfirmText').textContent = source.dataset.confirmText;
-            document.getElementById('peConfirmOkLabel').textContent = source.dataset.confirmOk;
-            confirmOk.disabled = false;
-            confirmModal.show();
-        }
-        document.getElementById('peDelete').addEventListener('click', function () {
-            askConfirm(document.getElementById('formDeletePlaceAction'), this);
-        });
-        document.querySelectorAll('form[data-confirm-title]').forEach(function (photoForm) {
-            photoForm.addEventListener('submit', function (event) {
-                event.preventDefault();
-                askConfirm(photoForm, photoForm);
-            });
-        });
-        confirmOk.addEventListener('click', function () {
-            // Deleting the place leaves the page for good; deleting a photo
-            // still warns about unsaved edits.
-            if (pendingForm.id === 'formDeletePlaceAction') submitting = true;
-            confirmOk.disabled = true;
-            pendingForm.submit();
-        });
+        // Deleting the place leaves the page for good; deleting a photo still
+        // warns about unsaved edits.
+        document.getElementById('confirmModalUrlForm').addEventListener('confirmed', function () { submitting = true; });
     })();
 </script>
 @endpush

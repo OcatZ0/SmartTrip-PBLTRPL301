@@ -125,14 +125,14 @@ class GeminiEnrichmentClient
             'category_tags' => array_values(array_intersect($parsed['category_tags'] ?? [], $availableCategorySlugs)),
             'estimated_visit_minutes' => isset($parsed['estimated_visit_minutes']) ? (int) $parsed['estimated_visit_minutes'] : null,
             'is_outdoor' => isset($parsed['is_outdoor']) ? (bool) $parsed['is_outdoor'] : null,
-            'estimated_cost_idr' => $this->cost($parsed['estimated_cost_idr'] ?? null),
+            'estimated_cost_idr' => self::cost($parsed['estimated_cost_idr'] ?? null),
         ];
     }
 
     /**
      * Anything outside 0 to Rp 50 juta is a misread, not a price.
      */
-    private function cost(mixed $value): ?int
+    public static function cost(mixed $value): ?int
     {
         if (! is_numeric($value) || $value < 0 || $value > 50_000_000) {
             return null;

@@ -86,15 +86,15 @@ class AdminPlacePhotoTest extends TestCase
         ];
     }
 
-    public function test_the_google_images_search_returns_at_most_three_results(): void
+    public function test_the_google_images_search_returns_at_most_nine_results(): void
     {
-        Http::fake(['serpapi.com/*' => Http::response(['images_results' => array_map(fn ($position) => $this->googleImage($position), range(1, 5))])]);
+        Http::fake(['serpapi.com/*' => Http::response(['images_results' => array_map(fn ($position) => $this->googleImage($position), range(1, 12))])]);
 
         $response = $this->actingAs($this->admin)
             ->getJson(route('admin.places.photos.google', [$this->place, 'q' => 'Masjid Agung Batam']));
 
         $response->assertOk()
-            ->assertJsonCount(3, 'results')
+            ->assertJsonCount(9, 'results')
             ->assertJsonPath('results.0.url', 'https://upload.wikimedia.org/masjid-1.jpg')
             ->assertJsonPath('results.0.source_url', 'https://id.wikipedia.org/wiki/Masjid_1');
         Http::assertSent(fn ($request) => $request['engine'] === 'google_images'

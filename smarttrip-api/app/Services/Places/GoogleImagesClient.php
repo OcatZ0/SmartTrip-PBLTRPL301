@@ -21,7 +21,7 @@ class GoogleImagesClient
 
     private const CACHE_SECONDS = 86400;
 
-    public const MAX_RESULTS = 3;
+    public const MAX_RESULTS = 9;
 
     /**
      * @return array<int, array{title: string, url: string, thumbnail: string|null, source: string|null, source_url: string|null}>
@@ -35,7 +35,7 @@ class GoogleImagesClient
 
         $query = trim($query);
 
-        return Cache::remember('serpapi:images:'.md5(mb_strtolower($query)), self::CACHE_SECONDS, function () use ($query, $apiKey) {
+        return Cache::remember('serpapi:images:'.self::MAX_RESULTS.':'.md5(mb_strtolower($query)), self::CACHE_SECONDS, function () use ($query, $apiKey) {
             try {
                 $response = Http::timeout(self::TIMEOUT_SECONDS)->get(self::SEARCH_URL, [
                     'engine' => 'google_images',

@@ -54,8 +54,8 @@ class ItineraryGenerationTest extends TestCase
     private static function orsRoute(int $waypointCount): array
     {
         $coordinates = [];
-        for ($i = 0; $i < $waypointCount; $i++) {
-            $coordinates[] = [104.0 + $i / 100, 1.1 + $i / 100];
+        for ($waypoint = 0; $waypoint < $waypointCount; $waypoint++) {
+            $coordinates[] = [104.0 + $waypoint / 100, 1.1 + $waypoint / 100];
         }
 
         return ['features' => [[
@@ -323,9 +323,9 @@ class ItineraryGenerationTest extends TestCase
         $response->assertOk();
         $days = collect($response->json('days'));
 
-        $dayOfA1 = $days->first(fn ($d) => collect($d['items'])->contains('places_id', $clusterA1->places_id));
-        $dayOfA2 = $days->first(fn ($d) => collect($d['items'])->contains('places_id', $clusterA2->places_id));
-        $dayOfB1 = $days->first(fn ($d) => collect($d['items'])->contains('places_id', $clusterB1->places_id));
+        $dayOfA1 = $days->first(fn ($day) => collect($day['items'])->contains('places_id', $clusterA1->places_id));
+        $dayOfA2 = $days->first(fn ($day) => collect($day['items'])->contains('places_id', $clusterA2->places_id));
+        $dayOfB1 = $days->first(fn ($day) => collect($day['items'])->contains('places_id', $clusterB1->places_id));
 
         $this->assertSame($dayOfA1['day_number'], $dayOfA2['day_number']);
         $this->assertNotSame($dayOfA1['day_number'], $dayOfB1['day_number']);

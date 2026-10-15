@@ -287,29 +287,100 @@ class CandidateReviewTest extends TestCase
         $this->assertDatabaseMissing('places', ['external_place_id' => 'osm:n2001']);
     }
 
+    // --- status transitions ---
+
+    public function test_a_rejected_candidate_can_still_be_approved(): void
+    {
+        Storage::fake('public');
+        $admin = User::factory()->create(['role' => 'admin']);
+        $candidate = $this->makeCandidate(['status' => 'rejected']);
+        $this->fakeDetailsAndGemini();
+
+        $this->actingAs($admin)->post("/admin/candidates/{$candidate->place_candidates_id}/approve")->assertRedirect();
+
+        $this->assertSame('approved', $candidate->fresh()->status);
+        $this->assertDatabaseHas('places', ['external_place_id' => 'osm:n2001']);
+    }
+
+    public function test_an_approved_candidate_cannot_be_approved_again(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $candidate = $this->makeCandidate(['status' => 'approved']);
+        Http::fake();
+
+        $this->actingAs($admin)->post("/admin/candidates/{$candidate->place_candidates_id}/approve")
+            ->assertRedirect()
+            ->assertSessionHas('error', 'Gagal approve "Pantai Kandidat": kandidat ini sudah disetujui');
+
+        Http::assertNothingSent();
+        $this->assertDatabaseMissing('places', ['external_place_id' => 'osm:n2001']);
+    }
+
+    public function test_an_approved_candidate_cannot_be_rejected(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $candidate = $this->makeCandidate(['status' => 'approved']);
+
+        $this->actingAs($admin)->post("/admin/candidates/{$candidate->place_candidates_id}/reject")
+            ->assertRedirect()
+            ->assertSessionHas('error', 'Gagal menolak "Pantai Kandidat": hanya kandidat pending yang bisa ditolak');
+
+        $this->assertSame('approved', $candidate->fresh()->status);
+    }
+
+    public function test_bulk_reject_skips_candidates_that_are_not_pending(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $pending = $this->makeCandidate(['name' => 'Masih Pending']);
+        $approved = $this->makeCandidate(['name' => 'Sudah Disetujui', 'external_place_id' => 'osm:n2003', 'status' => 'approved']);
+
+        $this->actingAs($admin)->post('/admin/candidates/bulk-reject', ['ids' => [$pending->place_candidates_id, $approved->place_candidates_id]])
+            ->assertRedirect()
+            ->assertSessionHas('status', '1 kandidat ditolak, 1 dilewati karena bukan pending.');
+
+        $this->assertSame('rejected', $pending->fresh()->status);
+        $this->assertSame('approved', $approved->fresh()->status);
+    }
+
+    public function test_the_list_only_shows_the_actions_allowed_for_each_status(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $rejected = $this->makeCandidate(['name' => 'Ditolak', 'status' => 'rejected']);
+        $approved = $this->makeCandidate(['name' => 'Disetujui', 'external_place_id' => 'osm:n2003', 'status' => 'approved']);
+
+        $rejectedPage = $this->actingAs($admin)->get('/admin/candidates?status=rejected');
+        $rejectedPage->assertSee(route('admin.candidates.approve', $rejected), false);
+        $rejectedPage->assertDontSee(route('admin.candidates.reject', $rejected), false);
+
+        $approvedPage = $this->actingAs($admin)->get('/admin/candidates?status=approved');
+        $approvedPage->assertDontSee(route('admin.candidates.approve', $approved), false);
+        $approvedPage->assertDontSee(route('admin.candidates.reject', $approved), false);
+        $approvedPage->assertSee('Sudah di katalog');
+    }
+
     // --- bulk actions ---
 
     public function test_candidates_can_be_bulk_rejected(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
-        $a = $this->makeCandidate(['name' => 'A']);
-        $b = $this->makeCandidate(['name' => 'B', 'external_place_id' => 'osm:n2003']);
+        $firstCandidate = $this->makeCandidate(['name' => 'A']);
+        $secondCandidate = $this->makeCandidate(['name' => 'B', 'external_place_id' => 'osm:n2003']);
 
         $response = $this->actingAs($admin)->post('/admin/candidates/bulk-reject', [
-            'ids' => [$a->place_candidates_id, $b->place_candidates_id],
+            'ids' => [$firstCandidate->place_candidates_id, $secondCandidate->place_candidates_id],
         ]);
 
         $response->assertRedirect();
-        $this->assertSame('rejected', $a->fresh()->status);
-        $this->assertSame('rejected', $b->fresh()->status);
+        $this->assertSame('rejected', $firstCandidate->fresh()->status);
+        $this->assertSame('rejected', $secondCandidate->fresh()->status);
     }
 
     public function test_candidates_can_be_bulk_approved(): void
     {
         Storage::fake('public');
         $admin = User::factory()->create(['role' => 'admin']);
-        $a = $this->makeCandidate(['name' => 'A', 'external_place_id' => 'osm:n2001']);
-        $b = $this->makeCandidate(['name' => 'B', 'external_place_id' => 'osm:n2002']);
+        $firstCandidate = $this->makeCandidate(['name' => 'A', 'external_place_id' => 'osm:n2001']);
+        $secondCandidate = $this->makeCandidate(['name' => 'B', 'external_place_id' => 'osm:n2002']);
         Http::fake([
             'api.geoapify.com/v2/place-details*' => Http::response(['features' => [[
                 'properties' => [
@@ -328,12 +399,12 @@ class CandidateReviewTest extends TestCase
         ]);
 
         $response = $this->actingAs($admin)->post('/admin/candidates/bulk-approve', [
-            'ids' => [$a->place_candidates_id, $b->place_candidates_id],
+            'ids' => [$firstCandidate->place_candidates_id, $secondCandidate->place_candidates_id],
         ]);
 
         $response->assertRedirect();
-        $this->assertSame('approved', $a->fresh()->status);
-        $this->assertSame('approved', $b->fresh()->status);
+        $this->assertSame('approved', $firstCandidate->fresh()->status);
+        $this->assertSame('approved', $secondCandidate->fresh()->status);
         $this->assertSame(2, Place::count());
     }
 

@@ -45,8 +45,8 @@ class SwapTest extends TestCase
     private static function orsRoute(int $waypointCount): array
     {
         $coordinates = [];
-        for ($i = 0; $i < $waypointCount; $i++) {
-            $coordinates[] = [104.0 + $i / 100, 1.1 + $i / 100];
+        for ($waypoint = 0; $waypoint < $waypointCount; $waypoint++) {
+            $coordinates[] = [104.0 + $waypoint / 100, 1.1 + $waypoint / 100];
         }
 
         return ['features' => [[

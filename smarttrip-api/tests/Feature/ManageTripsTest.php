@@ -120,8 +120,8 @@ class ManageTripsTest extends TestCase
     public function test_trip_list_is_paginated(): void
     {
         $user = User::factory()->create();
-        for ($i = 0; $i < 25; $i++) {
-            $this->makeTrip($user, ['title' => "Trip $i"]);
+        for ($number = 0; $number < 25; $number++) {
+            $this->makeTrip($user, ['title' => "Trip $number"]);
         }
 
         $response = $this->withHeaders($this->authHeader($user))->getJson('/api/trips?per_page=10');

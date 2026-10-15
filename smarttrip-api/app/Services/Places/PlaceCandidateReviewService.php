@@ -34,6 +34,11 @@ class PlaceCandidateReviewService
      */
     public function approve(PlaceCandidate $candidate): Place
     {
+        // A rejected candidate may still be approved (the admin changed their mind), an approved one is final.
+        if ($candidate->status === 'approved') {
+            throw new RuntimeException('kandidat ini sudah disetujui');
+        }
+
         $existing = $this->duplicates->findPlace(
             $candidate->external_place_id, $candidate->name, (float) $candidate->lat, (float) $candidate->lng
         );
@@ -79,6 +84,11 @@ class PlaceCandidateReviewService
 
     public function reject(PlaceCandidate $candidate): void
     {
+        // Rejecting an approved candidate would leave its place in the catalog under a rejected status.
+        if ($candidate->status !== 'pending') {
+            throw new RuntimeException('hanya kandidat pending yang bisa ditolak');
+        }
+
         $candidate->update(['status' => 'rejected']);
     }
 

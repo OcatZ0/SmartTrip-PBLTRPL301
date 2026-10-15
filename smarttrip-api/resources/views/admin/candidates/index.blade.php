@@ -59,20 +59,27 @@
         <tbody>
             @forelse ($candidates as $candidate)
                 <tr>
-                    <td><input type="checkbox" class="candidate-check" name="ids[]" value="{{ $candidate->place_candidates_id }}" form="bulk-form"></td>
+                    <td>@if ($candidate->status !== 'approved')<input type="checkbox" class="candidate-check" name="ids[]" value="{{ $candidate->place_candidates_id }}" form="bulk-form" aria-label="Pilih {{ $candidate->name }}">@endif</td>
                     <td>{{ $candidate->name }}</td>
                     <td>{{ $candidate->type }}</td>
                     <td>{{ $candidate->search_area }}</td>
                     <td>{{ $candidate->status }}</td>
                     <td>
-                        <form method="POST" action="{{ route('admin.candidates.approve', $candidate) }}" class="d-inline">
-                            @csrf
-                            <button type="submit" class="btn btn-sm btn-success">Approve</button>
-                        </form>
-                        <form method="POST" action="{{ route('admin.candidates.reject', $candidate) }}" class="d-inline">
-                            @csrf
-                            <button type="submit" class="btn btn-sm btn-outline-danger">Reject</button>
-                        </form>
+                        @if ($candidate->status !== 'approved')
+                            <form method="POST" action="{{ route('admin.candidates.approve', $candidate) }}" class="d-inline">
+                                @csrf
+                                <button type="submit" class="btn btn-sm btn-success">Approve</button>
+                            </form>
+                        @endif
+                        @if ($candidate->status === 'pending')
+                            <form method="POST" action="{{ route('admin.candidates.reject', $candidate) }}" class="d-inline">
+                                @csrf
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Reject</button>
+                            </form>
+                        @endif
+                        @if ($candidate->status === 'approved')
+                            <span class="text-muted small">Sudah di katalog</span>
+                        @endif
                     </td>
                 </tr>
             @empty

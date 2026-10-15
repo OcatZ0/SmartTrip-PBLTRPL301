@@ -134,8 +134,8 @@ class AdminDashboardTest extends TestCase
     public function test_the_candidate_column_links_to_all_candidates_when_more_are_waiting(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
-        foreach (range(1, 4) as $i) {
-            PlaceCandidate::create(['external_place_id' => "osm:n{$i}", 'name' => "Kandidat {$i}", 'type' => 'attraction', 'lat' => 1.1, 'lng' => 104.1, 'search_area' => 'Nongsa', 'status' => 'pending']);
+        foreach (range(1, 4) as $number) {
+            PlaceCandidate::create(['external_place_id' => "osm:n{$number}", 'name' => "Kandidat {$number}", 'type' => 'attraction', 'lat' => 1.1, 'lng' => 104.1, 'search_area' => 'Nongsa', 'status' => 'pending']);
         }
 
         $response = $this->actingAs($admin)->get('/admin/dashboard');

@@ -136,8 +136,8 @@ class PlaceCatalogTest extends TestCase
 
     public function test_the_catalog_is_paginated(): void
     {
-        for ($i = 0; $i < 25; $i++) {
-            $this->makePlace(['name' => "Tempat $i", 'external_place_id' => "gp-$i"]);
+        for ($number = 0; $number < 25; $number++) {
+            $this->makePlace(['name' => "Tempat $number", 'external_place_id' => "gp-$number"]);
         }
 
         $response = $this->getJson('/api/places?per_page=10');

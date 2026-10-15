@@ -56,7 +56,11 @@ class CandidateController extends Controller
 
     public function reject(PlaceCandidate $candidate, PlaceCandidateReviewService $service)
     {
-        $service->reject($candidate);
+        try {
+            $service->reject($candidate);
+        } catch (RuntimeException $exception) {
+            return back()->with('error', "Gagal menolak \"{$candidate->name}\": {$exception->getMessage()}");
+        }
 
         return back()->with('status', "\"{$candidate->name}\" ditolak.");
     }
@@ -84,10 +88,18 @@ class CandidateController extends Controller
     {
         $data = $request->validate(['ids' => ['required', 'array'], 'ids.*' => ['integer']]);
 
+        $rejected = 0;
+        $skipped = 0;
+
         foreach (PlaceCandidate::whereIn('place_candidates_id', $data['ids'])->get() as $candidate) {
-            $service->reject($candidate);
+            try {
+                $service->reject($candidate);
+                $rejected++;
+            } catch (RuntimeException) {
+                $skipped++;
+            }
         }
 
-        return back()->with('status', count($data['ids']).' kandidat ditolak.');
+        return back()->with('status', "{$rejected} kandidat ditolak, {$skipped} dilewati karena bukan pending.");
     }
 }

@@ -51,15 +51,35 @@ class PlacePhotoController extends Controller
 
     public function storeFromGoogle(Request $request, Place $place, PlacePhotoStore $store)
     {
-        $data = $request->validate(['image_url' => ['required', 'url:http,https', 'max:2000']]);
+        $data = $request->validate([
+            'image_urls' => ['required', 'array', 'max:'.GoogleImagesClient::MAX_RESULTS],
+            'image_urls.*' => ['required', 'distinct', 'url:http,https', 'max:2000'],
+        ], [
+            'image_urls.required' => 'Pilih minimal satu foto.',
+        ]);
 
-        try {
-            $store->storeFromLink($place, $data['image_url']);
-        } catch (RuntimeException $exception) {
-            return back()->with('error', $exception->getMessage());
+        // One host blocking downloads should not cost the admin the others.
+        $savedCount = 0;
+        $failures = [];
+        foreach ($data['image_urls'] as $imageUrl) {
+            try {
+                $store->storeFromLink($place, $imageUrl);
+                $savedCount++;
+            } catch (RuntimeException $exception) {
+                $failures[] = $exception->getMessage();
+            }
         }
 
-        return back()->with('status', 'Foto dari Google Gambar ditambahkan.');
+        if ($savedCount === 0) {
+            return back()->with('error', 'Foto tidak bisa ditambahkan. '.$failures[0]);
+        }
+
+        $status = "{$savedCount} foto dari Google Gambar ditambahkan.";
+        if ($failures !== []) {
+            $status .= ' '.count($failures).' foto gagal diunduh, pilih foto lain.';
+        }
+
+        return back()->with('status', $status);
     }
 
     public function storeFromLink(Request $request, Place $place, PlacePhotoStore $store)

@@ -145,18 +145,52 @@ class AdminPlacePhotoTest extends TestCase
             ->assertJsonCount(1, 'results');
     }
 
-    public function test_picking_a_google_images_result_downloads_and_saves_it(): void
+    public function test_several_google_images_results_can_be_picked_at_once(): void
     {
-        // A public IP literal, so the address check needs no DNS lookup in tests.
+        // Public IP literals, so the address check needs no DNS lookup in tests.
         Http::fake(['93.184.216.34/*' => Http::response($this->jpegBytes(1000, 700))]);
 
         $this->actingAs($this->admin)
-            ->post(route('admin.places.photos.google.store', $this->place), ['image_url' => 'http://93.184.216.34/masjid.jpg'])
+            ->post(route('admin.places.photos.google.store', $this->place), ['image_urls' => [
+                'http://93.184.216.34/masjid-1.jpg', 'http://93.184.216.34/masjid-2.jpg', 'http://93.184.216.34/masjid-3.jpg',
+            ]])
             ->assertRedirect()
-            ->assertSessionHas('status', 'Foto dari Google Gambar ditambahkan.');
+            ->assertSessionHas('status', '3 foto dari Google Gambar ditambahkan.');
 
-        $photo = $this->place->photos()->sole();
-        $this->assertSame($photo->photo_url, $this->place->fresh()->photo_url);
+        $this->assertSame([0, 1, 2], $this->place->photos()->orderBy('sort_order')->pluck('sort_order')->all());
+        $this->assertSame($this->place->photos()->orderBy('sort_order')->value('photo_url'), $this->place->fresh()->photo_url);
+    }
+
+    public function test_one_failed_download_does_not_drop_the_other_picks(): void
+    {
+        Http::fake([
+            '93.184.216.34/ok.jpg' => Http::response($this->jpegBytes(1000, 700)),
+            '93.184.216.34/blocked.jpg' => Http::response('', 403),
+        ]);
+
+        $this->actingAs($this->admin)
+            ->post(route('admin.places.photos.google.store', $this->place), ['image_urls' => [
+                'http://93.184.216.34/blocked.jpg', 'http://93.184.216.34/ok.jpg',
+            ]])
+            ->assertSessionHas('status', '1 foto dari Google Gambar ditambahkan. 1 foto gagal diunduh, pilih foto lain.');
+
+        $this->assertSame(1, $this->place->photos()->count());
+    }
+
+    public function test_picking_needs_at_least_one_and_at_most_nine_photos(): void
+    {
+        Http::fake();
+
+        $this->actingAs($this->admin)
+            ->post(route('admin.places.photos.google.store', $this->place), ['image_urls' => []])
+            ->assertSessionHasErrors('image_urls');
+
+        $tooMany = array_map(fn ($number) => "http://93.184.216.34/{$number}.jpg", range(1, 10));
+        $this->actingAs($this->admin)
+            ->post(route('admin.places.photos.google.store', $this->place), ['image_urls' => $tooMany])
+            ->assertSessionHasErrors('image_urls');
+
+        Http::assertNothingSent();
     }
 
     public function test_a_google_images_result_on_the_local_network_is_refused(): void
@@ -164,8 +198,8 @@ class AdminPlacePhotoTest extends TestCase
         Http::fake();
 
         $this->actingAs($this->admin)
-            ->post(route('admin.places.photos.google.store', $this->place), ['image_url' => 'http://192.168.1.10/a.jpg'])
-            ->assertSessionHas('error', 'Alamat gambar harus dari internet, bukan jaringan lokal.');
+            ->post(route('admin.places.photos.google.store', $this->place), ['image_urls' => ['http://192.168.1.10/a.jpg']])
+            ->assertSessionHas('error', 'Foto tidak bisa ditambahkan. Alamat gambar harus dari internet, bukan jaringan lokal.');
 
         Http::assertNothingSent();
         $this->assertSame(0, $this->place->photos()->count());

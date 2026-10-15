@@ -23,7 +23,8 @@ class PlaceController extends Controller
         $selectedType = $request->string('type')->trim()->toString();
         $selectedStatus = $request->string('status_data')->trim()->toString();
 
-        $query = Place::query()->with(['categories', 'photos']);
+        // Review count and average feed ratingBlend(), the rating the app shows.
+        $query = Place::query()->with(['categories', 'photos'])->withCount('reviews')->withAvg('reviews', 'rating');
 
         if (! empty($search)) {
             $term = '%'.mb_strtolower($search).'%';

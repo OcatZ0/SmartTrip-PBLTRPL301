@@ -788,6 +788,23 @@
         background: #FEE2E2;
         color: #991B1B;
     }
+
+    .badge-type-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .badge-type-more {
+        background: #F1F5F9;
+        color: #475569;
+        cursor: default;
+    }
+
+    .rating-empty {
+        font-size: 13px;
+        color: #94A3B8;
+    }
 </style>
 @endpush
 
@@ -871,31 +888,34 @@
                             </td>
                             <td>
                                 @php
-                                    $catName = $place->categories->first()->name_id ?? 'Wisata Umum';
-                                    $badgeClass = 'badge-type-ikon';
-                                    $icon = 'bi-geo-alt';
-
-                                    if (str_contains(strtolower($catName), 'pantai')) {
-                                        $badgeClass = 'badge-type-pantai';
-                                        $icon = 'bi-water';
-                                    } elseif (str_contains(strtolower($catName), 'seafood')) {
-                                        $badgeClass = 'badge-type-seafood';
-                                        $icon = 'bi-cup-hot';
-                                    } elseif (str_contains(strtolower($catName), 'kuliner')) {
-                                        $badgeClass = 'badge-type-kuliner';
-                                        $icon = 'bi-utensils';
-                                    } elseif (str_contains(strtolower($catName), 'bahari')) {
-                                        $badgeClass = 'badge-type-bahari';
-                                        $icon = 'bi-tsunami';
-                                    } elseif (str_contains(strtolower($catName), 'belanja')) {
-                                        $badgeClass = 'badge-type-belanja';
-                                        $icon = 'bi-bag-check';
+                                    $categoryNames = $place->categories->pluck('name_id');
+                                    if ($categoryNames->isEmpty()) {
+                                        $categoryNames = collect([match ($place->type) { 'lodging' => 'Penginapan / Hotel', 'culinary' => 'Kuliner', default => 'Wisata Umum' }]);
                                     }
+                                    $hiddenCategories = $categoryNames->slice(3);
                                 @endphp
-                                <span class="badge-type {{ $badgeClass }}">
-                                    <i class="bi {{ $icon }}"></i>
-                                    <span>{{ $catName }}</span>
-                                </span>
+                                <div class="badge-type-list">
+                                    @foreach ($categoryNames->take(3) as $catName)
+                                        @php
+                                            $lowerName = strtolower($catName);
+                                            [$badgeClass, $icon] = match (true) {
+                                                str_contains($lowerName, 'pantai') => ['badge-type-pantai', 'bi-water'],
+                                                str_contains($lowerName, 'seafood') => ['badge-type-seafood', 'bi-cup-hot'],
+                                                str_contains($lowerName, 'kuliner') => ['badge-type-kuliner', 'bi-egg-fried'],
+                                                str_contains($lowerName, 'bahari') => ['badge-type-bahari', 'bi-tsunami'],
+                                                str_contains($lowerName, 'belanja') => ['badge-type-belanja', 'bi-bag-check'],
+                                                default => ['badge-type-ikon', 'bi-geo-alt'],
+                                            };
+                                        @endphp
+                                        <span class="badge-type {{ $badgeClass }}">
+                                            <i class="bi {{ $icon }}" aria-hidden="true"></i>
+                                            <span>{{ $catName }}</span>
+                                        </span>
+                                    @endforeach
+                                    @if ($hiddenCategories->isNotEmpty())
+                                        <span class="badge-type badge-type-more" title="{{ $hiddenCategories->join(', ') }}">+{{ $hiddenCategories->count() }}</span>
+                                    @endif
+                                </div>
                             </td>
                             <td>
                                 <span class="location-text">
@@ -903,17 +923,28 @@
                                 </span>
                             </td>
                             <td>
-                                <div class="rating-text">
-                                    <i class="bi bi-star-fill rating-star me-1"></i>{{ number_format($place->rating ?? 4.5, 1) }}
-                                    <span class="rating-count">({{ number_format($place->review_count ?? 100) }})</span>
-                                </div>
+                                @php
+                                    $rating = $place->ratingBlend();
+                                    $ratingCount = (int) $place->review_count + (int) $place->reviews_count;
+                                @endphp
+                                @if ($rating === null)
+                                    <div class="rating-empty">Belum ada rating</div>
+                                @else
+                                    <div class="rating-text">
+                                        <i class="bi bi-star-fill rating-star me-1" aria-hidden="true"></i>{{ number_format($rating, 1, ',', '.') }}
+                                        <span class="rating-count">({{ number_format($ratingCount, 0, ',', '.') }} ulasan)</span>
+                                    </div>
+                                @endif
                             </td>
                             <td>
                                 @if($place->estimated_cost_idr === 0)
                                     <div class="ticket-text">Gratis</div>
-                                    <div class="ticket-sub">Bebas Masuk</div>
+                                    <div class="ticket-sub">{{ $place->estimated_cost_is_ai ? 'Perkiraan AI' : 'Bebas Masuk' }}</div>
                                 @elseif($place->estimated_cost_idr > 0)
                                     <div class="ticket-text">Rp {{ number_format($place->estimated_cost_idr, 0, ',', '.') }}</div>
+                                    <div class="ticket-sub">
+                                        {{ $place->type === 'lodging' ? 'per malam' : 'per orang' }}{{ $place->estimated_cost_is_ai ? ' · Perkiraan AI' : '' }}
+                                    </div>
                                 @else
                                     <div class="ticket-warning">
                                         <i class="bi bi-exclamation-circle me-1"></i>Belum Diatur

@@ -110,6 +110,55 @@ class AdminPlaceManagementTest extends TestCase
         $response->assertDontSee('Showing');
     }
 
+    public function test_the_list_shows_no_made_up_rating(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $this->makePlace(['name' => 'Tanpa Rating', 'rating' => null, 'review_count' => 0]);
+
+        $response = $this->actingAs($admin)->get('/admin/places');
+
+        $response->assertOk();
+        $response->assertSee('Belum ada rating');
+        $response->assertDontSee('4,5');
+    }
+
+    public function test_the_list_shows_the_source_rating_with_its_review_count(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $this->makePlace(['rating' => 4.3, 'review_count' => 120]);
+
+        $response = $this->actingAs($admin)->get('/admin/places');
+
+        $response->assertSee('4,3');
+        $response->assertSee('(120 ulasan)');
+    }
+
+    public function test_the_list_shows_three_categories_and_counts_the_rest(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $place = $this->makePlace();
+        foreach (['Pantai', 'Sejarah', 'Alam', 'Keluarga', 'Foto'] as $name) {
+            $category = Category::create(['name_id' => $name, 'name_en' => $name, 'slug' => strtolower($name)]);
+            $place->categories()->attach($category->categories_id);
+        }
+
+        $response = $this->actingAs($admin)->get('/admin/places');
+
+        $response->assertSee('+2');
+        $response->assertSee('title="', false);
+    }
+
+    public function test_the_list_shows_the_cost_and_marks_an_ai_estimate(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $this->makePlace(['name' => 'Hotel AI', 'type' => 'lodging', 'estimated_cost_idr' => 350000, 'estimated_cost_is_ai' => true]);
+
+        $response = $this->actingAs($admin)->get('/admin/places');
+
+        $response->assertSee('Rp 350.000');
+        $response->assertSee('per malam · Perkiraan AI');
+    }
+
     public function test_an_admin_can_add_a_manual_place(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);

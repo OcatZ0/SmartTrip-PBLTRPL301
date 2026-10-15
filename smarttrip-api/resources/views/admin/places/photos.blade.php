@@ -18,14 +18,15 @@
                                 @unless ($loop->first)
                                     <form method="POST" action="{{ route('admin.places.photos.primary', [$place, $photo]) }}">
                                         @csrf
-                                        <button type="submit" class="btn btn-outline-primary btn-sm">Jadikan utama</button>
+                                        <button type="submit" class="btn btn-outline-primary btn-sm"><i class="bi bi-star" aria-hidden="true"></i> Jadikan utama</button>
                                     </form>
                                 @endunless
                                 <form method="POST" action="{{ route('admin.places.photos.destroy', [$place, $photo]) }}"
-                                    onsubmit="return confirm('Hapus foto ini?')">
+                                    data-confirm-title="Hapus foto ini?" data-confirm-ok="Hapus foto"
+                                    data-confirm-text="Foto dihapus dari server dan tidak bisa dikembalikan.">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="btn btn-outline-danger btn-sm">Hapus</button>
+                                    <button type="submit" class="btn btn-outline-danger btn-sm" aria-label="Hapus foto" title="Hapus foto"><i class="bi bi-trash3" aria-hidden="true"></i></button>
                                 </form>
                             </div>
                         </div>
@@ -39,7 +40,7 @@
             @csrf
             <div class="input-group">
                 <input type="file" name="photos[]" class="form-control" accept="image/jpeg,image/png,image/webp" multiple required>
-                <button type="submit" class="btn btn-primary">Unggah</button>
+                <button type="submit" class="btn btn-primary"><i class="bi bi-upload" aria-hidden="true"></i> Unggah</button>
             </div>
             <div class="form-text">JPG, PNG, atau WebP, maksimal 8 MB per foto, sampai 10 foto sekaligus. Foto dikecilkan otomatis.</div>
         </form>
@@ -61,7 +62,7 @@
 
         <button type="button" class="btn btn-outline-secondary mb-3" data-bs-toggle="collapse" data-bs-target="#photo-link-form"
             aria-expanded="{{ $linkFormOpen ? 'true' : 'false' }}" aria-controls="photo-link-form">
-            Tambah dari tautan
+            <i class="bi bi-link-45deg" aria-hidden="true"></i> Tambah dari tautan
         </button>
         <form method="POST" action="{{ route('admin.places.photos.link.store', $place) }}" id="photo-link-form"
             class="collapse {{ $linkFormOpen ? 'show' : '' }} border rounded-3 p-3 bg-light">
@@ -75,7 +76,7 @@
                     @error('image_url')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div class="col-12">
-                    <button type="submit" class="btn btn-primary">Simpan foto</button>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-check2" aria-hidden="true"></i> Simpan foto</button>
                 </div>
             </div>
         </form>
@@ -111,7 +112,8 @@ document.addEventListener('DOMContentLoaded', function () {
         const $add = $('<form method="POST" class="card-footer p-2">').attr('action', addUrl);
         $add.append($('<input type="hidden" name="_token">').val(csrf));
         $add.append($('<input type="hidden" name="image_url">').val(image.url));
-        $add.append($('<button type="submit" class="btn btn-success btn-sm w-100">').text('Pakai foto ini'));
+        $add.append($('<button type="submit" class="btn btn-success btn-sm w-100">')
+            .append('<i class="bi bi-plus-lg" aria-hidden="true"></i> ', document.createTextNode('Pakai foto ini')));
         $card.append($add);
 
         return $('<div class="col-12 col-md-4">').append($card);

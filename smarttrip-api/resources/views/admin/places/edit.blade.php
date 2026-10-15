@@ -162,9 +162,6 @@
     .pe-map iframe { display: block; width: 100%; height: 160px; border: 0; }
     .pe-map-foot { padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 13px; }
     .pe-map-foot a { font-weight: 700; text-decoration: none; }
-    .pe-log { display: flex; flex-direction: column; gap: 2px; padding-left: 12px; border-left: 2px solid var(--pe-line); }
-    .pe-log span { font-size: 13px; }
-    .pe-log small { font-size: 12px; color: var(--pe-muted); }
 
     .pe-page #photos { border: 0; border-radius: 20px; box-shadow: 0 4px 16px rgba(10, 36, 64, .06); overflow: hidden; margin-top: 0 !important; }
     .pe-page #photos > .card-header { padding: 18px 22px 0; border: 0; background: #fff; font-size: 17px; font-weight: 700; }
@@ -207,15 +204,24 @@
 
     .pe-savebar { position: fixed; left: 76px; right: 0; bottom: 0; z-index: 900; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 14px 32px; background: rgba(255, 255, 255, .94); border-top: 1px solid #dbe2ec; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); transition: left .2s ease; }
     .admin-shell:has(.admin-rail.is-expanded) .pe-savebar { left: 240px; }
-    .pe-delete { height: 44px; padding: 0 12px; border: 0; border-radius: 12px; background: transparent; font-size: 14px; font-weight: 700; color: #b42318; }
+    .pe-delete { width: 44px; height: 44px; padding: 0; border: 0; border-radius: 12px; background: transparent; display: inline-flex; align-items: center; justify-content: center; font-size: 18px; color: #b42318; }
     .pe-delete:hover { background: #fdecea; }
     .pe-dirty { flex: 1; text-align: right; font-size: 13px; color: #5d6b7c; }
     .pe-dirty.is-dirty { color: #7a4b00; font-weight: 600; }
-    .pe-btn { height: 44px; padding: 0 18px; border: 0; border-radius: 12px; display: inline-flex; align-items: center; font-size: 14px; font-weight: 700; text-decoration: none; }
+    .pe-btn { height: 44px; padding: 0 18px; border: 0; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 14px; font-weight: 700; text-decoration: none; }
     .pe-btn.is-quiet { background: #eef2f8; color: #14212f; }
     .pe-btn.is-quiet:hover { background: #e2e8f1; color: #14212f; }
     .pe-btn.is-primary { padding: 0 20px; background: #2b6fab; color: #fff; }
     .pe-btn.is-primary:hover { background: #245f93; }
+    .pe-btn.is-danger { background: #d92d20; color: #fff; }
+    .pe-btn.is-danger:hover { background: #b42318; }
+    .pe-btn:disabled { opacity: .7; }
+    .pe-confirm { padding: 32px 28px 24px; border: 0; border-radius: 20px; align-items: center; text-align: center; box-shadow: 0 24px 64px rgba(10, 36, 64, .22); }
+    .pe-confirm-icon { width: 64px; height: 64px; margin-bottom: 16px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: #fdecea; color: #b42318; font-size: 26px; box-shadow: 0 0 0 8px #fef5f4; }
+    .pe-confirm-title { margin: 0 0 8px; font-size: 19px; line-height: 26px; font-weight: 700; color: #14212f; overflow-wrap: anywhere; }
+    .pe-confirm-text { margin: 0 0 24px; font-size: 14px; color: #5d6b7c; }
+    .pe-confirm-actions { width: 100%; display: flex; gap: 12px; }
+    .pe-confirm-actions .pe-btn { flex: 1; }
     .pe-page button:focus-visible, .pe-savebar button:focus-visible, .pe-savebar a:focus-visible { outline: 3px solid rgba(43, 111, 171, .45); outline-offset: 2px; }
     @media (max-width: 640px) {
         .pe-savebar { padding: 12px 16px; }
@@ -256,7 +262,7 @@
                     @else
                         <div class="pe-photo-empty"><i class="bi bi-image" aria-hidden="true"></i>Belum ada foto</div>
                     @endif
-                    <a href="#photos" class="pe-photo-link">Kelola foto ({{ $photoCount }})</a>
+                    <a href="#photos" class="pe-photo-link"><i class="bi bi-images" aria-hidden="true"></i> Kelola foto ({{ $photoCount }})</a>
                 </div>
                 <div class="pe-facts">
                     <div class="pe-name">
@@ -405,25 +411,11 @@
                     <iframe src="{{ $embedUrl }}" title="Peta lokasi {{ $place->name }}" loading="lazy"></iframe>
                     <div class="pe-map-foot">
                         <span class="pe-card-sub">{{ $place->kecamatan ?: 'Batam' }}</span>
-                        <a href="https://www.openstreetmap.org/?mlat={{ $lat }}&amp;mlon={{ $lng }}#map=17/{{ $lat }}/{{ $lng }}" target="_blank" rel="noopener">Buka di peta</a>
+                        <a href="https://www.openstreetmap.org/?mlat={{ $lat }}&amp;mlon={{ $lng }}#map=17/{{ $lat }}/{{ $lng }}" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right" aria-hidden="true"></i> Buka di peta</a>
                     </div>
                 </section>
             @endif
 
-            <section class="pe-card">
-                <h2>Riwayat perubahan</h2>
-                @forelse ($activities->take(3) as $activity)
-                    <div class="pe-log">
-                        <span><b>{{ $activity->causer?->name ?? 'Sistem' }}</b> {{ $describeActivity($activity) }}</span>
-                        <small>{{ $activity->created_at->translatedFormat('j M Y, H.i') }}</small>
-                    </div>
-                @empty
-                    <span class="pe-card-sub">Belum ada perubahan.</span>
-                @endforelse
-                @if ($activities->count() > 3)
-                    <a href="#riwayat" style="font-size: 13px; font-weight: 700; text-decoration: none">Lihat semua riwayat ({{ $activities->count() }})</a>
-                @endif
-            </section>
         </aside>
     </div>
 
@@ -445,10 +437,28 @@
 </form>
 
 <div class="pe-savebar">
-    <button type="button" class="pe-delete" id="peDelete">Hapus dari katalog</button>
+    <button type="button" class="pe-delete" id="peDelete" aria-label="Hapus dari katalog" title="Hapus dari katalog"
+        data-confirm-title="Hapus {{ $place->name }}?" data-confirm-ok="Hapus dari katalog"
+        data-confirm-text="Tempat ini tidak akan muncul lagi di aplikasi dan di rekomendasi itinerary.">
+        <i class="bi bi-trash3" aria-hidden="true"></i>
+    </button>
     <span class="pe-dirty" id="peDirty" aria-live="polite">Belum ada perubahan</span>
-    <a href="{{ route('admin.places.index') }}" class="pe-btn is-quiet">Batal</a>
-    <button type="submit" form="formEditPlace" class="pe-btn is-primary">Simpan perubahan</button>
+    <a href="{{ route('admin.places.index') }}" class="pe-btn is-quiet"><i class="bi bi-x-lg" aria-hidden="true"></i>Batal</a>
+    <button type="submit" form="formEditPlace" class="pe-btn is-primary"><i class="bi bi-check2" aria-hidden="true"></i>Simpan perubahan</button>
+</div>
+
+<div class="modal fade" id="peConfirm" tabindex="-1" aria-labelledby="peConfirmTitle" aria-describedby="peConfirmText" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content pe-confirm">
+            <span class="pe-confirm-icon" aria-hidden="true"><i class="bi bi-trash3"></i></span>
+            <h2 class="pe-confirm-title" id="peConfirmTitle"></h2>
+            <p class="pe-confirm-text" id="peConfirmText"></p>
+            <div class="pe-confirm-actions">
+                <button type="button" class="pe-btn is-quiet" data-bs-dismiss="modal"><i class="bi bi-x-lg" aria-hidden="true"></i>Batal</button>
+                <button type="button" class="pe-btn is-danger" id="peConfirmOk"><i class="bi bi-trash3" aria-hidden="true"></i><span id="peConfirmOkLabel">Hapus</span></button>
+            </div>
+        </div>
+    </div>
 </div>
 @endsection
 
@@ -592,11 +602,32 @@
                 .finally(function () { priceButton.disabled = false; });
         });
 
+        var confirmModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('peConfirm'));
+        var confirmOk = document.getElementById('peConfirmOk');
+        var pendingForm = null;
+        function askConfirm(targetForm, source) {
+            pendingForm = targetForm;
+            document.getElementById('peConfirmTitle').textContent = source.dataset.confirmTitle;
+            document.getElementById('peConfirmText').textContent = source.dataset.confirmText;
+            document.getElementById('peConfirmOkLabel').textContent = source.dataset.confirmOk;
+            confirmOk.disabled = false;
+            confirmModal.show();
+        }
         document.getElementById('peDelete').addEventListener('click', function () {
-            if (confirm(@json('Hapus "' . $place->name . '" dari katalog? Tempat ini tidak akan muncul lagi di aplikasi.'))) {
-                submitting = true;
-                document.getElementById('formDeletePlaceAction').submit();
-            }
+            askConfirm(document.getElementById('formDeletePlaceAction'), this);
+        });
+        document.querySelectorAll('form[data-confirm-title]').forEach(function (photoForm) {
+            photoForm.addEventListener('submit', function (event) {
+                event.preventDefault();
+                askConfirm(photoForm, photoForm);
+            });
+        });
+        confirmOk.addEventListener('click', function () {
+            // Deleting the place leaves the page for good; deleting a photo
+            // still warns about unsaved edits.
+            if (pendingForm.id === 'formDeletePlaceAction') submitting = true;
+            confirmOk.disabled = true;
+            pendingForm.submit();
         });
     })();
 </script>

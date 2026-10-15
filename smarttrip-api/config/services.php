@@ -38,6 +38,10 @@ return [
         'daily_credits' => env('GEOAPIFY_DAILY_CREDITS', 3000),
     ],
 
+    'serpapi' => [
+        'api_key' => env('SERPAPI_API_KEY'),
+    ],
+
     'openrouteservice' => [
         'api_key' => env('ORS_API_KEY'),
     ],

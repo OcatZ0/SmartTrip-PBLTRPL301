@@ -115,31 +115,18 @@ class PlaceReview {
   final DateTime? createdAt;
 }
 
-/// A photo on the B2 detail screen. Openverse photos carry the Creative
-/// Commons credit the app must show; photos the admin uploaded have none.
+/// A photo on the B2 detail screen.
 class PlacePhoto {
-  const PlacePhoto({required this.url, this.credit, this.license, this.sourceUrl});
+  const PlacePhoto({required this.url});
 
   factory PlacePhoto.fromJson(Object? json) {
     // Older API responses listed bare URLs.
     if (json is! Map<String, dynamic>) return PlacePhoto(url: AppConfig.resolveMediaUrl(json?.toString()) ?? '');
 
-    return PlacePhoto(
-      url: AppConfig.resolveMediaUrl(json['url'] as String?) ?? '',
-      credit: json['credit'] as String?,
-      license: json['license'] as String?,
-      sourceUrl: json['source_url'] as String?,
-    );
+    return PlacePhoto(url: AppConfig.resolveMediaUrl(json['url'] as String?) ?? '');
   }
 
   final String url;
-  final String? credit;
-  final String? license;
-
-  /// Page the photo came from, opened when the credit is tapped.
-  final String? sourceUrl;
-
-  bool get needsCredit => license != null;
 }
 
 /// B2 Detail Tempat, from `GET /api/places/{id}` (PlaceDetailResource).

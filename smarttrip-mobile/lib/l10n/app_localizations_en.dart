@@ -937,12 +937,4 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get detailLoadFailed => 'Couldn\'t load this place.';
-
-  @override
-  String detailPhotoCredit(String credit, String license) {
-    return 'Photo: $credit, $license';
-  }
-
-  @override
-  String get detailPhotoAnonymous => 'Unknown';
 }

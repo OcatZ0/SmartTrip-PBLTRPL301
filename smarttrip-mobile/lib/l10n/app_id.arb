@@ -483,17 +483,5 @@
       }
     }
   },
-  "detailLoadFailed": "Detail tempat gagal dimuat.",
-  "detailPhotoCredit": "Foto: {credit}, {license}",
-  "@detailPhotoCredit": {
-    "placeholders": {
-      "credit": {
-        "type": "String"
-      },
-      "license": {
-        "type": "String"
-      }
-    }
-  },
-  "detailPhotoAnonymous": "Anonim"
+  "detailLoadFailed": "Detail tempat gagal dimuat."
 }

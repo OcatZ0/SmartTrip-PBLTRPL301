@@ -147,12 +147,6 @@ class _Hero extends StatefulWidget {
 class _HeroState extends State<_Hero> {
   int _page = 0;
 
-  Future<void> _openSource(PlacePhoto photo) async {
-    final url = photo.sourceUrl;
-    if (url == null) return;
-    await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
-  }
-
   @override
   Widget build(BuildContext context) {
     final detail = widget.detail;
@@ -163,7 +157,6 @@ class _HeroState extends State<_Hero> {
     Widget image(String url) => CatalogPhoto.network(url, placeholder: placeholder);
 
     final heroUrl = detail.heroPhotoUrl;
-    final current = photos.isEmpty ? null : photos[_page.clamp(0, photos.length - 1)];
 
     return Stack(
       fit: StackFit.expand,
@@ -211,49 +204,7 @@ class _HeroState extends State<_Hero> {
               ],
             ),
           ),
-        if (current != null && current.needsCredit)
-          Positioned(
-            top: belowBar,
-            right: 12,
-            left: photos.length > 1 ? 16 + photos.length * 10.0 + 12 : 12,
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: _PhotoCredit(photo: current, onTap: () => _openSource(current)),
-            ),
-          ),
       ],
-    );
-  }
-}
-
-/// Creative Commons credit for the photo on screen; tapping opens its
-/// source page, where the full license is.
-class _PhotoCredit extends StatelessWidget {
-  const _PhotoCredit({required this.photo, required this.onTap});
-
-  final PlacePhoto photo;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final credit = photo.credit?.trim();
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-        decoration: BoxDecoration(
-          color: CatalogColors.navy900.withValues(alpha: 0.55),
-          borderRadius: BorderRadius.circular(999),
-        ),
-        child: Text(
-          l10n.detailPhotoCredit(credit == null || credit.isEmpty ? l10n.detailPhotoAnonymous : credit, photo.license!),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: catalogText(10, FontWeight.w500, Colors.white.withValues(alpha: 0.9)),
-        ),
-      ),
     );
   }
 }

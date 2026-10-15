@@ -15,8 +15,6 @@ class AdminPlacePhotoTest extends TestCase
 {
     use RefreshDatabase;
 
-    private const OPENVERSE_ID = '4bc43a04-ef46-4544-a0c1-63c63f56e276';
-
     private User $admin;
 
     private Place $place;
@@ -26,6 +24,7 @@ class AdminPlacePhotoTest extends TestCase
         parent::setUp();
 
         Storage::fake('public');
+        config(['services.serpapi.api_key' => 'test-key']);
         $this->admin = User::factory()->create(['role' => 'admin']);
         $this->place = Place::create([
             'name' => 'Masjid Agung Batam', 'type' => 'attraction', 'lat' => 1.1264, 'lng' => 104.0534,
@@ -42,21 +41,6 @@ class AdminPlacePhotoTest extends TestCase
         return (string) ob_get_clean();
     }
 
-    private function openverseImage(array $overrides = []): array
-    {
-        return array_merge([
-            'id' => self::OPENVERSE_ID,
-            'title' => 'Masjid Agung Batam',
-            'creator' => 'Si Gam',
-            'license' => 'by-sa',
-            'license_version' => '4.0',
-            'license_url' => 'https://creativecommons.org/licenses/by-sa/4.0/',
-            'foreign_landing_url' => 'https://commons.wikimedia.org/w/index.php?curid=1',
-            'url' => 'https://upload.wikimedia.org/masjid.jpg',
-            'thumbnail' => 'https://api.openverse.org/v1/images/'.self::OPENVERSE_ID.'/thumb/',
-            'source' => 'wikimedia',
-        ], $overrides);
-    }
 
     public function test_the_admin_can_upload_photos_and_the_first_becomes_the_catalog_thumbnail(): void
     {
@@ -70,7 +54,6 @@ class AdminPlacePhotoTest extends TestCase
         $response->assertRedirect();
         $photos = $this->place->photos()->orderBy('sort_order')->get();
         $this->assertSame([0, 1], $photos->pluck('sort_order')->all());
-        $this->assertNull($photos->first()->credit);
         $this->assertSame($photos->first()->photo_url, $this->place->fresh()->photo_url);
 
         // Shrunk to at most 1600 px on the longest side.
@@ -89,47 +72,116 @@ class AdminPlacePhotoTest extends TestCase
         $this->assertSame(0, $this->place->photos()->count());
     }
 
-    public function test_the_openverse_search_returns_normalized_candidates_as_json(): void
+
+
+    private function googleImage(int $position): array
     {
-        Http::fake(['api.openverse.org/v1/images/*' => Http::response(['results' => [
-            $this->openverseImage(),
-            $this->openverseImage(['id' => 'x', 'license' => 'by-nc-sa', 'license_version' => '2.0']),
-        ]])]);
+        return [
+            'position' => $position,
+            'title' => "Masjid Agung Batam {$position}",
+            'source' => 'Wikipedia',
+            'link' => "https://id.wikipedia.org/wiki/Masjid_{$position}",
+            'original' => "https://upload.wikimedia.org/masjid-{$position}.jpg",
+            'thumbnail' => "https://serpapi.com/thumb-{$position}.jpg",
+        ];
+    }
+
+    public function test_the_google_images_search_returns_at_most_three_results(): void
+    {
+        Http::fake(['serpapi.com/*' => Http::response(['images_results' => array_map(fn ($position) => $this->googleImage($position), range(1, 5))])]);
 
         $response = $this->actingAs($this->admin)
-            ->getJson("/admin/places/{$this->place->places_id}/photos/openverse?q=Masjid+Agung+Batam");
+            ->getJson(route('admin.places.photos.google', [$this->place, 'q' => 'Masjid Agung Batam']));
 
         $response->assertOk()
-            ->assertJsonPath('results.0.license', 'CC BY-SA 4.0')
-            ->assertJsonPath('results.0.commercial', true)
-            ->assertJsonPath('results.0.creator', 'Si Gam')
-            ->assertJsonPath('results.1.commercial', false);
-        Http::assertSent(fn ($request) => $request['q'] === 'Masjid Agung Batam');
+            ->assertJsonCount(3, 'results')
+            ->assertJsonPath('results.0.url', 'https://upload.wikimedia.org/masjid-1.jpg')
+            ->assertJsonPath('results.0.source_url', 'https://id.wikipedia.org/wiki/Masjid_1');
+        Http::assertSent(fn ($request) => $request['engine'] === 'google_images'
+            && $request['q'] === 'Masjid Agung Batam'
+            && $request['api_key'] === 'test-key');
     }
 
-    public function test_an_openverse_outage_is_reported_as_json(): void
+    public function test_the_same_google_images_search_is_cached_for_a_day(): void
     {
-        Http::fake(['api.openverse.org/*' => Http::response([], 503)]);
+        Http::fake(['serpapi.com/*' => Http::response(['images_results' => [$this->googleImage(1)]])]);
+
+        foreach (['Masjid Agung Batam', ' masjid agung batam '] as $query) {
+            $this->actingAs($this->admin)
+                ->getJson(route('admin.places.photos.google', [$this->place, 'q' => $query]))
+                ->assertOk();
+        }
+
+        Http::assertSentCount(1);
+    }
+
+    public function test_the_google_images_search_needs_an_api_key(): void
+    {
+        config(['services.serpapi.api_key' => null]);
+        Http::fake();
 
         $this->actingAs($this->admin)
-            ->getJson("/admin/places/{$this->place->places_id}/photos/openverse?q=x")
+            ->getJson(route('admin.places.photos.google', [$this->place, 'q' => 'x']))
             ->assertStatus(502)
-            ->assertJsonPath('message', 'Openverse gagal (503).');
+            ->assertJsonPath('message', 'SERPAPI_API_KEY belum diisi di .env.');
+
+        Http::assertNothingSent();
     }
+
+    public function test_a_used_up_serpapi_quota_is_reported_and_not_cached(): void
+    {
+        Http::fake(['serpapi.com/*' => Http::sequence()
+            ->push(['error' => 'Your account has run out of searches.'], 429)
+            ->push(['images_results' => [$this->googleImage(1)]])]);
+
+        $this->actingAs($this->admin)
+            ->getJson(route('admin.places.photos.google', [$this->place, 'q' => 'x']))
+            ->assertStatus(502)
+            ->assertJsonPath('message', 'Kuota pencarian SerpApi bulan ini sudah habis.');
+
+        $this->actingAs($this->admin)
+            ->getJson(route('admin.places.photos.google', [$this->place, 'q' => 'x']))
+            ->assertOk()
+            ->assertJsonCount(1, 'results');
+    }
+
+    public function test_picking_a_google_images_result_downloads_and_saves_it(): void
+    {
+        // A public IP literal, so the address check needs no DNS lookup in tests.
+        Http::fake(['93.184.216.34/*' => Http::response($this->jpegBytes(1000, 700))]);
+
+        $this->actingAs($this->admin)
+            ->post(route('admin.places.photos.google.store', $this->place), ['image_url' => 'http://93.184.216.34/masjid.jpg'])
+            ->assertRedirect()
+            ->assertSessionHas('status', 'Foto dari Google Gambar ditambahkan.');
+
+        $photo = $this->place->photos()->sole();
+        $this->assertSame($photo->photo_url, $this->place->fresh()->photo_url);
+    }
+
+    public function test_a_google_images_result_on_the_local_network_is_refused(): void
+    {
+        Http::fake();
+
+        $this->actingAs($this->admin)
+            ->post(route('admin.places.photos.google.store', $this->place), ['image_url' => 'http://192.168.1.10/a.jpg'])
+            ->assertSessionHas('error', 'Alamat gambar harus dari internet, bukan jaringan lokal.');
+
+        Http::assertNothingSent();
+        $this->assertSame(0, $this->place->photos()->count());
+    }
+
 
     private function linkPayload(array $overrides = []): array
     {
         // A public IP literal, so the address check needs no DNS lookup in tests.
         return array_merge([
             'image_url' => 'http://93.184.216.34/masjid.jpg',
-            'source_url' => 'https://www.flickr.com/photos/someone/123',
-            'credit' => 'Budi Santoso',
-            'license' => 'CC BY 2.0',
             'license_checked' => '1',
         ], $overrides);
     }
 
-    public function test_a_photo_from_a_link_is_saved_with_the_credit_and_license_the_admin_checked(): void
+    public function test_a_photo_from_a_link_is_saved_and_becomes_the_catalog_thumbnail(): void
     {
         Http::fake(['93.184.216.34/*' => Http::response($this->jpegBytes(1000, 700))]);
 
@@ -137,23 +189,19 @@ class AdminPlacePhotoTest extends TestCase
 
         $response->assertRedirect()->assertSessionHas('status');
         $photo = $this->place->photos()->sole();
-        $this->assertSame('Budi Santoso', $photo->credit);
-        $this->assertSame('CC BY 2.0', $photo->license);
-        $this->assertSame('https://creativecommons.org/licenses/by/2.0/', $photo->license_url);
-        $this->assertSame('https://www.flickr.com/photos/someone/123', $photo->source_url);
         $this->assertSame($photo->photo_url, $this->place->fresh()->photo_url);
     }
 
-    public function test_a_photo_from_a_link_needs_the_license_confirmation_and_an_allowed_license(): void
+    public function test_a_photo_from_a_link_needs_the_license_confirmation(): void
     {
         Http::fake();
 
         $response = $this->actingAs($this->admin)->post(
             route('admin.places.photos.link.store', $this->place),
-            $this->linkPayload(['license_checked' => null, 'license' => 'CC BY-NC 2.0', 'credit' => '']),
+            $this->linkPayload(['license_checked' => null]),
         );
 
-        $response->assertSessionHasErrors(['license_checked', 'license', 'credit']);
+        $response->assertSessionHasErrors(['license_checked']);
         Http::assertNothingSent();
         $this->assertSame(0, $this->place->photos()->count());
     }
@@ -185,47 +233,8 @@ class AdminPlacePhotoTest extends TestCase
         $this->assertSame(0, $this->place->photos()->count());
     }
 
-    public function test_the_edit_page_links_to_google_images_with_the_creative_commons_filter(): void
-    {
-        $this->actingAs($this->admin)
-            ->get(route('admin.places.edit', $this->place))
-            ->assertOk()
-            ->assertSee('Cari di Google Gambar')
-            ->assertSee('https://www.google.com/search?q=Masjid+Agung+Batam&amp;tbm=isch&amp;tbs=il%3Acl', false)
-            ->assertSee('Tambah dari tautan');
-    }
 
-    public function test_picking_an_openverse_photo_saves_it_with_credit_from_openverse_itself(): void
-    {
-        Http::fake([
-            'api.openverse.org/v1/images/'.self::OPENVERSE_ID.'/' => Http::response($this->openverseImage()),
-            'upload.wikimedia.org/*' => Http::response($this->jpegBytes(1000, 700)),
-        ]);
 
-        $response = $this->actingAs($this->admin)->post("/admin/places/{$this->place->places_id}/photos/openverse", [
-            'openverse_id' => self::OPENVERSE_ID,
-            // Ignored: the credit is read from Openverse, not the form.
-            'credit' => 'Penipu',
-        ]);
-
-        $response->assertRedirect()->assertSessionHas('status');
-        $photo = $this->place->photos()->sole();
-        $this->assertSame('Si Gam', $photo->credit);
-        $this->assertSame('CC BY-SA 4.0', $photo->license);
-        $this->assertSame('https://commons.wikimedia.org/w/index.php?curid=1', $photo->source_url);
-        $this->assertSame($photo->photo_url, $this->place->fresh()->photo_url);
-    }
-
-    public function test_an_invalid_openverse_id_is_refused_without_calling_openverse(): void
-    {
-        Http::fake();
-
-        $this->actingAs($this->admin)
-            ->post("/admin/places/{$this->place->places_id}/photos/openverse", ['openverse_id' => '../../etc'])
-            ->assertSessionHas('error', 'ID foto Openverse tidak valid.');
-
-        Http::assertNothingSent();
-    }
 
     public function test_making_a_photo_primary_reorders_and_updates_the_thumbnail(): void
     {
@@ -279,36 +288,29 @@ class AdminPlacePhotoTest extends TestCase
         $user = User::factory()->create(['role' => 'user']);
 
         $this->actingAs($user)
-            ->getJson("/admin/places/{$this->place->places_id}/photos/openverse?q=x")
+            ->getJson(route('admin.places.photos.google', [$this->place, 'q' => 'x']))
             ->assertForbidden();
     }
 
-    public function test_the_edit_page_shows_photos_with_their_credit(): void
+    public function test_the_edit_page_shows_the_photos(): void
     {
-        PlacePhoto::create([
-            'places_id' => $this->place->places_id, 'photo_url' => 'a.jpg', 'sort_order' => 0,
-            'credit' => 'Si Gam', 'license' => 'CC BY-SA 4.0', 'source_url' => 'https://commons.wikimedia.org/x',
-        ]);
+        PlacePhoto::create(['places_id' => $this->place->places_id, 'photo_url' => 'a.jpg', 'sort_order' => 0]);
 
         $this->actingAs($this->admin)
             ->get("/admin/places/{$this->place->places_id}/edit")
             ->assertOk()
             ->assertSee('Foto Tempat')
-            ->assertSee('Si Gam, CC BY-SA 4.0')
-            ->assertSee('Cari foto berlisensi bebas (Openverse)');
+            ->assertSee('src="a.jpg"', false)
+            ->assertSee('Cari di Google Gambar')
+            ->assertSee('Tambah dari tautan');
     }
 
-    public function test_the_place_detail_api_returns_photo_credits(): void
+    public function test_the_place_detail_api_returns_only_the_photo_url(): void
     {
-        PlacePhoto::create([
-            'places_id' => $this->place->places_id, 'photo_url' => 'a.jpg', 'sort_order' => 0,
-            'credit' => 'Si Gam', 'license' => 'CC BY-SA 4.0', 'source_url' => 'https://commons.wikimedia.org/x',
-        ]);
+        PlacePhoto::create(['places_id' => $this->place->places_id, 'photo_url' => 'a.jpg', 'sort_order' => 0]);
 
         $this->getJson("/api/places/{$this->place->places_id}")
             ->assertOk()
-            ->assertJsonPath('data.photos.0.credit', 'Si Gam')
-            ->assertJsonPath('data.photos.0.license', 'CC BY-SA 4.0')
-            ->assertJsonPath('data.photos.0.source_url', 'https://commons.wikimedia.org/x');
+            ->assertJsonPath('data.photos', [['url' => 'a.jpg']]);
     }
 }

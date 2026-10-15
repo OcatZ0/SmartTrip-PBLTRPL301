@@ -220,7 +220,7 @@ class PlaceCatalogTest extends TestCase
         $response->assertJsonPath('data.description_en', 'Admin English description');
         $response->assertJsonPath('data.photos.0.url', 'foto-1.jpg');
         $response->assertJsonPath('data.photos.1.url', 'foto-2.jpg');
-        $response->assertJsonPath('data.photos.0.credit', null);
+        $response->assertJsonMissingPath('data.photos.0.credit');
         $response->assertJsonPath('data.categories.0.slug', 'pantai');
         $response->assertJsonPath('data.estimated_visit_minutes', 90);
     }

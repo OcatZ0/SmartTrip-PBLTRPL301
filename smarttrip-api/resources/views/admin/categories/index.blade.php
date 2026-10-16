@@ -162,6 +162,50 @@
         font-weight: 700;
     }
 
+    /* "3 items, then +n" cells (keywords, related places) */
+    .cell-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        max-width: 260px;
+    }
+
+    .cell-chip {
+        padding: 2px 8px;
+        border-radius: 10px;
+        background-color: #F1F5F9;
+        color: #334155;
+        font-size: 11.5px;
+        font-weight: 600;
+        white-space: nowrap;
+        max-width: 160px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .cell-chip-more {
+        background-color: #DCEBFE;
+        color: #1D4ED8;
+    }
+
+    .cell-empty {
+        color: #94A3B8;
+        font-size: 12px;
+    }
+
+    .badge-onboarding {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 10px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .badge-onboarding.is-shown { background-color: #DCFCE7; color: #15803D; }
+    .badge-onboarding.is-hidden { background-color: #F1F5F9; color: #64748B; }
+
     /* Action buttons */
     .btn-action-edit {
         width: 32px;
@@ -744,7 +788,9 @@
                         <th style="width: 100px;">Ikon Simbol</th>
                         <th>Nama Kategori (Indonesia)</th>
                         <th>Nama Kategori (Inggris)</th>
+                        <th>Kata Kunci Pencarian</th>
                         <th>Destinasi Terkait</th>
+                        <th class="text-center">Onboarding</th>
                         <th style="width: 100px;" class="text-center">Aksi</th>
                     </tr>
                 </thead>
@@ -764,11 +810,42 @@
                             <td>
                                 <div class="cat-en-title">{{ $cat->name_en }}</div>
                             </td>
+                            @php($keywords = $cat->searchKeywordList())
                             <td>
-                                <span class="badge-destinasi">
-                                    <i class="bi bi-geo-alt-fill"></i>
-                                    <span>{{ $cat->places_count }} Tempat</span>
-                                </span>
+                                @if ($keywords === [])
+                                    <span class="cell-empty">Belum ada</span>
+                                @else
+                                    <div class="cell-chips" title="{{ implode(', ', $keywords) }}">
+                                        @foreach (array_slice($keywords, 0, 3) as $keyword)
+                                            <span class="cell-chip">{{ $keyword }}</span>
+                                        @endforeach
+                                        @if (count($keywords) > 3)
+                                            <span class="cell-chip cell-chip-more">+{{ count($keywords) - 3 }}</span>
+                                        @endif
+                                    </div>
+                                @endif
+                            </td>
+                            <td>
+                                {{-- places is eager-loaded with at most 3 rows per category; places_count is the total. --}}
+                                @if ($cat->places_count === 0)
+                                    <span class="cell-empty">Belum ada tempat</span>
+                                @else
+                                    <div class="cell-chips">
+                                        @foreach ($cat->places as $place)
+                                            <span class="cell-chip" title="{{ $place->name }}">{{ $place->name }}</span>
+                                        @endforeach
+                                        @if ($cat->places_count > $cat->places->count())
+                                            <span class="cell-chip cell-chip-more" title="{{ $cat->places_count }} tempat">+{{ $cat->places_count - $cat->places->count() }}</span>
+                                        @endif
+                                    </div>
+                                @endif
+                            </td>
+                            <td class="text-center">
+                                @if ($cat->show_in_onboarding)
+                                    <span class="badge-onboarding is-shown"><i class="bi bi-check-lg"></i> Ya</span>
+                                @else
+                                    <span class="badge-onboarding is-hidden"><i class="bi bi-eye-slash"></i> Tidak</span>
+                                @endif
                             </td>
                             <td class="text-center">
                                 <div class="d-flex align-items-center justify-content-center gap-2">
@@ -790,7 +867,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="text-center py-5 text-muted">
+                            <td colspan="7" class="text-center py-5 text-muted">
                                 <i class="bi bi-inbox fs-2 d-block mb-1 text-slate-300"></i>
                                 <span>Belum ada kategori tempat wisata.</span>
                             </td>

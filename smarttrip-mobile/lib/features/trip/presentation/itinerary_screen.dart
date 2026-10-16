@@ -15,6 +15,7 @@ import 'trip_detail_controller.dart';
 import 'trip_error_message.dart';
 import 'widgets/load_error_view.dart';
 import 'widgets/place_photo.dart';
+import 'replace_place_screen.dart';
 
 /// D1. Hasil Itinerary - Figma Mockup, node 85:3569 (US4): the generated
 /// day-by-day plan with a source badge per stop.
@@ -397,6 +398,33 @@ class _StopRow extends StatelessWidget {
                     context.push(AppRoutes.place(place!.placesId!));
                   },
                 ),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const CircleAvatar(
+                  backgroundColor: Color(0xFFEFF6FF),
+                  child: Icon(Icons.swap_horiz_rounded, color: Color(0xFF1D6FA5)),
+                ),
+                title: Text(
+                  'Ganti Lokasi Wisata',
+                  style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
+                ),
+                subtitle: Text(
+                  'Cari alternatif tempat wisata lain untuk jadwal ini',
+                  style: theme.textTheme.bodySmall?.copyWith(color: tokens.textSecondary),
+                ),
+                trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: Color(0xFF94A3B8)),
+                onTap: () {
+                  Navigator.pop(modalContext);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ReplacePlaceScreen(
+                        currentItem: item,
+                      ),
+                    ),
+                  );
+                },
+              ),
               if (place != null)
                 ListTile(
                   contentPadding: EdgeInsets.zero,

@@ -2,16 +2,16 @@
 
 namespace App\Services\Places;
 
+use App\Models\Place;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
 
 /**
- * "Sarankan dengan AI" in the admin category popup: Gemini proposes search
- * keywords for a category (categories.search_keywords). The admin edits the
- * list before saving; the keywords then feed the catalog search and the
- * category list Gemini tags places with (GeminiEnrichmentClient).
+ * "Sarankan dengan AI" on the admin Edit Tempat page: Gemini proposes search
+ * keywords for one place (places.search_keywords). The admin edits the list
+ * before saving; the catalog search then also finds the place by them.
  */
 class GeminiKeywordSuggestionClient
 {
@@ -20,23 +20,29 @@ class GeminiKeywordSuggestionClient
     private const MAX_KEYWORDS = 12;
 
     /**
-     * @param  array<int, string>  $samplePlaces  a few places already in the category, as context
      * @return array<int, string>
      */
-    public function suggest(string $nameId, ?string $nameEn, array $samplePlaces = []): array
+    public function suggest(Place $place): array
     {
         $model = config('services.gemini.model');
-        $category = trim($nameId.($nameEn ? " ({$nameEn})" : ''));
-        $examples = $samplePlaces === []
-            ? ''
-            : 'Contoh tempat di kategori ini: '.implode(', ', $samplePlaces).'.';
+        $type = match ($place->type) { 'culinary' => 'tempat makan', 'lodging' => 'penginapan', default => 'tempat wisata' };
+        $placeText = implode(', ', array_filter([$place->name, $place->kecamatan, 'Batam']));
+        $categories = $place->categories->pluck('name_id')->join(', ');
+        $description = trim((string) ($place->description_override ?: $place->description));
+
+        $context = implode("\n", array_filter([
+            $categories !== '' ? "Kategori: {$categories}." : null,
+            $description !== '' ? "Deskripsi: {$description}" : null,
+        ]));
 
         $prompt = <<<PROMPT
-            Kamu membantu admin aplikasi wisata Batam, Indonesia. Untuk kategori minat wisata "{$category}",
+            Kamu membantu admin aplikasi wisata Batam, Indonesia. Untuk {$type} "{$placeText}",
             tulis 6 sampai 10 kata kunci pencarian singkat (1-3 kata, Bahasa Indonesia, boleh istilah Inggris
-            yang umum dipakai wisatawan) yang akan dicari wisatawan untuk menemukan tempat di kategori ini.
-            {$examples}
-            Jangan ulangi nama kategorinya sendiri. Balas HANYA JSON persis seperti ini, tanpa teks lain:
+            yang umum dipakai wisatawan) yang akan diketik wisatawan untuk menemukan tempat ini: kegiatan,
+            suasana, makanan, atau ciri khasnya.
+            {$context}
+            Jangan ulangi nama tempatnya sendiri dan jangan mengarang hal yang tidak pasti ada di tempat ini.
+            Balas HANYA JSON persis seperti ini, tanpa teks lain:
             {"keywords": ["kata kunci 1", "kata kunci 2"]}
             PROMPT;
 
@@ -56,7 +62,7 @@ class GeminiKeywordSuggestionClient
         }
 
         if ($response->failed()) {
-            Log::warning('Gemini keyword suggestion failed', ['category' => $nameId, 'status' => $response->status()]);
+            Log::warning('Gemini keyword suggestion failed', ['places_id' => $place->places_id, 'status' => $response->status()]);
 
             throw new RuntimeException('Saran kata kunci gagal ('.$response->status().'), coba lagi.');
         }
@@ -66,10 +72,20 @@ class GeminiKeywordSuggestionClient
             throw new RuntimeException('Jawaban Gemini tidak bisa dibaca, coba lagi.');
         }
 
-        // Plain short strings only; commas would split one keyword into two.
+        return self::clean($parsed['keywords']);
+    }
+
+    /**
+     * Plain short strings only (a comma would split one keyword into two),
+     * at most MAX_KEYWORDS. Also used for the keywords enrichment writes.
+     *
+     * @return array<int, string>
+     */
+    public static function clean(array $keywords): array
+    {
         $keywords = array_filter(array_map(
             fn ($keyword) => is_string($keyword) ? trim(str_replace(',', ' ', $keyword)) : '',
-            $parsed['keywords'],
+            $keywords,
         ), fn (string $keyword) => $keyword !== '' && mb_strlen($keyword) <= 40);
 
         return array_slice(array_values(array_unique($keywords)), 0, self::MAX_KEYWORDS);

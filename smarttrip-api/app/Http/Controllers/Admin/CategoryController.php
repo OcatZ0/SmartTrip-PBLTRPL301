@@ -4,13 +4,11 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Category;
-use App\Services\Places\GeminiKeywordSuggestionClient;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
-use RuntimeException;
 
 /**
  * F021 - Admin dapat mengelola kategori tempat wisata (CRUD categories lewat Modal UI)
@@ -32,8 +30,7 @@ class CategoryController extends Controller
             $query->where(function ($searchQuery) use ($term) {
                 $searchQuery->whereRaw('LOWER(name_id) LIKE ?', [$term])
                     ->orWhereRaw('LOWER(name_en) LIKE ?', [$term])
-                    ->orWhereRaw('LOWER(subtitle_id) LIKE ?', [$term])
-                    ->orWhereRaw('LOWER(search_keywords) LIKE ?', [$term]);
+                    ->orWhereRaw('LOWER(subtitle_id) LIKE ?', [$term]);
             });
         }
 
@@ -85,7 +82,6 @@ class CategoryController extends Controller
             'subtitle_id' => $data['subtitle_id'] ?? null,
             'name_en' => $data['name_en'],
             'icon_symbol' => $data['icon_symbol'] ?? Category::DEFAULT_ICON_SYMBOL,
-            'search_keywords' => $this->normalizeKeywords($data['search_keywords'] ?? null),
             'show_in_onboarding' => $data['show_in_onboarding'] ?? true,
             'slug' => $slug,
         ]);
@@ -113,9 +109,9 @@ class CategoryController extends Controller
         // Only fields the request sends are changed: a field emptied in the
         // popup arrives as null and is cleared, while a request that leaves a
         // field out keeps the stored value.
-        foreach (['subtitle_id', 'icon_symbol', 'search_keywords', 'show_in_onboarding'] as $field) {
+        foreach (['subtitle_id', 'icon_symbol', 'show_in_onboarding'] as $field) {
             if ($request->exists($field)) {
-                $updateData[$field] = $field === 'search_keywords' ? $this->normalizeKeywords($data[$field]) : $data[$field];
+                $updateData[$field] = $data[$field];
             }
         }
 
@@ -137,31 +133,6 @@ class CategoryController extends Controller
             ->with('status', "\"{$category->name_id}\" berhasil diperbarui.");
     }
 
-    /**
-     * "Sarankan dengan AI" in the popup. Works while adding a category too,
-     * so it takes the names from the form instead of a saved category.
-     */
-    public function suggestKeywords(Request $request, GeminiKeywordSuggestionClient $suggestions)
-    {
-        $data = $request->validate([
-            'name_id' => ['required', 'string', 'max:255'],
-            'name_en' => ['nullable', 'string', 'max:255'],
-            'category_id' => ['nullable', 'integer'],
-        ]);
-
-        $samplePlaces = isset($data['category_id'])
-            ? Category::find($data['category_id'])?->places()->orderBy('places.name')->limit(5)->pluck('places.name')->all() ?? []
-            : [];
-
-        try {
-            return response()->json([
-                'keywords' => $suggestions->suggest($data['name_id'], $data['name_en'] ?? null, $samplePlaces),
-            ]);
-        } catch (RuntimeException $exception) {
-            return response()->json(['message' => $exception->getMessage()], 502);
-        }
-    }
-
     private function rules($uniqueSlug): array
     {
         return [
@@ -169,24 +140,9 @@ class CategoryController extends Controller
             'subtitle_id' => ['nullable', 'string', 'max:255'],
             'name_en' => ['required', 'string', 'max:255'],
             'icon_symbol' => ['nullable', 'string', Rule::in(array_keys(Category::ICON_SYMBOLS))],
-            'search_keywords' => ['nullable', 'string', 'max:1000'],
             'show_in_onboarding' => ['nullable', 'boolean'],
             'slug' => ['nullable', 'string', 'max:255', $uniqueSlug],
         ];
-    }
-
-    /** "pulau,  Diving,pulau" becomes "pulau, Diving": trimmed, no empty or repeated entries. */
-    private function normalizeKeywords(?string $keywords): ?string
-    {
-        $unique = [];
-        foreach (explode(',', (string) $keywords) as $keyword) {
-            $keyword = trim($keyword);
-            if ($keyword !== '' && ! isset($unique[mb_strtolower($keyword)])) {
-                $unique[mb_strtolower($keyword)] = $keyword;
-            }
-        }
-
-        return $unique === [] ? null : implode(', ', $unique);
     }
 
     public function destroy(Category $category)

@@ -45,9 +45,9 @@ class Place extends Model
         'estimated_visit_minutes',
         'is_outdoor',
         'estimated_cost_idr',
-        'estimated_cost_is_ai',
         'description_override',
         'description_en',
+        'search_keywords',
     ];
 
     protected function casts(): array
@@ -60,7 +60,6 @@ class Place extends Model
             'types' => 'array',
             'category_tags_reviewed' => 'boolean',
             'is_outdoor' => 'boolean',
-            'estimated_cost_is_ai' => 'boolean',
         ];
     }
 
@@ -75,10 +74,33 @@ class Place extends Model
             ->logOnly([
                 'name', 'type', 'address', 'kecamatan',
                 'estimated_cost_idr', 'description_override', 'description_en',
-                'estimated_visit_minutes', 'is_outdoor', 'category_tags_reviewed',
+                'estimated_visit_minutes', 'is_outdoor', 'category_tags_reviewed', 'search_keywords',
             ])
             ->logOnlyDirty()
             ->dontLogEmptyChanges();
+    }
+
+    /** search_keywords as a list, e.g. "pulau, diving" -> ["pulau", "diving"]. */
+    public function searchKeywordList(): array
+    {
+        return array_values(array_filter(array_map('trim', explode(',', (string) $this->search_keywords)), fn ($keyword) => $keyword !== ''));
+    }
+
+    /**
+     * Comma-separated keywords as stored: "pulau,  Diving,pulau" becomes
+     * "pulau, Diving" (trimmed, no empty or repeated entries), null when empty.
+     */
+    public static function normalizeSearchKeywords(?string $keywords): ?string
+    {
+        $unique = [];
+        foreach (explode(',', (string) $keywords) as $keyword) {
+            $keyword = trim($keyword);
+            if ($keyword !== '' && ! isset($unique[mb_strtolower($keyword)])) {
+                $unique[mb_strtolower($keyword)] = $keyword;
+            }
+        }
+
+        return $unique === [] ? null : implode(', ', $unique);
     }
 
     public function categories(): BelongsToMany

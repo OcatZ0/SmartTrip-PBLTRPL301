@@ -24,12 +24,13 @@
 
     $checks = [
         ['label' => 'Biaya', 'done' => $place->estimated_cost_idr !== null,
-            'state' => ($place->estimated_cost_idr === null ? 'Belum' : ($place->estimated_cost_idr == 0 ? 'Gratis' : 'Rp ' . $idNumber($place->estimated_cost_idr)))
-                . ($place->estimated_cost_is_ai ? ' (AI)' : '')],
+            'state' => $place->estimated_cost_idr === null ? 'Belum' : ($place->estimated_cost_idr == 0 ? 'Gratis' : 'Rp ' . $idNumber($place->estimated_cost_idr))],
         ['label' => 'Lama kunjungan', 'done' => (bool) $place->estimated_visit_minutes,
             'state' => $place->estimated_visit_minutes ? $place->estimated_visit_minutes . ' menit' : 'Belum'],
         ['label' => 'Tag kategori dicek', 'done' => $place->category_tags_reviewed, 'state' => $place->category_tags_reviewed ? 'Sudah' : 'Belum'],
         ['label' => 'Deskripsi English', 'done' => filled($place->description_en), 'state' => filled($place->description_en) ? 'Ada' : 'Belum'],
+        ['label' => 'Kata kunci pencarian', 'done' => filled($place->search_keywords),
+            'state' => filled($place->search_keywords) ? count($place->searchKeywordList()) . ' kata' : 'Belum'],
         ['label' => 'Foto utama', 'done' => $photoCount > 0, 'state' => $photoCount > 0 ? $photoCount . ' foto' : 'Belum'],
     ];
     $doneCount = collect($checks)->where('done', true)->count();
@@ -38,6 +39,7 @@
         'name' => 'nama', 'type' => 'jenis', 'kecamatan' => 'kecamatan', 'address' => 'alamat', 'estimated_cost_idr' => 'biaya',
         'estimated_visit_minutes' => 'lama kunjungan', 'is_outdoor' => 'area', 'category_tags_reviewed' => 'status tag',
         'description_override' => 'deskripsi', 'description_en' => 'deskripsi English', 'photo_url' => 'foto utama',
+        'search_keywords' => 'kata kunci pencarian',
     ];
     $formatValue = fn ($field, $value) => match ($field) {
         'estimated_visit_minutes' => $value . ' menit',
@@ -133,6 +135,11 @@
     .pe-reviewed:has(input:checked) { background: #e3f6ec; color: #1d7a55; }
     .pe-reviewed input { width: 18px; height: 18px; margin: 0; accent-color: var(--pe-blue); }
     .pe-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .pe-kw-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .pe-kw-chip { display: inline-flex; align-items: center; gap: 4px; height: 30px; padding: 0 6px 0 12px; border-radius: 999px; background: #e7f0f9; color: #1f5f99; font-size: 12.5px; font-weight: 600; }
+    .pe-kw-chip button { border: 0; background: transparent; color: inherit; padding: 0 4px; line-height: 1; font-size: 15px; }
+    .pe-kw-empty { font-size: 12.5px; color: var(--pe-muted); }
+    .pe-hint.is-error { color: #c0392b; font-weight: 600; }
     .pe-chip { position: relative; display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 14px; margin: 0; border: 1px solid var(--pe-line); border-radius: 999px; background: #fff; color: var(--pe-soft); font-size: 13px; font-weight: 600; cursor: pointer; user-select: none; }
     .pe-chip:hover { border-color: #9fb6cf; }
     .pe-chip input { position: absolute; opacity: 0; pointer-events: none; }
@@ -166,7 +173,6 @@
     .pe-page #photos { border: 0; border-radius: 20px; box-shadow: 0 4px 16px rgba(10, 36, 64, .06); overflow: hidden; margin-top: 0 !important; }
     .pe-page #photos > .card-header { padding: 18px 22px 0; border: 0; background: #fff; font-size: 17px; font-weight: 700; }
     .pe-page #photos > .card-body { padding: 16px 22px 22px; }
-    .pe-ai-badge { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; background: #f3ecfd; color: #6a3fb5; }
     .pe-price-button { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1px solid var(--pe-line); border-radius: 10px; background: #fff; font-size: 13px; font-weight: 600; color: var(--pe-link); }
     .pe-price-button:hover { background: var(--pe-fill); }
     .pe-price-button:disabled { opacity: .6; }
@@ -287,9 +293,6 @@
                                 value="{{ old('estimated_cost_idr', $place->estimated_cost_idr) }}">
                         </div>
                         <span class="pe-hint">{{ $costHint }}</span>
-                        @if ($place->estimated_cost_is_ai)
-                            <span class="pe-ai-badge"><i class="bi bi-stars" aria-hidden="true"></i> Perkiraan AI, ubah kalau sudah tahu harga sebenarnya</span>
-                        @endif
                         <button type="button" id="pePriceSearch" class="pe-price-button" data-url="{{ route('admin.places.price-estimate', $place) }}">
                             <i class="bi bi-stars" aria-hidden="true"></i> Perkirakan harga dengan AI
                         </button>
@@ -338,6 +341,23 @@
                         </label>
                     @endforeach
                 </div>
+            </section>
+
+            <section class="pe-card">
+                <div class="pe-card-head">
+                    <div>
+                        <h2><label for="peKeywords" class="m-0">Kata Kunci Pencarian</label></h2>
+                        <span class="pe-card-sub">Wisatawan yang mencari salah satu kata ini di katalog akan menemukan tempat ini. Pisahkan dengan koma.</span>
+                    </div>
+                    <button type="button" id="peKeywordSuggest" class="pe-price-button" data-url="{{ route('admin.places.keyword-suggestions', $place) }}">
+                        <i class="bi bi-stars" aria-hidden="true"></i> <span>Sarankan dengan AI</span>
+                    </button>
+                </div>
+                {{-- Filled from the textarea by the script below; the x removes that keyword. --}}
+                <div class="pe-kw-chips" id="peKeywordChips" aria-live="polite"></div>
+                <textarea id="peKeywords" name="search_keywords" class="pe-textarea" rows="2"
+                    placeholder="contoh: snorkeling, pasir putih, sunset, keluarga">{{ old('search_keywords', $place->search_keywords) }}</textarea>
+                <p id="peKeywordError" class="pe-hint is-error" hidden></p>
             </section>
 
             <section class="pe-card">
@@ -568,6 +588,79 @@
                 .then(showPrice)
                 .catch(function (error) { priceMessage(error.message || 'Perkiraan harga gagal, coba lagi.', true); })
                 .finally(function () { priceButton.disabled = false; });
+        });
+
+        var keywordsField = document.getElementById('peKeywords');
+        var keywordChips = document.getElementById('peKeywordChips');
+        var keywordButton = document.getElementById('peKeywordSuggest');
+        var keywordError = document.getElementById('peKeywordError');
+        function keywordList() {
+            var seen = {};
+            return keywordsField.value.split(',').map(function (k) { return k.trim(); }).filter(function (k) {
+                var key = k.toLowerCase();
+                if (!k || seen[key]) return false;
+                seen[key] = true;
+                return true;
+            });
+        }
+        function setKeywords(list) {
+            keywordsField.value = list.join(', ');
+            keywordsField.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        // Built with textContent only: keywords can come from Gemini.
+        function renderKeywordChips() {
+            var list = keywordList();
+            keywordChips.replaceChildren();
+            if (list.length === 0) {
+                var empty = document.createElement('span');
+                empty.className = 'pe-kw-empty';
+                empty.textContent = 'Belum ada kata kunci.';
+                keywordChips.appendChild(empty);
+                return;
+            }
+            list.forEach(function (keyword) {
+                var chip = document.createElement('span');
+                chip.className = 'pe-kw-chip';
+                chip.appendChild(document.createTextNode(keyword));
+                var remove = document.createElement('button');
+                remove.type = 'button';
+                remove.setAttribute('aria-label', 'Hapus ' + keyword);
+                remove.innerHTML = '<i class="bi bi-x" aria-hidden="true"></i>';
+                remove.addEventListener('click', function () {
+                    setKeywords(keywordList().filter(function (other) { return other.toLowerCase() !== keyword.toLowerCase(); }));
+                });
+                chip.appendChild(remove);
+                keywordChips.appendChild(chip);
+            });
+        }
+        keywordsField.addEventListener('input', renderKeywordChips);
+        renderKeywordChips();
+
+        // Adds Gemini's suggestions to what is already there; saved with Simpan perubahan.
+        keywordButton.addEventListener('click', function () {
+            var label = keywordButton.querySelector('span');
+            keywordButton.disabled = true;
+            keywordError.hidden = true;
+            label.textContent = 'Meminta saran...';
+            fetch(keywordButton.dataset.url, { headers: { Accept: 'application/json' } })
+                .then(function (response) {
+                    return response.json().then(function (body) {
+                        if (!response.ok) throw new Error(body.message || 'Saran kata kunci gagal, coba lagi.');
+                        return body;
+                    });
+                })
+                .then(function (body) {
+                    keywordsField.value = keywordList().concat(body.keywords || []).join(', ');
+                    setKeywords(keywordList());
+                })
+                .catch(function (error) {
+                    keywordError.textContent = error.message || 'Saran kata kunci gagal, coba lagi.';
+                    keywordError.hidden = false;
+                })
+                .finally(function () {
+                    keywordButton.disabled = false;
+                    label.textContent = 'Sarankan dengan AI';
+                });
         });
 
         // Deleting the place leaves the page for good; deleting a photo still

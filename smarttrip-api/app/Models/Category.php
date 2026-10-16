@@ -73,7 +73,6 @@ class Category extends Model
         'name_en',
         'slug',
         'icon_symbol',
-        'search_keywords',
         'show_in_onboarding',
     ];
 
@@ -97,7 +96,6 @@ class Category extends Model
                 'name_en',
                 'slug',
                 'icon_symbol',
-                'search_keywords',
                 'show_in_onboarding',
             ])
             ->logOnlyDirty()
@@ -118,12 +116,6 @@ class Category extends Model
         }
 
         return ['key' => $symbol] + (self::ICON_SYMBOLS[$symbol] ?? self::ICON_SYMBOLS[self::DEFAULT_ICON_SYMBOL]);
-    }
-
-    /** search_keywords as a list, e.g. "pulau, diving" -> ["pulau", "diving"]. */
-    public function searchKeywordList(): array
-    {
-        return array_values(array_filter(array_map('trim', explode(',', (string) $this->search_keywords)), fn ($keyword) => $keyword !== ''));
     }
 
     private function guessIconSymbol(): ?string

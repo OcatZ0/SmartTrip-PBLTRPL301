@@ -148,15 +148,16 @@ class AdminPlaceManagementTest extends TestCase
         $response->assertSee('title="', false);
     }
 
-    public function test_the_list_shows_the_cost_and_marks_an_ai_estimate(): void
+    public function test_the_list_shows_the_cost(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
-        $this->makePlace(['name' => 'Hotel AI', 'type' => 'lodging', 'estimated_cost_idr' => 350000, 'estimated_cost_is_ai' => true]);
+        $this->makePlace(['name' => 'Hotel AI', 'type' => 'lodging', 'estimated_cost_idr' => 350000]);
 
         $response = $this->actingAs($admin)->get('/admin/places');
 
         $response->assertSee('Rp 350.000');
-        $response->assertSee('per malam · Perkiraan AI');
+        $response->assertSee('per malam');
+        $response->assertDontSee('Perkiraan AI');
     }
 
     public function test_an_admin_can_add_a_manual_place(): void
@@ -277,8 +278,9 @@ class AdminPlaceManagementTest extends TestCase
         $response = $this->actingAs($admin)->get(route('admin.places.edit', $place));
 
         $response->assertOk();
-        $response->assertSeeInOrder(['Edit tempat', 'Aktif di katalog', 'Jembatan Barelang', 'Data kurasi', 'Biaya masuk per orang', 'Kategori', 'Deskripsi']);
-        $response->assertSeeInOrder(['Kelengkapan', '2 / 5', 'Gratis', '60 menit', 'Belum', 'Popularitas', 'Disimpan ke wishlist', 'Masuk itinerary']);
+        $response->assertSeeInOrder(['Edit tempat', 'Aktif di katalog', 'Jembatan Barelang', 'Data kurasi', 'Biaya masuk per orang', 'Kategori', 'Kata Kunci Pencarian', 'Deskripsi']);
+        $response->assertSeeInOrder(['Kelengkapan', '2 / 6', 'Gratis', '60 menit', 'Belum', 'Popularitas', 'Disimpan ke wishlist', 'Masuk itinerary']);
+        $response->assertSee('name="search_keywords"', false);
         $response->assertSee('name="category_tags_reviewed"', false);
         $response->assertSeeInOrder(['class="pe-savebar"', 'Hapus dari katalog', 'Batal', 'form="formEditPlace"', 'Simpan perubahan'], false);
     }

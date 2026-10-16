@@ -145,16 +145,14 @@ class PlaceEnrichmentTest extends TestCase
         }
     }
 
-    public function test_a_missing_cost_gets_a_gemini_estimate_marked_as_ai(): void
+    public function test_a_missing_cost_gets_a_gemini_estimate(): void
     {
         $this->fakeGemini();
         $place = $this->makePlace();
 
         $this->assertContains('estimated_cost_idr', $this->enrich($place));
 
-        $place->refresh();
-        $this->assertSame(15000, $place->estimated_cost_idr);
-        $this->assertTrue($place->estimated_cost_is_ai);
+        $this->assertSame(15000, $place->fresh()->estimated_cost_idr);
     }
 
     public function test_an_admin_cost_is_never_replaced_by_the_estimate(): void
@@ -164,9 +162,7 @@ class PlaceEnrichmentTest extends TestCase
 
         $this->assertNotContains('estimated_cost_idr', $this->enrich($place));
 
-        $place->refresh();
-        $this->assertSame(0, $place->estimated_cost_idr);
-        $this->assertFalse($place->estimated_cost_is_ai);
+        $this->assertSame(0, $place->fresh()->estimated_cost_idr);
     }
 
     public function test_a_cost_only_estimate_keeps_the_tag_review(): void
@@ -201,7 +197,7 @@ class PlaceEnrichmentTest extends TestCase
         $complete = $this->makePlace([
             'name' => 'Sudah Lengkap', 'description' => 'Ada.', 'description_en' => 'There.',
             'estimated_visit_minutes' => 60, 'is_outdoor' => true, 'category_tags_reviewed' => true,
-            'estimated_cost_idr' => 0,
+            'estimated_cost_idr' => 0, 'search_keywords' => 'pasir putih, sunset',
         ]);
         $complete->categories()->attach($this->pantai->categories_id);
 
@@ -222,7 +218,7 @@ class PlaceEnrichmentTest extends TestCase
         $this->makePlace([
             'name' => 'Mercure Batam', 'type' => 'lodging', 'description' => 'Hotel.',
             'description_en' => 'Hotel.', 'is_outdoor' => false, 'category_tags_reviewed' => false,
-            'estimated_cost_idr' => 650000,
+            'estimated_cost_idr' => 650000, 'search_keywords' => 'kolam renang, dekat pelabuhan',
         ]);
 
         $this->artisan('places:enrich', ['--sleep' => 0])

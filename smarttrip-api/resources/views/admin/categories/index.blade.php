@@ -162,7 +162,7 @@
         font-weight: 700;
     }
 
-    /* "3 items, then +n" cells (keywords, related places) */
+    /* "3 places, then +n" cell (Destinasi Terkait) */
     .cell-chips {
         display: flex;
         flex-wrap: wrap;
@@ -397,49 +397,6 @@
         font-size: 11.5px;
         font-weight: 700;
         display: block;
-    }
-
-    .keywords-box-container {
-        background-color: #EFF6FF;
-        border: 1px solid #BFDBFE;
-        border-radius: 14px;
-        padding: 14px;
-        margin-bottom: 8px;
-    }
-
-    .tag-chips-container {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-        margin-bottom: 8px;
-    }
-
-    .tag-chip {
-        background-color: #DBEAFE;
-        color: #1D4ED8;
-        border: 1px solid #93C5FD;
-        font-size: 12px;
-        font-weight: 700;
-        padding: 4px 10px;
-        border-radius: 14px;
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-    }
-
-    .tag-chip button {
-        border: 0;
-        background: transparent;
-        color: inherit;
-        padding: 0;
-        line-height: 1;
-        font-size: 13px;
-        cursor: pointer;
-    }
-
-    .tag-chips-empty {
-        font-size: 12px;
-        color: #64748B;
     }
 
     .info-callout-box {
@@ -755,7 +712,6 @@
         'name_en' => $category->name_en,
         'subtitle_id' => $category->subtitle_id,
         'icon_symbol' => $category->iconMeta()['key'],
-        'search_keywords' => $category->search_keywords,
         'show_in_onboarding' => $category->show_in_onboarding ?? true,
         'places_count' => $category->places_count ?? 0,
         'sample_places' => $category->places->pluck('name')->values(),
@@ -788,7 +744,6 @@
                         <th style="width: 100px;">Ikon Simbol</th>
                         <th>Nama Kategori (Indonesia)</th>
                         <th>Nama Kategori (Inggris)</th>
-                        <th>Kata Kunci Pencarian</th>
                         <th>Destinasi Terkait</th>
                         <th class="text-center">Onboarding</th>
                         <th style="width: 100px;" class="text-center">Aksi</th>
@@ -809,21 +764,6 @@
                             </td>
                             <td>
                                 <div class="cat-en-title">{{ $cat->name_en }}</div>
-                            </td>
-                            @php($keywords = $cat->searchKeywordList())
-                            <td>
-                                @if ($keywords === [])
-                                    <span class="cell-empty">Belum ada</span>
-                                @else
-                                    <div class="cell-chips" title="{{ implode(', ', $keywords) }}">
-                                        @foreach (array_slice($keywords, 0, 3) as $keyword)
-                                            <span class="cell-chip">{{ $keyword }}</span>
-                                        @endforeach
-                                        @if (count($keywords) > 3)
-                                            <span class="cell-chip cell-chip-more">+{{ count($keywords) - 3 }}</span>
-                                        @endif
-                                    </div>
-                                @endif
                             </td>
                             <td>
                                 {{-- places is eager-loaded with at most 3 rows per category; places_count is the total. --}}
@@ -867,7 +807,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="text-center py-5 text-muted">
+                            <td colspan="6" class="text-center py-5 text-muted">
                                 <i class="bi bi-inbox fs-2 d-block mb-1 text-slate-300"></i>
                                 <span>Belum ada kategori tempat wisata.</span>
                             </td>
@@ -973,27 +913,6 @@
                             <label class="form-label-custom">Deskripsi Singkat / Subtitle</label>
                             <input type="text" name="subtitle_id" id="inputSubtitleId" class="form-control-custom @error('subtitle_id') is-invalid @enderror" placeholder="contoh: Prioritas Utama Pulau">
                             @error('subtitle_id')
-                                <div class="field-error">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <!-- Kata kunci pencarian -->
-                        <div class="mb-4">
-                            <div class="d-flex align-items-center justify-content-between mb-2">
-                                <label class="form-label-custom mb-0" for="inputAiKeywords">Kata Kunci Pencarian <span class="text-slate-500 fw-normal" style="font-size: 12px; color: #64748B;">(pisahkan dengan koma)</span></label>
-                                <button type="button" class="btn btn-sm btn-outline-primary fw-semibold" id="suggestKeywordsButton" style="font-size: 12px; border-radius: 8px;" onclick="suggestKeywords()">
-                                    <i class="bi bi-stars me-1" aria-hidden="true"></i><span>Sarankan dengan AI</span>
-                                </button>
-                            </div>
-                            <div class="field-error d-none" id="suggestKeywordsError"></div>
-                            <p class="text-slate-500 mt-0 mb-2" style="font-size: 12px;">Wisatawan yang mencari salah satu kata ini di katalog akan menemukan tempat-tempat di kategori ini.</p>
-
-                            <div class="keywords-box-container">
-                                {{-- Filled from the textarea by renderKeywordChips(). --}}
-                                <div class="tag-chips-container" id="tagChipsPreview"></div>
-                                <textarea name="search_keywords" id="inputAiKeywords" class="form-control-custom bg-white @error('search_keywords') is-invalid @enderror" style="height: 60px; padding: 8px 12px; resize: none;" placeholder="Pulau, terumbu karang, kapal pompong, snorkeling, diving" oninput="renderKeywordChips()"></textarea>
-                            </div>
-                            @error('search_keywords')
                                 <div class="field-error">{{ $message }}</div>
                             @enderror
                         </div>
@@ -1157,101 +1076,6 @@
         document.getElementById('symbolEmpty').classList.toggle('d-none', shown > 0);
     }
 
-    function keywordList() {
-        const seen = new Set();
-        return document.getElementById('inputAiKeywords').value.split(',')
-            .map(function (keyword) { return keyword.trim(); })
-            .filter(function (keyword) {
-                const key = keyword.toLowerCase();
-                if (!keyword || seen.has(key)) return false;
-                seen.add(key);
-                return true;
-            });
-    }
-
-    // Chips mirror the textarea; the x on a chip removes that keyword from it.
-    function renderKeywordChips() {
-        const container = document.getElementById('tagChipsPreview');
-        const keywords = keywordList();
-        container.replaceChildren();
-
-        if (keywords.length === 0) {
-            const empty = document.createElement('span');
-            empty.className = 'tag-chips-empty';
-            empty.textContent = 'Belum ada kata kunci.';
-            container.appendChild(empty);
-            return;
-        }
-
-        keywords.forEach(function (keyword) {
-            const chip = document.createElement('span');
-            chip.className = 'tag-chip';
-            chip.appendChild(document.createTextNode(keyword));
-
-            const remove = document.createElement('button');
-            remove.type = 'button';
-            remove.setAttribute('aria-label', 'Hapus ' + keyword);
-            remove.innerHTML = '<i class="bi bi-x" aria-hidden="true"></i>';
-            remove.addEventListener('click', function () {
-                document.getElementById('inputAiKeywords').value = keywordList()
-                    .filter(function (other) { return other.toLowerCase() !== keyword.toLowerCase(); })
-                    .join(', ');
-                renderKeywordChips();
-            });
-
-            chip.appendChild(remove);
-            container.appendChild(chip);
-        });
-    }
-
-    // Adds Gemini's suggestions to the keywords already typed (no
-    // duplicates); nothing is saved until the admin presses Simpan.
-    function suggestKeywords() {
-        const button = document.getElementById('suggestKeywordsButton');
-        const error = document.getElementById('suggestKeywordsError');
-        const nameId = document.getElementById('inputNameId').value.trim();
-
-        error.classList.add('d-none');
-        if (!nameId) {
-            error.textContent = 'Isi nama kategori dulu.';
-            error.classList.remove('d-none');
-            return;
-        }
-
-        const params = new URLSearchParams({ name_id: nameId, name_en: document.getElementById('inputNameEn').value.trim() });
-        const categoryId = document.getElementById('inputCategoryId').value;
-        if (categoryId) params.set('category_id', categoryId);
-
-        const label = button.querySelector('span');
-        button.disabled = true;
-        label.textContent = 'Meminta saran...';
-
-        fetch(@json(route('admin.categories.keyword-suggestions')) + '?' + params, {
-            credentials: 'same-origin',
-            headers: { 'Accept': 'application/json' },
-        })
-            .then(function (response) {
-                return response.json().then(function (body) {
-                    if (!response.ok) throw new Error(body.message || 'Saran kata kunci gagal, coba lagi.');
-                    return body;
-                });
-            })
-            .then(function (body) {
-                const textarea = document.getElementById('inputAiKeywords');
-                textarea.value = keywordList().concat(body.keywords || []).join(', ');
-                textarea.value = keywordList().join(', ');
-                renderKeywordChips();
-            })
-            .catch(function (err) {
-                error.textContent = err.message;
-                error.classList.remove('d-none');
-            })
-            .finally(function () {
-                button.disabled = false;
-                label.textContent = 'Sarankan dengan AI';
-            });
-    }
-
     function renderLinkedPlaces(category) {
         const box = document.getElementById('linkedPlacesBox');
         box.classList.toggle('d-none', !category);
@@ -1280,9 +1104,7 @@
     }
 
     function clearFieldErrors() {
-        // Server errors are removed; the AI suggestion message box is reused, so only hidden.
-        document.querySelectorAll('#formCategory .field-error:not(#suggestKeywordsError), #formErrorSummary').forEach(function (el) { el.remove(); });
-        document.getElementById('suggestKeywordsError').classList.add('d-none');
+        document.querySelectorAll('#formCategory .field-error, #formErrorSummary').forEach(function (el) { el.remove(); });
         document.querySelectorAll('#formCategory .is-invalid').forEach(function (el) { el.classList.remove('is-invalid'); });
     }
 
@@ -1290,14 +1112,12 @@
         document.getElementById('inputNameId').value = values.name_id || '';
         document.getElementById('inputNameEn').value = values.name_en || '';
         document.getElementById('inputSubtitleId').value = values.subtitle_id || '';
-        document.getElementById('inputAiKeywords').value = values.search_keywords || '';
         // Shown unless explicitly off (false, or "0" from old input after a failed save).
         document.getElementById('inputShowInOnboarding').checked =
             !(values.show_in_onboarding === false || values.show_in_onboarding === '0');
         selectSymbol(values.icon_symbol || DEFAULT_ICON_SYMBOL);
         document.getElementById('symbolSearch').value = '';
         filterSymbols('');
-        renderKeywordChips();
     }
 
     function showCategoryModal() {

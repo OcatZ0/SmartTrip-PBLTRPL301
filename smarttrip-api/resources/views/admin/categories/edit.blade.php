@@ -219,29 +219,6 @@
                 <input type="text" name="subtitle_id" class="form-control-custom" value="{{ old('subtitle_id', $category->subtitle_id ?? 'Prioritas Utama Pulau') }}" placeholder="contoh: Prioritas Utama Pulau">
             </div>
 
-            <!-- Deskripsi Singkat / Kata Kunci AI -->
-            <div class="mb-4">
-                <div class="d-flex align-items-center justify-content-between mb-2">
-                    <label class="form-label-custom mb-0">Kata Kunci Pencarian</label>
-                    <span class="text-slate-500" style="font-size: 12px;">Pisahkan dengan koma</span>
-                </div>
-
-                <div class="keywords-box-container">
-                    <div class="tag-chips-container" id="tagChipsContainer">
-                        @php
-                            $keywordsList = explode(',', $category->search_keywords ?? '');
-                        @endphp
-                        @foreach($keywordsList as $kw)
-                            @if(trim($kw) !== '')
-                                <span class="tag-chip">{{ trim($kw) }} <i class="bi bi-x" onclick="this.parentElement.remove()"></i></span>
-                            @endif
-                        @endforeach
-                    </div>
-                    <textarea name="search_keywords" id="inputAiKeywordsPage" class="form-control-custom bg-white" style="height: 64px; padding: 10px 14px; resize: none;" placeholder="Pulau, terumbu karang, kapal pompong, snorkeling, diving">{{ old('search_keywords', $category->search_keywords) }}</textarea>
-                </div>
-                <p class="text-slate-500 mt-1 mb-0" style="font-size: 12px;">Wisatawan yang mencari salah satu kata ini di katalog akan menemukan tempat-tempat di kategori ini.</p>
-            </div>
-
             <!-- Info Callout Box Tautan Tempat -->
             <div class="info-callout-box">
                 <i class="bi bi-info-circle-fill info-callout-icon"></i>

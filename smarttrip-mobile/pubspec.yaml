@@ -80,6 +80,7 @@ dependencies:
   # Material motion screen transitions (fade through, shared axis,
   # container transform)
   animations: ^3.0.0
+  bootstrap_icons: ^1.13.2
 
 dev_dependencies:
   flutter_test:

@@ -65,6 +65,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/categories', [AdminCategoryController::class, 'index'])->name('categories.index');
         Route::get('/categories/create', [AdminCategoryController::class, 'create'])->name('categories.create');
         Route::post('/categories', [AdminCategoryController::class, 'store'])->name('categories.store');
+        Route::get('/categories/keyword-suggestions', [AdminCategoryController::class, 'suggestKeywords'])
+            ->middleware('throttle:20,1')
+            ->name('categories.keyword-suggestions');
         Route::get('/categories/{category}/edit', [AdminCategoryController::class, 'edit'])->name('categories.edit');
         Route::get('/categories/{category}/activities', [AdminCategoryController::class, 'activities'])->name('categories.activities');
         Route::put('/categories/{category}', [AdminCategoryController::class, 'update'])->name('categories.update');

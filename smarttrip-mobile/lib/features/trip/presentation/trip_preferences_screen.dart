@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/router/app_routes.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../core/widgets/bottom_action_bar.dart';
+import '../../../core/widgets/category_icons.dart';
 import '../../../core/widgets/primary_button.dart';
 import '../../../core/widgets/screen_header.dart';
 import '../../../core/widgets/step_progress.dart';
@@ -187,6 +188,7 @@ class _TripPreferencesFormState extends ConsumerState<_TripPreferencesForm> {
                     for (final category in widget.data.categories)
                       _InterestChip(
                         label: category.localizedName(languageCode),
+                        icon: categoryIcon(category.iconSymbol),
                         isSelected: _selectedCategoryIds.contains(category.categoriesId),
                         onTap: () => setState(() {
                           if (!_selectedCategoryIds.remove(category.categoriesId)) {
@@ -283,11 +285,14 @@ class _TripPreferencesFormState extends ConsumerState<_TripPreferencesForm> {
 }
 
 class _InterestChip extends StatelessWidget {
-  const _InterestChip({required this.label, required this.isSelected, required this.onTap});
+  const _InterestChip({required this.label, required this.isSelected, required this.onTap, this.icon});
 
   final String label;
   final bool isSelected;
   final VoidCallback onTap;
+
+  /// The category's own icon, shown while not selected (falls back to +).
+  final IconData? icon;
 
   @override
   Widget build(BuildContext context) {
@@ -307,7 +312,7 @@ class _InterestChip extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(isSelected ? Icons.check : Icons.add, size: 16, color: foreground),
+              Icon(isSelected ? Icons.check : (icon ?? Icons.add), size: 16, color: foreground),
               const SizedBox(width: 8),
               Text(label, style: theme.textTheme.bodyMedium?.copyWith(color: foreground)),
             ],

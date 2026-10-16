@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/auth/session_controller.dart';
 import '../../../core/router/app_routes.dart';
 import '../../../core/widgets/app_bottom_bar.dart';
+import '../../../core/widgets/category_icons.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../trip/data/trip_models.dart';
 import '../../trip/presentation/trip_error_message.dart';
@@ -490,6 +491,7 @@ class _ChipBar extends ConsumerWidget {
         _FilterChip(
           label: category.localizedName(languageCode),
           selected: filter.categorySlug == category.slug,
+          leading: categoryIcon(category.iconSymbol),
           onTap: () => controller.selectCategory(category.slug),
         ),
       _FilterChip(

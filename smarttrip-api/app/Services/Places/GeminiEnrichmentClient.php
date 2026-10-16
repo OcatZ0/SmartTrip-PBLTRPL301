@@ -34,14 +34,22 @@ class GeminiEnrichmentClient
     private const RETRYABLE_STATUSES = [429, 500, 503];
 
     /**
-     * @param  array<int, string>  $availableCategorySlugs  categories.slug yang sudah di-seed (Section 3: wajib diseed duluan)
+     * @param  array<string, array{name: string, keywords: string|null}>  $availableCategories  categories yang sudah di-seed (Section 3: wajib diseed duluan), keyed by slug; name + search_keywords tell Gemini what each tag means
      * @param  array{type?: string|null, kecamatan?: string|null, address?: string|null}  $context  helps Gemini tell same-named places apart
      * @return array{description_id: string|null, description_en: string|null, category_tags: array<int, string>, estimated_visit_minutes: int|null, is_outdoor: bool|null, estimated_cost_idr: int|null}
      */
-    public function enrich(string $name, ?string $descriptionId, array $availableCategorySlugs, array $context = []): array
+    public function enrich(string $name, ?string $descriptionId, array $availableCategories, array $context = []): array
     {
         $model = config('services.gemini.model');
-        $slugList = implode(', ', $availableCategorySlugs);
+        $availableCategorySlugs = array_keys($availableCategories);
+        // "- pantai (Pantai): pasir putih, sunset" - the admin's keywords
+        // say what a tag covers, so places get the right interest tags.
+        $categoryList = implode("\n", array_map(
+            fn (string $slug, array $category) => "- {$slug} ({$category['name']})"
+                .(filled($category['keywords']) ? ": {$category['keywords']}" : ''),
+            $availableCategorySlugs,
+            $availableCategories,
+        ));
         $hasDescription = trim((string) $descriptionId) !== '';
         $place = implode(', ', array_filter([
             $name,
@@ -72,7 +80,9 @@ class GeminiEnrichmentClient
             Tempat: {$place}
             {$descriptionTask}
 
-            Daftar tag kategori yang TERSEDIA (cuma boleh pilih dari daftar ini, jangan buat tag baru): {$slugList}
+            Daftar tag kategori yang TERSEDIA, format "slug (nama): kata kunci". Pilih slug yang cocok dengan
+            tempat ini berdasarkan nama dan kata kuncinya; cuma boleh pilih slug dari daftar ini, jangan buat tag baru:
+            {$categoryList}
 
             Balas HANYA dalam format JSON persis seperti ini, tanpa teks lain:
             {

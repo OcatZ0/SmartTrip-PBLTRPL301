@@ -4,10 +4,13 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Category;
+use App\Services\Places\GeminiKeywordSuggestionClient;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
+use RuntimeException;
 
 /**
  * F021 - Admin dapat mengelola kategori tempat wisata (CRUD categories lewat Modal UI)
@@ -19,7 +22,10 @@ class CategoryController extends Controller
         $search = $request->string('search')->trim()->toString();
         $editId = $request->integer('edit_id');
 
-        $query = Category::query()->withCount('places');
+        // Up to 3 place names per category for the edit popup's note.
+        $query = Category::query()
+            ->withCount('places')
+            ->with(['places' => fn ($places) => $places->select('places.places_id', 'places.name')->orderBy('places.name')->limit(3)]);
 
         if (! empty($search)) {
             $term = '%'.mb_strtolower($search).'%';
@@ -27,7 +33,7 @@ class CategoryController extends Controller
                 $searchQuery->whereRaw('LOWER(name_id) LIKE ?', [$term])
                     ->orWhereRaw('LOWER(name_en) LIKE ?', [$term])
                     ->orWhereRaw('LOWER(subtitle_id) LIKE ?', [$term])
-                    ->orWhereRaw('LOWER(ai_keywords) LIKE ?', [$term]);
+                    ->orWhereRaw('LOWER(search_keywords) LIKE ?', [$term]);
             });
         }
 
@@ -38,7 +44,13 @@ class CategoryController extends Controller
         $totalCategoriesCount = Category::count();
         $totalRelationsCount = DB::table('place_category')->count();
 
-        $editCategory = $editId ? Category::withCount('places')->find($editId) : null;
+        // After a failed save the popup reopens on the category being edited.
+        $editId = $request->old('_category_id') ?: $editId;
+        $editCategory = $editId
+            ? Category::withCount('places')
+                ->with(['places' => fn ($places) => $places->select('places.places_id', 'places.name')->orderBy('places.name')->limit(3)])
+                ->find($editId)
+            : null;
 
         return view('admin.categories.index', [
             'categories' => $categories,
@@ -56,27 +68,26 @@ class CategoryController extends Controller
 
     public function store(Request $request)
     {
-        $data = $request->validate([
-            'name_id' => ['required', 'string', 'max:255'],
-            'subtitle_id' => ['nullable', 'string', 'max:255'],
-            'name_en' => ['required', 'string', 'max:255'],
-            'icon_symbol' => ['nullable', 'string', 'max:100'],
-            'ai_keywords' => ['nullable', 'string'],
-            'visibility_onboarding' => ['nullable', 'string', 'max:100'],
-            'slug' => [
-                'nullable', 'string', 'max:255',
-                Rule::unique('categories', 'slug')->whereNull('deleted_at'),
-            ],
-        ]);
+        $data = $request->validate($this->rules(Rule::unique('categories', 'slug')->whereNull('deleted_at')));
+
+        $slug = ! empty($data['slug']) ? $data['slug'] : Str::slug($data['name_id']);
+
+        // A slug made from the name is not covered by the rule above; without
+        // this check a second "Pantai" fails on the unique index (HTTP 500).
+        if (empty($data['slug']) && Category::where('slug', $slug)->exists()) {
+            throw ValidationException::withMessages([
+                'name_id' => "Kategori dengan nama ini sudah ada (slug \"{$slug}\").",
+            ]);
+        }
 
         $category = Category::create([
             'name_id' => $data['name_id'],
             'subtitle_id' => $data['subtitle_id'] ?? null,
             'name_en' => $data['name_en'],
-            'icon_symbol' => $data['icon_symbol'] ?? 'ombak',
-            'ai_keywords' => $data['ai_keywords'] ?? null,
-            'visibility_onboarding' => $data['visibility_onboarding'] ?? 'Tampil di A4',
-            'slug' => ! empty($data['slug']) ? $data['slug'] : Str::slug($data['name_id']),
+            'icon_symbol' => $data['icon_symbol'] ?? Category::DEFAULT_ICON_SYMBOL,
+            'search_keywords' => $this->normalizeKeywords($data['search_keywords'] ?? null),
+            'show_in_onboarding' => $data['show_in_onboarding'] ?? true,
+            'slug' => $slug,
         ]);
 
         return redirect()->route('admin.categories.index')
@@ -90,27 +101,31 @@ class CategoryController extends Controller
 
     public function update(Request $request, Category $category)
     {
-        $data = $request->validate([
-            'name_id' => ['required', 'string', 'max:255'],
-            'subtitle_id' => ['nullable', 'string', 'max:255'],
-            'name_en' => ['required', 'string', 'max:255'],
-            'icon_symbol' => ['nullable', 'string', 'max:100'],
-            'ai_keywords' => ['nullable', 'string'],
-            'visibility_onboarding' => ['nullable', 'string', 'max:100'],
-            'slug' => [
-                'nullable', 'string', 'max:255',
-                Rule::unique('categories', 'slug')->whereNull('deleted_at')->ignore($category->categories_id, 'categories_id'),
-            ],
-        ]);
+        $data = $request->validate($this->rules(
+            Rule::unique('categories', 'slug')->whereNull('deleted_at')->ignore($category->categories_id, 'categories_id')
+        ));
 
         $updateData = [
             'name_id' => $data['name_id'],
-            'subtitle_id' => $data['subtitle_id'] ?? $category->subtitle_id,
             'name_en' => $data['name_en'],
-            'icon_symbol' => $data['icon_symbol'] ?? $category->icon_symbol,
-            'ai_keywords' => $data['ai_keywords'] ?? $category->ai_keywords,
-            'visibility_onboarding' => $data['visibility_onboarding'] ?? $category->visibility_onboarding,
         ];
+
+        // Only fields the request sends are changed: a field emptied in the
+        // popup arrives as null and is cleared, while a request that leaves a
+        // field out keeps the stored value.
+        foreach (['subtitle_id', 'icon_symbol', 'search_keywords', 'show_in_onboarding'] as $field) {
+            if ($request->exists($field)) {
+                $updateData[$field] = $field === 'search_keywords' ? $this->normalizeKeywords($data[$field]) : $data[$field];
+            }
+        }
+
+        // These two always need a value.
+        if (array_key_exists('icon_symbol', $updateData)) {
+            $updateData['icon_symbol'] ??= Category::DEFAULT_ICON_SYMBOL;
+        }
+        if (array_key_exists('show_in_onboarding', $updateData)) {
+            $updateData['show_in_onboarding'] ??= true;
+        }
 
         if (! empty($data['slug'])) {
             $updateData['slug'] = $data['slug'];
@@ -120,6 +135,58 @@ class CategoryController extends Controller
 
         return redirect()->route('admin.categories.index')
             ->with('status', "\"{$category->name_id}\" berhasil diperbarui.");
+    }
+
+    /**
+     * "Sarankan dengan AI" in the popup. Works while adding a category too,
+     * so it takes the names from the form instead of a saved category.
+     */
+    public function suggestKeywords(Request $request, GeminiKeywordSuggestionClient $suggestions)
+    {
+        $data = $request->validate([
+            'name_id' => ['required', 'string', 'max:255'],
+            'name_en' => ['nullable', 'string', 'max:255'],
+            'category_id' => ['nullable', 'integer'],
+        ]);
+
+        $samplePlaces = isset($data['category_id'])
+            ? Category::find($data['category_id'])?->places()->orderBy('places.name')->limit(5)->pluck('places.name')->all() ?? []
+            : [];
+
+        try {
+            return response()->json([
+                'keywords' => $suggestions->suggest($data['name_id'], $data['name_en'] ?? null, $samplePlaces),
+            ]);
+        } catch (RuntimeException $exception) {
+            return response()->json(['message' => $exception->getMessage()], 502);
+        }
+    }
+
+    private function rules($uniqueSlug): array
+    {
+        return [
+            'name_id' => ['required', 'string', 'max:255'],
+            'subtitle_id' => ['nullable', 'string', 'max:255'],
+            'name_en' => ['required', 'string', 'max:255'],
+            'icon_symbol' => ['nullable', 'string', Rule::in(array_keys(Category::ICON_SYMBOLS))],
+            'search_keywords' => ['nullable', 'string', 'max:1000'],
+            'show_in_onboarding' => ['nullable', 'boolean'],
+            'slug' => ['nullable', 'string', 'max:255', $uniqueSlug],
+        ];
+    }
+
+    /** "pulau,  Diving,pulau" becomes "pulau, Diving": trimmed, no empty or repeated entries. */
+    private function normalizeKeywords(?string $keywords): ?string
+    {
+        $unique = [];
+        foreach (explode(',', (string) $keywords) as $keyword) {
+            $keyword = trim($keyword);
+            if ($keyword !== '' && ! isset($unique[mb_strtolower($keyword)])) {
+                $unique[mb_strtolower($keyword)] = $keyword;
+            }
+        }
+
+        return $unique === [] ? null : implode(', ', $unique);
     }
 
     public function destroy(Category $category)

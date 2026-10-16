@@ -39,7 +39,12 @@ class PlaceController extends Controller
             ->where('business_status', '!=', 'closed_permanently')
             ->when($request->filled('search'), function ($query) use ($request) {
                 $term = '%'.mb_strtolower($request->string('search')->trim()).'%';
-                $query->whereRaw('LOWER(name) LIKE ?', [$term]);
+                // Also places in a category whose admin-set search keywords
+                // match, e.g. "snorkeling" finds the places in a category
+                // tagged with it even when the word is not in their names.
+                $query->where(fn ($match) => $match
+                    ->whereRaw('LOWER(name) LIKE ?', [$term])
+                    ->orWhereHas('categories', fn ($categoryQuery) => $categoryQuery->whereRaw('LOWER(search_keywords) LIKE ?', [$term])));
             })
             ->when($request->filled('category'), function ($query) use ($request) {
                 $slug = $request->string('category')->trim();

@@ -119,15 +119,16 @@
         font-size: 20px;
     }
 
-    .symbol-ombak { background-color: #E0F2FE; color: #0284C7; }
-    .symbol-feri { background-color: #E0F2FE; color: #0284C7; }
-    .symbol-senja { background-color: #FFEDD5; color: #EA580C; }
-    .symbol-kuliner { background-color: #E0F2FE; color: #0284C7; }
-    .symbol-belanja { background-color: #EDE9FE; color: #7C3AED; }
-    .symbol-budaya { background-color: #E0E7FF; color: #4F46E5; }
-    .symbol-keluarga { background-color: #E0F2FE; color: #0369A1; }
-    .symbol-malam { background-color: #F1F5F9; color: #475569; }
-    .symbol-spa { background-color: #DCFCE7; color: #16A34A; }
+    /* One colour per tone in Category::ICON_SYMBOLS. */
+    .symbol-tone-blue { background-color: #E0F2FE; color: #0284C7; }
+    .symbol-tone-orange { background-color: #FFEDD5; color: #EA580C; }
+    .symbol-tone-green { background-color: #DCFCE7; color: #16A34A; }
+    .symbol-tone-amber { background-color: #FEF3C7; color: #B45309; }
+    .symbol-tone-purple { background-color: #EDE9FE; color: #7C3AED; }
+    .symbol-tone-indigo { background-color: #E0E7FF; color: #4F46E5; }
+    .symbol-tone-red { background-color: #FFE4E6; color: #E11D48; }
+    .symbol-tone-teal { background-color: #CCFBF1; color: #0F766E; }
+    .symbol-tone-slate { background-color: #F1F5F9; color: #475569; }
 
     .cat-title {
         font-weight: 800;
@@ -280,14 +281,53 @@
         background: #0F5C97;
     }
 
+    .symbol-search {
+        position: relative;
+        margin-bottom: 10px;
+    }
+
+    .symbol-search i {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #64748B;
+    }
+
+    .symbol-search input {
+        padding-left: 36px;
+    }
+
     .symbol-select-grid {
         display: grid;
-        grid-template-columns: repeat(6, 1fr);
+        grid-template-columns: repeat(auto-fill, minmax(82px, 1fr));
         gap: 10px;
-        margin-bottom: 16px;
+        max-height: 228px;
+        overflow-y: auto;
+        padding: 2px;
+    }
+
+    .symbol-empty {
+        font-size: 12.5px;
+        color: #64748B;
+        padding: 12px 0 4px;
+    }
+
+    .field-error {
+        color: #DC2626;
+        font-size: 12px;
+        font-weight: 600;
+        margin-top: 4px;
+    }
+
+    .form-control-custom.is-invalid {
+        border-color: #DC2626;
     }
 
     .symbol-select-item {
+        width: 100%;
+        font: inherit;
+        color: #334155;
         background-color: #F8FAFC;
         border: 1px solid #E2E8F0;
         border-radius: 12px;
@@ -343,9 +383,19 @@
         gap: 6px;
     }
 
-    .tag-chip i {
+    .tag-chip button {
+        border: 0;
+        background: transparent;
+        color: inherit;
+        padding: 0;
+        line-height: 1;
+        font-size: 13px;
         cursor: pointer;
-        font-size: 11px;
+    }
+
+    .tag-chips-empty {
+        font-size: 12px;
+        color: #64748B;
     }
 
     .info-callout-box {
@@ -651,6 +701,23 @@
 
 @section('content')
 
+@php
+    // What the edit popup needs for one category, passed as JSON in a data
+    // attribute instead of quoted onclick arguments.
+    $categoryPayload = fn ($category) => [
+        'id' => $category->categories_id,
+        'update_url' => route('admin.categories.update', $category),
+        'name_id' => $category->name_id,
+        'name_en' => $category->name_en,
+        'subtitle_id' => $category->subtitle_id,
+        'icon_symbol' => $category->iconMeta()['key'],
+        'search_keywords' => $category->search_keywords,
+        'show_in_onboarding' => $category->show_in_onboarding ?? true,
+        'places_count' => $category->places_count ?? 0,
+        'sample_places' => $category->places->pluck('name')->values(),
+    ];
+@endphp
+
 @if (session('error'))
     <div class="alert alert-danger text-white">{{ session('error') }}</div>
 @endif
@@ -683,40 +750,11 @@
                 </thead>
                 <tbody>
                     @forelse($categories as $cat)
-                        @php
-                            $symbolClass = 'symbol-ombak';
-                            $iconClass = 'bi-tsunami';
-
-                            if ($cat->icon_symbol === 'feri' || str_contains(strtolower($cat->name_id), 'feri')) {
-                                $symbolClass = 'symbol-feri';
-                                $iconClass = 'bi-anchor';
-                            } elseif ($cat->icon_symbol === 'senja' || str_contains(strtolower($cat->name_id), 'pantai')) {
-                                $symbolClass = 'symbol-senja';
-                                $iconClass = 'bi-sunset-fill';
-                            } elseif ($cat->icon_symbol === 'kuliner' || str_contains(strtolower($cat->name_id), 'seafood')) {
-                                $symbolClass = 'symbol-kuliner';
-                                $iconClass = 'bi-cup-hot-fill';
-                            } elseif ($cat->icon_symbol === 'belanja' || str_contains(strtolower($cat->name_id), 'belanja')) {
-                                $symbolClass = 'symbol-belanja';
-                                $iconClass = 'bi-bag-fill';
-                            } elseif ($cat->icon_symbol === 'budaya' || str_contains(strtolower($cat->name_id), 'budaya')) {
-                                $symbolClass = 'symbol-budaya';
-                                $iconClass = 'bi-bank2';
-                            } elseif ($cat->icon_symbol === 'keluarga' || str_contains(strtolower($cat->name_id), 'keluarga')) {
-                                $symbolClass = 'symbol-keluarga';
-                                $iconClass = 'bi-gear-fill';
-                            } elseif ($cat->icon_symbol === 'malam' || str_contains(strtolower($cat->name_id), 'malam')) {
-                                $symbolClass = 'symbol-malam';
-                                $iconClass = 'bi-music-note-beamed';
-                            } elseif ($cat->icon_symbol === 'spa' || str_contains(strtolower($cat->name_id), 'spa')) {
-                                $symbolClass = 'symbol-spa';
-                                $iconClass = 'bi-flower1';
-                            }
-                        @endphp
+                        @php($icon = $cat->iconMeta())
                         <tr>
                             <td>
-                                <div class="symbol-icon-box {{ $symbolClass }}">
-                                    <i class="bi {{ $iconClass }}"></i>
+                                <div class="symbol-icon-box symbol-tone-{{ $icon['tone'] }}" title="{{ $icon['label'] }}">
+                                    <i class="bi {{ $icon['icon'] }}"></i>
                                 </div>
                             </td>
                             <td>
@@ -729,13 +767,14 @@
                             <td>
                                 <span class="badge-destinasi">
                                     <i class="bi bi-geo-alt-fill"></i>
-                                    <span>{{ $cat->places_count ?? rand(10, 45) }} Tempat</span>
+                                    <span>{{ $cat->places_count }} Tempat</span>
                                 </span>
                             </td>
                             <td class="text-center">
                                 <div class="d-flex align-items-center justify-content-center gap-2">
-                                    <button type="button" class="btn-action-edit" title="Edit Kategori" 
-                                            onclick="openEditModal('{{ $cat->categories_id }}', '{{ addslashes($cat->name_id) }}', '{{ addslashes($cat->subtitle_id ?? '') }}', '{{ addslashes($cat->name_en) }}', '{{ $cat->icon_symbol ?? 'ombak' }}', '{{ addslashes($cat->ai_keywords ?? '') }}', '{{ $cat->places_count ?? 42 }}')">
+                                    <button type="button" class="btn-action-edit" title="Edit Kategori"
+                                            data-category="{{ json_encode($categoryPayload($cat)) }}"
+                                            onclick="openEditModal(JSON.parse(this.dataset.category))">
                                         <i class="bi bi-pencil-fill" style="pointer-events: none;"></i>
                                     </button>
                                     <button type="button" class="btn-action-history" title="Riwayat Perubahan (F022)"
@@ -764,7 +803,7 @@
         <!-- Table Footer Summary Bar -->
         <div class="table-card-footer">
             <i class="bi bi-grid-3x3-gap-fill fs-6"></i>
-            <span>{{ $totalCategoriesCount }} Kategori Aktif • {{ $totalRelationsCount ?? 177 }} Relasi Tempat Wisata</span>
+            <span>{{ $totalCategoriesCount }} Kategori Aktif • {{ $totalRelationsCount }} Relasi Tempat Wisata</span>
         </div>
     </div>
 
@@ -787,42 +826,45 @@
                 <form id="formCategory" method="POST" action="" class="d-flex flex-column m-0 p-0" style="overflow: hidden; flex: 1;">
                     @csrf
                     <input type="hidden" name="_method" id="formMethod" value="POST">
-                    
+                    {{-- Empty when adding; lets a failed save reopen the right category. --}}
+                    <input type="hidden" name="_category_id" id="inputCategoryId" value="">
+
                     <div class="modal-body-scrollable">
+                        @if ($errors->any())
+                            <div class="alert alert-danger mb-4" id="formErrorSummary" style="font-size: 13px; border-radius: 10px;">
+                                <div class="fw-bold mb-1"><i class="bi bi-exclamation-triangle-fill me-1"></i> Perubahan belum tersimpan</div>
+                                <ul class="mb-0 ps-3">
+                                    @foreach ($errors->all() as $error)
+                                        <li>{{ $error }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        @endif
+
                         <!-- Simbol Visual Kategori -->
                         <div class="mb-4">
-                            <div class="d-flex align-items-center justify-content-between mb-2">
-                                <label class="form-label-custom mb-0">Simbol Visual Kategori</label>
-                                <span class="text-primary fw-semibold" style="font-size: 12px;">Dipakai di Peta & Filter Seluler</span>
-                            </div>
+                            <label class="form-label-custom mb-2" for="symbolSearch">Simbol Visual Kategori</label>
 
-                            <input type="hidden" name="icon_symbol" id="inputIconSymbol" value="ombak">
-                            <div class="symbol-select-grid">
-                                <div class="symbol-select-item active" data-symbol="ombak" onclick="selectSymbol(this, 'ombak')">
-                                    <i class="bi bi-tsunami"></i>
-                                    <span>Ombak</span>
-                                </div>
-                                <div class="symbol-select-item" data-symbol="feri" onclick="selectSymbol(this, 'feri')">
-                                    <i class="bi bi-anchor"></i>
-                                    <span>Feri</span>
-                                </div>
-                                <div class="symbol-select-item" data-symbol="kuliner" onclick="selectSymbol(this, 'kuliner')">
-                                    <i class="bi bi-cup-hot-fill"></i>
-                                    <span>Kuliner</span>
-                                </div>
-                                <div class="symbol-select-item" data-symbol="selam" onclick="selectSymbol(this, 'selam')">
-                                    <i class="bi bi-water"></i>
-                                    <span>Selam</span>
-                                </div>
-                                <div class="symbol-select-item" data-symbol="pantai" onclick="selectSymbol(this, 'pantai')">
-                                    <i class="bi bi-umbrella-fill"></i>
-                                    <span>Pesisir</span>
-                                </div>
-                                <div class="symbol-select-item" data-symbol="senja" onclick="selectSymbol(this, 'senja')">
-                                    <i class="bi bi-sunset-fill"></i>
-                                    <span>Senja</span>
-                                </div>
+                            <input type="hidden" name="icon_symbol" id="inputIconSymbol" value="{{ \App\Models\Category::DEFAULT_ICON_SYMBOL }}">
+                            <div class="symbol-search">
+                                <i class="bi bi-search"></i>
+                                <input type="search" id="symbolSearch" class="form-control-custom" placeholder="Cari ikon, misal: pantai, kuliner, museum" autocomplete="off" oninput="filterSymbols(this.value)">
                             </div>
+                            <div class="symbol-select-grid" id="symbolGrid" role="radiogroup" aria-label="Simbol kategori">
+                                @foreach (\App\Models\Category::ICON_SYMBOLS as $key => $symbol)
+                                    <button type="button" class="symbol-select-item" role="radio" aria-checked="false"
+                                            data-symbol="{{ $key }}"
+                                            data-search="{{ mb_strtolower($key.' '.$symbol['label'].' '.$symbol['search']) }}"
+                                            onclick="selectSymbol('{{ $key }}')">
+                                        <i class="bi {{ $symbol['icon'] }}"></i>
+                                        <span>{{ $symbol['label'] }}</span>
+                                    </button>
+                                @endforeach
+                            </div>
+                            <div class="symbol-empty d-none" id="symbolEmpty">Tidak ada ikon yang cocok.</div>
+                            @error('icon_symbol')
+                                <div class="field-error">{{ $message }}</div>
+                            @enderror
                         </div>
 
                         <!-- Nama Kategori ID & EN -->
@@ -830,53 +872,78 @@
                             <div class="col-md-6">
                                 <label class="form-label-custom">Nama Kategori (Bahasa Indonesia) <span>*</span></label>
                                 <div class="position-relative">
-                                    <input type="text" name="name_id" id="inputNameId" class="form-control-custom pe-5" placeholder="Wisata Bahari" required>
+                                    <input type="text" name="name_id" id="inputNameId" class="form-control-custom pe-5 @error('name_id') is-invalid @enderror" placeholder="Wisata Bahari" required>
                                     <span class="position-absolute text-slate-400 fw-bold" style="right: 14px; top: 12px; font-size: 12px;">ID</span>
                                 </div>
+                                @error('name_id')
+                                    <div class="field-error">{{ $message }}</div>
+                                @enderror
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label-custom">Nama Kategori (English) <span>*</span></label>
                                 <div class="position-relative">
-                                    <input type="text" name="name_en" id="inputNameEn" class="form-control-custom pe-5" placeholder="Marine Tourism" required>
+                                    <input type="text" name="name_en" id="inputNameEn" class="form-control-custom pe-5 @error('name_en') is-invalid @enderror" placeholder="Marine Tourism" required>
                                     <span class="position-absolute text-slate-400 fw-bold" style="right: 14px; top: 12px; font-size: 12px;">EN</span>
                                 </div>
+                                @error('name_en')
+                                    <div class="field-error">{{ $message }}</div>
+                                @enderror
                             </div>
                         </div>
 
                         <!-- Subtitle -->
                         <div class="mb-4">
                             <label class="form-label-custom">Deskripsi Singkat / Subtitle</label>
-                            <input type="text" name="subtitle_id" id="inputSubtitleId" class="form-control-custom" placeholder="contoh: Prioritas Utama Pulau">
+                            <input type="text" name="subtitle_id" id="inputSubtitleId" class="form-control-custom @error('subtitle_id') is-invalid @enderror" placeholder="contoh: Prioritas Utama Pulau">
+                            @error('subtitle_id')
+                                <div class="field-error">{{ $message }}</div>
+                            @enderror
                         </div>
 
-                        <!-- Deskripsi Singkat / Kata Kunci AI -->
+                        <!-- Kata kunci pencarian -->
                         <div class="mb-4">
                             <div class="d-flex align-items-center justify-content-between mb-2">
-                                <label class="form-label-custom mb-0">✨ Deskripsi Singkat / Kata Kunci AI</label>
-                                <span class="text-slate-500" style="font-size: 12px;">Pisahkan dengan koma</span>
+                                <label class="form-label-custom mb-0" for="inputAiKeywords">Kata Kunci Pencarian <span class="text-slate-500 fw-normal" style="font-size: 12px; color: #64748B;">(pisahkan dengan koma)</span></label>
+                                <button type="button" class="btn btn-sm btn-outline-primary fw-semibold" id="suggestKeywordsButton" style="font-size: 12px; border-radius: 8px;" onclick="suggestKeywords()">
+                                    <i class="bi bi-stars me-1" aria-hidden="true"></i><span>Sarankan dengan AI</span>
+                                </button>
                             </div>
+                            <div class="field-error d-none" id="suggestKeywordsError"></div>
+                            <p class="text-slate-500 mt-0 mb-2" style="font-size: 12px;">Wisatawan yang mencari salah satu kata ini di katalog akan menemukan tempat-tempat di kategori ini.</p>
 
                             <div class="keywords-box-container">
-                                <div class="tag-chips-container" id="tagChipsPreview">
-                                    <span class="tag-chip">Pulau <i class="bi bi-x"></i></span>
-                                    <span class="tag-chip">Terumbu karang <i class="bi bi-x"></i></span>
-                                    <span class="tag-chip">Kapal pompong <i class="bi bi-x"></i></span>
-                                    <span class="tag-chip">Snorkeling <i class="bi bi-x"></i></span>
-                                    <span class="tag-chip">Diving <i class="bi bi-x"></i></span>
-                                </div>
-                                <textarea name="ai_keywords" id="inputAiKeywords" class="form-control-custom bg-white" style="height: 60px; padding: 8px 12px; resize: none;" placeholder="Pulau, terumbu karang, kapal pompong, snorkeling, diving"></textarea>
+                                {{-- Filled from the textarea by renderKeywordChips(). --}}
+                                <div class="tag-chips-container" id="tagChipsPreview"></div>
+                                <textarea name="search_keywords" id="inputAiKeywords" class="form-control-custom bg-white @error('search_keywords') is-invalid @enderror" style="height: 60px; padding: 8px 12px; resize: none;" placeholder="Pulau, terumbu karang, kapal pompong, snorkeling, diving" oninput="renderKeywordChips()"></textarea>
                             </div>
-                            <p class="text-slate-500 mt-1 mb-0" style="font-size: 12px;">Kata kunci ini digunakan oleh agen pintar Batam untuk mencocokkan preferensi rute harian wisatawan.</p>
+                            @error('search_keywords')
+                                <div class="field-error">{{ $message }}</div>
+                            @enderror
                         </div>
 
-                        <!-- Info Callout Box Tautan Tempat -->
-                        <div class="info-callout-box">
+                        <!-- Tampil di onboarding -->
+                        <div class="mb-2">
+                            {{-- The hidden 0 is sent when the switch is off (an unchecked box sends nothing). --}}
+                            <input type="hidden" name="show_in_onboarding" value="0">
+                            <div class="form-check form-switch d-flex align-items-start gap-2 ps-0">
+                                <input class="form-check-input ms-0 mt-1" type="checkbox" role="switch" name="show_in_onboarding" value="1" id="inputShowInOnboarding" checked>
+                                <label class="form-check-label" for="inputShowInOnboarding">
+                                    <span class="form-label-custom mb-0">Tampilkan di onboarding</span>
+                                    <span class="d-block text-slate-500" style="font-size: 12px;">Muncul sebagai pilihan minat saat wisatawan pertama kali membuka aplikasi.</span>
+                                </label>
+                            </div>
+                            @error('show_in_onboarding')
+                                <div class="field-error">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <!-- Info Callout Box Tautan Tempat (edit only) -->
+                        <div class="info-callout-box" id="linkedPlacesBox">
                             <i class="bi bi-info-circle-fill info-callout-icon"></i>
                             <div>
-                                <div class="fw-bold text-slate-900 mb-1" style="font-size: 13.5px;">Tautan Objek Wisata Aktif</div>
-                                <div style="line-height: 1.4; color: #334155;">
-                                    Kategori ini saat ini ditautkan pada <strong id="linkedPlacesCount">42 tempat wisata aktif</strong> (termasuk Jembatan Barelang, Pulau Ranoh, dan Mega Wisata Ocarina). Perubahan nama akan langsung tersinkronisasi.
-                                </div>
+                                <div class="fw-bold text-slate-900 mb-1" style="font-size: 13.5px;" id="linkedPlacesTitle"></div>
+                                <ul class="mb-1 ps-3" style="line-height: 1.5; color: #334155;" id="linkedPlacesList"></ul>
+                                <div class="text-slate-500" style="font-size: 12px;" id="linkedPlacesNote">Ganti nama berlaku di semua tempat ini.</div>
                             </div>
                         </div>
                     </div>
@@ -991,52 +1058,197 @@
 
 @push('scripts')
 <script>
-    function selectSymbol(element, symbol) {
-        document.querySelectorAll('.symbol-select-item').forEach(el => el.classList.remove('active'));
-        element.classList.add('active');
-        document.getElementById('inputIconSymbol').value = symbol;
-    }
+    const DEFAULT_ICON_SYMBOL = @json(\App\Models\Category::DEFAULT_ICON_SYMBOL);
 
-    function openCreateModal() {
-        document.getElementById('modalFormTitle').innerText = 'Tambah Kategori Wisata';
-        document.getElementById('formCategory').action = "{{ route('admin.categories.store') }}";
-        document.getElementById('formMethod').value = 'POST';
-
-        document.getElementById('inputNameId').value = '';
-        document.getElementById('inputNameEn').value = '';
-        document.getElementById('inputSubtitleId').value = '';
-        document.getElementById('inputAiKeywords').value = 'Pulau, terumbu karang, kapal pompong, snorkeling, diving';
-        document.getElementById('linkedPlacesCount').innerText = '0 tempat wisata aktif';
-
-        var modalEl = document.getElementById('modalCategoryForm');
-        var myModal = bootstrap.Modal.getOrCreateInstance(modalEl);
-        myModal.show();
-    }
-
-    function openEditModal(id, nameId, subtitleId, nameEn, symbol, keywords, count) {
-        document.getElementById('modalFormTitle').innerText = 'Edit Kategori Wisata';
-        document.getElementById('formCategory').action = "/admin/categories/" + id;
-        document.getElementById('formMethod').value = 'PUT';
-
-        document.getElementById('inputNameId').value = nameId;
-        document.getElementById('inputSubtitleId').value = subtitleId;
-        document.getElementById('inputNameEn').value = nameEn;
-        document.getElementById('inputAiKeywords').value = keywords || 'Pulau, terumbu karang, kapal pompong, snorkeling, diving';
-        document.getElementById('linkedPlacesCount').innerText = count + ' tempat wisata aktif';
-
-        // Select symbol active
-        document.querySelectorAll('.symbol-select-item').forEach(el => {
-            if (el.dataset.symbol === symbol) {
-                el.classList.add('active');
-            } else {
-                el.classList.remove('active');
-            }
+    function selectSymbol(symbol) {
+        document.querySelectorAll('#symbolGrid .symbol-select-item').forEach(function (item) {
+            const picked = item.dataset.symbol === symbol;
+            item.classList.toggle('active', picked);
+            item.setAttribute('aria-checked', picked ? 'true' : 'false');
         });
         document.getElementById('inputIconSymbol').value = symbol;
+    }
 
-        var modalEl = document.getElementById('modalCategoryForm');
-        var myModal = bootstrap.Modal.getOrCreateInstance(modalEl);
-        myModal.show();
+    function filterSymbols(query) {
+        const words = query.toLowerCase().trim().split(/\s+/).filter(Boolean);
+        let shown = 0;
+        document.querySelectorAll('#symbolGrid .symbol-select-item').forEach(function (item) {
+            const match = words.every(function (word) { return item.dataset.search.includes(word); });
+            item.classList.toggle('d-none', !match);
+            if (match) shown++;
+        });
+        document.getElementById('symbolEmpty').classList.toggle('d-none', shown > 0);
+    }
+
+    function keywordList() {
+        const seen = new Set();
+        return document.getElementById('inputAiKeywords').value.split(',')
+            .map(function (keyword) { return keyword.trim(); })
+            .filter(function (keyword) {
+                const key = keyword.toLowerCase();
+                if (!keyword || seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
+    }
+
+    // Chips mirror the textarea; the x on a chip removes that keyword from it.
+    function renderKeywordChips() {
+        const container = document.getElementById('tagChipsPreview');
+        const keywords = keywordList();
+        container.replaceChildren();
+
+        if (keywords.length === 0) {
+            const empty = document.createElement('span');
+            empty.className = 'tag-chips-empty';
+            empty.textContent = 'Belum ada kata kunci.';
+            container.appendChild(empty);
+            return;
+        }
+
+        keywords.forEach(function (keyword) {
+            const chip = document.createElement('span');
+            chip.className = 'tag-chip';
+            chip.appendChild(document.createTextNode(keyword));
+
+            const remove = document.createElement('button');
+            remove.type = 'button';
+            remove.setAttribute('aria-label', 'Hapus ' + keyword);
+            remove.innerHTML = '<i class="bi bi-x" aria-hidden="true"></i>';
+            remove.addEventListener('click', function () {
+                document.getElementById('inputAiKeywords').value = keywordList()
+                    .filter(function (other) { return other.toLowerCase() !== keyword.toLowerCase(); })
+                    .join(', ');
+                renderKeywordChips();
+            });
+
+            chip.appendChild(remove);
+            container.appendChild(chip);
+        });
+    }
+
+    // Adds Gemini's suggestions to the keywords already typed (no
+    // duplicates); nothing is saved until the admin presses Simpan.
+    function suggestKeywords() {
+        const button = document.getElementById('suggestKeywordsButton');
+        const error = document.getElementById('suggestKeywordsError');
+        const nameId = document.getElementById('inputNameId').value.trim();
+
+        error.classList.add('d-none');
+        if (!nameId) {
+            error.textContent = 'Isi nama kategori dulu.';
+            error.classList.remove('d-none');
+            return;
+        }
+
+        const params = new URLSearchParams({ name_id: nameId, name_en: document.getElementById('inputNameEn').value.trim() });
+        const categoryId = document.getElementById('inputCategoryId').value;
+        if (categoryId) params.set('category_id', categoryId);
+
+        const label = button.querySelector('span');
+        button.disabled = true;
+        label.textContent = 'Meminta saran...';
+
+        fetch(@json(route('admin.categories.keyword-suggestions')) + '?' + params, {
+            credentials: 'same-origin',
+            headers: { 'Accept': 'application/json' },
+        })
+            .then(function (response) {
+                return response.json().then(function (body) {
+                    if (!response.ok) throw new Error(body.message || 'Saran kata kunci gagal, coba lagi.');
+                    return body;
+                });
+            })
+            .then(function (body) {
+                const textarea = document.getElementById('inputAiKeywords');
+                textarea.value = keywordList().concat(body.keywords || []).join(', ');
+                textarea.value = keywordList().join(', ');
+                renderKeywordChips();
+            })
+            .catch(function (err) {
+                error.textContent = err.message;
+                error.classList.remove('d-none');
+            })
+            .finally(function () {
+                button.disabled = false;
+                label.textContent = 'Sarankan dengan AI';
+            });
+    }
+
+    function renderLinkedPlaces(category) {
+        const box = document.getElementById('linkedPlacesBox');
+        box.classList.toggle('d-none', !category);
+        if (!category) return;
+
+        const count = category.places_count || 0;
+        const names = category.sample_places || [];
+        const list = document.getElementById('linkedPlacesList');
+
+        document.getElementById('linkedPlacesTitle').textContent =
+            count ? 'Dipakai oleh ' + count + ' tempat' : 'Belum dipakai tempat mana pun';
+        document.getElementById('linkedPlacesNote').classList.toggle('d-none', !count);
+
+        list.replaceChildren();
+        list.classList.toggle('d-none', !count);
+        names.forEach(function (name) {
+            const item = document.createElement('li');
+            item.textContent = name;
+            list.appendChild(item);
+        });
+        if (count > names.length) {
+            const more = document.createElement('li');
+            more.textContent = '+' + (count - names.length) + ' lainnya';
+            list.appendChild(more);
+        }
+    }
+
+    function clearFieldErrors() {
+        // Server errors are removed; the AI suggestion message box is reused, so only hidden.
+        document.querySelectorAll('#formCategory .field-error:not(#suggestKeywordsError), #formErrorSummary').forEach(function (el) { el.remove(); });
+        document.getElementById('suggestKeywordsError').classList.add('d-none');
+        document.querySelectorAll('#formCategory .is-invalid').forEach(function (el) { el.classList.remove('is-invalid'); });
+    }
+
+    function fillForm(values) {
+        document.getElementById('inputNameId').value = values.name_id || '';
+        document.getElementById('inputNameEn').value = values.name_en || '';
+        document.getElementById('inputSubtitleId').value = values.subtitle_id || '';
+        document.getElementById('inputAiKeywords').value = values.search_keywords || '';
+        // Shown unless explicitly off (false, or "0" from old input after a failed save).
+        document.getElementById('inputShowInOnboarding').checked =
+            !(values.show_in_onboarding === false || values.show_in_onboarding === '0');
+        selectSymbol(values.icon_symbol || DEFAULT_ICON_SYMBOL);
+        document.getElementById('symbolSearch').value = '';
+        filterSymbols('');
+        renderKeywordChips();
+    }
+
+    function showCategoryModal() {
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('modalCategoryForm')).show();
+    }
+
+    function openCreateModal(keepErrors) {
+        if (!keepErrors) clearFieldErrors();
+        document.getElementById('modalFormTitle').innerText = 'Tambah Kategori Wisata';
+        document.getElementById('formCategory').action = @json(route('admin.categories.store'));
+        document.getElementById('formMethod').value = 'POST';
+        document.getElementById('inputCategoryId').value = '';
+
+        fillForm({});
+        renderLinkedPlaces(null);
+        showCategoryModal();
+    }
+
+    function openEditModal(category, keepErrors) {
+        if (!keepErrors) clearFieldErrors();
+        document.getElementById('modalFormTitle').innerText = 'Edit Kategori Wisata';
+        document.getElementById('formCategory').action = category.update_url;
+        document.getElementById('formMethod').value = 'PUT';
+        document.getElementById('inputCategoryId').value = category.id;
+
+        fillForm(category);
+        renderLinkedPlaces(category);
+        showCategoryModal();
     }
 
     function openDeleteModal(url, name) {
@@ -1053,7 +1265,8 @@
         'name_en': { label: 'Nama Kategori (EN)', icon: 'bi-translate' },
         'subtitle_id': { label: 'Subjudul / Tagline', icon: 'bi-card-heading' },
         'icon_symbol': { label: 'Simbol Visual', icon: 'bi-emoji-smile' },
-        'ai_keywords': { label: 'Kata Kunci Rekomendasi AI', icon: 'bi-stars', isLong: true },
+        'ai_keywords': { label: 'Kata Kunci Pencarian', icon: 'bi-search', isLong: true },
+        'search_keywords': { label: 'Kata Kunci Pencarian', icon: 'bi-search', isLong: true },
         'slug': { label: 'Slug URL', icon: 'bi-link-45deg' },
         'type': { label: 'Kategori / Tipe Tempat', icon: 'bi-compass' },
         'address': { label: 'Alamat Lokasi', icon: 'bi-map' },
@@ -1416,18 +1629,22 @@
         });
     });
 
-    @if(isset($editCategory) && $editCategory)
-        document.addEventListener('DOMContentLoaded', function() {
-            openEditModal(
-                '{{ $editCategory->categories_id }}',
-                '{{ addslashes($editCategory->name_id) }}',
-                '{{ addslashes($editCategory->subtitle_id ?? "") }}',
-                '{{ addslashes($editCategory->name_en) }}',
-                '{{ $editCategory->icon_symbol ?? "ombak" }}',
-                '{{ addslashes($editCategory->ai_keywords ?? "") }}',
-                '{{ $editCategory->places_count ?? 42 }}'
-            );
-        });
-    @endif
+    // Reopen the popup: on /categories/{id}/edit, or after a failed save with
+    // what the admin typed (old input) instead of the stored values.
+    document.addEventListener('DOMContentLoaded', function () {
+        const editCategory = @json($editCategory ? $categoryPayload($editCategory) : null);
+
+        @if ($errors->any())
+            const typed = @json(request()->old());
+            if (editCategory) {
+                openEditModal(editCategory, true);
+            } else {
+                openCreateModal(true);
+            }
+            fillForm(Object.assign({}, editCategory || {}, typed));
+        @else
+            if (editCategory) openEditModal(editCategory);
+        @endif
+    });
 </script>
 @endpush

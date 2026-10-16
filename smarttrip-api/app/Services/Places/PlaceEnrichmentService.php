@@ -54,10 +54,15 @@ class PlaceEnrichmentService
      */
     public function enrich(Place $place): array
     {
-        $availableSlugs = Category::query()->pluck('slug')->all();
+        $availableCategories = Category::query()
+            ->get(['slug', 'name_id', 'search_keywords'])
+            ->mapWithKeys(fn (Category $category) => [
+                $category->slug => ['name' => $category->name_id, 'keywords' => $category->search_keywords],
+            ])
+            ->all();
         $description = $this->sourceDescription($place);
 
-        $result = $this->gemini->enrich($place->name, $description, $availableSlugs, [
+        $result = $this->gemini->enrich($place->name, $description, $availableCategories, [
             'type' => $place->type,
             'kecamatan' => $place->kecamatan,
             'address' => $place->address,

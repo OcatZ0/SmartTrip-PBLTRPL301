@@ -268,7 +268,7 @@ class AdminPlacePhotoTest extends TestCase
 
 
 
-    public function test_making_a_photo_primary_reorders_and_updates_the_thumbnail(): void
+    public function test_saving_the_edit_form_with_a_new_main_photo_reorders_and_updates_the_thumbnail(): void
     {
         foreach (['a', 'b', 'c'] as $index => $name) {
             PlacePhoto::create(['places_id' => $this->place->places_id, 'photo_url' => "{$name}.jpg", 'sort_order' => $index]);
@@ -276,8 +276,9 @@ class AdminPlacePhotoTest extends TestCase
         $this->place->update(['photo_url' => 'a.jpg']);
         $third = PlacePhoto::where('photo_url', 'c.jpg')->first();
 
+        // "Jadikan utama" only picks the photo; it is applied by "Simpan perubahan".
         $this->actingAs($this->admin)
-            ->post("/admin/places/{$this->place->places_id}/photos/{$third->place_photos_id}/primary")
+            ->put("/admin/places/{$this->place->places_id}", ['primary_photo_id' => $third->place_photos_id])
             ->assertRedirect();
 
         $this->assertSame(['c.jpg', 'a.jpg', 'b.jpg'], $this->place->photos()->orderBy('sort_order')->pluck('photo_url')->all());

@@ -77,6 +77,67 @@ class CandidateReviewTest extends TestCase
 
     // --- list/filter ---
 
+    public function test_the_list_speaks_indonesian_and_counts_each_status(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $this->makeCandidate(['name' => 'Kuliner A', 'type' => 'culinary', 'external_place_id' => 'osm:n1']);
+        $this->makeCandidate(['name' => 'Pending B', 'external_place_id' => 'osm:n2']);
+        $this->makeCandidate(['name' => 'Ditolak C', 'status' => 'rejected', 'external_place_id' => 'osm:n3']);
+
+        $response = $this->actingAs($admin)->get('/admin/candidates');
+
+        $response->assertOk();
+        $response->assertSeeInOrder(['Menunggu review', '2', 'Disetujui', '0', 'Ditolak', '1']);
+        $response->assertSee('Kuliner');
+        $response->assertSee('Setujui terpilih');
+        $response->assertDontSee('Approve Terpilih');
+        $response->assertDontSee('>Reject<', false);
+        $response->assertDontSee('>culinary<', false);
+    }
+
+    public function test_the_list_can_be_searched_by_name_or_osm_id(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $this->makeCandidate(['name' => 'Pantai Melur', 'external_place_id' => 'osm:n111']);
+        $this->makeCandidate(['name' => 'Kedai Kopi', 'external_place_id' => 'osm:w222']);
+
+        $byName = $this->actingAs($admin)->get('/admin/candidates?search=melur');
+        $byName->assertSee('Pantai Melur');
+        $byName->assertDontSee('Kedai Kopi');
+
+        $byId = $this->actingAs($admin)->get('/admin/candidates?search=w222');
+        $byId->assertSee('Kedai Kopi');
+        $byId->assertDontSee('Pantai Melur');
+    }
+
+    public function test_the_list_can_be_filtered_by_type_and_the_tabs_follow_it(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $this->makeCandidate(['name' => 'Hotel Satu', 'type' => 'lodging', 'external_place_id' => 'osm:n1']);
+        $this->makeCandidate(['name' => 'Hotel Dua', 'type' => 'lodging', 'status' => 'rejected', 'external_place_id' => 'osm:n2']);
+        $this->makeCandidate(['name' => 'Pantai Tiga', 'external_place_id' => 'osm:n3']);
+
+        $response = $this->actingAs($admin)->get('/admin/candidates?type=lodging');
+
+        $response->assertSee('Hotel Satu');
+        $response->assertDontSee('Pantai Tiga');
+        $response->assertSeeInOrder(['Menunggu review', '1', 'Disetujui', '0', 'Ditolak', '1']);
+    }
+
+    public function test_the_list_uses_the_admin_pagination(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        foreach (range(1, 26) as $number) {
+            $this->makeCandidate(['name' => "Kandidat {$number}", 'external_place_id' => "osm:n{$number}"]);
+        }
+
+        $response = $this->actingAs($admin)->get('/admin/candidates');
+
+        $response->assertSee('Menampilkan 1–25 dari 26 kandidat');
+        $response->assertSee('aria-label="Halaman berikutnya"', false);
+        $response->assertDontSee('Showing');
+    }
+
     public function test_the_list_defaults_to_pending_candidates(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
@@ -310,7 +371,7 @@ class CandidateReviewTest extends TestCase
 
         $this->actingAs($admin)->post("/admin/candidates/{$candidate->place_candidates_id}/approve")
             ->assertRedirect()
-            ->assertSessionHas('error', 'Gagal approve "Pantai Kandidat": kandidat ini sudah disetujui');
+            ->assertSessionHas('error', 'Gagal menyetujui "Pantai Kandidat": kandidat ini sudah disetujui');
 
         Http::assertNothingSent();
         $this->assertDatabaseMissing('places', ['external_place_id' => 'osm:n2001']);
@@ -323,7 +384,7 @@ class CandidateReviewTest extends TestCase
 
         $this->actingAs($admin)->post("/admin/candidates/{$candidate->place_candidates_id}/reject")
             ->assertRedirect()
-            ->assertSessionHas('error', 'Gagal menolak "Pantai Kandidat": hanya kandidat pending yang bisa ditolak');
+            ->assertSessionHas('error', 'Gagal menolak "Pantai Kandidat": hanya kandidat yang menunggu review yang bisa ditolak');
 
         $this->assertSame('approved', $candidate->fresh()->status);
     }
@@ -336,7 +397,7 @@ class CandidateReviewTest extends TestCase
 
         $this->actingAs($admin)->post('/admin/candidates/bulk-reject', ['ids' => [$pending->place_candidates_id, $approved->place_candidates_id]])
             ->assertRedirect()
-            ->assertSessionHas('status', '1 kandidat ditolak, 1 dilewati karena bukan pending.');
+            ->assertSessionHas('status', '1 kandidat ditolak, 1 dilewati karena statusnya bukan menunggu.');
 
         $this->assertSame('rejected', $pending->fresh()->status);
         $this->assertSame('approved', $approved->fresh()->status);

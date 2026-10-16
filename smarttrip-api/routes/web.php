@@ -41,6 +41,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         Route::get('/candidates', [CandidateController::class, 'index'])->name('candidates.index');
         Route::post('/candidates/discover', [CandidateController::class, 'discover'])->name('candidates.discover');
+        Route::get('/candidates/discovery', [CandidateController::class, 'discoveryStatus'])->name('candidates.discovery');
         Route::post('/candidates/{candidate}/approve', [CandidateController::class, 'approve'])->name('candidates.approve');
         Route::post('/candidates/{candidate}/reject', [CandidateController::class, 'reject'])->name('candidates.reject');
         Route::post('/candidates/bulk-approve', [CandidateController::class, 'bulkApprove'])->name('candidates.bulk-approve');

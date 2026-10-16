@@ -86,7 +86,7 @@ class PlaceCandidateReviewService
     {
         // Rejecting an approved candidate would leave its place in the catalog under a rejected status.
         if ($candidate->status !== 'pending') {
-            throw new RuntimeException('hanya kandidat pending yang bisa ditolak');
+            throw new RuntimeException('hanya kandidat yang menunggu review yang bisa ditolak');
         }
 
         $candidate->update(['status' => 'rejected']);

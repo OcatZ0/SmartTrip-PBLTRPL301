@@ -530,8 +530,12 @@
             dirty.textContent = n === 0 ? 'Belum ada perubahan' : n + ' perubahan belum disimpan';
             dirty.classList.toggle('is-dirty', n > 0);
         }
-        form.addEventListener('input', updateDirty);
-        form.addEventListener('change', updateDirty);
+        // Listened on the document, not the form: fields that belong to the
+        // form through form="formEditPlace" (the main-photo radios in Foto
+        // Tempat) sit outside it, so their events never reach the form element.
+        function updateDirtyFor(e) { if (e.target.form === form) updateDirty(); }
+        document.addEventListener('input', updateDirtyFor);
+        document.addEventListener('change', updateDirtyFor);
         form.addEventListener('submit', function () { submitting = true; });
         window.addEventListener('beforeunload', function (e) {
             if (!submitting && changedCount() > 0) {

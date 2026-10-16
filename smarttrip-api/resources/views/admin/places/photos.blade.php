@@ -9,19 +9,19 @@
                     <div class="col-6 col-md-3">
                         <div class="card h-100">
                             <img src="{{ $photo->photo_url }}" class="card-img-top object-fit-cover" style="height: 140px" alt="Foto {{ $place->name }}">
-                            <div class="card-body p-2 small">
+                            {{-- One row on every card: the photo's status (or the action to make it the main one) on the left, delete on the right. --}}
+                            <div class="card-footer p-2 d-flex align-items-center gap-2">
                                 @if ($loop->first)
-                                    <span class="badge text-bg-primary mb-1">Utama</span>
-                                @endif
-                            </div>
-                            <div class="card-footer p-2 d-flex gap-1">
-                                @unless ($loop->first)
+                                    <span class="badge text-bg-primary d-inline-flex align-items-center gap-1 py-2 px-2">
+                                        <i class="bi bi-star-fill" aria-hidden="true"></i> Foto utama
+                                    </span>
+                                @else
                                     <form method="POST" action="{{ route('admin.places.photos.primary', [$place, $photo]) }}">
                                         @csrf
-                                        <button type="submit" class="btn btn-outline-primary btn-sm"><i class="bi bi-star" aria-hidden="true"></i> Jadikan utama</button>
+                                        <button type="submit" class="btn btn-link btn-sm text-decoration-none px-1"><i class="bi bi-star" aria-hidden="true"></i> Jadikan utama</button>
                                     </form>
-                                @endunless
-                                <form method="POST" action="{{ route('admin.places.photos.destroy', [$place, $photo]) }}"
+                                @endif
+                                <form method="POST" action="{{ route('admin.places.photos.destroy', [$place, $photo]) }}" class="ms-auto"
                                     data-confirm-title="Hapus foto ini?" data-confirm-ok="Hapus foto"
                                     data-confirm-text="Foto dihapus dari server dan tidak bisa dikembalikan.">
                                     @csrf

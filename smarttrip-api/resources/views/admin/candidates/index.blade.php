@@ -1,93 +1,589 @@
 @extends('admin.layout')
 
+@php
+    $statusTabs = [
+        'pending' => ['label' => 'Menunggu review', 'icon' => 'bi-hourglass-split'],
+        'approved' => ['label' => 'Disetujui', 'icon' => 'bi-check-circle'],
+        'rejected' => ['label' => 'Ditolak', 'icon' => 'bi-x-circle'],
+    ];
+    $typeBadges = [
+        'attraction' => ['label' => 'Wisata', 'icon' => 'bi-geo-alt', 'class' => 'is-attraction'],
+        'culinary' => ['label' => 'Kuliner', 'icon' => 'bi-cup-hot', 'class' => 'is-culinary'],
+        'lodging' => ['label' => 'Penginapan', 'icon' => 'bi-building', 'class' => 'is-lodging'],
+    ];
+    $typeLabels = array_map(fn ($typeBadge) => $typeBadge['label'], $typeBadges);
+    $canSelect = $selectedStatus !== 'approved';
+@endphp
+
 @section('title', 'Kandidat Tempat')
 
 @section('subtitle', 'Tinjau tempat baru hasil Discovery sebelum masuk katalog.')
 
 @section('topbar_actions')
-    <form method="POST" action="{{ route('admin.candidates.discover') }}">
-        @csrf
-        <button type="submit" class="admin-topbar-action">Jalankan Discovery</button>
-    </form>
+    <button type="button" class="admin-topbar-action" id="cdDiscover" data-bs-toggle="modal" data-bs-target="#cdDiscoveryModal">
+        <i class="bi bi-radar" aria-hidden="true"></i>
+        <span id="cdDiscoverLabel">Jalankan Discovery</span>
+    </button>
 @endsection
+
+@push('styles')
+<style>
+    .cd-page { --cd-ink: #14212f; --cd-muted: #5d6b7c; --cd-line: #e2e8f0; --cd-fill: #f1f5f9; --cd-blue: #2b6fab;
+        display: flex; flex-direction: column; gap: 16px; color: var(--cd-ink); }
+    .cd-alert { margin: 0; padding: 12px 16px; border-radius: 14px; font-size: 14px; font-weight: 600; display: flex; gap: 10px; align-items: flex-start; }
+    .cd-alert.is-ok { background: #e3f6ec; color: #1d7a55; }
+    .cd-alert.is-error { background: #fdecea; color: #b42318; }
+    .cd-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border-radius: 16px; background: #fff; border: 1px solid var(--cd-line); }
+    .cd-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+    .cd-tab { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 10px; font-size: 13.5px; font-weight: 600; color: var(--cd-muted); text-decoration: none; }
+    .cd-tab:hover { background: var(--cd-fill); color: var(--cd-ink); }
+    .cd-tab.is-active { background: #eaf2fa; color: var(--cd-blue); }
+    .cd-tab-count { min-width: 22px; padding: 1px 7px; border-radius: 999px; background: var(--cd-fill); font-size: 12px; text-align: center; color: var(--cd-muted); }
+    .cd-tab.is-active .cd-tab-count { background: var(--cd-blue); color: #fff; }
+    .cd-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .cd-search { position: relative; }
+    .cd-search .bi { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 14px; }
+    .cd-search input { height: 40px; width: 260px; max-width: 100%; padding: 0 12px 0 36px; border: 1px solid var(--cd-line); border-radius: 10px; font-size: 13.5px; color: var(--cd-ink); }
+    .cd-search input:focus, .cd-select:focus { outline: none; border-color: var(--cd-blue); box-shadow: 0 0 0 3px rgba(43, 111, 171, .15); }
+    .cd-reset { border-color: var(--cd-line); color: var(--cd-muted); }
+    .cd-reset:hover { background: var(--cd-fill); color: var(--cd-ink); }
+    .cd-select { height: 40px; min-width: 170px; padding: 0 36px 0 12px; border: 1px solid var(--cd-line); border-radius: 10px; font-size: 13.5px; color: var(--cd-ink); background-color: #fff; }
+    .cd-card { border-radius: 16px; background: #fff; border: 1px solid var(--cd-line); overflow: hidden; }
+    .cd-bulk { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--cd-line); background: #f8fafc; }
+    .cd-bulk-count { font-size: 13px; color: var(--cd-muted); margin-right: auto; }
+    .cd-btn { height: 36px; padding: 0 14px; border: 1px solid transparent; border-radius: 10px; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; text-decoration: none; white-space: nowrap; }
+    .cd-btn:disabled { opacity: .5; cursor: not-allowed; }
+    .cd-btn.is-approve { background: #1d7a55; color: #fff; }
+    .cd-btn.is-approve:hover:not(:disabled) { background: #16613f; }
+    .cd-btn.is-reject { background: #fff; border-color: #f3c3bd; color: #b42318; }
+    .cd-btn.is-reject:hover:not(:disabled) { background: #fdecea; }
+    .cd-btn.is-icon { width: 36px; padding: 0; justify-content: center; }
+    .cd-table { width: 100%; margin: 0; border-collapse: collapse; font-size: 14px; }
+    .cd-table th { padding: 12px 16px; font-size: 11.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--cd-muted); border-bottom: 1px solid var(--cd-line); white-space: nowrap; }
+    .cd-table td { padding: 14px 16px; border-bottom: 1px solid var(--cd-line); vertical-align: middle; }
+    .cd-table tbody tr:last-child td { border-bottom: 0; }
+    .cd-table tbody tr:hover { background: #fafcfe; }
+    .cd-table tbody tr.is-selected { background: #f2f7fc; }
+    .cd-check { width: 18px; height: 18px; margin: 0; accent-color: var(--cd-blue); cursor: pointer; }
+    .cd-name { font-weight: 700; }
+    .cd-id { font-size: 12px; color: #94a3b8; }
+    .cd-type { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+    .cd-type.is-attraction { background: #dbeafe; color: #1d4ed8; }
+    .cd-type.is-culinary { background: #ffedd5; color: #c2410c; }
+    .cd-type.is-lodging { background: #ede9fe; color: #6d28d9; }
+    .cd-muted { font-size: 13px; color: var(--cd-muted); white-space: nowrap; }
+    .cd-status { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+    .cd-status.is-pending { background: #fef3c7; color: #a15c07; }
+    .cd-status.is-approved { background: #e3f6ec; color: #1d7a55; }
+    .cd-status.is-rejected { background: #fdecea; color: #b42318; }
+    .cd-actions { display: flex; justify-content: flex-end; align-items: center; gap: 6px; }
+    .cd-map { color: var(--cd-blue); }
+    .cd-empty { padding: 48px 16px; text-align: center; color: var(--cd-muted); }
+    .cd-empty .bi { display: block; margin-bottom: 8px; font-size: 36px; color: #cbd5e1; }
+    .cd-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-top: 1px solid var(--cd-line); font-size: 13px; color: var(--cd-muted); }
+    .cd-dm .modal-content { border: 0; border-radius: 20px; box-shadow: 0 24px 64px rgba(10, 36, 64, .22); }
+    .cd-dm-head { display: flex; align-items: center; gap: 14px; padding: 20px 24px; border-bottom: 1px solid #e2e8f0; }
+    .cd-dm-icon { width: 44px; height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border-radius: 12px; background: #eaf2fa; color: #2b6fab; font-size: 20px; }
+    .cd-dm-icon.is-finished { background: #e3f6ec; color: #1d7a55; }
+    .cd-dm-icon.is-failed { background: #fdecea; color: #b42318; }
+    .cd-dm-title { margin: 0; font-size: 18px; font-weight: 700; color: #14212f; }
+    .cd-dm-sub { margin: 2px 0 0; font-size: 13px; color: #5d6b7c; }
+    .cd-dm-body { padding: 20px 24px; display: flex; flex-direction: column; gap: 16px; }
+    .cd-dm-intro { margin: 0; font-size: 14px; color: #3a4757; line-height: 1.6; }
+    .cd-dm-last { padding: 12px 14px; border-radius: 12px; background: #f1f5f9; font-size: 13px; color: #5d6b7c; }
+    .cd-dm-progress-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-size: 13px; color: #5d6b7c; }
+    .cd-dm-progress-head b { font-size: 15px; color: #14212f; }
+    .cd-dm-bar { height: 10px; border-radius: 999px; background: #e2e8f0; overflow: hidden; }
+    .cd-dm-bar > div { height: 100%; width: 0; border-radius: 999px; background: #2b6fab; transition: width .4s ease; }
+    .cd-dm-bar.is-finished > div { background: #1d7a55; }
+    .cd-dm-bar.is-failed > div { background: #b42318; }
+    .cd-dm-current { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: #14212f; }
+    .cd-dm-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .cd-dm-stat { padding: 12px 14px; border-radius: 12px; background: #f8fafc; border: 1px solid #e2e8f0; }
+    .cd-dm-stat span { display: block; font-size: 12px; color: #5d6b7c; }
+    .cd-dm-stat b { font-size: 22px; line-height: 28px; color: #14212f; }
+    .cd-dm-stat.is-new b { color: #1d7a55; }
+    .cd-dm-stat.is-fail b { color: #b42318; }
+    .cd-dm-error { margin: 0; padding: 12px 14px; border-radius: 12px; background: #fdecea; color: #b42318; font-size: 13.5px; font-weight: 600; }
+    .cd-dm-log-title { margin: 0; font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: #5d6b7c; }
+    .cd-dm-log { max-height: 240px; overflow-y: auto; margin: 0; padding: 0; list-style: none; border: 1px solid #e2e8f0; border-radius: 12px; }
+    .cd-dm-log li { display: flex; align-items: center; gap: 10px; padding: 9px 14px; font-size: 13px; }
+    .cd-dm-log li + li { border-top: 1px solid #eef2f6; }
+    .cd-dm-log .bi-check-circle-fill { color: #1d7a55; }
+    .cd-dm-log .bi-x-circle-fill { color: #b42318; }
+    .cd-dm-log-step { flex: 1; min-width: 0; font-weight: 600; color: #14212f; }
+    .cd-dm-log-result { color: #5d6b7c; text-align: right; overflow-wrap: anywhere; }
+    .cd-dm-log li.is-error .cd-dm-log-result { color: #b42318; }
+    .cd-dm-foot { display: flex; justify-content: flex-end; gap: 10px; padding: 14px 24px 20px; }
+    .cd-dm-foot .cd-btn { height: 40px; padding: 0 18px; }
+    .cd-btn.is-quiet { background: #eef2f8; color: #14212f; }
+    .cd-btn.is-quiet:hover { background: #e2e8f1; }
+    .cd-btn.is-primary { background: #2b6fab; color: #fff; }
+    .cd-btn.is-primary:hover:not(:disabled) { background: #245f93; }
+    .cd-page button:focus-visible, .cd-page a:focus-visible { outline: 3px solid rgba(43, 111, 171, .45); outline-offset: 2px; }
+</style>
+@endpush
 
 @section('content')
+<div class="cd-page">
+    @if (session('status'))
+        <p class="cd-alert is-ok" role="status"><i class="bi bi-check-circle-fill" aria-hidden="true"></i>{{ session('status') }}</p>
+    @endif
+    @if (session('error'))
+        <p class="cd-alert is-error" role="alert"><i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>{{ session('error') }}</p>
+    @endif
+    @if ($errors->any())
+        <p class="cd-alert is-error" role="alert"><i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>Pilih minimal satu kandidat dulu.</p>
+    @endif
 
-@if (session('status'))
-    <div class="alert alert-success">{{ session('status') }}</div>
-@endif
-@if (session('error'))
-    <div class="alert alert-danger">{{ session('error') }}</div>
-@endif
-
-<form method="GET" action="{{ route('admin.candidates.index') }}" class="row g-2 mb-3">
-    <div class="col-auto">
-        <select name="search_area" class="form-select" onchange="this.form.submit()">
-            <option value="">Semua Kecamatan</option>
-            @foreach ($areas as $area)
-                <option value="{{ $area }}" @selected($selectedArea === $area)>{{ $area }}</option>
+    <div class="cd-toolbar">
+        <nav class="cd-tabs" aria-label="Status kandidat">
+            @foreach ($statusTabs as $status => $tab)
+                <a href="{{ route('admin.candidates.index', array_filter(['status' => $status, 'search' => $search, 'search_area' => $selectedArea, 'type' => $selectedType])) }}"
+                    class="cd-tab {{ $selectedStatus === $status ? 'is-active' : '' }}" @if ($selectedStatus === $status) aria-current="page" @endif>
+                    <i class="bi {{ $tab['icon'] }}" aria-hidden="true"></i>{{ $tab['label'] }}
+                    <span class="cd-tab-count">{{ number_format($statusCounts[$status] ?? 0, 0, ',', '.') }}</span>
+                </a>
             @endforeach
-        </select>
+        </nav>
+        <form method="GET" action="{{ route('admin.candidates.index') }}" class="cd-filters" id="cdFilterForm">
+            <input type="hidden" name="status" value="{{ $selectedStatus }}">
+            <div class="cd-search">
+                <i class="bi bi-search" aria-hidden="true"></i>
+                <label for="cdSearch" class="visually-hidden">Cari kandidat</label>
+                <input type="search" name="search" id="cdSearch" value="{{ $search }}" maxlength="100" placeholder="Cari nama atau ID OSM..." autocomplete="off">
+            </div>
+            <label for="cdType" class="visually-hidden">Jenis tempat</label>
+            <select name="type" id="cdType" class="cd-select form-select" onchange="this.form.submit()">
+                <option value="">Semua jenis</option>
+                @foreach ($typeBadges as $typeValue => $typeBadge)
+                    <option value="{{ $typeValue }}" @selected($selectedType === $typeValue)>{{ $typeBadge['label'] }}</option>
+                @endforeach
+            </select>
+            <label for="cdArea" class="visually-hidden">Kecamatan</label>
+            <select name="search_area" id="cdArea" class="cd-select form-select" onchange="this.form.submit()">
+                <option value="">Semua kecamatan</option>
+                @foreach ($areas as $area)
+                    <option value="{{ $area }}" @selected($selectedArea === $area)>{{ $area }}</option>
+                @endforeach
+            </select>
+            @if ($search !== '' || $selectedType !== '' || $selectedArea !== '')
+                <a href="{{ route('admin.candidates.index', ['status' => $selectedStatus]) }}" class="cd-btn is-icon cd-reset" title="Atur ulang filter" aria-label="Atur ulang filter">
+                    <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
+                </a>
+            @endif
+        </form>
     </div>
-    <div class="col-auto">
-        <select name="status" class="form-select" onchange="this.form.submit()">
-            <option value="pending" @selected($selectedStatus === '' || $selectedStatus === 'pending')>Pending</option>
-            <option value="approved" @selected($selectedStatus === 'approved')>Approved</option>
-            <option value="rejected" @selected($selectedStatus === 'rejected')>Rejected</option>
-        </select>
+
+    <form method="POST" id="cdBulkForm" class="cd-card">
+        @csrf
+        @if ($canSelect && $candidates->isNotEmpty())
+            <div class="cd-bulk">
+                <span class="cd-bulk-count" id="cdBulkCount" aria-live="polite">Belum ada yang dipilih</span>
+                <button type="submit" formaction="{{ route('admin.candidates.bulk-approve') }}" class="cd-btn is-approve" data-bulk-button
+                    data-busy-label="Menyetujui..." disabled>
+                    <i class="bi bi-check-lg" aria-hidden="true"></i>Setujui terpilih
+                </button>
+                @if ($selectedStatus === 'pending')
+                    <button type="submit" formaction="{{ route('admin.candidates.bulk-reject') }}" class="cd-btn is-reject" data-bulk-button
+                        data-busy-label="Menolak..." disabled>
+                        <i class="bi bi-x-lg" aria-hidden="true"></i>Tolak terpilih
+                    </button>
+                @endif
+            </div>
+        @endif
+
+        <div class="table-responsive">
+            <table class="cd-table">
+                <thead>
+                    <tr>
+                        @if ($canSelect)
+                            <th style="width: 48px;"><input type="checkbox" class="cd-check" id="cdCheckAll" aria-label="Pilih semua kandidat di halaman ini"></th>
+                        @endif
+                        <th>Nama tempat</th>
+                        <th>Jenis</th>
+                        <th>Kecamatan</th>
+                        <th>Ditemukan</th>
+                        <th>Status</th>
+                        <th class="text-end">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse ($candidates as $candidate)
+                        @php
+                            $type = $typeBadges[$candidate->type] ?? ['label' => $candidate->type, 'icon' => 'bi-geo-alt', 'class' => 'is-attraction'];
+                            $status = $statusTabs[$candidate->status] ?? $statusTabs['pending'];
+                        @endphp
+                        <tr>
+                            @if ($canSelect)
+                                <td>
+                                    @if ($candidate->status !== 'approved')
+                                        <input type="checkbox" class="cd-check candidate-check" name="ids[]" value="{{ $candidate->place_candidates_id }}"
+                                            aria-label="Pilih {{ $candidate->name }}">
+                                    @endif
+                                </td>
+                            @endif
+                            <td>
+                                <div class="cd-name">{{ $candidate->name }}</div>
+                                <div class="cd-id">{{ $candidate->external_place_id }}</div>
+                            </td>
+                            <td><span class="cd-type {{ $type['class'] }}"><i class="bi {{ $type['icon'] }}" aria-hidden="true"></i>{{ $type['label'] }}</span></td>
+                            <td class="cd-muted"><i class="bi bi-geo-alt me-1" aria-hidden="true"></i>{{ $candidate->search_area }}</td>
+                            <td class="cd-muted">{{ $candidate->created_at?->format('d/m/Y') }}</td>
+                            <td><span class="cd-status is-{{ $candidate->status }}"><i class="bi {{ $status['icon'] }}" aria-hidden="true"></i>{{ $status['label'] }}</span></td>
+                            <td>
+                                <div class="cd-actions">
+                                    <a href="https://www.openstreetmap.org/?mlat={{ $candidate->lat }}&amp;mlon={{ $candidate->lng }}#map=18/{{ $candidate->lat }}/{{ $candidate->lng }}"
+                                        target="_blank" rel="noopener" class="cd-btn is-icon cd-map" title="Lihat di peta" aria-label="Lihat {{ $candidate->name }} di peta">
+                                        <i class="bi bi-map" aria-hidden="true"></i>
+                                    </a>
+                                    @if ($candidate->status !== 'approved')
+                                        <button type="submit" form="cdApprove{{ $candidate->place_candidates_id }}" class="cd-btn is-approve" data-busy-label="Menyetujui...">
+                                            <i class="bi bi-check-lg" aria-hidden="true"></i>Setujui
+                                        </button>
+                                    @endif
+                                    @if ($candidate->status === 'pending')
+                                        <button type="submit" form="cdReject{{ $candidate->place_candidates_id }}" class="cd-btn is-reject is-icon" title="Tolak" aria-label="Tolak {{ $candidate->name }}">
+                                            <i class="bi bi-x-lg" aria-hidden="true"></i>
+                                        </button>
+                                    @endif
+                                    @if ($candidate->status === 'approved')
+                                        <span class="cd-muted"><i class="bi bi-check2-circle me-1" aria-hidden="true"></i>Sudah di katalog</span>
+                                    @endif
+                                </div>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="{{ $canSelect ? 7 : 6 }}" class="cd-empty">
+                                <i class="bi bi-inbox" aria-hidden="true"></i>
+                                @if ($search !== '' || $selectedType !== '' || $selectedArea !== '')
+                                    Tidak ada kandidat yang cocok dengan filter ini.
+                                @elseif ($selectedStatus === 'pending')
+                                    Tidak ada kandidat yang menunggu review. Jalankan Discovery untuk mencari tempat baru.
+                                @else
+                                    Tidak ada kandidat dengan status ini.
+                                @endif
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+
+        @if ($candidates->total() > 0)
+            <div class="cd-foot">
+                <span>Menampilkan {{ $candidates->firstItem() }}–{{ $candidates->lastItem() }} dari {{ $candidates->total() }} kandidat</span>
+                {{ $candidates->links('admin.partials.pagination') }}
+            </div>
+        @endif
+    </form>
+
+    <div class="modal fade cd-dm" id="cdDiscoveryModal" tabindex="-1" aria-labelledby="cdDmTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="cd-dm-head">
+                    <span class="cd-dm-icon" id="cdDmIcon" aria-hidden="true"><i class="bi bi-radar"></i></span>
+                    <div class="flex-grow-1">
+                        <h2 class="cd-dm-title" id="cdDmTitle">Discovery tempat baru</h2>
+                        <p class="cd-dm-sub" id="cdDmSub">Cari kandidat tempat dari Geoapify (OpenStreetMap).</p>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+                </div>
+                <div class="cd-dm-body" id="cdDmBody" aria-live="polite"></div>
+                <div class="cd-dm-foot" id="cdDmFoot"></div>
+            </div>
+        </div>
     </div>
-</form>
 
-<form method="POST" id="bulk-form">
-    @csrf
-    <div class="mb-2">
-        <button type="submit" formaction="{{ route('admin.candidates.bulk-approve') }}" class="btn btn-sm btn-success">Approve Terpilih</button>
-        <button type="submit" formaction="{{ route('admin.candidates.bulk-reject') }}" class="btn btn-sm btn-outline-danger">Reject Terpilih</button>
-    </div>
-
-    <table class="table table-bordered table-sm bg-white">
-        <thead>
-            <tr>
-                <th><input type="checkbox" onclick="document.querySelectorAll('.candidate-check').forEach(c => c.checked = this.checked)"></th>
-                <th>Nama</th>
-                <th>Tipe</th>
-                <th>Kecamatan</th>
-                <th>Status</th>
-                <th>Aksi</th>
-            </tr>
-        </thead>
-        <tbody>
-            @forelse ($candidates as $candidate)
-                <tr>
-                    <td>@if ($candidate->status !== 'approved')<input type="checkbox" class="candidate-check" name="ids[]" value="{{ $candidate->place_candidates_id }}" form="bulk-form" aria-label="Pilih {{ $candidate->name }}">@endif</td>
-                    <td>{{ $candidate->name }}</td>
-                    <td>{{ $candidate->type }}</td>
-                    <td>{{ $candidate->search_area }}</td>
-                    <td>{{ $candidate->status }}</td>
-                    <td>
-                        @if ($candidate->status !== 'approved')
-                            <form method="POST" action="{{ route('admin.candidates.approve', $candidate) }}" class="d-inline">
-                                @csrf
-                                <button type="submit" class="btn btn-sm btn-success">Approve</button>
-                            </form>
-                        @endif
-                        @if ($candidate->status === 'pending')
-                            <form method="POST" action="{{ route('admin.candidates.reject', $candidate) }}" class="d-inline">
-                                @csrf
-                                <button type="submit" class="btn btn-sm btn-outline-danger">Reject</button>
-                            </form>
-                        @endif
-                        @if ($candidate->status === 'approved')
-                            <span class="text-muted small">Sudah di katalog</span>
-                        @endif
-                    </td>
-                </tr>
-            @empty
-                <tr><td colspan="6" class="text-center text-muted">Tidak ada kandidat.</td></tr>
-            @endforelse
-        </tbody>
-    </table>
-</form>
-
-{{ $candidates->links() }}
+    {{-- Outside the bulk form: forms cannot nest. --}}
+    @foreach ($candidates as $candidate)
+        @if ($candidate->status !== 'approved')
+            <form method="POST" action="{{ route('admin.candidates.approve', $candidate) }}" id="cdApprove{{ $candidate->place_candidates_id }}" class="d-none">@csrf</form>
+        @endif
+        @if ($candidate->status === 'pending')
+            <form method="POST" action="{{ route('admin.candidates.reject', $candidate) }}" id="cdReject{{ $candidate->place_candidates_id }}" class="d-none">@csrf</form>
+        @endif
+    @endforeach
+</div>
 @endsection
+
+@push('scripts')
+<script>
+    (function () {
+        var checks = Array.prototype.slice.call(document.querySelectorAll('.candidate-check'));
+        var checkAll = document.getElementById('cdCheckAll');
+        var countLabel = document.getElementById('cdBulkCount');
+        var bulkButtons = document.querySelectorAll('[data-bulk-button]');
+
+        function updateSelection() {
+            var picked = checks.filter(function (check) { return check.checked; }).length;
+            checks.forEach(function (check) { check.closest('tr').classList.toggle('is-selected', check.checked); });
+            bulkButtons.forEach(function (button) { button.disabled = picked === 0; });
+            if (countLabel) countLabel.textContent = picked === 0 ? 'Belum ada yang dipilih' : picked + ' kandidat dipilih';
+            if (checkAll) {
+                checkAll.checked = picked > 0 && picked === checks.length;
+                checkAll.indeterminate = picked > 0 && picked < checks.length;
+            }
+        }
+        checks.forEach(function (check) { check.addEventListener('change', updateSelection); });
+        if (checkAll) {
+            checkAll.addEventListener('change', function () {
+                checks.forEach(function (check) { check.checked = checkAll.checked; });
+                updateSelection();
+            });
+        }
+
+        var filterForm = document.getElementById('cdFilterForm');
+        var searchInput = document.getElementById('cdSearch');
+        var searchTimer = null;
+        searchInput.addEventListener('input', function () {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(function () { filterForm.submit(); }, 500);
+        });
+        // Every search reloads the page, so the cursor goes back to the end of the text.
+        if (searchInput.value !== '') {
+            searchInput.focus();
+            searchInput.setSelectionRange(searchInput.value.length, searchInput.value.length);
+        }
+
+        // Approving fetches place details and runs Gemini, so it can take a while.
+        document.addEventListener('submit', function (event) {
+            var button = event.submitter;
+            if (!button || !button.dataset.busyLabel) return;
+            setTimeout(function () {
+                button.disabled = true;
+                button.innerHTML = '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span>' + button.dataset.busyLabel;
+            });
+        });
+
+        // Discovery progress: polls the latest run while it is queued or running.
+        var discovery = {
+            run: @json($discoveryRun),
+            startUrl: @json(route('admin.candidates.discover')),
+            statusUrl: @json(route('admin.candidates.discovery')),
+            csrf: @json(csrf_token()),
+            steps: @json(\App\Services\Places\PlaceDiscoveryService::stepCount()),
+            areas: @json(count(\App\Services\Places\PlaceDiscoveryService::AREAS)),
+            types: @json($typeLabels),
+            timer: null,
+            starting: false,
+        };
+        var modalEl = document.getElementById('cdDiscoveryModal');
+        var dmBody = document.getElementById('cdDmBody');
+        var dmFoot = document.getElementById('cdDmFoot');
+
+        function isActive(run) { return run && (run.status === 'queued' || run.status === 'running'); }
+        function el(tag, className, text) {
+            var node = document.createElement(tag);
+            if (className) node.className = className;
+            if (text !== undefined) node.textContent = text;
+            return node;
+        }
+        function number(value) { return Number(value || 0).toLocaleString('id-ID'); }
+        function stepLabel(step) {
+            if (!step) return '';
+            var parts = step.split(' x ');
+            return parts[0] + ' · ' + (discovery.types[parts[1]] || parts[1]);
+        }
+        function dateLabel(iso) {
+            return iso ? new Date(iso).toLocaleString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+        }
+        function duration(run) {
+            if (!run.started_at) return '';
+            var seconds = Math.max(0, Math.round(((run.finished_at ? new Date(run.finished_at) : new Date()) - new Date(run.started_at)) / 1000));
+            var minutes = Math.floor(seconds / 60);
+            return (minutes > 0 ? minutes + ' menit ' : '') + (seconds % 60) + ' detik';
+        }
+        function button(className, iconClass, text, onClick) {
+            var node = el('button', 'cd-btn ' + className);
+            node.type = 'button';
+            if (iconClass) node.appendChild(el('i', 'bi ' + iconClass));
+            node.appendChild(document.createTextNode(text));
+            if (onClick) node.addEventListener('click', onClick);
+            return node;
+        }
+        function setHead(icon, iconClass, title, sub) {
+            var iconBox = document.getElementById('cdDmIcon');
+            iconBox.className = 'cd-dm-icon ' + (iconClass || '');
+            iconBox.innerHTML = '<i class="bi ' + icon + '"></i>';
+            document.getElementById('cdDmTitle').textContent = title;
+            document.getElementById('cdDmSub').textContent = sub;
+        }
+
+        function renderIdle() {
+            setHead('bi-radar', '', 'Discovery tempat baru', 'Cari kandidat tempat dari Geoapify (OpenStreetMap).');
+            dmBody.replaceChildren(el('p', 'cd-dm-intro',
+                'Discovery mencari tempat di ' + discovery.areas + ' kecamatan untuk 3 jenis tempat (' + discovery.steps
+                + ' pencarian, sekitar ' + discovery.steps + ' kredit Geoapify dari 3.000 per hari). Prosesnya berjalan di latar belakang: '
+                + 'halaman ini boleh ditutup, progresnya bisa dilihat lagi kapan saja. Tempat yang sudah ada di katalog atau pernah ditolak dilewati.'));
+            var run = discovery.run;
+            if (run && (run.status === 'finished' || run.status === 'failed')) {
+                dmBody.appendChild(el('div', 'cd-dm-last', 'Terakhir dijalankan ' + dateLabel(run.created_at)
+                    + (run.started_by ? ' oleh ' + run.started_by : '') + ': '
+                    + (run.status === 'failed' ? 'gagal.' : number(run.inserted) + ' kandidat baru, ' + number(run.skipped) + ' dilewati, ' + number(run.failed_steps) + ' gagal.')));
+            }
+            dmFoot.replaceChildren(
+                button('is-quiet', 'bi-x-lg', 'Batal', function () { bootstrap.Modal.getOrCreateInstance(modalEl).hide(); }),
+                button('is-primary', 'bi-play-fill', 'Mulai Discovery', start)
+            );
+        }
+
+        function renderRun(run) {
+            var percent = run.total_steps ? Math.round(run.done_steps / run.total_steps * 100) : 0;
+            if (run.status === 'queued') {
+                setHead('bi-hourglass-split', '', 'Menunggu worker', 'Discovery masuk antrean, biasanya mulai dalam 1 menit.');
+            } else if (run.status === 'running') {
+                setHead('bi-radar', '', 'Discovery berjalan', 'Halaman ini boleh ditutup, Discovery tetap jalan di server.');
+            } else if (run.status === 'finished') {
+                setHead('bi-check-lg', 'is-finished', 'Discovery selesai', 'Selesai dalam ' + duration(run) + '.');
+            } else {
+                setHead('bi-exclamation-triangle', 'is-failed', 'Discovery gagal', 'Kandidat yang sudah ditemukan tetap tersimpan.');
+            }
+
+            var nodes = [];
+            var head = el('div', 'cd-dm-progress-head');
+            var count = el('span');
+            count.appendChild(el('b', '', number(run.done_steps) + ' / ' + number(run.total_steps)));
+            count.appendChild(document.createTextNode(' pencarian'));
+            head.appendChild(count);
+            head.appendChild(el('span', '', percent + '%' + (isActive(run) && run.started_at ? ' · ' + duration(run) : '')));
+            nodes.push(head);
+            var bar = el('div', 'cd-dm-bar ' + (run.status === 'finished' ? 'is-finished' : run.status === 'failed' ? 'is-failed' : ''));
+            bar.setAttribute('role', 'progressbar');
+            bar.setAttribute('aria-valuemin', '0');
+            bar.setAttribute('aria-valuemax', String(run.total_steps));
+            bar.setAttribute('aria-valuenow', String(run.done_steps));
+            var fill = el('div');
+            fill.style.width = percent + '%';
+            bar.appendChild(fill);
+            nodes.push(bar);
+
+            if (isActive(run)) {
+                var current = el('div', 'cd-dm-current');
+                current.innerHTML = '<span class="spinner-border spinner-border-sm text-primary" aria-hidden="true"></span>';
+                current.appendChild(document.createTextNode(run.status === 'queued'
+                    ? 'Menunggu giliran di antrean...'
+                    : (run.current_step ? 'Terakhir selesai: ' + stepLabel(run.current_step) : 'Memulai pencarian pertama...')));
+                nodes.push(current);
+            }
+
+            var stats = el('div', 'cd-dm-stats');
+            [['is-new', 'Kandidat baru', run.inserted], ['', 'Dilewati (sudah ada)', run.skipped], ['is-fail', 'Pencarian gagal', run.failed_steps]].forEach(function (item) {
+                var box = el('div', 'cd-dm-stat ' + item[0]);
+                box.appendChild(el('span', '', item[1]));
+                box.appendChild(el('b', '', number(item[2])));
+                stats.appendChild(box);
+            });
+            nodes.push(stats);
+
+            if (run.error) nodes.push(el('p', 'cd-dm-error', run.error));
+
+            if (run.log && run.log.length) {
+                nodes.push(el('h3', 'cd-dm-log-title', 'Rincian per pencarian'));
+                var list = el('ul', 'cd-dm-log');
+                run.log.slice().reverse().forEach(function (entry) {
+                    var item = el('li', entry.error ? 'is-error' : '');
+                    item.appendChild(el('i', 'bi ' + (entry.error ? 'bi-x-circle-fill' : 'bi-check-circle-fill')));
+                    item.appendChild(el('span', 'cd-dm-log-step', entry.area + ' · ' + (discovery.types[entry.type] || entry.type)));
+                    item.appendChild(el('span', 'cd-dm-log-result', entry.error
+                        ? entry.error
+                        : '+' + number(entry.inserted) + ' baru · ' + number(entry.skipped) + ' dilewati'));
+                    list.appendChild(item);
+                });
+                nodes.push(list);
+            }
+            dmBody.replaceChildren.apply(dmBody, nodes);
+
+            if (isActive(run)) {
+                dmFoot.replaceChildren(button('is-quiet', 'bi-box-arrow-right', 'Tutup, biarkan berjalan', function () { bootstrap.Modal.getOrCreateInstance(modalEl).hide(); }));
+            } else {
+                dmFoot.replaceChildren(
+                    button('is-quiet', 'bi-arrow-repeat', 'Jalankan lagi', renderIdle),
+                    button('is-primary', 'bi-list-check', 'Lihat kandidat', function () { window.location.reload(); })
+                );
+            }
+        }
+
+        function updateTopbar() {
+            var run = discovery.run;
+            var label = document.getElementById('cdDiscoverLabel');
+            var topbarButton = document.getElementById('cdDiscover');
+            var spinner = topbarButton.querySelector('.spinner-border');
+            if (isActive(run)) {
+                label.textContent = run.status === 'queued' ? 'Discovery mengantre' : 'Discovery ' + run.done_steps + '/' + run.total_steps;
+                if (!spinner) topbarButton.insertAdjacentHTML('afterbegin', '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span>');
+                topbarButton.querySelector('.bi-radar')?.classList.add('d-none');
+            } else {
+                label.textContent = 'Jalankan Discovery';
+                if (spinner) spinner.remove();
+                topbarButton.querySelector('.bi-radar')?.classList.remove('d-none');
+            }
+        }
+
+        function render() {
+            updateTopbar();
+            if (discovery.run && (isActive(discovery.run) || discovery.showResult)) {
+                renderRun(discovery.run);
+            } else {
+                renderIdle();
+            }
+        }
+
+        function poll() {
+            clearTimeout(discovery.timer);
+            if (!isActive(discovery.run)) return;
+            var modalOpen = modalEl.classList.contains('show');
+            discovery.timer = setTimeout(function () {
+                fetch(discovery.statusUrl, { headers: { Accept: 'application/json' } })
+                    .then(function (response) { return response.json(); })
+                    .then(function (body) {
+                        var wasActive = isActive(discovery.run);
+                        discovery.run = body.run;
+                        if (wasActive && !isActive(body.run)) discovery.showResult = true;
+                        render();
+                        poll();
+                    })
+                    .catch(poll);
+            }, modalOpen ? 2000 : 6000);
+        }
+
+        function start() {
+            if (discovery.starting) return;
+            discovery.starting = true;
+            dmFoot.querySelectorAll('button').forEach(function (node) { node.disabled = true; });
+            fetch(discovery.startUrl, {
+                method: 'POST',
+                headers: { Accept: 'application/json', 'X-CSRF-TOKEN': discovery.csrf },
+            })
+                .then(function (response) { return response.json(); })
+                .then(function (body) {
+                    discovery.run = body.run;
+                    discovery.showResult = true;
+                    render();
+                    poll();
+                })
+                .catch(function () {
+                    dmBody.replaceChildren(el('p', 'cd-dm-error', 'Discovery tidak bisa dimulai, coba lagi.'));
+                    renderIdleFoot();
+                })
+                .finally(function () { discovery.starting = false; });
+        }
+        function renderIdleFoot() {
+            dmFoot.replaceChildren(button('is-primary', 'bi-play-fill', 'Coba lagi', start));
+        }
+
+        modalEl.addEventListener('show.bs.modal', function () {
+            discovery.showResult = discovery.showResult || isActive(discovery.run);
+            render();
+            poll();
+        });
+        modalEl.addEventListener('hidden.bs.modal', function () {
+            if (!isActive(discovery.run)) discovery.showResult = false;
+            poll();
+        });
+        render();
+        poll();
+    })();
+</script>
+@endpush

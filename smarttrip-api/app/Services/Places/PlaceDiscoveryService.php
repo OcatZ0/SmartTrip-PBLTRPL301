@@ -53,9 +53,12 @@ class PlaceDiscoveryService
      * kombinasi lain tetap dicoba supaya satu error tidak membuang seluruh
      * progres bootstrap.
      *
+     * [onStep] gets (area, type, result or null, error or null) after every
+     * area x type, for the progress modal.
+     *
      * @return array{inserted: int, skipped_existing: int, areas_searched: int, failed: array<int, string>}
      */
-    public function discoverAll(): array
+    public function discoverAll(?callable $onStep = null): array
     {
         $inserted = 0;
         $skipped = 0;
@@ -67,8 +70,14 @@ class PlaceDiscoveryService
                     $result = $this->discoverOne($area, $circle, $type, $categories);
                     $inserted += $result['inserted'];
                     $skipped += $result['skipped_existing'];
+                    if ($onStep !== null) {
+                        $onStep($area, $type, $result, null);
+                    }
                 } catch (RuntimeException $exception) {
                     $failed[] = "{$area} x {$type}: {$exception->getMessage()}";
+                    if ($onStep !== null) {
+                        $onStep($area, $type, null, $exception->getMessage());
+                    }
                 }
             }
         }
@@ -76,9 +85,14 @@ class PlaceDiscoveryService
         return [
             'inserted' => $inserted,
             'skipped_existing' => $skipped,
-            'areas_searched' => count(self::AREAS) * count(self::CATEGORY_QUERIES),
+            'areas_searched' => self::stepCount(),
             'failed' => $failed,
         ];
+    }
+
+    public static function stepCount(): int
+    {
+        return count(self::AREAS) * count(self::CATEGORY_QUERIES);
     }
 
     /**

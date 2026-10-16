@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/router/app_routes.dart';
 import '../../../core/theme/app_tokens.dart';
@@ -309,6 +310,125 @@ class _StopRow extends StatelessWidget {
 
   final ItineraryItem item;
 
+  void _showPlaceModal(BuildContext context, ItineraryItem item) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final tokens = context.tokens;
+    final place = item.place;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (modalContext) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 38,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD0D7DE),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: SizedBox(
+                      width: 52,
+                      height: 52,
+                      child: PlacePhoto(url: place?.photoUrl),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _SourceBadge(isFromWishlist: item.isFromWishlist),
+                        const SizedBox(height: 4),
+                        Text(
+                          place?.name ?? l10n.itineraryUnknownPlace,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              const Divider(height: 1, color: Color(0xFFE2E8F0)),
+              const SizedBox(height: 8),
+              if (place?.placesId != null)
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: CircleAvatar(
+                    backgroundColor: tokens.fieldFill,
+                    child: Icon(Icons.info_outline_rounded, color: tokens.link),
+                  ),
+                  title: Text(
+                    'Detail Tempat Wisata',
+                    style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: Text(
+                    'Lihat deskripsi, fasilitas, tiket & ulasan',
+                    style: theme.textTheme.bodySmall?.copyWith(color: tokens.textSecondary),
+                  ),
+                  trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: Color(0xFF94A3B8)),
+                  onTap: () {
+                    Navigator.pop(modalContext);
+                    context.push(AppRoutes.place(place!.placesId!));
+                  },
+                ),
+              if (place != null)
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: CircleAvatar(
+                    backgroundColor: tokens.successFill.withValues(alpha: 0.5),
+                    child: Icon(Icons.directions_outlined, color: tokens.onSuccess),
+                  ),
+                  title: Text(
+                    'Buka di Google Maps',
+                    style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: Text(
+                    'Petunjuk arah navigasi rute ke lokasi',
+                    style: theme.textTheme.bodySmall?.copyWith(color: tokens.textSecondary),
+                  ),
+                  trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: Color(0xFF94A3B8)),
+                  onTap: () async {
+                    Navigator.pop(modalContext);
+                    final uri = Uri.https('www.google.com', '/maps/dir/', {
+                      'api': '1',
+                      'destination': '${place.lat},${place.lng}',
+                    });
+                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  },
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -357,7 +477,25 @@ class _StopRow extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _SourceBadge(isFromWishlist: item.isFromWishlist),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          _SourceBadge(isFromWishlist: item.isFromWishlist),
+                          if (!item.isFromWishlist)
+                            InkWell(
+                              borderRadius: BorderRadius.circular(16),
+                              onTap: () => _showPlaceModal(context, item),
+                              child: Padding(
+                                padding: const EdgeInsets.all(4),
+                                child: Icon(
+                                  Icons.more_vert_rounded,
+                                  size: 18,
+                                  color: tokens.textSecondary,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
                       const SizedBox(height: 4),
                       Text(
                         place?.name ?? l10n.itineraryUnknownPlace,

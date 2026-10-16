@@ -198,7 +198,7 @@ class _ReplacePlaceScreenState extends State<ReplacePlaceScreen> {
             // ── 2. BODY KONTEN (SCROLLABLE) ──
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
                 children: [
                   // Kartu Tempat Saat Ini Ditukar
                   _buildCurrentPlaceCard(currentPlaceName, currentPlaceCategory),
@@ -248,7 +248,7 @@ class _ReplacePlaceScreenState extends State<ReplacePlaceScreen> {
       ),
 
       // ── 3. BOTTOM ACTION BAR (STICKY DI BAWAH) ──
-      bottomSheet: _buildBottomActionBar(currentPlaceName, selectedPlace),
+      bottomNavigationBar: _buildBottomActionBar(currentPlaceName, selectedPlace),
     );
   }
 
@@ -1157,6 +1157,8 @@ class _ReplacePlaceScreenState extends State<ReplacePlaceScreen> {
 
   // ── WIDGET: Sticky Bottom Action Bar ─────────────────────────────────────
   Widget _buildBottomActionBar(String currentPlaceName, _AlternativePlace selectedPlace) {
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
+
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -1165,12 +1167,10 @@ class _ReplacePlaceScreenState extends State<ReplacePlaceScreen> {
           BoxShadow(color: Color(0x14000000), offset: Offset(0, -4), blurRadius: 16),
         ],
       ),
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
-      child: SafeArea(
-        top: false,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+      padding: EdgeInsets.fromLTRB(16, 10, 16, 12 + bottomInset),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
             // Baris Ringkasan Penggantian (Pill Light Blue)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
@@ -1287,7 +1287,6 @@ class _ReplacePlaceScreenState extends State<ReplacePlaceScreen> {
             ),
           ],
         ),
-      ),
     );
   }
 }

@@ -8,6 +8,7 @@ use App\Models\Place;
 use App\Models\PlaceCandidate;
 use App\Services\Places\GeminiKeywordSuggestionClient;
 use App\Services\Places\GeminiPriceEstimateClient;
+use App\Services\Places\PlacePhotoStore;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use RuntimeException;
@@ -167,7 +168,7 @@ class PlaceController extends Controller
         ]);
     }
 
-    public function update(Request $request, Place $place)
+    public function update(Request $request, Place $place, PlacePhotoStore $photos)
     {
         $data = $request->validate([
             'name' => ['sometimes', 'required', 'string', 'max:255'],
@@ -186,6 +187,8 @@ class PlaceController extends Controller
             'category_ids' => ['sometimes', 'array'],
             'category_ids.*' => ['integer', Rule::exists('categories', 'categories_id')->whereNull('deleted_at')],
             'search_keywords' => ['nullable', 'string', 'max:1000'],
+            // "Jadikan utama" on Foto Tempat: applied with the rest of the form.
+            'primary_photo_id' => ['nullable', 'integer', Rule::exists('place_photos', 'place_photos_id')->where('places_id', $place->places_id)],
         ]);
 
         $photoUrl = $place->photo_url;
@@ -222,6 +225,12 @@ class PlaceController extends Controller
         }
 
         $place->update($updateData);
+
+        // After the update, so the thumbnail it syncs is the one saved.
+        $primary = isset($data['primary_photo_id']) ? $place->photos()->find($data['primary_photo_id']) : null;
+        if ($primary && ! $primary->is($place->photos()->orderBy('sort_order')->first())) {
+            $photos->makePrimary($primary);
+        }
 
         $place->categories()->sync($request->input('category_ids', []));
 

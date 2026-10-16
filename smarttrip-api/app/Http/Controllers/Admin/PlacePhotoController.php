@@ -100,15 +100,6 @@ class PlacePhotoController extends Controller
         return back()->with('status', 'Foto dari tautan ditambahkan.');
     }
 
-    public function primary(Place $place, PlacePhoto $photo, PlacePhotoStore $store)
-    {
-        abort_unless($photo->places_id === $place->places_id, 404);
-
-        $store->makePrimary($photo);
-
-        return back()->with('status', 'Foto utama diganti.');
-    }
-
     public function destroy(Place $place, PlacePhoto $photo, PlacePhotoStore $store)
     {
         abort_unless($photo->places_id === $place->places_id, 404);

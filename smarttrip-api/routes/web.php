@@ -62,7 +62,6 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/places/{place}/photos/google', [PlacePhotoController::class, 'search'])->name('places.photos.google');
         Route::post('/places/{place}/photos/google', [PlacePhotoController::class, 'storeFromGoogle'])->name('places.photos.google.store');
         Route::post('/places/{place}/photos/link', [PlacePhotoController::class, 'storeFromLink'])->name('places.photos.link.store');
-        Route::post('/places/{place}/photos/{photo}/primary', [PlacePhotoController::class, 'primary'])->name('places.photos.primary');
         Route::delete('/places/{place}/photos/{photo}', [PlacePhotoController::class, 'destroy'])->name('places.photos.destroy');
 
         Route::get('/categories', [AdminCategoryController::class, 'index'])->name('categories.index');

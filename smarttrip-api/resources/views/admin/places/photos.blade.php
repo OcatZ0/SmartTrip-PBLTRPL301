@@ -124,7 +124,8 @@ document.addEventListener('DOMContentLoaded', function () {
     function updatePick() {
         const $checks = $results.find('.google-pick-check');
         const count = $checks.filter(':checked').length;
-        $checks.each(function () { $(this).closest('.google-pick-card').toggleClass('is-picked', this.checked); });
+        // The checkbox sits next to its card (not inside it), see candidate().
+        $checks.each(function () { $(this).next('.google-pick-card').toggleClass('is-picked', this.checked); });
         $pickSubmit.prop('disabled', count === 0);
         $('#google-pick-label').text(count === 0 ? 'Pilih foto dulu' : 'Pakai ' + count + ' foto');
         $('#google-pick-all').toggleClass('d-none', count === $checks.length);

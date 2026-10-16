@@ -52,6 +52,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/places/{place}/edit', [AdminPlaceController::class, 'edit'])->name('places.edit');
         Route::get('/places/{place}/activities', [AdminPlaceController::class, 'activities'])->name('places.activities');
         Route::get('/places/{place}/price-estimate', [AdminPlaceController::class, 'estimatePrice'])->name('places.price-estimate');
+        Route::get('/places/{place}/keyword-suggestions', [AdminPlaceController::class, 'suggestKeywords'])
+            ->middleware('throttle:20,1')
+            ->name('places.keyword-suggestions');
         Route::put('/places/{place}', [AdminPlaceController::class, 'update'])->name('places.update');
         Route::delete('/places/{place}', [AdminPlaceController::class, 'destroy'])->name('places.destroy');
 
@@ -65,9 +68,6 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/categories', [AdminCategoryController::class, 'index'])->name('categories.index');
         Route::get('/categories/create', [AdminCategoryController::class, 'create'])->name('categories.create');
         Route::post('/categories', [AdminCategoryController::class, 'store'])->name('categories.store');
-        Route::get('/categories/keyword-suggestions', [AdminCategoryController::class, 'suggestKeywords'])
-            ->middleware('throttle:20,1')
-            ->name('categories.keyword-suggestions');
         Route::get('/categories/{category}/edit', [AdminCategoryController::class, 'edit'])->name('categories.edit');
         Route::get('/categories/{category}/activities', [AdminCategoryController::class, 'activities'])->name('categories.activities');
         Route::put('/categories/{category}', [AdminCategoryController::class, 'update'])->name('categories.update');

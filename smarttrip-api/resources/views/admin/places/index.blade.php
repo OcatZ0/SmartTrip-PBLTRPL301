@@ -939,11 +939,11 @@
                             <td>
                                 @if($place->estimated_cost_idr === 0)
                                     <div class="ticket-text">Gratis</div>
-                                    <div class="ticket-sub">{{ $place->estimated_cost_is_ai ? 'Perkiraan AI' : 'Bebas Masuk' }}</div>
+                                    <div class="ticket-sub">Bebas Masuk</div>
                                 @elseif($place->estimated_cost_idr > 0)
                                     <div class="ticket-text">Rp {{ number_format($place->estimated_cost_idr, 0, ',', '.') }}</div>
                                     <div class="ticket-sub">
-                                        {{ $place->type === 'lodging' ? 'per malam' : 'per orang' }}{{ $place->estimated_cost_is_ai ? ' · Perkiraan AI' : '' }}
+                                        {{ $place->type === 'lodging' ? 'per malam' : 'per orang' }}
                                     </div>
                                 @else
                                     <div class="ticket-warning">

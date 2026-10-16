@@ -16,8 +16,8 @@ use RuntimeException;
  * deskripsi singkat Bahasa Indonesia kalau sumber data tidak punya (Geoapify
  * dan tempat seed memang kosong); teks itu buatan AI, jadi pemanggil
  * menandainya untuk direview admin. Sejak 2026-10-15 juga perkiraan biaya
- * (estimated_cost_idr) dari pengetahuan model, tanpa pencarian web; hasilnya
- * ditandai "Perkiraan AI" sampai admin mengubahnya.
+ * (estimated_cost_idr) dari pengetahuan model, tanpa pencarian web; hanya
+ * mengisi biaya yang masih kosong, admin bisa mengubahnya kapan saja.
  */
 class GeminiEnrichmentClient
 {
@@ -34,19 +34,17 @@ class GeminiEnrichmentClient
     private const RETRYABLE_STATUSES = [429, 500, 503];
 
     /**
-     * @param  array<string, array{name: string, keywords: string|null}>  $availableCategories  categories yang sudah di-seed (Section 3: wajib diseed duluan), keyed by slug; name + search_keywords tell Gemini what each tag means
+     * @param  array<string, string>  $availableCategories  categories yang sudah di-seed (Section 3: wajib diseed duluan), slug => name_id; the name tells Gemini what each tag means
      * @param  array{type?: string|null, kecamatan?: string|null, address?: string|null}  $context  helps Gemini tell same-named places apart
-     * @return array{description_id: string|null, description_en: string|null, category_tags: array<int, string>, estimated_visit_minutes: int|null, is_outdoor: bool|null, estimated_cost_idr: int|null}
+     * @return array{description_id: string|null, description_en: string|null, category_tags: array<int, string>, estimated_visit_minutes: int|null, is_outdoor: bool|null, estimated_cost_idr: int|null, search_keywords: array<int, string>}
      */
     public function enrich(string $name, ?string $descriptionId, array $availableCategories, array $context = []): array
     {
         $model = config('services.gemini.model');
         $availableCategorySlugs = array_keys($availableCategories);
-        // "- pantai (Pantai): pasir putih, sunset" - the admin's keywords
-        // say what a tag covers, so places get the right interest tags.
+        // "- pantai (Pantai)": a bare slug like "spot-foto" is easy to misread.
         $categoryList = implode("\n", array_map(
-            fn (string $slug, array $category) => "- {$slug} ({$category['name']})"
-                .(filled($category['keywords']) ? ": {$category['keywords']}" : ''),
+            fn (string $slug, string $categoryName) => "- {$slug} ({$categoryName})",
             $availableCategorySlugs,
             $availableCategories,
         ));
@@ -80,8 +78,8 @@ class GeminiEnrichmentClient
             Tempat: {$place}
             {$descriptionTask}
 
-            Daftar tag kategori yang TERSEDIA, format "slug (nama): kata kunci". Pilih slug yang cocok dengan
-            tempat ini berdasarkan nama dan kata kuncinya; cuma boleh pilih slug dari daftar ini, jangan buat tag baru:
+            Daftar tag kategori yang TERSEDIA, format "slug (nama)". Cuma boleh pilih slug dari daftar ini,
+            jangan buat tag baru:
             {$categoryList}
 
             Balas HANYA dalam format JSON persis seperti ini, tanpa teks lain:
@@ -91,7 +89,8 @@ class GeminiEnrichmentClient
               "category_tags": ["slug1", "slug2"],
               "estimated_visit_minutes": angka perkiraan lama kunjungan wajar dalam menit,
               "is_outdoor": true atau false, apakah tempat ini sensitif cuaca/kegiatan luar ruangan,
-              "estimated_cost_idr": angka bulat perkiraan {$costMeaning} dalam Rupiah, atau null kalau kamu tidak punya gambaran sama sekali
+              "estimated_cost_idr": angka bulat perkiraan {$costMeaning} dalam Rupiah, atau null kalau kamu tidak punya gambaran sama sekali,
+              "search_keywords": ["6 sampai 10 kata kunci pencarian singkat (1-3 kata) yang akan diketik wisatawan untuk menemukan tempat ini: kegiatan, suasana, makanan, atau ciri khasnya; jangan ulangi nama tempat dan jangan mengarang"]
             }
             PROMPT;
 
@@ -136,6 +135,9 @@ class GeminiEnrichmentClient
             'estimated_visit_minutes' => isset($parsed['estimated_visit_minutes']) ? (int) $parsed['estimated_visit_minutes'] : null,
             'is_outdoor' => isset($parsed['is_outdoor']) ? (bool) $parsed['is_outdoor'] : null,
             'estimated_cost_idr' => self::cost($parsed['estimated_cost_idr'] ?? null),
+            'search_keywords' => is_array($parsed['search_keywords'] ?? null)
+                ? GeminiKeywordSuggestionClient::clean($parsed['search_keywords'])
+                : [],
         ];
     }
 

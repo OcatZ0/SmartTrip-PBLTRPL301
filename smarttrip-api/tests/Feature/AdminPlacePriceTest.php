@@ -74,9 +74,7 @@ class AdminPlacePriceTest extends TestCase
 
         $this->actingAs($this->admin)->getJson(route('admin.places.price-estimate', $this->place))->assertOk();
 
-        $place = $this->place->fresh();
-        $this->assertNull($place->estimated_cost_idr);
-        $this->assertFalse($place->estimated_cost_is_ai);
+        $this->assertNull($this->place->fresh()->estimated_cost_idr);
     }
 
     public function test_a_retired_gemini_model_is_named_in_the_error(): void
@@ -109,38 +107,25 @@ class AdminPlacePriceTest extends TestCase
         Http::assertNothingSent();
     }
 
-    public function test_the_edit_page_marks_an_ai_cost_and_offers_the_price_estimate(): void
+    public function test_the_edit_page_offers_the_price_estimate(): void
     {
-        $this->place->update(['estimated_cost_idr' => 500000, 'estimated_cost_is_ai' => true]);
+        $this->place->update(['estimated_cost_idr' => 500000]);
 
         $this->actingAs($this->admin)
             ->get(route('admin.places.edit', $this->place))
             ->assertOk()
-            ->assertSee('Perkiraan AI')
+            ->assertDontSee('Perkiraan AI')
             ->assertSee('Perkirakan harga dengan AI');
     }
 
-    public function test_changing_an_ai_cost_makes_it_the_admin_cost(): void
+    public function test_an_admin_can_change_the_cost(): void
     {
-        $this->place->update(['estimated_cost_idr' => 500000, 'estimated_cost_is_ai' => true]);
+        $this->place->update(['estimated_cost_idr' => 500000]);
 
         $this->actingAs($this->admin)
             ->put(route('admin.places.update', $this->place), ['estimated_cost_idr' => 550000])
             ->assertRedirect();
 
-        $place = $this->place->fresh();
-        $this->assertSame(550000, $place->estimated_cost_idr);
-        $this->assertFalse($place->estimated_cost_is_ai);
-    }
-
-    public function test_saving_without_changing_an_ai_cost_keeps_the_mark(): void
-    {
-        $this->place->update(['estimated_cost_idr' => 500000, 'estimated_cost_is_ai' => true]);
-
-        $this->actingAs($this->admin)
-            ->put(route('admin.places.update', $this->place), ['estimated_cost_idr' => 500000, 'kecamatan' => 'Lubuk Baja'])
-            ->assertRedirect();
-
-        $this->assertTrue($this->place->fresh()->estimated_cost_is_ai);
+        $this->assertSame(550000, $this->place->fresh()->estimated_cost_idr);
     }
 }

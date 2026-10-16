@@ -15,8 +15,8 @@ use RuntimeException;
  * anything the admin already confirmed (category_tags_reviewed) are left
  * alone. Whatever Gemini writes puts the place back on the dashboard's
  * "needs attention" list, because an AI description can be wrong. A cost
- * guessed by Gemini is only written when the admin left it empty, and is
- * marked estimated_cost_is_ai instead.
+ * guessed by Gemini is only written when the admin left it empty; it is not
+ * marked as AI (an estimate the admin keeps is their decision).
  */
 class PlaceEnrichmentService
 {
@@ -27,7 +27,8 @@ class PlaceEnrichmentService
      */
     public function needsEnrichment(Place $place): bool
     {
-        if ($this->sourceDescription($place) === null || blank($place->description_en) || $place->estimated_cost_idr === null) {
+        if ($this->sourceDescription($place) === null || blank($place->description_en) || $place->estimated_cost_idr === null
+            || blank($place->search_keywords)) {
             return true;
         }
 
@@ -54,12 +55,7 @@ class PlaceEnrichmentService
      */
     public function enrich(Place $place): array
     {
-        $availableCategories = Category::query()
-            ->get(['slug', 'name_id', 'search_keywords'])
-            ->mapWithKeys(fn (Category $category) => [
-                $category->slug => ['name' => $category->name_id, 'keywords' => $category->search_keywords],
-            ])
-            ->all();
+        $availableCategories = Category::query()->pluck('name_id', 'slug')->all();
         $description = $this->sourceDescription($place);
 
         $result = $this->gemini->enrich($place->name, $description, $availableCategories, [
@@ -108,11 +104,17 @@ class PlaceEnrichmentService
             $updates['category_tags_reviewed'] = false;
         }
 
-        // Has its own "Perkiraan AI" mark, so it does not reopen the tag review.
+        // A cost does not reopen the tag review.
         if ($place->estimated_cost_idr === null && $result['estimated_cost_idr'] !== null) {
             $updates['estimated_cost_idr'] = $result['estimated_cost_idr'];
-            $updates['estimated_cost_is_ai'] = true;
             $filled[] = 'estimated_cost_idr';
+        }
+
+        // Only when the place has none yet: keywords an admin wrote stay theirs.
+        // Like the cost, they do not reopen the tag review.
+        if (blank($place->search_keywords) && $result['search_keywords'] !== []) {
+            $updates['search_keywords'] = Place::normalizeSearchKeywords(implode(', ', $result['search_keywords']));
+            $filled[] = 'search_keywords';
         }
 
         if ($updates !== []) {

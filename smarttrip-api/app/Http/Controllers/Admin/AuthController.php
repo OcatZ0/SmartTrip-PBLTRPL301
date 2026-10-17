@@ -26,7 +26,8 @@ class AuthController extends Controller
             'password' => ['required', 'string'],
         ]);
 
-        if (! Auth::attempt($credentials, $request->boolean('remember'))) {
+        // No "Ingat saya": an admin session ends when it expires or on Keluar.
+        if (! Auth::attempt($credentials)) {
             throw ValidationException::withMessages([
                 'email' => ['Email atau kata sandi salah.'],
             ]);

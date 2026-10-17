@@ -39,7 +39,8 @@ class DashboardController extends Controller
             // max() adalah query agregat mentah - tidak lewat hydration
             // model, jadi hasilnya string biasa dari DB, bukan Carbon.
             'lastDiscoveryAt' => self::toCarbon(PlaceCandidate::max('created_at')),
-            'lastEnrichmentAt' => self::toCarbon(Place::whereIn('source', ['google', 'geoapify'])->max('created_at')),
+            // Newest place promoted from a candidate (approve also runs the Gemini enrichment).
+            'lastApprovedAt' => self::toCarbon(Place::whereIn('source', ['google', 'geoapify'])->max('created_at')),
             'quotaUsed' => GeoapifyPlacesClient::creditsUsedToday(),
             'quotaLimit' => (int) config('services.geoapify.daily_credits'),
             'mostWishlistedPlaces' => Place::whereHas('wishlistedIn')

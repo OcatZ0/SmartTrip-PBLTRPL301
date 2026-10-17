@@ -210,8 +210,10 @@
 
     .pe-savebar { position: fixed; left: 76px; right: 0; bottom: 0; z-index: 900; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 14px 32px; background: rgba(255, 255, 255, .94); border-top: 1px solid #dbe2ec; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); transition: left .2s ease; }
     .admin-shell:has(.admin-rail.is-expanded) .pe-savebar { left: 240px; }
-    .pe-delete { width: 44px; height: 44px; padding: 0; border: 0; border-radius: 12px; background: transparent; display: inline-flex; align-items: center; justify-content: center; font-size: 18px; color: #b42318; }
-    .pe-delete:hover { background: #fdecea; }
+    /* Red at rest (what used to be the hover look); hover deepens it. */
+    .pe-delete { width: 44px; height: 44px; padding: 0; border: 0; border-radius: 12px; background: #fdecea; display: inline-flex; align-items: center; justify-content: center; font-size: 18px; color: #b42318; transition: background-color .15s ease, color .15s ease; }
+    .pe-delete:hover { background: #f8c9c3; color: #912018; }
+    .pe-delete:focus-visible { outline: 3px solid rgba(180, 35, 24, .35); outline-offset: 2px; }
     .pe-dirty { flex: 1; text-align: right; font-size: 13px; color: #5d6b7c; }
     .pe-dirty.is-dirty { color: #7a4b00; font-weight: 600; }
     .pe-btn { height: 44px; padding: 0 18px; border: 0; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 14px; font-weight: 700; text-decoration: none; }

@@ -33,6 +33,13 @@
     .admin-rail-avatar { display: flex; flex-shrink: 0; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; background: #2b6fab; font-size: 13px; font-weight: 800; }
     .admin-rail-user small { display: block; color: rgba(255, 255, 255, .7); font-size: 12px; font-weight: 500; }
     .admin-rail a:focus-visible, .admin-rail button:focus-visible { outline: 2px solid #f6b03c; outline-offset: 2px; }
+    .admin-rail-user[aria-expanded="true"] { background: rgba(255, 255, 255, .1); }
+    .admin-user-menu { position: fixed; z-index: 1060; min-width: 180px; padding: 6px; border: 1px solid #e2e8f0; border-radius: 14px; background: #fff; box-shadow: 0 16px 40px rgba(10, 36, 64, .22); font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+    .admin-user-menu[hidden] { display: none; }
+    .admin-user-menu-item { display: flex; align-items: center; gap: 10px; width: 100%; height: 42px; padding: 0 12px; border: 0; border-radius: 10px; background: transparent; font: 600 14px/1 'Plus Jakarta Sans', system-ui, sans-serif; text-align: left; cursor: pointer; }
+    .admin-user-menu-item svg { flex-shrink: 0; width: 19px; height: 19px; }
+    .admin-user-menu-item.is-danger { color: #c0392b; }
+    .admin-user-menu-item.is-danger:hover, .admin-user-menu-item.is-danger:focus-visible { background: #fdecea; outline: none; }
     @media (prefers-reduced-motion: reduce) { .admin-rail.is-ready, .admin-rail *, .admin-rail-label { transition: none !important; } }
 </style>
 <nav aria-label="Navigasi admin" id="admin-rail" class="admin-rail">
@@ -50,14 +57,25 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 6l6 6-6 6M5 6l6 6-6 6"/></svg>
         <span class="admin-rail-label">Perkecil menu</span>
     </button>
+    <button type="button" class="admin-rail-user" id="adminUserButton" title="{{ $userName }}"
+        aria-haspopup="menu" aria-expanded="false" aria-controls="adminUserMenu">
+        <span class="admin-rail-avatar" aria-hidden="true">{{ $initials }}</span>
+        <span class="admin-rail-label">{{ $userName }}<small>Admin</small></span>
+    </button>
+</nav>
+{{-- Outside the rail: the rail clips its overflow, so the menu is placed with
+     position: fixed next to the profile button when it opens. --}}
+<div class="admin-user-menu" id="adminUserMenu" role="menu" aria-labelledby="adminUserButton" hidden>
     <form method="POST" action="{{ route('admin.logout') }}" class="admin-rail-logout">
         @csrf
-        <button type="submit" class="admin-rail-user" title="Keluar">
-            <span class="admin-rail-avatar" aria-hidden="true">{{ $initials }}</span>
-            <span class="admin-rail-label">{{ $userName }}<small>Keluar</small></span>
+        <button type="submit" class="admin-user-menu-item is-danger" role="menuitem">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l5-5-5-5M15 12H3"/>
+            </svg>
+            Keluar
         </button>
     </form>
-</nav>
+</div>
 <script>
     (function () {
         var rail = document.getElementById('admin-rail');
@@ -81,6 +99,38 @@
             var expanded = !rail.classList.contains('is-expanded');
             apply(expanded);
             try { localStorage.setItem(key, expanded ? '1' : '0'); } catch (e) {}
+            closeUserMenu();
         });
+
+        // Profile dropdown: opens beside the profile button, bottom-aligned with it.
+        var userButton = document.getElementById('adminUserButton');
+        var userMenu = document.getElementById('adminUserMenu');
+
+        function openUserMenu() {
+            var rect = userButton.getBoundingClientRect();
+            userMenu.style.left = (rect.right + 10) + 'px';
+            userMenu.style.bottom = (window.innerHeight - rect.bottom) + 'px';
+            userMenu.hidden = false;
+            userButton.setAttribute('aria-expanded', 'true');
+            userMenu.querySelector('[role="menuitem"]').focus();
+        }
+        function closeUserMenu(returnFocus) {
+            if (userMenu.hidden) return;
+            userMenu.hidden = true;
+            userButton.setAttribute('aria-expanded', 'false');
+            if (returnFocus) userButton.focus();
+        }
+
+        userButton.addEventListener('click', function (e) {
+            e.stopPropagation();
+            userMenu.hidden ? openUserMenu() : closeUserMenu();
+        });
+        document.addEventListener('click', function (e) {
+            if (!userMenu.contains(e.target)) closeUserMenu();
+        });
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') closeUserMenu(true);
+        });
+        window.addEventListener('resize', function () { closeUserMenu(); });
     })();
 </script>

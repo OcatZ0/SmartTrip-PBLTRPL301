@@ -33,21 +33,28 @@
     .cd-alert { margin: 0; padding: 12px 16px; border-radius: 14px; font-size: 14px; font-weight: 600; display: flex; gap: 10px; align-items: flex-start; }
     .cd-alert.is-ok { background: #e3f6ec; color: #1d7a55; }
     .cd-alert.is-error { background: #fdecea; color: #b42318; }
-    .cd-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border-radius: 16px; background: #fff; border: 1px solid var(--cd-line); }
-    .cd-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
-    .cd-tab { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 10px; font-size: 13.5px; font-weight: 600; color: var(--cd-muted); text-decoration: none; }
-    .cd-tab:hover { background: var(--cd-fill); color: var(--cd-ink); }
-    .cd-tab.is-active { background: #eaf2fa; color: var(--cd-blue); }
-    .cd-tab-count { min-width: 22px; padding: 1px 7px; border-radius: 999px; background: var(--cd-fill); font-size: 12px; text-align: center; color: var(--cd-muted); }
+    /* One row: status tabs on the left, search and filters on the right; the
+       filters drop to their own full-width row only when there is no room. */
+    .cd-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 16px; padding: 12px 14px; border-radius: 16px; background: #fff; border: 1px solid var(--cd-line); }
+    .cd-tabs { display: flex; flex-wrap: wrap; gap: 4px; padding: 4px; border-radius: 12px; background: var(--cd-fill); }
+    .cd-tab { display: inline-flex; align-items: center; gap: 8px; padding: 7px 12px; border-radius: 9px; font-size: 13.5px; font-weight: 600; color: var(--cd-muted); text-decoration: none; white-space: nowrap; }
+    .cd-tab:hover { background: #fff; color: var(--cd-ink); }
+    .cd-tab.is-active { background: #fff; color: var(--cd-blue); box-shadow: 0 1px 3px rgba(15, 23, 42, .08); }
+    .cd-tab-count { min-width: 22px; padding: 1px 7px; border-radius: 999px; background: #fff; font-size: 12px; text-align: center; color: var(--cd-muted); }
     .cd-tab.is-active .cd-tab-count { background: var(--cd-blue); color: #fff; }
-    .cd-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-    .cd-search { position: relative; }
+    .cd-filters { flex: 1 1 520px; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
+    .cd-search { position: relative; flex: 1 1 220px; max-width: 320px; }
     .cd-search .bi { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 14px; }
-    .cd-search input { height: 40px; width: 260px; max-width: 100%; padding: 0 12px 0 36px; border: 1px solid var(--cd-line); border-radius: 10px; font-size: 13.5px; color: var(--cd-ink); }
+    .cd-search input { height: 40px; width: 100%; padding: 0 12px 0 36px; border: 1px solid var(--cd-line); border-radius: 10px; font-size: 13.5px; color: var(--cd-ink); }
     .cd-search input:focus, .cd-select:focus { outline: none; border-color: var(--cd-blue); box-shadow: 0 0 0 3px rgba(43, 111, 171, .15); }
     .cd-reset { border-color: var(--cd-line); color: var(--cd-muted); }
     .cd-reset:hover { background: var(--cd-fill); color: var(--cd-ink); }
-    .cd-select { height: 40px; min-width: 170px; padding: 0 36px 0 12px; border: 1px solid var(--cd-line); border-radius: 10px; font-size: 13.5px; color: var(--cd-ink); background-color: #fff; }
+    /* Bootstrap's .form-select is width: 100%, which put each select on its own row. */
+    .cd-select.form-select { flex: 0 0 auto; width: auto; height: 40px; min-width: 160px; padding: 0 36px 0 12px; border: 1px solid var(--cd-line); border-radius: 10px; font-size: 13.5px; color: var(--cd-ink); background-color: #fff; }
+    @media (max-width: 640px) {
+        .cd-search { max-width: none; flex-basis: 100%; }
+        .cd-select.form-select { flex: 1 1 140px; }
+    }
     .cd-card { border-radius: 16px; background: #fff; border: 1px solid var(--cd-line); overflow: hidden; }
     .cd-bulk { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--cd-line); background: #f8fafc; }
     .cd-bulk-count { font-size: 13px; color: var(--cd-muted); margin-right: auto; }
@@ -118,6 +125,15 @@
     .cd-dm-foot .cd-btn { height: 40px; padding: 0 18px; }
     .cd-btn.is-quiet { background: #eef2f8; color: #14212f; }
     .cd-btn.is-quiet:hover { background: #e2e8f1; }
+    .cd-name-link { padding: 0; border: 0; background: none; text-align: left; cursor: pointer; }
+    .cd-name-link:hover { color: var(--cd-blue); text-decoration: underline; }
+    .cd-dt-badges { display: flex; flex-wrap: wrap; gap: 8px; }
+    .cd-dt-map { height: 240px; border-radius: 14px; overflow: hidden; border: 1px solid #e2e8f0; background: #eef2f6; }
+    .cd-dt-map iframe { width: 100%; height: 100%; border: 0; }
+    .cd-dt-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin: 0; }
+    .cd-dt-facts > div { padding: 10px 14px; border-radius: 12px; background: #f8fafc; border: 1px solid #e2e8f0; min-width: 0; }
+    .cd-dt-facts dt { font-size: 12px; font-weight: 600; color: #5d6b7c; }
+    .cd-dt-facts dd { margin: 2px 0 0; font-size: 14px; font-weight: 600; color: #14212f; overflow-wrap: anywhere; }
     .cd-btn.is-primary { background: #2b6fab; color: #fff; }
     .cd-btn.is-primary:hover:not(:disabled) { background: #245f93; }
     .cd-page button:focus-visible, .cd-page a:focus-visible { outline: 3px solid rgba(43, 111, 171, .45); outline-offset: 2px; }
@@ -213,6 +229,21 @@
                         @php
                             $type = $typeBadges[$candidate->type] ?? ['label' => $candidate->type, 'icon' => 'bi-geo-alt', 'class' => 'is-attraction'];
                             $status = $statusTabs[$candidate->status] ?? $statusTabs['pending'];
+                            // Everything the detail modal shows; read with JSON.parse, no extra request.
+                            $detail = [
+                                'id' => $candidate->place_candidates_id,
+                                'name' => $candidate->name,
+                                'osm' => $candidate->external_place_id,
+                                'type' => $type,
+                                'area' => $candidate->search_area,
+                                'lat' => (float) $candidate->lat,
+                                'lng' => (float) $candidate->lng,
+                                'found' => $candidate->created_at?->translatedFormat('d M Y, H:i'),
+                                'updated' => $candidate->updated_at?->translatedFormat('d M Y, H:i'),
+                                'status' => ['key' => $candidate->status] + $status,
+                                'can_approve' => $candidate->status !== 'approved',
+                                'can_reject' => $candidate->status === 'pending',
+                            ];
                         @endphp
                         <tr>
                             @if ($canSelect)
@@ -224,7 +255,7 @@
                                 </td>
                             @endif
                             <td>
-                                <div class="cd-name">{{ $candidate->name }}</div>
+                                <button type="button" class="cd-name cd-name-link" data-candidate="{{ json_encode($detail) }}">{{ $candidate->name }}</button>
                                 <div class="cd-id">{{ $candidate->external_place_id }}</div>
                             </td>
                             <td><span class="cd-type {{ $type['class'] }}"><i class="bi {{ $type['icon'] }}" aria-hidden="true"></i>{{ $type['label'] }}</span></td>
@@ -233,10 +264,10 @@
                             <td><span class="cd-status is-{{ $candidate->status }}"><i class="bi {{ $status['icon'] }}" aria-hidden="true"></i>{{ $status['label'] }}</span></td>
                             <td>
                                 <div class="cd-actions">
-                                    <a href="https://www.openstreetmap.org/?mlat={{ $candidate->lat }}&amp;mlon={{ $candidate->lng }}#map=18/{{ $candidate->lat }}/{{ $candidate->lng }}"
-                                        target="_blank" rel="noopener" class="cd-btn is-icon cd-map" title="Lihat di peta" aria-label="Lihat {{ $candidate->name }} di peta">
-                                        <i class="bi bi-map" aria-hidden="true"></i>
-                                    </a>
+                                    <button type="button" class="cd-btn is-icon cd-map" data-candidate="{{ json_encode($detail) }}"
+                                        title="Lihat detail" aria-label="Lihat detail {{ $candidate->name }}">
+                                        <i class="bi bi-eye" aria-hidden="true"></i>
+                                    </button>
                                     @if ($candidate->status !== 'approved')
                                         <button type="submit" form="cdApprove{{ $candidate->place_candidates_id }}" class="cd-btn is-approve" data-busy-label="Menyetujui...">
                                             <i class="bi bi-check-lg" aria-hidden="true"></i>Setujui
@@ -292,6 +323,50 @@
                 </div>
                 <div class="cd-dm-body" id="cdDmBody" aria-live="polite"></div>
                 <div class="cd-dm-foot" id="cdDmFoot"></div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Candidate detail, filled from the row's data-candidate by openCandidateDetail(). --}}
+    <div class="modal fade cd-dm" id="cdDetailModal" tabindex="-1" aria-labelledby="cdDtTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="cd-dm-head">
+                    <span class="cd-dm-icon" aria-hidden="true"><i class="bi bi-geo-alt" id="cdDtIcon"></i></span>
+                    <div class="flex-grow-1 min-w-0">
+                        <h2 class="cd-dm-title text-truncate" id="cdDtTitle"></h2>
+                        <p class="cd-dm-sub" id="cdDtSub"></p>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+                </div>
+                <div class="cd-dm-body">
+                    <div class="cd-dt-badges">
+                        <span class="cd-type" id="cdDtType"></span>
+                        <span class="cd-status" id="cdDtStatus"></span>
+                    </div>
+                    <div class="cd-dt-map">
+                        <iframe id="cdDtMap" title="Peta lokasi kandidat" loading="lazy" referrerpolicy="no-referrer"></iframe>
+                    </div>
+                    <dl class="cd-dt-facts">
+                        <div><dt>Kecamatan</dt><dd id="cdDtArea"></dd></div>
+                        <div><dt>Koordinat</dt><dd id="cdDtCoords"></dd></div>
+                        <div><dt>ID OpenStreetMap</dt><dd id="cdDtOsm"></dd></div>
+                        <div><dt>Ditemukan</dt><dd id="cdDtFound"></dd></div>
+                        <div><dt>Terakhir diubah</dt><dd id="cdDtUpdated"></dd></div>
+                    </dl>
+                    <p class="cd-dm-last mb-0" id="cdDtNote">Setujui untuk memasukkan tempat ini ke katalog: sistem mengambil detail lengkap dari Geoapify lalu melengkapi deskripsi, kategori, biaya, dan kata kunci dengan Gemini.</p>
+                </div>
+                <div class="cd-dm-foot">
+                    <a href="#" target="_blank" rel="noopener" class="cd-btn is-quiet me-auto" id="cdDtOsmLink">
+                        <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>Buka di OpenStreetMap
+                    </a>
+                    <button type="submit" class="cd-btn is-reject" id="cdDtReject" data-busy-label="Menolak...">
+                        <i class="bi bi-x-lg" aria-hidden="true"></i>Tolak
+                    </button>
+                    <button type="submit" class="cd-btn is-approve" id="cdDtApprove" data-busy-label="Menyetujui...">
+                        <i class="bi bi-check-lg" aria-hidden="true"></i>Setujui
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -356,6 +431,49 @@
                 button.innerHTML = '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span>' + button.dataset.busyLabel;
             });
         });
+
+        // Candidate detail modal. Text goes in with textContent: names come from OpenStreetMap.
+        var detailModal = document.getElementById('cdDetailModal');
+        function openCandidateDetail(candidate) {
+            var lat = candidate.lat, lng = candidate.lng, pad = 0.004;
+            document.getElementById('cdDtTitle').textContent = candidate.name;
+            document.getElementById('cdDtSub').textContent = candidate.area ? 'Kecamatan ' + candidate.area : '';
+            document.getElementById('cdDtIcon').className = 'bi ' + candidate.type.icon;
+
+            var type = document.getElementById('cdDtType');
+            type.className = 'cd-type ' + candidate.type.class;
+            type.innerHTML = '<i class="bi ' + candidate.type.icon + '" aria-hidden="true"></i>';
+            type.appendChild(document.createTextNode(candidate.type.label));
+            var status = document.getElementById('cdDtStatus');
+            status.className = 'cd-status is-' + candidate.status.key;
+            status.innerHTML = '<i class="bi ' + candidate.status.icon + '" aria-hidden="true"></i>';
+            status.appendChild(document.createTextNode(candidate.status.label));
+
+            document.getElementById('cdDtArea').textContent = candidate.area || '-';
+            document.getElementById('cdDtCoords').textContent = lat.toFixed(5) + ', ' + lng.toFixed(5);
+            document.getElementById('cdDtOsm').textContent = candidate.osm || '-';
+            document.getElementById('cdDtFound').textContent = candidate.found || '-';
+            document.getElementById('cdDtUpdated').textContent = candidate.updated || '-';
+            document.getElementById('cdDtMap').src = 'https://www.openstreetmap.org/export/embed.html?layer=mapnik'
+                + '&bbox=' + [lng - pad, lat - pad, lng + pad, lat + pad].join(',')
+                + '&marker=' + lat + ',' + lng;
+            document.getElementById('cdDtOsmLink').href = 'https://www.openstreetmap.org/?mlat=' + lat + '&mlon=' + lng + '#map=18/' + lat + '/' + lng;
+
+            var approve = document.getElementById('cdDtApprove');
+            var reject = document.getElementById('cdDtReject');
+            approve.hidden = !candidate.can_approve;
+            reject.hidden = !candidate.can_reject;
+            approve.setAttribute('form', 'cdApprove' + candidate.id);
+            reject.setAttribute('form', 'cdReject' + candidate.id);
+            document.getElementById('cdDtNote').hidden = !candidate.can_approve;
+
+            bootstrap.Modal.getOrCreateInstance(detailModal).show();
+        }
+        document.querySelectorAll('[data-candidate]').forEach(function (trigger) {
+            trigger.addEventListener('click', function () { openCandidateDetail(JSON.parse(trigger.dataset.candidate)); });
+        });
+        // Stop loading the map once the modal is closed.
+        detailModal.addEventListener('hidden.bs.modal', function () { document.getElementById('cdDtMap').removeAttribute('src'); });
 
         // Discovery progress: polls the latest run while it is queued or running.
         var discovery = {

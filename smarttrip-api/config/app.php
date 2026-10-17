@@ -16,6 +16,11 @@ return [
     'name' => env('APP_NAME', 'Laravel'),
 
     /*
+    | Where "Hubungi Admin Utama" on the admin login sends people who need access.
+    */
+    'admin_contact_email' => env('ADMIN_CONTACT_EMAIL', 'muhamadnurfadli088@gmail.com'),
+
+    /*
     |--------------------------------------------------------------------------
     | Application Environment
     |--------------------------------------------------------------------------

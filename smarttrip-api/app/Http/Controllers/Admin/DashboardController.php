@@ -53,18 +53,15 @@ class DashboardController extends Controller
                 ->get(),
             'averageInAppRating' => PlaceReview::avg('rating'),
             'tripVolume' => Trip::count(),
-            'placesMissingCost' => Place::whereNull('estimated_cost_idr')->count(),
-            'placesTagsNotReviewed' => Place::where('category_tags_reviewed', false)->count(),
+            // "Data belum lengkap": how many places miss each kind of data.
+            'dataGaps' => collect(Place::DATA_GAPS)->map(fn (array $gap, string $key) => [
+                'label' => $gap[0],
+                'hint' => $gap[1],
+                'count' => Place::missing($key)->count(),
+                'url' => route('admin.places.index', ['kurang' => $key]),
+            ])->all(),
+            'incompletePlaceCount' => Place::incomplete()->count(),
             'recentCandidates' => PlaceCandidate::where('status', 'pending')
-                ->latest()
-                ->take(self::COLUMN_PREVIEW)
-                ->get(),
-            'missingCostList' => Place::whereNull('estimated_cost_idr')
-                ->orderBy('name')
-                ->take(self::COLUMN_PREVIEW)
-                ->get(),
-            'untaggedList' => Place::where('category_tags_reviewed', false)
-                ->with('categories')
                 ->latest()
                 ->take(self::COLUMN_PREVIEW)
                 ->get(),

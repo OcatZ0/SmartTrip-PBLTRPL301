@@ -195,33 +195,92 @@ class AdminDashboardTest extends TestCase
 
     // --- work columns ---
 
-    public function test_it_lists_places_missing_estimated_cost(): void
+    public function test_one_card_counts_every_kind_of_missing_data(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
-        $missing = $this->makePlace(['name' => 'Tanpa Biaya', 'type' => 'lodging', 'kecamatan' => 'Batam Kota', 'estimated_cost_idr' => null]);
-        $this->makePlace(['name' => 'Ada Biaya', 'external_place_id' => 'gp-2', 'category_tags_reviewed' => true, 'estimated_cost_idr' => 50000]);
+        $this->makePlace([
+            'name' => 'Tanpa Biaya', 'estimated_cost_idr' => null, 'category_tags_reviewed' => true,
+            'estimated_visit_minutes' => 60, 'description_en' => 'There.', 'search_keywords' => 'pantai',
+            'photo_url' => 'https://example.com/a.jpg', 'opening_hours' => ['osm' => '24/7'],
+        ]);
+        $this->makePlace([
+            'name' => 'Hotel Lengkap', 'type' => 'lodging', 'external_place_id' => 'gp-2', 'estimated_cost_idr' => 400000,
+            'category_tags_reviewed' => true, 'estimated_visit_minutes' => null, 'description_en' => 'Hotel.',
+            'search_keywords' => 'hotel', 'photo_url' => 'https://example.com/b.jpg', 'opening_hours' => ['osm' => '24/7'],
+        ]);
 
         $response = $this->actingAs($admin)->get('/admin/dashboard');
 
-        $response->assertOk();
-        $response->assertSeeInOrder(['Belum ada harga', 'Tanpa Biaya', 'Batam Kota · Hotel', 'Harga kamar', 'Lengkapi']);
-        $response->assertSee(route('admin.places.edit', $missing), false);
-        $response->assertDontSee('Ada Biaya');
+        $response->assertOk()
+            ->assertDontSee('Tag belum dicek</h2>', false)
+            ->assertSeeInOrder(['Data belum lengkap', '1</b> dari 2 tempat masih kurang data'], false)
+            ->assertSeeInOrder(['Belum ada harga', 'Kriteria anggaran di itinerary', '1', 'Lengkapi'])
+            // A hotel needs no visit length, so that row is complete.
+            ->assertSeeInOrder(['Belum ada lama kunjungan', 'Menentukan muat tidaknya satu hari', 'Lengkap'])
+            ->assertSee(route('admin.places.index', ['kurang' => 'harga']), false);
     }
 
-    public function test_it_lists_places_with_unreviewed_category_tags(): void
+    public function test_the_places_list_filters_by_missing_data(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
-        $beach = Category::create(['name_id' => 'Pantai', 'name_en' => 'Beach', 'slug' => 'pantai']);
-        $unreviewed = $this->makePlace(['name' => 'Belum Direview', 'category_tags_reviewed' => false, 'estimated_cost_idr' => 0]);
-        $unreviewed->categories()->attach($beach->categories_id);
-        $this->makePlace(['name' => 'Sudah Direview', 'external_place_id' => 'gp-2', 'category_tags_reviewed' => true, 'estimated_cost_idr' => 0]);
+        $this->makePlace(['name' => 'Tanpa Biaya', 'estimated_cost_idr' => null]);
+        $this->makePlace(['name' => 'Ada Biaya', 'external_place_id' => 'gp-2', 'estimated_cost_idr' => 50000]);
 
-        $response = $this->actingAs($admin)->get('/admin/dashboard');
+        $this->actingAs($admin)->get(route('admin.places.index', ['kurang' => 'harga']))
+            ->assertOk()
+            ->assertSee('Tanpa Biaya')
+            ->assertDontSee('Ada Biaya')
+            ->assertSee('name="kurang[]" value="harga" checked', false);
 
-        $response->assertOk();
-        $response->assertSeeInOrder(['Tag belum dicek', 'Belum Direview', 'Usulan: Pantai', '1 tag', 'Cek tag']);
-        $response->assertDontSee('Sudah Direview');
+        // An unknown gap is ignored.
+        $this->actingAs($admin)->get(route('admin.places.index', ['kurang' => 'bukan']))
+            ->assertOk()
+            ->assertSee('Ada Biaya');
+    }
+
+    public function test_places_that_need_completing_are_yellow_and_say_what_is_missing(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $this->makePlace([
+            'name' => 'Lengkap Semua', 'estimated_cost_idr' => 0, 'category_tags_reviewed' => true,
+            'estimated_visit_minutes' => 60, 'description_en' => 'There.', 'search_keywords' => 'pantai',
+            'photo_url' => 'https://example.com/a.jpg', 'opening_hours' => ['osm' => '24/7'],
+        ]);
+        $this->makePlace([
+            'name' => 'Kurang Dua', 'external_place_id' => 'gp-2', 'estimated_cost_idr' => null, 'category_tags_reviewed' => true,
+            'estimated_visit_minutes' => 60, 'description_en' => 'There.', 'search_keywords' => 'pantai',
+            'photo_url' => 'https://example.com/b.jpg', 'opening_hours' => null,
+        ]);
+
+        $response = $this->actingAs($admin)->get(route('admin.places.index'));
+
+        $response->assertOk()
+            ->assertSeeInOrder(['Kurang Dua', 'Kurang: harga, jam buka'])
+            ->assertSeeInOrder(['Lengkap Semua', 'Siap tampil'])
+            ->assertSee('Siap Tampil di App: 1')
+            ->assertSee('Butuh Lengkapi: 1 Tempat');
+        $this->assertSame(1, substr_count($response->getContent(), '<tr class="is-incomplete">'));
+
+        $this->actingAs($admin)->get(route('admin.places.index', ['status_data' => 'siap_tampil']))
+            ->assertSee('Lengkap Semua')->assertDontSee('Kurang Dua');
+        $this->actingAs($admin)->get(route('admin.places.index', ['status_data' => 'butuh_lengkapi']))
+            ->assertSee('Kurang Dua')->assertDontSee('Lengkap Semua');
+    }
+
+    public function test_ticking_several_gaps_shows_places_missing_any_of_them(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $this->makePlace(['name' => 'Tanpa Biaya', 'estimated_cost_idr' => null, 'opening_hours' => ['osm' => '24/7']]);
+        $this->makePlace(['name' => 'Tanpa Jam', 'external_place_id' => 'gp-2', 'estimated_cost_idr' => 0, 'opening_hours' => null]);
+        $this->makePlace(['name' => 'Ada Keduanya', 'external_place_id' => 'gp-3', 'estimated_cost_idr' => 0, 'opening_hours' => ['osm' => '24/7']]);
+
+        $this->actingAs($admin)->get(route('admin.places.index', ['kurang' => ['harga', 'jam']]))
+            ->assertOk()
+            ->assertSee('Tanpa Biaya')
+            ->assertSee('Tanpa Jam')
+            ->assertDontSee('Ada Keduanya')
+            ->assertSee('name="kurang[]" value="harga" checked', false)
+            ->assertSee('name="kurang[]" value="jam" checked', false);
     }
 
     // --- summary ---

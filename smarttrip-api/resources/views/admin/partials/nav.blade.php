@@ -40,7 +40,29 @@
     .admin-user-menu-item svg { flex-shrink: 0; width: 19px; height: 19px; }
     .admin-user-menu-item.is-danger { color: #c0392b; }
     .admin-user-menu-item.is-danger:hover, .admin-user-menu-item.is-danger:focus-visible { background: #fdecea; outline: none; }
-    @media (prefers-reduced-motion: reduce) { .admin-rail.is-ready, .admin-rail *, .admin-rail-label { transition: none !important; } }
+    /* Small screens: the rail leaves the layout and slides in over the page
+       from the topbar's menu button, always at its full width with labels. */
+    .admin-rail-backdrop { display: none; }
+    .admin-menu-button { display: none; }
+    @media (max-width: 767.98px) {
+        /* .is-ready is listed too: the desktop ".admin-rail.is-ready { transition: width }"
+           is more specific and would otherwise switch the slide animation off. */
+        .admin-rail, .admin-rail.is-ready, .admin-rail.is-expanded {
+            position: fixed; left: 0; top: 0; z-index: 1050; width: 260px;
+            transform: translateX(-100%); box-shadow: none; will-change: transform;
+            transition: transform .32s cubic-bezier(.22, .61, .36, 1), box-shadow .32s ease;
+        }
+        .admin-rail .admin-rail-label { opacity: 1; }
+        .admin-rail-toggle { visibility: hidden; }
+        .admin-rail.is-open { transform: translateX(0); box-shadow: 12px 0 40px rgba(10, 36, 64, .35); }
+        /* Always rendered on small screens so it can fade in and out instead of popping. */
+        .admin-rail-backdrop { display: block; position: fixed; inset: 0; z-index: 1040; background: rgba(10, 36, 64, .45);
+            opacity: 0; visibility: hidden; transition: opacity .32s ease, visibility 0s linear .32s; }
+        .admin-rail-backdrop.is-open { opacity: 1; visibility: visible; transition: opacity .32s ease, visibility 0s; }
+        .admin-menu-button { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; flex-shrink: 0; border: 0; border-radius: 12px; background: rgba(255, 255, 255, .12); color: #fff; cursor: pointer; }
+        .admin-menu-button svg { width: 22px; height: 22px; }
+    }
+    @media (prefers-reduced-motion: reduce) { .admin-rail, .admin-rail.is-ready, .admin-rail *, .admin-rail-label, .admin-rail-backdrop { transition: none !important; } }
 </style>
 <nav aria-label="Navigasi admin" id="admin-rail" class="admin-rail">
     <a href="{{ route('admin.dashboard') }}" class="admin-rail-brand" aria-label="SmartTrip">
@@ -63,6 +85,7 @@
         <span class="admin-rail-label">{{ $userName }}<small>Admin</small></span>
     </button>
 </nav>
+<div class="admin-rail-backdrop" id="adminRailBackdrop" aria-hidden="true"></div>
 {{-- Outside the rail: the rail clips its overflow, so the menu is placed with
      position: fixed next to the profile button when it opens. --}}
 <div class="admin-user-menu" id="adminUserMenu" role="menu" aria-labelledby="adminUserButton" hidden>
@@ -108,8 +131,10 @@
 
         function openUserMenu() {
             var rect = userButton.getBoundingClientRect();
-            userMenu.style.left = (rect.right + 10) + 'px';
-            userMenu.style.bottom = (window.innerHeight - rect.bottom) + 'px';
+            // Beside the button on the rail; above it in the slide-in menu, where there is no room beside.
+            var stacked = window.matchMedia('(max-width: 767.98px)').matches;
+            userMenu.style.left = (stacked ? rect.left : rect.right + 10) + 'px';
+            userMenu.style.bottom = (window.innerHeight - (stacked ? rect.top - 8 : rect.bottom)) + 'px';
             userMenu.hidden = false;
             userButton.setAttribute('aria-expanded', 'true');
             userMenu.querySelector('[role="menuitem"]').focus();
@@ -129,8 +154,37 @@
             if (!userMenu.contains(e.target)) closeUserMenu();
         });
         document.addEventListener('keydown', function (e) {
-            if (e.key === 'Escape') closeUserMenu(true);
+            if (e.key === 'Escape' && !userMenu.hidden) {
+                closeUserMenu(true);
+                e.preventDefault(); // so the same Esc does not also close the slide-in menu
+            }
         });
         window.addEventListener('resize', function () { closeUserMenu(); });
+
+        // Small screens: slide-in menu, opened by the topbar's ☰ button.
+        var backdrop = document.getElementById('adminRailBackdrop');
+        var smallScreen = window.matchMedia('(max-width: 767.98px)');
+        function setMenuOpen(open) {
+            rail.classList.toggle('is-open', open);
+            backdrop.classList.toggle('is-open', open);
+            document.querySelectorAll('[data-admin-menu-open]').forEach(function (button) {
+                button.setAttribute('aria-expanded', open ? 'true' : 'false');
+            });
+            document.body.style.overflow = open ? 'hidden' : '';
+            if (!open) closeUserMenu();
+        }
+        // Delegated: the ☰ button lives in the topbar, which renders after this
+        // script, so binding it directly here would find no button.
+        document.addEventListener('click', function (e) {
+            if (!e.target.closest('[data-admin-menu-open]')) return;
+            setMenuOpen(true);
+            rail.querySelector('a').focus();
+        });
+        backdrop.addEventListener('click', function () { setMenuOpen(false); });
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && !e.defaultPrevented && rail.classList.contains('is-open')) setMenuOpen(false);
+        });
+        // Back to the normal rail when the window grows past the breakpoint.
+        smallScreen.addEventListener('change', function () { if (!smallScreen.matches) setMenuOpen(false); });
     })();
 </script>

@@ -28,6 +28,11 @@ class GeoapifyPlacesClient
 
     private const DETAILS_URL = 'https://api.geoapify.com/v2/place-details';
 
+    private const GEOCODE_URL = 'https://api.geoapify.com/v1/geocode/search';
+
+    // Batam, Rempang, Galang and the Belakang Padang and Bulang islands (lon1,lat1,lon2,lat2).
+    private const BATAM_RECT = '103.65,0.45,104.45,1.25';
+
     private const TIMEOUT_SECONDS = 30;
 
     private const RESULTS_PER_CREDIT = 20;
@@ -116,6 +121,42 @@ class GeoapifyPlacesClient
             'website' => $details['website'] ?? null,
             'business_status' => 'operational',
         ];
+    }
+
+    /**
+     * Free-text address or place search inside Batam, for the admin's manual
+     * "Tambah Tempat" form. 1 credit per call.
+     *
+     * areas lists the result's suburb, district, county and city names so the
+     * caller can match one to a kecamatan.
+     *
+     * @return array<int, array{name: string, address: string, lat: float, lng: float, areas: array<int, string>}>
+     */
+    public function geocode(string $text, int $limit = 5): array
+    {
+        $response = $this->get(self::GEOCODE_URL, [
+            'text' => $text,
+            'filter' => 'rect:'.self::BATAM_RECT,
+            'limit' => $limit,
+            'lang' => 'id',
+            'format' => 'json',
+        ], 'Geoapify Geocoding');
+        $this->recordCredits(1);
+
+        return collect($response->json('results', []))
+            ->map(fn (array $result) => [
+                'name' => $result['name'] ?? ($result['address_line1'] ?? ''),
+                'address' => $result['formatted'] ?? '',
+                'lat' => (float) ($result['lat'] ?? 0),
+                'lng' => (float) ($result['lon'] ?? 0),
+                'areas' => collect(['suburb', 'district', 'city_district', 'county', 'city'])
+                    ->map(fn (string $key) => $result[$key] ?? null)
+                    ->filter(fn ($area) => is_string($area) && $area !== '')
+                    ->values()
+                    ->all(),
+            ])
+            ->values()
+            ->all();
     }
 
     /**

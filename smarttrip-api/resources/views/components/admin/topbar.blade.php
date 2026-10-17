@@ -25,9 +25,18 @@
     .admin-topbar-action.is-quiet { background: rgba(255, 255, 255, .12); color: #fff; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .32); }
     .admin-topbar-action.is-quiet:hover { background: rgba(255, 255, 255, .2); color: #fff; }
     .admin-topbar a:focus-visible, .admin-topbar button:focus-visible { outline: 3px solid rgba(246, 176, 60, .6); outline-offset: 2px; }
+    .admin-menu-button { position: relative; z-index: 1; }
+    @media (max-width: 767.98px) {
+        /* Menu button, then the title block beside it; actions wrap to their own row. */
+        .admin-topbar { min-height: 0; justify-content: flex-start; gap: 12px 14px; padding: 20px 20px 36px; }
+        .admin-topbar-text { flex: 1 1 0; }
+        .admin-topbar-actions { flex-basis: 100%; }
+        .admin-topbar-scene { opacity: .55; }
+    }
     @media (max-width: 640px) {
-        .admin-topbar { padding: 22px 16px 28px; }
-        .admin-topbar-title { font-size: 24px; }
+        .admin-topbar { padding: 18px 16px 32px; }
+        .admin-topbar-title { font-size: 22px; }
+        .admin-topbar-subtitle { font-size: 13px; }
     }
 </style>
 <header class="admin-topbar">
@@ -62,6 +71,11 @@
         </g>
         <path d="{{ $cables }}" stroke="#0a2440" stroke-width="1.4" fill="none"/>
     </svg>
+
+    {{-- Opens the slide-in admin menu; shown below 768px only (styles live in admin.partials.nav). --}}
+    <button type="button" class="admin-menu-button" data-admin-menu-open aria-controls="admin-rail" aria-expanded="false" aria-label="Buka menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+    </button>
 
     <div class="admin-topbar-text">
         @if ($backUrl)

@@ -3,7 +3,7 @@
 @section('title', 'Lupa Kata Sandi')
 
 @section('content')
-<form method="POST" action="{{ route('admin.password.email') }}" class="flex w-full max-w-[420px] flex-col gap-4 rounded-3xl bg-white px-6 pb-7 pt-9 text-[#14212f] shadow-[0_30px_60px_-20px_rgba(0,0,0,0.55)] sm:px-8">
+<form method="POST" action="{{ route('admin.password.email') }}" class="auth-card flex w-full max-w-[420px] flex-col gap-4 rounded-3xl bg-white px-6 pb-7 pt-9 text-[#14212f] shadow-[0_30px_60px_-20px_rgba(0,0,0,0.55)] sm:px-8">
     @csrf
 
     <div class="mb-1.5 flex flex-col gap-1.5">

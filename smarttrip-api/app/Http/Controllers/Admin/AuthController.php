@@ -43,6 +43,12 @@ class AuthController extends Controller
 
         $request->session()->regenerate();
 
+        // The login page sends the form with fetch to play its exit transition
+        // first; failures above come back as 422 JSON for it.
+        if ($request->expectsJson()) {
+            return response()->json(['redirect' => route('admin.dashboard')]);
+        }
+
         return redirect()->route('admin.dashboard');
     }
 

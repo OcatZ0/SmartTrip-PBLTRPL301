@@ -16,8 +16,8 @@
     .admin-topbar-back:hover { color: #fff; }
     .admin-topbar-back svg { width: 16px; height: 16px; }
     .admin-topbar-title { margin: 0; color: #fff; font-size: 28px; font-weight: 800; line-height: 1.25; letter-spacing: -.02em; overflow-wrap: anywhere; }
-    .admin-topbar-subtitle { display: flex; flex-wrap: wrap; gap: 4px 0; margin: 0; padding: 0; list-style: none; color: rgba(255, 255, 255, .84); font-size: 14px; line-height: 1.5; }
-    .admin-topbar-subtitle li + li { margin-left: 12px; padding-left: 12px; border-left: 1px solid rgba(255, 255, 255, .3); }
+    /* One subtitle item per line (the dashboard passes three). */
+    .admin-topbar-subtitle { display: flex; flex-direction: column; gap: 2px; margin: 0; padding: 0; list-style: none; color: rgba(255, 255, 255, .84); font-size: 14px; line-height: 1.5; }
     .admin-topbar-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
     .admin-topbar-actions form { margin: 0; }
     .admin-topbar-action { display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 18px; border: 0; border-radius: 12px; background: #f6b03c; color: #0a2440; font: 700 14px/1 'Plus Jakarta Sans', system-ui, sans-serif; text-decoration: none; cursor: pointer; transition: background-color .15s ease; }

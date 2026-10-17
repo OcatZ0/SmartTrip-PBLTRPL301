@@ -29,12 +29,13 @@
     <div class="flex flex-col gap-1.5">
         <div class="flex items-baseline justify-between">
             <label for="password" class="text-[13px] font-semibold">Kata sandi</label>
-            <a href="{{ route('admin.password.request') }}" class="text-[13px] font-semibold text-[#1f5f99] no-underline hover:text-[#16476d]">Lupa kata sandi?</a>
+            {{-- tabindex -1 here and on the eye toggle: Tab goes email, password, Masuk. --}}
+            <a href="{{ route('admin.password.request') }}" tabindex="-1" class="text-[13px] font-semibold text-[#1f5f99] no-underline hover:text-[#16476d]">Lupa kata sandi?</a>
         </div>
         <div class="flex h-[52px] items-center gap-2.5 rounded-[14px] border bg-[#eef2f8] pl-3.5 pr-1.5 focus-within:border-[#2b6fab] focus-within:bg-white focus-within:ring-4 focus-within:ring-[#2b6fab]/20 @error('password') border-[#c0392b] @else border-transparent @enderror">
             <svg class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="#5d6b7c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
             <input id="password" name="password" type="password" required autocomplete="current-password" placeholder="Masukkan kata sandi" class="min-w-0 flex-1 border-0 bg-transparent p-0 text-sm text-[#14212f] placeholder:text-[#5d6b7c] focus:outline-none focus:ring-0">
-            <button type="button" aria-label="Tampilkan kata sandi" aria-pressed="false"
+            <button type="button" tabindex="-1" aria-label="Tampilkan kata sandi" aria-pressed="false"
                     onclick="const i=document.getElementById('password');const s=i.type==='password';i.type=s?'text':'password';this.setAttribute('aria-pressed',s);this.setAttribute('aria-label',s?'Sembunyikan kata sandi':'Tampilkan kata sandi')"
                     class="flex h-11 w-11 items-center justify-center rounded-xl border-0 bg-transparent p-0 hover:bg-black/5">
                 <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="#5d6b7c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -45,18 +46,12 @@
         @enderror
     </div>
 
-    <label class="flex items-center gap-2 text-[13px]">
-        <input type="checkbox" name="remember" value="1" class="m-0 h-[18px] w-[18px] accent-[#2b6fab]" @checked(old('remember'))>
-        Ingat saya
-    </label>
-
     <button type="submit" class="flex h-[52px] items-center justify-center gap-2 rounded-[14px] border-0 bg-[#2b6fab] text-[15px] font-bold text-white transition hover:bg-[#245f93] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#2b6fab]/30">
         Masuk
-        <svg class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
     </button>
 
     <p class="m-0 mt-1.5 text-center text-[13px] text-[#5d6b7c]">
-        Belum punya akses? <a href="mailto:{{ config('mail.from.address') }}" class="font-bold text-[#1f5f99] no-underline hover:text-[#16476d]">Hubungi Admin Utama</a>
+        Belum punya akses? <a href="mailto:{{ config('app.admin_contact_email') }}" class="font-bold text-[#1f5f99] no-underline hover:text-[#16476d]">Hubungi Admin Utama</a>
     </p>
 </form>
 @endsection

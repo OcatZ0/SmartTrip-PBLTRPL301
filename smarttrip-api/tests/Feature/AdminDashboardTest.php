@@ -53,7 +53,7 @@ class AdminDashboardTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('Discovery belum pernah dijalankan');
-        $response->assertSee('Data belum pernah dilengkapi');
+        $response->assertSee('Belum ada tempat yang disetujui');
         $response->assertSee('Tidak ada yang perlu dikerjakan.');
         $response->assertSee('Belum ada tempat yang masuk wishlist.');
     }
@@ -112,23 +112,25 @@ class AdminDashboardTest extends TestCase
         $response = $this->actingAs($admin)->get('/admin/dashboard');
 
         $response->assertOk();
-        $response->assertSee('Discovery terakhir '.$candidate->fresh()->created_at->translatedFormat('j M Y, H.i'));
+        // Stored in UTC, shown in WIB: 08.00 UTC is 15.00 WIB.
+        $response->assertSee('Discovery terakhir '.$candidate->fresh()->created_at->timezone('Asia/Jakarta')->translatedFormat('j M Y, H.i').' WIB');
+        $response->assertSee('15.00 WIB');
     }
 
-    public function test_it_shows_the_last_enrichment_timestamp_from_the_newest_provider_sourced_place(): void
+    public function test_it_shows_the_last_approval_timestamp_from_the_newest_provider_sourced_place(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
         $place = $this->makePlace(['source' => 'google', 'external_place_id' => 'gp-1']);
         $place->forceFill(['created_at' => '2026-06-15 10:00:00'])->save();
-        // Manual place tidak dihitung sebagai pelengkapan data.
+        // Manual place tidak dihitung sebagai tempat yang disetujui dari kandidat.
         $manual = $this->makePlace(['source' => 'manual', 'external_place_id' => null]);
         $manual->forceFill(['created_at' => '2026-08-01 10:00:00'])->save();
 
         $response = $this->actingAs($admin)->get('/admin/dashboard');
 
         $response->assertOk();
-        $response->assertSee('Pelengkapan data terakhir '.$place->fresh()->created_at->translatedFormat('j M Y, H.i'));
-        $response->assertDontSee($manual->fresh()->created_at->translatedFormat('j M Y, H.i'));
+        $response->assertSee('Tempat terakhir disetujui '.$place->fresh()->created_at->timezone('Asia/Jakarta')->translatedFormat('j M Y, H.i').' WIB');
+        $response->assertDontSee($manual->fresh()->created_at->timezone('Asia/Jakarta')->translatedFormat('j M Y, H.i'));
     }
 
     public function test_the_candidate_column_links_to_all_candidates_when_more_are_waiting(): void

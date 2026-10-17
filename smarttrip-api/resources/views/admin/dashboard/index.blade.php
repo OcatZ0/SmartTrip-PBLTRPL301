@@ -45,10 +45,11 @@
         ],
     ];
 
-    $formatTime = fn ($time) => $time->translatedFormat('j M Y, H.i');
+    // Stored in UTC (config app.timezone); shown in Batam time.
+    $formatTime = fn ($time) => $time->copy()->timezone('Asia/Jakarta')->translatedFormat('j M Y, H.i') . ' WIB';
     $syncStatus = [
         $lastDiscoveryAt ? 'Discovery terakhir ' . $formatTime($lastDiscoveryAt) : 'Discovery belum pernah dijalankan',
-        $lastEnrichmentAt ? 'Pelengkapan data terakhir ' . $formatTime($lastEnrichmentAt) : 'Data belum pernah dilengkapi',
+        $lastApprovedAt ? 'Tempat terakhir disetujui ' . $formatTime($lastApprovedAt) : 'Belum ada tempat yang disetujui',
         $idNumber($pendingCandidates) . ' kandidat menunggu',
     ];
 
@@ -71,15 +72,8 @@
     @include('admin.partials.nav')
 
     <div class="flex min-w-0 flex-1 flex-col">
-        <x-admin.topbar title="Dashboard" :subtitle="$syncStatus">
-            <form method="POST" action="{{ route('admin.candidates.discover') }}">
-                @csrf
-                <button type="submit" class="admin-topbar-action">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-                    Jalankan Discovery
-                </button>
-            </form>
-        </x-admin.topbar>
+        {{-- Discovery is started from Kandidat Tempat, where its progress modal lives. --}}
+        <x-admin.topbar title="Dashboard" :subtitle="$syncStatus" />
 
         <main class="flex flex-col gap-7 px-6 pb-10 sm:px-8">
             <div class="relative -mt-12 grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4">

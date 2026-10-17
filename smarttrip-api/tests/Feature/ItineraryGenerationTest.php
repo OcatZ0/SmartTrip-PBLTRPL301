@@ -405,4 +405,87 @@ class ItineraryGenerationTest extends TestCase
         $this->assertNotEmpty($response->json('days.0.items'));
         $this->assertNotNull($response->json('days.0.items.0.polyline_to_here'));
     }
+
+    // --- opening hours (tingkat 1) ---
+
+    /**
+     * Stored hours closed on the given ISO weekdays and open 09:00-17:00 on the others.
+     */
+    private static function hoursClosedOn(array $isoWeekdays): array
+    {
+        $rows = [];
+        foreach (array_keys(\App\Services\Places\OpeningHours::DAYS) as $index => $day) {
+            $rows[$day] = in_array($index + 1, $isoWeekdays, true)
+                ? ['state' => 'closed']
+                : ['state' => 'open', 'open' => '09:00', 'close' => '17:00'];
+        }
+
+        return \App\Services\Places\OpeningHours::fromForm($rows);
+    }
+
+    private function nextSaturday(): string
+    {
+        return now()->next(\Carbon\Carbon::SATURDAY)->toDateString();
+    }
+
+    public function test_a_place_closed_on_the_trip_day_is_not_recommended(): void
+    {
+        $user = User::factory()->create();
+        $trip = $this->readyTrip($user, 1);
+        $trip->update(['start_date' => $this->nextSaturday()]);
+        $category = $trip->interestCategories()->first();
+
+        $closed = $this->makePlace(['name' => 'Tutup Sabtu', 'lat' => 1.1301, 'lng' => 104.0301, 'opening_hours' => self::hoursClosedOn([6])]);
+        $open = $this->makePlace(['name' => 'Buka Sabtu', 'lat' => 1.1302, 'lng' => 104.0302, 'opening_hours' => self::hoursClosedOn([1])]);
+        $unknown = $this->makePlace(['name' => 'Jam Tidak Diketahui', 'lat' => 1.1303, 'lng' => 104.0303]);
+        foreach ([$closed, $open, $unknown] as $place) {
+            $place->categories()->attach($category->categories_id);
+        }
+        $this->fakeRoutes();
+
+        $response = $this->withHeaders($this->authHeader($user))->postJson("/api/trips/{$trip->trips_id}/generate");
+
+        $response->assertOk();
+        $placeIds = collect($response->json('days.0.items'))->pluck('places_id');
+        $this->assertNotContains($closed->places_id, $placeIds);
+        $this->assertContains($open->places_id, $placeIds);
+        // Unknown hours count as open.
+        $this->assertContains($unknown->places_id, $placeIds);
+    }
+
+    public function test_a_wishlist_place_moves_off_its_closed_day(): void
+    {
+        $user = User::factory()->create();
+        $trip = $this->readyTrip($user, 2);
+        $trip->update(['start_date' => $this->nextSaturday()]);
+        $museum = $this->makePlace(['name' => 'Museum Tutup Sabtu', 'lat' => 1.1301, 'lng' => 104.0301, 'opening_hours' => self::hoursClosedOn([6])]);
+        $trip->wishlistPlaces()->create(['places_id' => $museum->places_id]);
+        $this->fakeRoutes();
+
+        $response = $this->withHeaders($this->authHeader($user))->postJson("/api/trips/{$trip->trips_id}/generate");
+
+        $response->assertOk()->assertJsonPath('closed_wishlist_places', []);
+        $dayOfMuseum = collect($response->json('days'))
+            ->first(fn ($day) => collect($day['items'])->contains('places_id', $museum->places_id));
+        // Day 1 is Saturday, day 2 Sunday.
+        $this->assertSame(2, $dayOfMuseum['day_number']);
+    }
+
+    public function test_a_wishlist_place_closed_on_every_trip_day_is_left_out_and_reported(): void
+    {
+        $user = User::factory()->create();
+        $trip = $this->readyTrip($user, 2);
+        $trip->update(['start_date' => $this->nextSaturday()]);
+        $office = $this->makePlace(['name' => 'Tutup Akhir Pekan', 'lat' => 1.1301, 'lng' => 104.0301, 'opening_hours' => self::hoursClosedOn([6, 7])]);
+        $trip->wishlistPlaces()->create(['places_id' => $office->places_id]);
+        $this->fakeRoutes();
+
+        $response = $this->withHeaders($this->authHeader($user))->postJson("/api/trips/{$trip->trips_id}/generate");
+
+        $response->assertOk()
+            ->assertJsonPath('closed_wishlist_places', ['Tutup Akhir Pekan'])
+            ->assertJsonPath('dropped_wishlist_places', []);
+        $allPlaceIds = collect($response->json('days'))->flatMap(fn ($day) => collect($day['items'])->pluck('places_id'));
+        $this->assertNotContains($office->places_id, $allPlaceIds);
+    }
 }

@@ -279,7 +279,7 @@ class AdminPlaceManagementTest extends TestCase
 
         $response->assertOk();
         $response->assertSeeInOrder(['Edit tempat', 'Aktif di katalog', 'Jembatan Barelang', 'Data kurasi', 'Biaya masuk per orang', 'Kategori', 'Kata Kunci Pencarian', 'Deskripsi']);
-        $response->assertSeeInOrder(['Kelengkapan', '2 / 6', 'Gratis', '60 menit', 'Belum', 'Popularitas', 'Disimpan ke wishlist', 'Masuk itinerary']);
+        $response->assertSeeInOrder(['Kelengkapan', '2 / 7', 'Gratis', '60 menit', 'Belum', 'Popularitas', 'Disimpan ke wishlist', 'Masuk itinerary']);
         $response->assertSee('name="search_keywords"', false);
         $response->assertSee('name="category_tags_reviewed"', false);
         $response->assertSeeInOrder(['class="pe-savebar"', 'Hapus dari katalog', 'Batal', 'form="formEditPlace"', 'Simpan perubahan'], false);

@@ -7,8 +7,10 @@ use App\Models\Category;
 use App\Models\Place;
 use App\Models\PlaceCandidate;
 use App\Services\Places\GeminiKeywordSuggestionClient;
-use App\Services\Places\GeminiPriceEstimateClient;
+use App\Services\Places\GeminiPlaceDataClient;
 use App\Services\Places\GeoapifyPlacesClient;
+use App\Services\Places\GooglePlaceLookupClient;
+use App\Services\Places\OpeningHours;
 use App\Services\Places\PlacePhotoStore;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -239,6 +241,13 @@ class PlaceController extends Controller
             'category_ids' => ['sometimes', 'array'],
             'category_ids.*' => ['integer', Rule::exists('categories', 'categories_id')->whereNull('deleted_at')],
             'search_keywords' => ['nullable', 'string', 'max:1000'],
+            // The seven day rows on the edit page, saved only when one was touched.
+            'opening_hours_changed' => ['sometimes', 'boolean'],
+            'opening_hours' => ['sometimes', 'array'],
+            'opening_hours.*.state' => ['nullable', Rule::in(['', 'open', 'closed', '24h'])],
+            'opening_hours.*.open' => ['nullable', 'date_format:H:i', 'required_if:opening_hours.*.state,open'],
+            'opening_hours.*.close' => ['nullable', 'date_format:H:i', 'required_if:opening_hours.*.state,open', 'different:opening_hours.*.open'],
+            'business_status' => ['sometimes', Rule::in(['operational', 'closed_temporarily', 'closed_permanently'])],
             // "Jadikan utama" on Foto Tempat: applied with the rest of the form.
             'primary_photo_id' => ['nullable', 'integer', Rule::exists('place_photos', 'place_photos_id')->where('places_id', $place->places_id)],
         ]);
@@ -276,6 +285,16 @@ class PlaceController extends Controller
             $updateData['search_keywords'] = Place::normalizeSearchKeywords($data['search_keywords']);
         }
 
+        // Also edit page only. Untouched rows keep what is stored (an OSM
+        // string the rows cannot show stays as it is).
+        if ($request->boolean('opening_hours_changed')) {
+            $updateData['opening_hours'] = OpeningHours::fromForm($data['opening_hours'] ?? []);
+        }
+
+        if (isset($data['business_status'])) {
+            $updateData['business_status'] = $data['business_status'];
+        }
+
         $place->update($updateData);
 
         // After the update, so the thumbnail it syncs is the one saved.
@@ -292,12 +311,14 @@ class PlaceController extends Controller
     }
 
     /**
-     * AJAX: Gemini's price estimate for the admin to use or ignore.
+     * AJAX: "Perkiraan data dengan AI". Google Maps and web results through
+     * SerpApi, read by Gemini: price, visit length, indoor/outdoor and the
+     * opening hours, each with its sources, for the admin to use or ignore.
      */
-    public function estimatePrice(Place $place, GeminiPriceEstimateClient $priceEstimate)
+    public function estimateData(Place $place, GooglePlaceLookupClient $google, GeminiPlaceDataClient $gemini)
     {
         try {
-            return response()->json($priceEstimate->estimate($place));
+            return response()->json($gemini->estimate($place, $google->lookUp($place)));
         } catch (RuntimeException $exception) {
             return response()->json(['message' => $exception->getMessage()], 502);
         }

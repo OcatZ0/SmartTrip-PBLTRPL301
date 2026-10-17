@@ -38,6 +38,17 @@ class GeoapifyPlacesClient
     private const RESULTS_PER_CREDIT = 20;
 
     /**
+     * OpenStreetMap tags worth telling Gemini (osm_tags in fetch()): what the
+     * place is, what it serves, whether it charges. Contact and address tags
+     * are left out.
+     */
+    private const OSM_FACT_TAGS = [
+        'amenity', 'tourism', 'leisure', 'natural', 'historic', 'shop', 'sport', 'religion', 'building',
+        'cuisine', 'fee', 'charge', 'access', 'stars', 'rooms', 'outdoor_seating', 'indoor_seating', 'takeaway',
+        'description', 'description:id', 'description:en', 'wikipedia', 'name:en', 'operator', 'brand',
+    ];
+
+    /**
      * Named places of [categories] inside a circle.
      *
      * Results that do not come from OpenStreetMap have no stable key and are
@@ -80,7 +91,7 @@ class GeoapifyPlacesClient
      *     name: string, address: string, lat: float, lng: float, types: array<int, string>,
      *     rating: float|null, review_count: int|null, price_level: string|null,
      *     opening_hours: array|null, description: string|null, phone: string|null,
-     *     website: string|null, business_status: string,
+     *     website: string|null, business_status: string, osm_tags: array<string, string>,
      * }
      */
     public function fetch(string $externalPlaceId): array
@@ -120,7 +131,24 @@ class GeoapifyPlacesClient
             'phone' => $details['contact']['phone'] ?? null,
             'website' => $details['website'] ?? null,
             'business_status' => 'operational',
+            'osm_tags' => self::osmFacts($details['datasource']['raw'] ?? []),
         ];
+    }
+
+    /**
+     * @return array<string, string> the OSM_FACT_TAGS present on the element, e.g. ['cuisine' => 'seafood']
+     */
+    private static function osmFacts(array $raw): array
+    {
+        $facts = [];
+        foreach (self::OSM_FACT_TAGS as $tag) {
+            $value = $raw[$tag] ?? null;
+            if (is_scalar($value) && trim((string) $value) !== '') {
+                $facts[$tag] = mb_strimwidth(trim((string) $value), 0, 300, '...');
+            }
+        }
+
+        return $facts;
     }
 
     /**

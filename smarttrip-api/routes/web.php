@@ -53,7 +53,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/places/geocode', [AdminPlaceController::class, 'geocode'])->name('places.geocode');
         Route::get('/places/{place}/edit', [AdminPlaceController::class, 'edit'])->name('places.edit');
         Route::get('/places/{place}/activities', [AdminPlaceController::class, 'activities'])->name('places.activities');
-        Route::get('/places/{place}/price-estimate', [AdminPlaceController::class, 'estimatePrice'])->name('places.price-estimate');
+        // Two SerpApi searches per call (cached 30 days per place).
+        Route::get('/places/{place}/data-estimate', [AdminPlaceController::class, 'estimateData'])
+            ->middleware('throttle:10,1')
+            ->name('places.data-estimate');
         Route::get('/places/{place}/keyword-suggestions', [AdminPlaceController::class, 'suggestKeywords'])
             ->middleware('throttle:20,1')
             ->name('places.keyword-suggestions');

@@ -3,6 +3,7 @@
 namespace App\Services\Places;
 
 use App\Models\Place;
+use App\Services\ApiUsage;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -55,6 +56,11 @@ class GeminiKeywordSuggestionClient
                 ]);
         } catch (ConnectionException) {
             throw new RuntimeException('Gemini tidak bisa dihubungi, coba lagi.');
+        }
+
+        // Counted for the dashboard's API quota; a 429 was refused, not used.
+        if ($response->status() !== 429) {
+            ApiUsage::record(ApiUsage::GEMINI);
         }
 
         if ($response->status() === 429) {

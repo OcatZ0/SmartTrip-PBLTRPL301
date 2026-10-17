@@ -1364,6 +1364,12 @@ abstract class AppLocalizations {
   /// **'{count} tempat wishlist tidak muat dan dilewati.'**
   String itineraryDroppedWishlist(int count);
 
+  /// No description provided for @itineraryClosedWishlist.
+  ///
+  /// In id, this message translates to:
+  /// **'{count} tempat wishlist tutup di semua hari trip dan dilewati.'**
+  String itineraryClosedWishlist(int count);
+
   /// No description provided for @itineraryStartFrom.
   ///
   /// In id, this message translates to:

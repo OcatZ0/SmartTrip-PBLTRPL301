@@ -158,6 +158,8 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
               ),
               if (flags != null && flags.droppedWishlistCount > 0)
                 _NoticeBanner(text: l10n.itineraryDroppedWishlist(flags.droppedWishlistCount)),
+              if (flags != null && flags.closedWishlistCount > 0)
+                _NoticeBanner(text: l10n.itineraryClosedWishlist(flags.closedWishlistCount)),
               if (dayFlags?.isOverpacked == true) _NoticeBanner(text: l10n.itineraryOverpacked),
               if (dayFlags?.isShortOfPlaces == true) _NoticeBanner(text: l10n.itineraryShortOfPlaces),
               if (trip.hotel != null)

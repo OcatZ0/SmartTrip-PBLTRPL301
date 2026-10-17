@@ -211,6 +211,7 @@
   "itineraryOverpacked": "This day is packed, consider swapping a place.",
   "itineraryShortOfPlaces": "There were not enough matching places to fill this day.",
   "itineraryDroppedWishlist": "{count, plural, =1{1 wishlist place did not fit and was skipped.} other{{count} wishlist places did not fit and were skipped.}}",
+  "itineraryClosedWishlist": "{count, plural, =1{1 wishlist place is closed on every trip day and was skipped.} other{{count} wishlist places are closed on every trip day and were skipped.}}",
   "itineraryStartFrom": "Starting from {name}",
   "itineraryUnknownPlace": "Place unavailable",
   "liveMapTitle": "Trip Tracking",

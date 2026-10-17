@@ -331,6 +331,14 @@
       }
     }
   },
+  "itineraryClosedWishlist": "{count} tempat wishlist tutup di semua hari trip dan dilewati.",
+  "@itineraryClosedWishlist": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "itineraryStartFrom": "Berangkat dari {name}",
   "@itineraryStartFrom": {
     "placeholders": {

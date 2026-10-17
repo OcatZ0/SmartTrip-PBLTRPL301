@@ -77,7 +77,8 @@ class PlaceCandidateReviewService
             return $place;
         });
 
-        $this->tryEnrichWithGemini($place);
+        // The OSM tags from this fetch are the facts Gemini describes from.
+        $this->tryEnrichWithGemini($place, $details['osm_tags'] ?? []);
 
         return $place->fresh();
     }
@@ -122,10 +123,10 @@ class PlaceCandidateReviewService
         return $rejected;
     }
 
-    private function tryEnrichWithGemini(Place $place): void
+    private function tryEnrichWithGemini(Place $place, array $osmTags): void
     {
         try {
-            $this->enrichment->enrich($place);
+            $this->enrichment->enrich($place, $osmTags);
         } catch (RuntimeException $exception) {
             Log::warning("Gagal enrichment Gemini buat place {$place->places_id}: {$exception->getMessage()}");
         }

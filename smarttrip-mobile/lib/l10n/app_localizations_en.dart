@@ -723,6 +723,18 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String itineraryClosedWishlist(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count wishlist places are closed on every trip day and were skipped.',
+      one: '1 wishlist place is closed on every trip day and was skipped.',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String itineraryStartFrom(String name) {
     return 'Starting from $name';
   }

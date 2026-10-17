@@ -40,10 +40,16 @@ return [
 
     'serpapi' => [
         'api_key' => env('SERPAPI_API_KEY'),
+        // Automatic Google lookups (candidate approval, places:enrich) stop
+        // while this many searches or fewer are left this month, keeping them
+        // for the admin's buttons.
+        'reserve' => env('SERPAPI_RESERVE', 50),
     ],
 
     'openrouteservice' => [
         'api_key' => env('ORS_API_KEY'),
+        // Standard (free) plan: 2,000 directions a day, shown on the dashboard.
+        'daily_limit' => env('ORS_DAILY_LIMIT', 2000),
     ],
 
     'gemini' => [
@@ -51,6 +57,9 @@ return [
         // An alias, so a retired version (gemini-2.0-flash returned 404 in
         // 2026-10) does not break enrichment again.
         'model' => env('GEMINI_MODEL', 'gemini-flash-lite-latest'),
+        // Free tier requests per day for that model, shown on the dashboard
+        // (AI Studio, Rate limit page: Gemini 3.5 Flash Lite, 500 RPD).
+        'daily_limit' => env('GEMINI_DAILY_LIMIT', 500),
     ],
 
     'slack' => [

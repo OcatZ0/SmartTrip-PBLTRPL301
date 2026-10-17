@@ -406,4 +406,30 @@ class SwapTest extends TestCase
 
         $response->assertNotFound();
     }
+
+    public function test_swap_candidates_leave_out_places_closed_on_that_day(): void
+    {
+        $user = User::factory()->create();
+        ['trip' => $trip, 'item' => $item, 'category' => $category] = $this->tripWithOneItem($user);
+        $saturday = now()->next(\Carbon\Carbon::SATURDAY);
+        $trip->update(['start_date' => $saturday->toDateString()]);
+
+        $rows = [];
+        foreach (array_keys(\App\Services\Places\OpeningHours::DAYS) as $day) {
+            $rows[$day] = $day === 'sat' ? ['state' => 'closed'] : ['state' => '24h'];
+        }
+        $closed = $this->makePlace(['name' => 'Tutup Sabtu', 'lat' => 1.1311, 'lng' => 104.0311, 'external_place_id' => 'gp-closed-sat',
+            'opening_hours' => \App\Services\Places\OpeningHours::fromForm($rows)]);
+        $closed->categories()->attach($category->categories_id);
+        $open = $this->makePlace(['name' => 'Buka Sabtu', 'lat' => 1.1312, 'lng' => 104.0312, 'external_place_id' => 'gp-open-sat']);
+        $open->categories()->attach($category->categories_id);
+
+        $names = collect($this->withHeaders($this->authHeader($user))
+            ->getJson("/api/itinerary-items/{$item->itinerary_items_id}/swap-candidates")
+            ->assertOk()
+            ->json('data'))->pluck('name');
+
+        $this->assertNotContains('Tutup Sabtu', $names);
+        $this->assertContains('Buka Sabtu', $names);
+    }
 }

@@ -9,8 +9,10 @@ use App\Models\PlaceReview;
 use App\Models\Trip;
 use App\Models\TripWishlistPlace;
 use App\Models\User;
+use App\Services\ApiUsage;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class AdminDashboardTest extends TestCase
@@ -158,7 +160,37 @@ class AdminDashboardTest extends TestCase
         $response = $this->actingAs($admin)->get('/admin/dashboard');
 
         $response->assertOk();
-        $response->assertSeeInOrder(['Kredit Geoapify', '42', 'dari 3.000 hari ini']);
+        $response->assertSeeInOrder(['Kuota API', 'Geoapify', '42', '/ 3.000 kredit hari ini']);
+    }
+
+    public function test_the_api_quota_card_shows_every_provider(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        config([
+            'services.gemini.daily_limit' => 500, 'services.openrouteservice.daily_limit' => 2000,
+            'services.serpapi.api_key' => 'serp-key',
+        ]);
+        Http::fake(['serpapi.com/account*' => Http::response([
+            'searches_per_month' => 250, 'total_searches_left' => 190, 'this_month_usage' => 60, 'plan_renewal_date' => '2026-11-15',
+        ])]);
+        ApiUsage::record(ApiUsage::GEMINI, 125);
+        ApiUsage::record(ApiUsage::OPENROUTESERVICE, 7);
+
+        $response = $this->actingAs($admin)->get('/admin/dashboard');
+
+        $response->assertOk()
+            ->assertSeeInOrder(['Gemini', '25%', '125', '/ 500 hari ini'])
+            ->assertSeeInOrder(['SerpApi', '24%', '60', '/ 250 bulan ini', 'Reset 15 Nov 2026'])
+            ->assertSeeInOrder(['OpenRouteService', '7', '/ 2.000 hari ini']);
+    }
+
+    public function test_an_unreadable_serpapi_account_does_not_break_the_dashboard(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $this->actingAs($admin)->get('/admin/dashboard')
+            ->assertOk()
+            ->assertSee('Tidak terbaca, periksa SERPAPI_API_KEY');
     }
 
     // --- work columns ---

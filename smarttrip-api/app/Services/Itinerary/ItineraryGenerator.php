@@ -6,6 +6,7 @@ use App\Models\ItineraryDay;
 use App\Models\ItineraryItem;
 use App\Models\Place;
 use App\Models\Trip;
+use App\Services\Places\OpeningHours;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -33,7 +34,13 @@ class ItineraryGenerator
     public function __construct(private readonly OpenRouteServiceClient $routesClient) {}
 
     /**
-     * @return array{days: array<int, array{day: ItineraryDay, tidak_muat: bool, padat: bool}>, dropped_wishlist_places: array<int, string>}
+     * Opening hours (tingkat 1, by weekday only): a recommended place is
+     * never put on a day it is closed, a wishlist place on its closed day
+     * moves to another trip day it is open, and one closed on every trip day
+     * is left out and reported in closed_wishlist_places. Unknown hours count
+     * as open.
+     *
+     * @return array{days: array<int, array{day: ItineraryDay, tidak_muat: bool, padat: bool}>, dropped_wishlist_places: array<int, string>, closed_wishlist_places: array<int, string>}
      */
     public function generate(Trip $trip): array
     {
@@ -54,6 +61,15 @@ class ItineraryGenerator
         $candidatePool = $this->scoredCandidatePool($trip, $wishlistStops, $tripCategoryIds, $start);
 
         $dayBuckets = $this->clusterIntoDays($trip->num_days, $wishlistStops);
+
+        // ISO weekday of every trip day (day 1 is start_date).
+        $weekdays = [];
+        for ($dayIndex = 0; $dayIndex < count($dayBuckets); $dayIndex++) {
+            $weekdays[$dayIndex] = Carbon::parse($trip->start_date)->addDays($dayIndex)->dayOfWeekIso;
+        }
+
+        $closedLabels = [];
+        $dayBuckets = $this->moveOffClosedDays($dayBuckets, $weekdays, $start, $closedLabels);
 
         $usedPlaceIds = $wishlistStops->pluck('places_id')->filter()->flip();
         $droppedLabels = [];
@@ -76,17 +92,27 @@ class ItineraryGenerator
             // to push to, so those items are dropped and the day is
             // flagged "tidak muat" (docs/prd design spec Section 7 langkah
             // 6b: "kalau tetap tidak muat sampai hari terakhir").
+            // An overflowing stop goes to the next day it is open on.
             $tidakMuat = false;
-            if ($overflow !== [] && isset($dayBuckets[$dayNumber + 1])) {
-                $dayBuckets[$dayNumber + 1]['stops'] = array_merge($dayBuckets[$dayNumber + 1]['stops'], $overflow);
-            } elseif ($overflow !== []) {
-                $tidakMuat = true;
-                foreach ($overflow as $item) {
+            foreach ($overflow as $item) {
+                $nextOpenDay = null;
+                for ($laterDay = $dayNumber + 1; $laterDay < $dayCount; $laterDay++) {
+                    if (! in_array($weekdays[$laterDay], $item['closed_weekdays'], true)) {
+                        $nextOpenDay = $laterDay;
+                        break;
+                    }
+                }
+
+                if ($nextOpenDay !== null) {
+                    $dayBuckets[$nextOpenDay]['stops'][] = $item;
+                } else {
+                    $tidakMuat = true;
                     $droppedLabels[] = $item['label'];
                 }
             }
 
-            $stops = $this->fillEmptySlots($stops, $centroid, $start, $windowMinutes, $candidatePool, $usedPlaceIds);
+            $openCandidates = $candidatePool->reject(fn ($candidate) => in_array($weekdays[$dayNumber], $candidate['closed_weekdays'], true));
+            $stops = $this->fillEmptySlots($stops, $centroid, $start, $windowMinutes, $openCandidates, $usedPlaceIds);
 
             foreach ($stops as $stop) {
                 if ($stop['places_id'] !== null) {
@@ -108,7 +134,7 @@ class ItineraryGenerator
             ];
         }
 
-        return DB::transaction(function () use ($trip, $days, $start, $droppedLabels) {
+        return DB::transaction(function () use ($trip, $days, $start, $droppedLabels, $closedLabels) {
             $trip->days()->delete();
 
             $result = [];
@@ -117,7 +143,7 @@ class ItineraryGenerator
                 $result[] = $this->persistDay($trip, $dayNumber + 1, $day, $start);
             }
 
-            return ['days' => $result, 'dropped_wishlist_places' => $droppedLabels];
+            return ['days' => $result, 'dropped_wishlist_places' => $droppedLabels, 'closed_wishlist_places' => $closedLabels];
         });
     }
 
@@ -153,6 +179,7 @@ class ItineraryGenerator
                     'source' => 'wishlist',
                     'label' => $item->place->name,
                     'topsis_score' => null,
+                    'closed_weekdays' => OpeningHours::closedWeekdays($item->place->opening_hours),
                 ];
             }
 
@@ -165,6 +192,7 @@ class ItineraryGenerator
                 'source' => 'wishlist',
                 'label' => $item->custom_name,
                 'topsis_score' => null,
+                'closed_weekdays' => [],
             ];
         });
     }
@@ -222,6 +250,7 @@ class ItineraryGenerator
             'visit_minutes' => (int) ($place->estimated_visit_minutes ?? 60),
             'label' => $place->name,
             'topsis_score' => $scores[$place->places_id],
+            'closed_weekdays' => OpeningHours::closedWeekdays($place->opening_hours),
         ])->sortByDesc('topsis_score')->values();
     }
 
@@ -257,6 +286,64 @@ class ItineraryGenerator
                 $stops
             ));
             $dayNumber++;
+        }
+
+        return $buckets;
+    }
+
+    /**
+     * Opening hours, tingkat 1: a wishlist stop clustered onto a day it is
+     * closed moves to the open trip day whose centroid is nearest; with no
+     * open trip day it is left out and its label added to $closedLabels.
+     * Centroids are recomputed for the days that changed.
+     *
+     * @param  array<int, int>  $weekdays  ISO weekday per day index
+     * @param  array<int, string>  $closedLabels
+     */
+    private function moveOffClosedDays(array $buckets, array $weekdays, array $start, array &$closedLabels): array
+    {
+        $changed = [];
+
+        foreach ($buckets as $dayIndex => $bucket) {
+            foreach ($bucket['stops'] as $stopIndex => $stop) {
+                if (! in_array($weekdays[$dayIndex], $stop['closed_weekdays'], true)) {
+                    continue;
+                }
+
+                unset($buckets[$dayIndex]['stops'][$stopIndex]);
+                $changed[$dayIndex] = true;
+
+                $target = null;
+                $targetDistance = INF;
+                foreach ($buckets as $otherIndex => $other) {
+                    if ($otherIndex === $dayIndex || in_array($weekdays[$otherIndex], $stop['closed_weekdays'], true)) {
+                        continue;
+                    }
+                    $reference = $other['centroid'] ?? $start;
+                    $distance = Haversine::km($reference['lat'], $reference['lng'], $stop['lat'], $stop['lng']);
+                    if ($distance < $targetDistance) {
+                        [$target, $targetDistance] = [$otherIndex, $distance];
+                    }
+                }
+
+                if ($target === null) {
+                    $closedLabels[] = $stop['label'];
+
+                    continue;
+                }
+
+                $buckets[$target]['stops'][] = $stop;
+                $changed[$target] = true;
+            }
+        }
+
+        foreach (array_keys($changed) as $dayIndex) {
+            $stops = array_values($buckets[$dayIndex]['stops']);
+            $buckets[$dayIndex]['stops'] = $stops;
+            $buckets[$dayIndex]['centroid'] = $stops === [] ? null : KMeans::centroid(array_map(
+                fn ($stop) => ['lat' => $stop['lat'], 'lng' => $stop['lng']],
+                $stops
+            ));
         }
 
         return $buckets;

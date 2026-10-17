@@ -4,6 +4,8 @@ namespace App\Services\Itinerary;
 
 use App\Models\ItineraryItem;
 use App\Models\Place;
+use App\Services\Places\OpeningHours;
+use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
 /**
@@ -53,6 +55,12 @@ class SwapCandidateFinder
             ->withAvg('reviews', 'rating')
             ->withCount('reviews')
             ->get();
+
+        // Not a place that is closed on this day of the trip (unknown hours count as open).
+        $weekday = Carbon::parse($trip->start_date)->addDays($day->day_number - 1)->dayOfWeekIso;
+        $candidates = $candidates
+            ->reject(fn (Place $candidate) => OpeningHours::isOpenOn($candidate->opening_hours, $weekday) === false)
+            ->values();
 
         if ($candidates->isEmpty()) {
             return collect();

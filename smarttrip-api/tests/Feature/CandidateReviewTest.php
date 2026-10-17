@@ -46,6 +46,8 @@ class CandidateReviewTest extends TestCase
                 'candidates' => [[
                     'content' => ['parts' => [[
                         'text' => json_encode([
+                            'description_id' => 'Pantai yang indah.',
+                            'description_confidence' => 'sedang',
                             'description_en' => 'A beautiful beach.',
                             'category_tags' => ['pantai'],
                             'estimated_visit_minutes' => 90,
@@ -311,6 +313,7 @@ class CandidateReviewTest extends TestCase
             'generativelanguage.googleapis.com/*' => Http::sequence()
                 ->push(['error' => ['code' => 503, 'status' => 'UNAVAILABLE']], 503)
                 ->push(['candidates' => [['content' => ['parts' => [['text' => json_encode([
+                    'description_id' => 'Pantai yang indah.', 'description_confidence' => 'sedang',
                     'description_en' => 'A beautiful beach.', 'category_tags' => ['pantai'],
                     'estimated_visit_minutes' => 90, 'is_outdoor' => true,
                 ])]]]]]]),

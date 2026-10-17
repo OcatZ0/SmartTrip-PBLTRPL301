@@ -17,7 +17,8 @@ class EnrichPlaces extends Command
 {
     protected $signature = 'places:enrich
         {--place= : Hanya satu places_id}
-        {--sleep=4 : Jeda detik antar panggilan Gemini (batas kuota per menit)}';
+        {--sleep=4 : Jeda detik antar panggilan Gemini (batas kuota per menit)}
+        {--dry-run : Tampilkan fakta, jawaban AI dan yang akan diisi tanpa menyimpan}';
 
     protected $description = 'Isi field kosong tempat di katalog (deskripsi, tag kategori, durasi, is_outdoor, perkiraan biaya) lewat Gemini';
 
@@ -47,6 +48,12 @@ class EnrichPlaces extends Command
             }
 
             try {
+                if ($this->option('dry-run')) {
+                    $this->showPlan($place, $enrichment->plan($place));
+
+                    continue;
+                }
+
                 $filled = $enrichment->enrich($place);
                 $rows[] = [$place->places_id, $place->name, $filled === [] ? '-' : implode(', ', $filled)];
             } catch (RuntimeException $exception) {
@@ -55,6 +62,12 @@ class EnrichPlaces extends Command
                 $message = preg_replace('/\s+/', ' ', $exception->getMessage());
                 $rows[] = [$place->places_id, $place->name, 'GAGAL: '.mb_strimwidth($message, 0, 80, '...')];
             }
+        }
+
+        if ($this->option('dry-run')) {
+            $this->info('Dry run: tidak ada yang disimpan.');
+
+            return $failed > 0 ? self::FAILURE : self::SUCCESS;
         }
 
         $this->table(['ID', 'Tempat', 'Diisi'], $rows);
@@ -68,5 +81,25 @@ class EnrichPlaces extends Command
         $this->info('Selesai. Tempat yang diisi AI muncul di dashboard admin sebagai "hasil AI belum direview".');
 
         return self::SUCCESS;
+    }
+
+    private function showPlan(Place $place, array $plan): void
+    {
+        $this->newLine();
+        $this->line("<options=bold>#{$place->places_id} {$place->name}</> ({$place->type}, ".($place->kecamatan ?: '-').')');
+        $this->line('Fakta untuk AI:');
+        foreach ($plan['facts'] ?: ['(tidak ada)'] as $fact) {
+            $this->line("  - {$fact}");
+        }
+        $this->line('Jawaban AI (setelah dibersihkan):');
+        $this->line('  '.json_encode($plan['answer'], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+        $this->line('Uji kewajaran:');
+        foreach ($plan['notes'] ?: ['lolos semua'] as $note) {
+            $this->line("  - {$note}");
+        }
+        $this->line('Akan diisi: '.($plan['filled'] === [] ? '-' : implode(', ', $plan['filled'])));
+        foreach ($plan['updates'] as $field => $value) {
+            $this->line("  {$field}: ".(is_bool($value) ? ($value ? 'true' : 'false') : (string) $value));
+        }
     }
 }

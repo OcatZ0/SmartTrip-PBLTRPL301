@@ -245,6 +245,8 @@ class TripController extends Controller
                 ])->values(),
             ])->values(),
             'dropped_wishlist_places' => $result['dropped_wishlist_places'],
+            // Wishlist places closed on every day of the trip, left out.
+            'closed_wishlist_places' => $result['closed_wishlist_places'],
         ]);
     }
 

@@ -351,7 +351,7 @@ class GeneratedDayFlags {
 }
 
 class GenerateResult {
-  const GenerateResult({required this.dayFlags, required this.droppedWishlistCount});
+  const GenerateResult({required this.dayFlags, required this.droppedWishlistCount, this.closedWishlistCount = 0});
 
   factory GenerateResult.fromJson(Map<String, dynamic> json) {
     final days = (json['days'] as List? ?? const []).cast<Map<String, dynamic>>();
@@ -364,9 +364,13 @@ class GenerateResult {
           ),
       },
       droppedWishlistCount: (json['dropped_wishlist_places'] as List? ?? const []).length,
+      closedWishlistCount: (json['closed_wishlist_places'] as List? ?? const []).length,
     );
   }
 
   final Map<int, GeneratedDayFlags> dayFlags;
   final int droppedWishlistCount;
+
+  /// Wishlist places closed on every day of the trip, left out.
+  final int closedWishlistCount;
 }

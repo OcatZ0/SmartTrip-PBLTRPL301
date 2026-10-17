@@ -700,6 +700,11 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
+  String itineraryClosedWishlist(int count) {
+    return '$count tempat wishlist tutup di semua hari trip dan dilewati.';
+  }
+
+  @override
   String itineraryStartFrom(String name) {
     return 'Berangkat dari $name';
   }

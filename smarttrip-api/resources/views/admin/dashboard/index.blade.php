@@ -6,7 +6,7 @@
         ['label' => 'Kandidat menunggu', 'value' => $idNumber($pendingCandidates), 'note' => 'Perlu direview'],
         ['label' => 'Trip dibuat', 'value' => $idNumber($tripVolume), 'note' => 'Total semua pengguna'],
         ['label' => 'Rata-rata rating', 'value' => $averageInAppRating ? number_format($averageInAppRating, 1, ',', '.') : '-', 'note' => 'Dari ulasan di aplikasi'],
-        ['label' => 'Kredit Geoapify', 'value' => $idNumber($quotaUsed), 'note' => 'dari ' . $idNumber($quotaLimit) . ' hari ini'],
+        ['label' => 'Tempat di katalog', 'value' => $idNumber($placeCount), 'note' => 'Wisata, kuliner dan hotel'],
     ];
 
     $columns = [
@@ -44,6 +44,14 @@
             'all' => route('admin.places.index'),
         ],
     ];
+
+    // Bar colour by how much of the free quota is gone.
+    $quotaTone = fn (?int $percent) => match (true) {
+        $percent === null => ['bar' => 'bg-[#c3cddb]', 'chip' => 'bg-[#eef2f8] text-[#5d6b7c]'],
+        $percent >= 90 => ['bar' => 'bg-[#c0392b]', 'chip' => 'bg-[#fdecea] text-[#912018]'],
+        $percent >= 70 => ['bar' => 'bg-[#f6b03c]', 'chip' => 'bg-[#fff4df] text-[#7a4b00]'],
+        default => ['bar' => 'bg-[#2e9e6b]', 'chip' => 'bg-[#e3f6ec] text-[#1d7a55]'],
+    };
 
     // Stored in UTC (config app.timezone); shown in Batam time.
     $formatTime = fn ($time) => $time->copy()->timezone('Asia/Jakarta')->translatedFormat('j M Y, H.i') . ' WIB';
@@ -116,6 +124,7 @@
                     </section>
                 @endforeach
             </div>
+            <div class="grid items-start gap-4 sm:gap-5 lg:grid-cols-2">
             <section class="flex flex-col gap-1 rounded-[20px] bg-white p-5 shadow-[0_18px_40px_-16px_rgba(10,36,64,0.18)]">
                 <h2 class="m-0 mb-2 text-[15px] font-bold leading-[22px]">Paling banyak di-wishlist</h2>
                 @forelse ($mostWishlistedPlaces as $place)
@@ -131,6 +140,39 @@
                     <p class="m-0 text-[13px] text-[#5d6b7c]">Belum ada tempat yang masuk wishlist.</p>
                 @endforelse
             </section>
+
+            <section class="flex flex-col gap-3 rounded-[20px] bg-white p-5 shadow-[0_18px_40px_-16px_rgba(10,36,64,0.18)]" aria-labelledby="apiQuotaTitle">
+                <div class="flex items-baseline justify-between gap-3">
+                    <h2 id="apiQuotaTitle" class="m-0 text-[15px] font-bold leading-[22px]">Kuota API</h2>
+                    <span class="text-xs text-[#5d6b7c]">Paket gratis</span>
+                </div>
+                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    @foreach ($apiQuotas as $quota)
+                        @php
+                            $percent = $quota['used'] === null || $quota['limit'] <= 0 ? null : (int) min(100, round($quota['used'] / $quota['limit'] * 100));
+                            $tone = $quotaTone($percent);
+                        @endphp
+                        <div class="flex min-w-0 flex-col gap-2 rounded-[14px] bg-[#f5f7fb] p-3.5">
+                            <div class="flex items-center justify-between gap-2">
+                                <b class="text-sm">{{ $quota['name'] }}</b>
+                                <span class="rounded-full px-2 py-0.5 text-[11px] font-bold {{ $tone['chip'] }}">{{ $percent === null ? '-' : $percent . '%' }}</span>
+                            </div>
+                            <span class="text-xs text-[#5d6b7c]">{{ $quota['purpose'] }}</span>
+                            <div class="text-[20px] font-extrabold leading-7">
+                                {{ $quota['used'] === null ? '-' : $idNumber($quota['used']) }}
+                                <span class="text-[13px] font-semibold text-[#5d6b7c]">/ {{ $idNumber($quota['limit']) }} {{ $quota['period'] }}</span>
+                            </div>
+                            <div class="h-2 overflow-hidden rounded-full bg-[#e3e9f2]" role="progressbar" aria-label="Pemakaian {{ $quota['name'] }}"
+                                 aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ $percent ?? 0 }}">
+                                <div class="h-full rounded-full {{ $tone['bar'] }}" style="width: {{ $percent ?? 0 }}%"></div>
+                            </div>
+                            <span class="text-[11px] text-[#5d6b7c]">{{ $quota['resets'] }}</span>
+                        </div>
+                    @endforeach
+                </div>
+                <p class="m-0 text-[11px] leading-4 text-[#5d6b7c]">SerpApi dibaca langsung dari akunnya. Gemini, Geoapify dan OpenRouteService dihitung dari pemakaian aplikasi ini, jadi pemakaian di luar aplikasi (misalnya AI Studio) tidak ikut terhitung.</p>
+            </section>
+            </div>
         </main>
     </div>
 </div>

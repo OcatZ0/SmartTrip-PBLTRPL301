@@ -75,9 +75,28 @@ class Place extends Model
                 'name', 'type', 'address', 'kecamatan',
                 'estimated_cost_idr', 'description_override', 'description_en',
                 'estimated_visit_minutes', 'is_outdoor', 'category_tags_reviewed', 'search_keywords',
+                'opening_hours', 'business_status',
             ])
             ->logOnlyDirty()
             ->dontLogEmptyChanges();
+    }
+
+    /**
+     * opening_hours as text, one line per day (see OpeningHours for the
+     * stored shape). Older Geoapify places hold {"osm": "Mo-Su 08:00-21:00"}.
+     */
+    public function openingHoursText(): string
+    {
+        $hours = $this->opening_hours;
+        if (! is_array($hours)) {
+            return '';
+        }
+
+        if (is_array($hours['weekday_descriptions'] ?? null)) {
+            return implode("\n", array_filter($hours['weekday_descriptions'], 'is_string'));
+        }
+
+        return is_string($hours['osm'] ?? null) ? $hours['osm'] : '';
     }
 
     /** search_keywords as a list, e.g. "pulau, diving" -> ["pulau", "diving"]. */

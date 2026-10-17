@@ -2,6 +2,7 @@
 
 namespace App\Services\Itinerary;
 
+use App\Services\ApiUsage;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
@@ -44,6 +45,11 @@ class OpenRouteServiceClient
                 ]);
         } catch (ConnectionException $exception) {
             throw new RuntimeException('OpenRouteService tidak bisa dihubungi: '.$exception->getMessage(), 0, $exception);
+        }
+
+        // Counted for the dashboard's API quota; a 429 was refused, not used.
+        if ($response->status() !== 429) {
+            ApiUsage::record(ApiUsage::OPENROUTESERVICE);
         }
 
         if ($response->failed()) {

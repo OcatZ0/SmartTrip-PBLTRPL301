@@ -21,28 +21,6 @@
             'url' => fn ($candidate) => route('admin.candidates.index'),
             'all' => route('admin.candidates.index'),
         ],
-        [
-            'title' => 'Belum ada harga',
-            'items' => $missingCostList,
-            'total' => $placesMissingCost,
-            'action' => 'Lengkapi',
-            'tag' => 'bg-[#fff4df] text-[#7a4b00]',
-            'meta' => fn ($place) => ($place->kecamatan ?: '-') . ' · ' . $typeLabel($place->type),
-            'chip' => fn ($place) => match ($place->type) { 'culinary' => 'Biaya makan', 'lodging' => 'Harga kamar', default => 'Tiket masuk' },
-            'url' => fn ($place) => route('admin.places.edit', $place),
-            'all' => route('admin.places.index'),
-        ],
-        [
-            'title' => 'Tag belum dicek',
-            'items' => $untaggedList,
-            'total' => $placesTagsNotReviewed,
-            'action' => 'Cek tag',
-            'tag' => 'bg-[#eef2f8] text-[#14212f]',
-            'meta' => fn ($place) => 'Usulan: ' . ($place->categories->pluck('name_id')->join(', ') ?: '-'),
-            'chip' => fn ($place) => $place->categories->count() . ' tag',
-            'url' => fn ($place) => route('admin.places.edit', $place),
-            'all' => route('admin.places.index'),
-        ],
     ];
 
     // Bar colour by how much of the free quota is gone.
@@ -99,7 +77,8 @@
                 <div role="status" class="rounded-xl bg-[#e3f6ec] px-4 py-3 text-sm font-semibold text-[#1d7a55]">{{ session('status') }}</div>
             @endif
 
-            <div class="grid grid-cols-[repeat(auto-fit,minmax(min(280px,100%),1fr))] items-start gap-4 sm:gap-5">
+            {{-- New candidates on the left; everything the catalog still misses in one card beside it. --}}
+            <div class="grid items-start gap-4 sm:gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
                 @foreach ($columns as $col)
                     <section class="flex flex-col gap-2.5 rounded-[20px] bg-[#eef2f8] p-3.5">
                         <div class="flex items-center justify-between px-1.5 py-1">
@@ -123,6 +102,50 @@
                         @endif
                     </section>
                 @endforeach
+
+                <section class="flex flex-col gap-2.5 rounded-[20px] bg-[#eef2f8] p-3.5" aria-labelledby="dataGapsTitle">
+                    <div class="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 px-1.5 py-1">
+                        <h2 id="dataGapsTitle" class="m-0 text-[15px] font-bold leading-[22px]">Data belum lengkap</h2>
+                        <span class="text-xs text-[#5d6b7c]">
+                            <b class="text-[#14212f]">{{ $idNumber($incompletePlaceCount) }}</b> dari {{ $idNumber($placeCount) }} tempat masih kurang data
+                        </span>
+                    </div>
+                    <div class="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                        @foreach ($dataGaps as $gap)
+                            @php $done = $placeCount > 0 ? (int) round(($placeCount - $gap['count']) / $placeCount * 100) : 100; @endphp
+                            @if ($gap['count'] > 0)
+                                <a href="{{ $gap['url'] }}" class="group flex min-w-0 flex-col gap-2 rounded-[14px] bg-white p-3.5 text-[#14212f] no-underline transition hover:shadow-[0_8px_20px_-12px_rgba(10,36,64,0.35)]">
+                            @else
+                                <div class="flex min-w-0 flex-col gap-2 rounded-[14px] bg-white p-3.5">
+                            @endif
+                                <div class="flex items-start justify-between gap-3">
+                                    <div class="flex min-w-0 flex-col">
+                                        <b class="text-sm">{{ $gap['label'] }}</b>
+                                        <span class="text-xs text-[#5d6b7c]">{{ $gap['hint'] }}</span>
+                                    </div>
+                                    @if ($gap['count'] > 0)
+                                        <span class="shrink-0 rounded-full bg-[#fff4df] px-2.5 py-0.5 text-xs font-extrabold text-[#7a4b00]">{{ $idNumber($gap['count']) }}</span>
+                                    @else
+                                        <span class="shrink-0 rounded-full bg-[#e3f6ec] px-2.5 py-0.5 text-xs font-extrabold text-[#1d7a55]">Lengkap</span>
+                                    @endif
+                                </div>
+                                <div class="flex items-center gap-2.5">
+                                    <div class="h-1.5 flex-1 overflow-hidden rounded-full bg-[#e3e9f2]" role="progressbar" aria-label="{{ $gap['label'] }}: {{ $done }}% tempat sudah lengkap"
+                                         aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ $done }}">
+                                        <div class="h-full rounded-full bg-[#2e9e6b]" style="width: {{ $done }}%"></div>
+                                    </div>
+                                    @if ($gap['count'] > 0)
+                                        <span class="shrink-0 text-[13px] font-bold text-[#1f5f99] group-hover:text-[#16476d]">Lengkapi</span>
+                                    @endif
+                                </div>
+                            @if ($gap['count'] > 0)
+                                </a>
+                            @else
+                                </div>
+                            @endif
+                        @endforeach
+                    </div>
+                </section>
             </div>
             <div class="grid items-start gap-4 sm:gap-5 lg:grid-cols-2">
             <section class="flex flex-col gap-1 rounded-[20px] bg-white p-5 shadow-[0_18px_40px_-16px_rgba(10,36,64,0.18)]">

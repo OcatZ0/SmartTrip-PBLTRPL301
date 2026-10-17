@@ -42,6 +42,12 @@ class PlaceController extends Controller
         $selectedKecamatan = $request->string('kecamatan')->trim()->toString();
         $selectedType = $request->string('type')->trim()->toString();
         $selectedStatus = $request->string('status_data')->trim()->toString();
+        // ?kurang[]=harga&kurang[]=jam from the checkboxes, or ?kurang=harga from
+        // the dashboard's "Data belum lengkap" card. Unknown keys are ignored.
+        $selectedGaps = array_values(array_intersect(
+            array_keys(Place::DATA_GAPS),
+            array_map('strval', array_filter((array) $request->input('kurang', []), 'is_string')),
+        ));
 
         // Review count and average feed ratingBlend(), the rating the app shows.
         $query = Place::query()->with(['categories', 'photos'])->withCount('reviews')->withAvg('reviews', 'rating');
@@ -63,12 +69,20 @@ class PlaceController extends Controller
             $query->where('type', $selectedType);
         }
 
-        if (! empty($selectedStatus)) {
-            if ($selectedStatus === 'siap_tampil') {
-                $query->where('category_tags_reviewed', true);
-            } elseif ($selectedStatus === 'butuh_lengkapi') {
-                $query->where('category_tags_reviewed', false);
-            }
+        // Several ticked: places missing any one of them.
+        if ($selectedGaps !== []) {
+            $query->where(function ($anyGap) use ($selectedGaps) {
+                foreach ($selectedGaps as $gap) {
+                    $anyGap->orWhere(fn ($oneGap) => $oneGap->missing($gap));
+                }
+            });
+        }
+
+        // Siap tampil: nothing in Place::DATA_GAPS missing; the others are the yellow rows.
+        if ($selectedStatus === 'siap_tampil') {
+            $query->whereNot(fn ($incomplete) => $incomplete->incomplete());
+        } elseif ($selectedStatus === 'butuh_lengkapi') {
+            $query->incomplete();
         }
 
         $places = $query->orderByDesc('created_at')
@@ -76,8 +90,8 @@ class PlaceController extends Controller
             ->withQueryString();
 
         $totalPlacesCount = Place::count();
-        $siapTampilCount = Place::where('category_tags_reviewed', true)->count();
-        $butuhLengkapiCount = Place::where('category_tags_reviewed', false)->count();
+        $butuhLengkapiCount = Place::incomplete()->count();
+        $siapTampilCount = $totalPlacesCount - $butuhLengkapiCount;
         $kandidatCount = PlaceCandidate::where('status', 'pending')->count();
         $categories = Category::orderBy('name_id')->get();
 
@@ -87,6 +101,9 @@ class PlaceController extends Controller
             'selectedKecamatan' => $selectedKecamatan,
             'selectedType' => $selectedType,
             'selectedStatus' => $selectedStatus,
+            'selectedGaps' => $selectedGaps,
+            // Places missing each kind of data, on its checkbox.
+            'gapCounts' => collect(Place::DATA_GAPS)->map(fn ($gap, string $key) => Place::missing($key)->count())->all(),
             'totalPlacesCount' => $totalPlacesCount,
             'siapTampilCount' => $siapTampilCount,
             'butuhLengkapiCount' => $butuhLengkapiCount,

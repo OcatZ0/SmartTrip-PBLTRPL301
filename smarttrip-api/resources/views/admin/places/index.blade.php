@@ -119,6 +119,19 @@
         font-weight: 700;
     }
 
+    /* "Data kurang" checkboxes: a row of chips under the filters, ticked = blue. */
+    .filter-gaps { flex: 1 1 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding-top: 10px; border-top: 1px solid #EEF2F6; }
+    .filter-gaps-label { margin-right: 4px; font-size: 12.5px; font-weight: 700; color: #475569; }
+    .filter-gap { position: relative; display: inline-flex; align-items: center; gap: 6px; margin: 0; padding: 5px 12px; border: 1px solid #CBD5E1; border-radius: 999px; background-color: #FFFFFF; font-size: 12.5px; font-weight: 600; color: #334155; cursor: pointer; user-select: none; }
+    .filter-gap:hover { border-color: #94A3B8; }
+    .filter-gap input { position: absolute; opacity: 0; pointer-events: none; }
+    .filter-gap i { display: none; font-size: 12px; }
+    .filter-gap:has(input:checked) { border-color: #1672B8; background-color: #1672B8; color: #FFFFFF; }
+    .filter-gap:has(input:checked) i { display: inline; }
+    .filter-gap:has(input:focus-visible) { outline: 3px solid rgba(22, 114, 184, .35); outline-offset: 2px; }
+    .filter-gap-count { min-width: 20px; padding: 0 6px; border-radius: 999px; background-color: #F1F5F9; color: #475569; font-size: 11px; font-weight: 800; text-align: center; }
+    .filter-gap:has(input:checked) .filter-gap-count { background-color: rgba(255, 255, 255, .22); color: #FFFFFF; }
+
     .summary-pill-total {
         background-color: #F1F5F9;
         color: #475569;
@@ -183,6 +196,13 @@
     .places-table tr:hover td {
         background-color: #F8FAFC;
     }
+
+    /* Needs completing (a Place::DATA_GAPS item is missing): yellow row and what is missing under the name. */
+    .places-table tr.is-incomplete td { background-color: #FFFBEB; }
+    .places-table tr.is-incomplete:hover td { background-color: #FEF3C7; }
+    .places-table tr.is-incomplete td:first-child { box-shadow: inset 4px 0 0 #F59E0B; }
+    .place-missing { margin-top: 3px; font-size: 11.5px; font-weight: 600; color: #92400E; }
+    .place-ready { display: inline-flex; align-items: center; gap: 4px; margin-top: 3px; font-size: 11.5px; font-weight: 700; color: #15803D; }
 
     .place-thumbnail {
         width: 42px;
@@ -815,6 +835,8 @@
         .places-table tbody { display: flex !important; flex-direction: column; gap: 12px; }
         .places-table tbody tr { display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; column-gap: 12px; row-gap: 8px; padding: 14px; background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 14px; box-shadow: 0 6px 18px -12px rgba(10, 36, 64, .25); }
         .places-table tr:hover td { background-color: transparent; }
+        .places-table tbody tr.is-incomplete { background: #FFFBEB; border-color: #FCD34D; box-shadow: inset 4px 0 0 #F59E0B, 0 6px 18px -12px rgba(10, 36, 64, .25); }
+        .places-table tr.is-incomplete td, .places-table tr.is-incomplete:hover td { background-color: transparent; box-shadow: none; }
         .places-table td { display: block; padding: 0; border: 0; }
         .places-table td.pt-photo { grid-column: 1; grid-row: 1 / span 2; }
         .places-table td.pt-photo .place-thumbnail { width: 48px; height: 48px; }
@@ -876,6 +898,19 @@
             <a href="{{ route('admin.places.index') }}" class="btn-filter-refresh" title="Atur ulang filter" aria-label="Atur ulang filter">
                 <i class="bi bi-arrow-counterclockwise"></i>
             </a>
+
+            {{-- Same seven gaps as the dashboard's "Data belum lengkap" card; ticking several shows places missing any of them. --}}
+            <div class="filter-gaps" role="group" aria-labelledby="filterGapsLabel">
+                <span class="filter-gaps-label" id="filterGapsLabel">Data kurang:</span>
+                @foreach (\App\Models\Place::DATA_GAPS as $gapKey => [$gapLabel])
+                    <label class="filter-gap">
+                        <input type="checkbox" name="kurang[]" value="{{ $gapKey }}" @checked(in_array($gapKey, $selectedGaps, true)) onchange="this.form.submit()">
+                        <i class="bi bi-check-lg" aria-hidden="true"></i>
+                        {{ \Illuminate\Support\Str::after($gapLabel, 'Belum ada ') }}
+                        <span class="filter-gap-count">{{ $gapCounts[$gapKey] }}</span>
+                    </label>
+                @endforeach
+            </div>
         </form>
     </div>
 
@@ -912,7 +947,8 @@
                 </thead>
                 <tbody>
                     @forelse($places as $place)
-                        <tr>
+                        @php $missingGaps = $place->missingDataGaps(); @endphp
+                        <tr @class(['is-incomplete' => $missingGaps !== []])>
                             <td class="pt-photo">
                                 <img src="{{ $place->photo_url ?? 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=120&h=120&fit=crop' }}" 
                                      alt="{{ $place->name }}" class="place-thumbnail">
@@ -920,6 +956,14 @@
                             <td class="pt-name">
                                 <div class="place-name">{{ $place->name }}</div>
                                 <div class="place-code">{{ $place->external_place_id ?? sprintf('BTM-DST-%03d', $place->places_id) }}</div>
+                                @if ($missingGaps !== [])
+                                    <div class="place-missing">
+                                        <i class="bi bi-exclamation-circle-fill" aria-hidden="true"></i>
+                                        Kurang: {{ collect($missingGaps)->map(fn ($gap) => \App\Models\Place::DATA_GAPS[$gap][2])->join(', ') }}
+                                    </div>
+                                @else
+                                    <div class="place-ready"><i class="bi bi-check-circle-fill" aria-hidden="true"></i> Siap tampil</div>
+                                @endif
                             </td>
                             <td class="pt-type">
                                 @php

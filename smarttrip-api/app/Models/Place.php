@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -68,6 +69,70 @@ class Place extends Model
      * admin (docs/prd design spec Section 14), bukan kolom hasil sync
      * Google - supaya log tidak banjir tiap places:sync jalan.
      */
+    /**
+     * What a place can still be missing: the dashboard's "Data belum
+     * lengkap" card, the ?kurang= filter and the yellow rows on Kelola
+     * Tempat. Label, why it matters, short name for a row.
+     */
+    public const DATA_GAPS = [
+        'tag' => ['Tag kategori belum dicek', 'Usulan AI, perlu dikonfirmasi admin', 'tag belum dicek'],
+        'harga' => ['Belum ada harga', 'Kriteria anggaran di itinerary', 'harga'],
+        'jam' => ['Belum ada jam operasional', 'Agar itinerary tidak memilih hari tutup', 'jam buka'],
+        'foto' => ['Belum ada foto', 'Tampil di katalog aplikasi', 'foto'],
+        'durasi' => ['Belum ada lama kunjungan', 'Menentukan muat tidaknya satu hari', 'lama kunjungan'],
+        'deskripsi_en' => ['Belum ada deskripsi English', 'Untuk wisatawan berbahasa Inggris', 'deskripsi English'],
+        'kata_kunci' => ['Belum ada kata kunci pencarian', 'Agar tempat ditemukan di katalog', 'kata kunci'],
+    ];
+
+    /**
+     * The DATA_GAPS this place has, the same rules as scopeMissing().
+     *
+     * @return array<int, string>
+     */
+    public function missingDataGaps(): array
+    {
+        return array_values(array_filter(array_keys(self::DATA_GAPS), fn (string $gap) => match ($gap) {
+            'tag' => ! $this->category_tags_reviewed,
+            'harga' => $this->estimated_cost_idr === null,
+            'jam' => $this->opening_hours === null,
+            'foto' => blank($this->photo_url),
+            'durasi' => $this->estimated_visit_minutes === null && $this->type !== 'lodging',
+            'deskripsi_en' => blank($this->description_en),
+            'kata_kunci' => blank($this->search_keywords),
+        }));
+    }
+
+    /**
+     * Places missing one of DATA_GAPS. Hotels need no visit length.
+     */
+    public function scopeMissing(Builder $query, string $gap): Builder
+    {
+        $blank = fn (string $column) => fn (Builder $inner) => $inner->whereNull($column)->orWhere($column, '');
+
+        return match ($gap) {
+            'tag' => $query->where('category_tags_reviewed', false),
+            'harga' => $query->whereNull('estimated_cost_idr'),
+            'jam' => $query->whereNull('opening_hours'),
+            'foto' => $query->where($blank('photo_url')),
+            'durasi' => $query->whereNull('estimated_visit_minutes')->where('type', '!=', 'lodging'),
+            'deskripsi_en' => $query->where($blank('description_en')),
+            'kata_kunci' => $query->where($blank('search_keywords')),
+            default => $query,
+        };
+    }
+
+    /**
+     * Places missing at least one of DATA_GAPS.
+     */
+    public function scopeIncomplete(Builder $query): Builder
+    {
+        return $query->where(function (Builder $any) {
+            foreach (array_keys(self::DATA_GAPS) as $gap) {
+                $any->orWhere(fn (Builder $one) => $one->missing($gap));
+            }
+        });
+    }
+
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()

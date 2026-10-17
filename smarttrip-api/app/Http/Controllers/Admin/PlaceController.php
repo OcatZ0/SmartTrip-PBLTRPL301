@@ -8,6 +8,7 @@ use App\Models\Place;
 use App\Models\PlaceCandidate;
 use App\Services\Places\GeminiKeywordSuggestionClient;
 use App\Services\Places\GeminiPriceEstimateClient;
+use App\Services\Places\GeoapifyPlacesClient;
 use App\Services\Places\PlacePhotoStore;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -18,6 +19,21 @@ use RuntimeException;
  */
 class PlaceController extends Controller
 {
+    private const KECAMATAN_LIST = [
+        'Sagulung',
+        'Galang',
+        'Bengkong',
+        'Sekupang',
+        'Galang Selatan',
+        'Lubuk Baja',
+        'Batam Kota',
+        'Nongsa',
+        'Batu Ampar',
+        'Bulang',
+        'Belakang Padang',
+        'Seibeduk',
+    ];
+
     public function index(Request $request)
     {
         $search = $request->string('search')->trim()->toString();
@@ -63,21 +79,6 @@ class PlaceController extends Controller
         $kandidatCount = PlaceCandidate::where('status', 'pending')->count();
         $categories = Category::orderBy('name_id')->get();
 
-        $kecamatanList = [
-            'Sagulung',
-            'Galang',
-            'Bengkong',
-            'Sekupang',
-            'Galang Selatan',
-            'Lubuk Baja',
-            'Batam Kota',
-            'Nongsa',
-            'Batu Ampar',
-            'Bulang',
-            'Belakang Padang',
-            'Seibeduk',
-        ];
-
         return view('admin.places.index', [
             'places' => $places,
             'search' => $search,
@@ -89,7 +90,7 @@ class PlaceController extends Controller
             'butuhLengkapiCount' => $butuhLengkapiCount,
             'kandidatCount' => $kandidatCount,
             'categories' => $categories,
-            'kecamatanList' => $kecamatanList,
+            'kecamatanList' => self::KECAMATAN_LIST,
         ]);
     }
 
@@ -100,32 +101,41 @@ class PlaceController extends Controller
         ]);
     }
 
+    /**
+     * The "Tambah Tempat Manual" modal on the places list. Only what is needed
+     * to put the place on the map; photos, descriptions and search keywords
+     * are added on the edit page the admin lands on next.
+     */
     public function store(Request $request)
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
+            'type' => ['required', 'string', Rule::in(['attraction', 'culinary', 'lodging'])],
             'category_ids' => ['nullable', 'array'],
             'category_ids.*' => ['integer', Rule::exists('categories', 'categories_id')],
             'kecamatan' => ['nullable', 'string', 'max:255'],
             'lat' => ['required', 'numeric', 'between:-90,90'],
             'lng' => ['required', 'numeric', 'between:-180,180'],
             'address' => ['required', 'string', 'max:1000'],
-            'photo_url' => ['nullable', 'string', 'max:2000'],
-            'photo_file' => ['nullable', 'image', 'max:2048'],
             'estimated_cost_idr' => ['nullable', 'integer', 'min:0'],
-            'is_free' => ['sometimes', 'boolean'],
-            'estimated_visit_minutes' => ['nullable', 'integer', 'min:1'],
-            'type' => ['required', 'string', Rule::in(['attraction', 'culinary', 'lodging'])],
-            'description' => ['nullable', 'string'],
+            'estimated_visit_minutes' => ['nullable', 'integer', 'min:15', 'max:1440'],
+        ], [
+            'name.required' => 'Nama tempat wajib diisi.',
+            'type.required' => 'Pilih jenis tempat.',
+            'type.in' => 'Pilih jenis tempat.',
+            'lat.required' => 'Tentukan titik lokasi: cari lokasi atau isi garis lintang.',
+            'lat.numeric' => 'Garis lintang harus angka, misalnya 1.0456.',
+            'lat.between' => 'Garis lintang harus di antara -90 dan 90.',
+            'lng.required' => 'Tentukan titik lokasi: cari lokasi atau isi garis bujur.',
+            'lng.numeric' => 'Garis bujur harus angka, misalnya 104.0305.',
+            'lng.between' => 'Garis bujur harus di antara -180 dan 180.',
+            'address.required' => 'Alamat wajib diisi.',
+            'estimated_cost_idr.integer' => 'Biaya harus angka bulat dalam rupiah.',
+            'estimated_cost_idr.min' => 'Biaya tidak boleh negatif.',
+            'estimated_visit_minutes.integer' => 'Lama kunjungan harus angka menit.',
+            'estimated_visit_minutes.min' => 'Lama kunjungan minimal 15 menit.',
+            'estimated_visit_minutes.max' => 'Lama kunjungan maksimal 1440 menit (24 jam).',
         ]);
-
-        $photoUrl = $data['photo_url'] ?? null;
-        if ($request->hasFile('photo_file')) {
-            $path = $request->file('photo_file')->store('places', 'public');
-            $photoUrl = asset('storage/'.$path);
-        }
-
-        $costIdr = $request->boolean('is_free') ? 0 : ($data['estimated_cost_idr'] ?? null);
 
         $place = Place::create([
             'name' => $data['name'],
@@ -134,9 +144,8 @@ class PlaceController extends Controller
             'lng' => $data['lng'],
             'address' => $data['address'],
             'kecamatan' => $data['kecamatan'] ?? null,
-            'photo_url' => $photoUrl,
-            'description' => $data['description'] ?? null,
-            'estimated_cost_idr' => $costIdr,
+            // 0 is free, null is not known yet (same as the edit page).
+            'estimated_cost_idr' => $data['estimated_cost_idr'] ?? null,
             'estimated_visit_minutes' => $data['estimated_visit_minutes'] ?? 60,
             'is_outdoor' => true,
             'category_tags_reviewed' => true,
@@ -150,8 +159,51 @@ class PlaceController extends Controller
             $place->categories()->sync($data['category_ids']);
         }
 
-        return redirect()->route('admin.places.index')
-            ->with('place_created_success', "\"{$place->name}\" berhasil ditambahkan.");
+        return redirect()->route('admin.places.edit', $place)
+            ->with('status', "\"{$place->name}\" ditambahkan. Lengkapi foto, deskripsi dan kata kunci pencarian di bawah.");
+    }
+
+    /**
+     * Location search for the "Tambah Tempat Manual" modal. Each result
+     * carries the kecamatan its area names match, when one does.
+     */
+    public function geocode(Request $request, GeoapifyPlacesClient $geoapify)
+    {
+        $data = $request->validate(['q' => ['required', 'string', 'min:3', 'max:200']]);
+
+        try {
+            $results = $geoapify->geocode($data['q']);
+        } catch (RuntimeException $exception) {
+            return response()->json(['message' => $exception->getMessage()], 502);
+        }
+
+        return response()->json([
+            'results' => array_map(fn (array $result) => [
+                'name' => $result['name'],
+                'address' => $result['address'],
+                'lat' => $result['lat'],
+                'lng' => $result['lng'],
+                'kecamatan' => self::matchKecamatan($result['areas']),
+            ], $results),
+        ]);
+    }
+
+    /**
+     * "Kecamatan Sei Beduk" and "Seibeduk" both match Seibeduk.
+     */
+    private static function matchKecamatan(array $areas): ?string
+    {
+        $normalize = fn (string $text) => preg_replace('/[^a-z]/', '', str_replace('kecamatan', '', mb_strtolower($text)));
+
+        foreach ($areas as $area) {
+            foreach (self::KECAMATAN_LIST as $kecamatan) {
+                if ($normalize($area) === $normalize($kecamatan)) {
+                    return $kecamatan;
+                }
+            }
+        }
+
+        return null;
     }
 
     public function edit(Place $place)

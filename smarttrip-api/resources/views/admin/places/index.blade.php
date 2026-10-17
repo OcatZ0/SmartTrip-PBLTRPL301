@@ -347,40 +347,7 @@
         font-weight: 600;
     }
 
-    .pagination-bar .pagination {
-        margin: 0 !important;
-        padding: 0 !important;
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        list-style: none;
-    }
-
-    .pagination-bar .page-item .page-link {
-        border-radius: 6px !important;
-        padding: 5px 12px;
-        font-size: 12px;
-        font-weight: 700;
-        color: #334155;
-        background-color: #FFFFFF;
-        border: 1px solid #CBD5E1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        text-decoration: none;
-    }
-
-    .pagination-bar .page-item.active .page-link {
-        background-color: #1672B8;
-        border-color: #1672B8;
-        color: #FFFFFF;
-    }
-
-    .pagination-bar .page-item.disabled .page-link {
-        color: #94A3B8;
-        background-color: #F8FAFC;
-        border-color: #E2E8F0;
-    }
+    /* Page buttons are styled in admin.partials.pagination. */
 
     /* ─────────────────────────────────────────────────────────────────── */
     /* MODAL STYLING WITH GUARANTEED VISIBLE SCROLLBAR & STICKY FOOTER     */
@@ -485,14 +452,6 @@
         border-color: #1672B8;
     }
 
-    .latlng-container-box {
-        background-color: #F8F9FA;
-        border: 1px solid #F1F3F4;
-        border-radius: 12px;
-        padding: 12px 14px;
-        margin-bottom: 14px;
-    }
-
     .btn-kunci-titik {
         height: 40px;
         padding: 0 16px;
@@ -512,32 +471,65 @@
         background-color: #0F5C97;
     }
 
-    .file-dropzone {
-        border: 1.5px dashed #DADCE0;
-        border-radius: 12px;
-        padding: 10px 14px;
-        background-color: #FAFAFA;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-    }
-
-    .dropzone-file-info {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-
-    .dropzone-icon {
-        width: 36px;
-        height: 36px;
-        border-radius: 8px;
-        background-color: #EFF6FF;
-        color: #1672B8;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 16px;
+    /* Tambah Tempat Manual form */
+    .ap-form { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; margin: 0; overflow: hidden; }
+    .ap-field { margin: 0 0 16px; padding: 0; border: 0; min-width: 0; }
+    .ap-field legend { float: none; width: auto; padding: 0; }
+    .ap-field legend small, .form-label-custom small { font-size: 12px; font-weight: 500; color: #64748B; }
+    .ap-section { margin-bottom: 16px; padding: 14px; border: 1px solid #E2E8F0; border-radius: 14px; background: #F8FAFC; }
+    .ap-alert { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 16px; padding: 10px 12px; border-radius: 10px; background: #FEF2F2; color: #991B1B; font-size: 13px; font-weight: 600; }
+    .ap-error { margin-top: 4px; font-size: 12px; font-weight: 600; color: #B42318; }
+    .form-control-custom.is-invalid, .ap-affix.is-invalid { border-color: #F04438; }
+    .ap-textarea { height: auto; min-height: 64px; padding: 10px 14px; line-height: 1.45; resize: vertical; }
+    .ap-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+    .ap-grid > div { min-width: 0; }
+    /* Type: three equal segments; categories: wrapping chips. Both use hidden .btn-check inputs. */
+    .ap-seg { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding: 4px; border-radius: 12px; background: #F1F5F9; }
+    .ap-seg label { display: flex; align-items: center; justify-content: center; gap: 6px; height: 38px; border-radius: 9px; font-size: 13px; font-weight: 700; color: #475569; cursor: pointer; }
+    .ap-seg .btn-check:checked + label { background: #FFFFFF; color: #1672B8; box-shadow: 0 1px 3px rgba(15, 23, 42, .12); }
+    .ap-seg .btn-check:focus-visible + label, .ap-chips .btn-check:focus-visible + label { outline: 3px solid rgba(22, 114, 184, .35); outline-offset: 1px; }
+    .ap-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .ap-chips label { padding: 6px 12px; border: 1px solid #DADCE0; border-radius: 999px; font-size: 12.5px; font-weight: 600; color: #334155; background: #FFFFFF; cursor: pointer; }
+    .ap-chips .btn-check:checked + label { border-color: #1672B8; background: #EFF6FF; color: #1672B8; }
+    .ap-search { display: flex; gap: 8px; }
+    .ap-search-box { position: relative; flex: 1 1 auto; min-width: 0; }
+    .ap-search-box i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #1672B8; font-size: 14px; }
+    .ap-search-box input { padding-left: 38px; }
+    .btn-kunci-titik:disabled { opacity: .65; }
+    .ap-hint { margin: 6px 0 10px; font-size: 12px; color: #64748B; }
+    .ap-hint.is-error { color: #B42318; font-weight: 600; }
+    .ap-results { list-style: none; margin: -2px 0 12px; padding: 4px; border: 1px solid #E2E8F0; border-radius: 12px; background: #FFFFFF; }
+    .ap-results button { width: 100%; display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border: 0; border-radius: 8px; background: transparent; text-align: left; }
+    .ap-results button:hover, .ap-results button:focus-visible { background: #EFF6FF; outline: none; }
+    .ap-results b { font-size: 13px; color: #0F172A; }
+    .ap-results span { font-size: 12px; color: #64748B; }
+    .ap-map { position: relative; height: 180px; margin-bottom: 12px; border-radius: 12px; overflow: hidden; border: 1px solid #E2E8F0; background: #EEF2F6; }
+    .ap-map iframe { width: 100%; height: 100%; border: 0; display: block; }
+    .ap-map-empty { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 16px; text-align: center; font-size: 12.5px; color: #64748B; }
+    .ap-map-empty i { font-size: 22px; color: #94A3B8; }
+    .ap-map-empty[hidden] { display: none; }
+    /* "Rp [   ]" and "[   ] menit": one bordered box, the input borderless inside it. */
+    .ap-affix { display: flex; align-items: center; height: 40px; border: 1px solid #DADCE0; border-radius: 10px; background: #FFFFFF; overflow: hidden; transition: border-color .15s ease; }
+    .ap-affix:focus-within { border-color: #1672B8; }
+    .ap-affix span { flex: none; padding: 0 12px; font-size: 13px; font-weight: 700; color: #64748B; background: #F8FAFC; align-self: stretch; display: flex; align-items: center; }
+    .ap-affix span:first-child { border-right: 1px solid #E2E8F0; }
+    .ap-affix span:last-child { border-left: 1px solid #E2E8F0; }
+    .ap-affix input { flex: 1 1 auto; min-width: 0; height: 100%; padding: 0 12px; border: 0; outline: none; font-size: 13px; font-weight: 600; color: #202124; background: transparent; }
+    .ap-affix input:disabled { color: #94A3B8; background: #F8FAFC; }
+    #modalTambahTempat .modal-header-icon { flex-shrink: 0; }
+    #modalTambahTempat .modal-footer-custom .btn { white-space: nowrap; }
+    @media (max-width: 575.98px) {
+        .ap-grid { grid-template-columns: 1fr; }
+        /* Phones: no header icon, smaller title; type segments put the icon above the label. */
+        #modalTambahTempat .modal-header-custom { padding: 14px 16px; align-items: center; gap: 12px; }
+        #modalTambahTempat .modal-header-icon { display: none; }
+        #modalTambahTempat .modal-title { font-size: 18px !important; }
+        .ap-seg label { flex-direction: column; gap: 2px; height: 52px; font-size: 12px; }
+        .ap-seg label i { font-size: 16px; }
+        .ap-search .btn-kunci-titik { padding: 0 14px; }
+        .ap-form .modal-body-scrollable { max-height: none; flex: 1 1 auto; padding: 16px; }
+        .ap-form .modal-footer-custom { padding: 12px 16px; }
+        .ap-form .modal-footer-custom .btn { flex: 1 1 0; }
     }
 
     .modal-footer-custom {
@@ -805,6 +797,49 @@
         font-size: 13px;
         color: #94A3B8;
     }
+
+    /* ── Small screens: filters stack, each place row becomes a card ── */
+    @media (max-width: 767.98px) {
+        .filter-card { padding: 10px; }
+        .filter-search-box { flex: 1 1 100%; min-width: 0; }
+        .filter-select { flex: 1 1 calc(50% - 30px); min-width: 0; }
+        .summary-badges-bar { flex-wrap: wrap; gap: 6px; }
+
+        .places-table-card .table-responsive { overflow: visible; }
+        .places-table, .places-table tbody { display: block; width: 100%; }
+        .places-table thead { display: none; }
+        /* Photo + name + actions on top, categories under the name, then one
+           "label: value" line each for area, rating and cost. */
+        /* Each place is its own white card on the page background, 12px apart. */
+        .places-table-card { background: transparent; border: 0; border-radius: 0; overflow: visible; gap: 12px; }
+        .places-table tbody { display: flex !important; flex-direction: column; gap: 12px; }
+        .places-table tbody tr { display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; column-gap: 12px; row-gap: 8px; padding: 14px; background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 14px; box-shadow: 0 6px 18px -12px rgba(10, 36, 64, .25); }
+        .places-table tr:hover td { background-color: transparent; }
+        .places-table td { display: block; padding: 0; border: 0; }
+        .places-table td.pt-photo { grid-column: 1; grid-row: 1 / span 2; }
+        .places-table td.pt-photo .place-thumbnail { width: 48px; height: 48px; }
+        .places-table td.pt-name { grid-column: 2; grid-row: 1; min-width: 0; overflow-wrap: anywhere; }
+        .places-table td.pt-actions { grid-column: 3; grid-row: 1; }
+        .places-table td.pt-type { grid-column: 2 / -1; grid-row: 2; }
+        .places-table td.pt-loc, .places-table td.pt-rating, .places-table td.pt-cost {
+            grid-column: 1 / -1; display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+            padding-top: 8px; border-top: 1px dashed #EEF2F6; text-align: right;
+        }
+        .places-table td[data-label]::before { content: attr(data-label); flex-shrink: 0; font-size: 12px; font-weight: 700; color: #64748B; text-align: left; }
+        /* The "no places" row keeps one full-width cell. */
+        .places-table td[colspan] { grid-column: 1 / -1; }
+        /* Price and "per orang" sit together on the right, not spread apart. */
+        .places-table td.pt-cost { justify-content: flex-end; gap: 6px; }
+        .places-table td.pt-cost::before { margin-right: auto; }
+
+
+        .pagination-bar { flex-direction: column; align-items: stretch; gap: 10px; padding: 12px 14px; text-align: center; border: 1px solid #E2E8F0; border-radius: 14px; }
+        .pagination-bar .pagination { justify-content: center; flex-wrap: wrap; }
+    }
+    /* Full-screen modals (modal-fullscreen-sm-down) have no rounded corners. */
+    @media (max-width: 575.98px) {
+        .modal-fullscreen-sm-down .modal-content-custom { border-radius: 0; border: 0; }
+    }
 </style>
 @endpush
 
@@ -878,15 +913,15 @@
                 <tbody>
                     @forelse($places as $place)
                         <tr>
-                            <td>
+                            <td class="pt-photo">
                                 <img src="{{ $place->photo_url ?? 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=120&h=120&fit=crop' }}" 
                                      alt="{{ $place->name }}" class="place-thumbnail">
                             </td>
-                            <td>
+                            <td class="pt-name">
                                 <div class="place-name">{{ $place->name }}</div>
                                 <div class="place-code">{{ $place->external_place_id ?? sprintf('BTM-DST-%03d', $place->places_id) }}</div>
                             </td>
-                            <td>
+                            <td class="pt-type">
                                 @php
                                     $categoryNames = $place->categories->pluck('name_id');
                                     if ($categoryNames->isEmpty()) {
@@ -917,12 +952,12 @@
                                     @endif
                                 </div>
                             </td>
-                            <td>
+                            <td class="pt-loc" data-label="Wilayah">
                                 <span class="location-text">
                                     <i class="bi bi-geo-alt me-1 text-slate-400"></i>{{ $place->kecamatan ?? 'Batam' }}
                                 </span>
                             </td>
-                            <td>
+                            <td class="pt-rating" data-label="Rating">
                                 @php
                                     $rating = $place->ratingBlend();
                                     $ratingCount = (int) $place->review_count + (int) $place->reviews_count;
@@ -936,7 +971,7 @@
                                     </div>
                                 @endif
                             </td>
-                            <td>
+                            <td class="pt-cost" data-label="Biaya">
                                 @if($place->estimated_cost_idr === 0)
                                     <div class="ticket-text">Gratis</div>
                                     <div class="ticket-sub">Bebas Masuk</div>
@@ -951,7 +986,7 @@
                                     </div>
                                 @endif
                             </td>
-                            <td class="text-center">
+                            <td class="text-center pt-actions">
                                 <div class="d-flex align-items-center justify-content-center gap-2">
                                     <button type="button" class="btn-action-history" title="Riwayat perubahan" aria-label="Riwayat perubahan {{ $place->name }}"
                                             onclick="openHistoryModal('{{ route('admin.places.activities', $place) }}', '{{ addslashes($place->name) }}')">
@@ -994,10 +1029,22 @@
     </div>
 
     <!-- ─────────────────────────────────────────────────────────────────── -->
-    <!-- MODAL TAMBAH TEMPAT MANUAL (SCROLLABLE WITH VISIBLE BLUE SCROLLBAR) -->
+    <!-- MODAL TAMBAH TEMPAT MANUAL -->
     <!-- ─────────────────────────────────────────────────────────────────── -->
-    <div class="modal fade" id="modalTambahTempat" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-dialog-custom">
+    @php
+        // Reopen the modal with the admin's input when the store validation fails.
+        $addPlaceFailed = $errors->any() && old('_form') === 'add-place';
+        $oldCategoryIds = array_map('intval', (array) old('category_ids', []));
+        // Same cost label and hint as the edit page, per type.
+        $placeTypes = [
+            'attraction' => ['Wisata', 'bi-camera', 'Biaya masuk per orang', 'Isi 0 kalau gratis. Kosongkan kalau belum tahu.'],
+            'culinary' => ['Kuliner', 'bi-cup-hot', 'Biaya makan per orang', 'Perkiraan sekali makan. Kosongkan kalau belum tahu.'],
+            'lodging' => ['Penginapan', 'bi-building', 'Harga kamar per malam', 'Harga kamar standar. Kosongkan kalau belum tahu.'],
+        ];
+        $selectedPlaceType = $placeTypes[old('type', 'attraction')] ?? $placeTypes['attraction'];
+    @endphp
+    <div class="modal fade" id="modalTambahTempat" tabindex="-1" aria-labelledby="addPlaceTitle" aria-hidden="true" data-reopen="{{ $addPlaceFailed ? '1' : '0' }}">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-custom modal-fullscreen-sm-down">
             <div class="modal-content modal-content-custom">
                 <!-- Header (Fixed Top) -->
                 <div class="modal-header-custom">
@@ -1006,130 +1053,116 @@
                             <i class="bi bi-plus-lg"></i>
                         </div>
                         <div>
-                            <div class="d-flex align-items-center gap-2">
-                                <h5 class="modal-title fw-bold fs-5 mb-0 text-slate-900">Tambah Tempat Manual</h5>
-                                <span class="badge-mode">Mode Kurator</span>
-                            </div>
-                            <p class="mb-0 text-slate-500" style="font-size: 12.5px;">Kurasi entitas destinasi langsung ke database SmartTrip.</p>
+                            <h5 class="modal-title fw-bold fs-5 mb-0 text-slate-900" id="addPlaceTitle">Tambah Tempat Manual</h5>
+                            <p class="mb-0 text-slate-500" style="font-size: 12.5px;">Foto, deskripsi dan kata kunci dilengkapi di halaman Edit setelah disimpan.</p>
                         </div>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
                 </div>
 
-                <!-- Form (With Custom Scrollable Body & Sticky Footer) -->
-                <form method="POST" action="{{ route('admin.places.store') }}" enctype="multipart/form-data" class="d-flex flex-column m-0 p-0" style="overflow: hidden;">
+                <form method="POST" action="{{ route('admin.places.store') }}" class="ap-form" id="formAddPlace">
                     @csrf
+                    <input type="hidden" name="_form" value="add-place">
                     <div class="modal-body-scrollable">
-                        <!-- Nama Tempat / Destinasi -->
-                        <div class="mb-3">
-                            <label class="form-label-custom">Nama Tempat / Destinasi <span>*</span></label>
-                            <input type="text" name="name" class="form-control-custom" value="Pantai Viovio Sunset Bar & Glamping" placeholder="contoh: Pantai Viovio Sunset Bar & Glamping" required>
+                        @if ($addPlaceFailed)
+                            <div class="ap-alert" role="alert">
+                                <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+                                <span>Tempat belum tersimpan. Periksa isian yang ditandai merah.</span>
+                            </div>
+                        @endif
+
+                        <div class="ap-field">
+                            <label class="form-label-custom" for="apName">Nama tempat <span>*</span></label>
+                            <input type="text" name="name" id="apName" class="form-control-custom @error('name') is-invalid @enderror" value="{{ old('name') }}" placeholder="contoh: Pantai Viovio" maxlength="255" required>
+                            @error('name') <div class="ap-error">{{ $message }}</div> @enderror
                         </div>
 
-                        <!-- Kategori Wisata & Wilayah / Kecamatan -->
-                        <div class="row g-3 mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label-custom">Kategori Wisata <span>*</span></label>
-                                <select name="category_ids[]" class="form-control-custom" required>
-                                    <option value="">Wisata Alam & Pantai</option>
-                                    @foreach($categories as $cat)
-                                        <option value="{{ $cat->categories_id }}" {{ str_contains(strtolower($cat->name_id), 'pantai') ? 'selected' : '' }}>{{ $cat->name_id }}</option>
+                        <fieldset class="ap-field">
+                            <legend class="form-label-custom">Jenis tempat <span>*</span></legend>
+                            <div class="ap-seg">
+                                @foreach ($placeTypes as $value => [$typeLabel, $typeIcon, $typeCostLabel, $typeCostHint])
+                                    <input type="radio" class="btn-check" name="type" id="apType{{ $value }}" value="{{ $value }}" {{ old('type', 'attraction') === $value ? 'checked' : '' }}
+                                        data-cost-label="{{ $typeCostLabel }}" data-cost-hint="{{ $typeCostHint }}">
+                                    <label for="apType{{ $value }}"><i class="bi {{ $typeIcon }}" aria-hidden="true"></i>{{ $typeLabel }}</label>
+                                @endforeach
+                            </div>
+                            @error('type') <div class="ap-error">{{ $message }}</div> @enderror
+                        </fieldset>
+
+                        <div class="ap-section">
+                            <label class="form-label-custom" for="apSearch">Lokasi <span>*</span></label>
+                            <div class="ap-search">
+                                <div class="ap-search-box">
+                                    <i class="bi bi-search" aria-hidden="true"></i>
+                                    <input type="search" id="apSearch" class="form-control-custom" placeholder="Cari nama tempat atau alamat di Batam" autocomplete="off" data-url="{{ route('admin.places.geocode') }}">
+                                </div>
+                                <button type="button" class="btn-kunci-titik" id="apSearchButton"><i class="bi bi-geo-alt-fill" aria-hidden="true"></i>Cari</button>
+                            </div>
+                            <p class="ap-hint" id="apSearchStatus" aria-live="polite">Pilih hasil pencarian untuk mengisi titik, alamat dan kecamatan, atau isi sendiri di bawah.</p>
+                            <ul class="ap-results" id="apResults" hidden></ul>
+
+                            <div class="ap-map">
+                                <iframe id="apMap" title="Pratinjau titik lokasi" loading="lazy" hidden></iframe>
+                                <div class="ap-map-empty" id="apMapEmpty"><i class="bi bi-map" aria-hidden="true"></i>Titik lokasi muncul di sini setelah koordinat diisi.</div>
+                            </div>
+
+                            <div class="ap-grid">
+                                <div>
+                                    <label class="form-label-custom" for="apLat">Garis lintang (lat) <span>*</span></label>
+                                    <input type="text" inputmode="decimal" name="lat" id="apLat" class="form-control-custom @error('lat') is-invalid @enderror" value="{{ old('lat') }}" placeholder="1.0456" required>
+                                    @error('lat') <div class="ap-error">{{ $message }}</div> @enderror
+                                </div>
+                                <div>
+                                    <label class="form-label-custom" for="apLng">Garis bujur (lng) <span>*</span></label>
+                                    <input type="text" inputmode="decimal" name="lng" id="apLng" class="form-control-custom @error('lng') is-invalid @enderror" value="{{ old('lng') }}" placeholder="104.0305" required>
+                                    @error('lng') <div class="ap-error">{{ $message }}</div> @enderror
+                                </div>
+                            </div>
+
+                            <div class="ap-field">
+                                <label class="form-label-custom" for="apAddress">Alamat <span>*</span></label>
+                                <textarea name="address" id="apAddress" class="form-control-custom ap-textarea @error('address') is-invalid @enderror" rows="2" maxlength="1000" placeholder="contoh: Jl. Trans Barelang, Sijantung, Galang, Batam" required>{{ old('address') }}</textarea>
+                                @error('address') <div class="ap-error">{{ $message }}</div> @enderror
+                            </div>
+
+                            <div class="ap-field mb-0">
+                                <label class="form-label-custom" for="apKecamatan">Kecamatan</label>
+                                <select name="kecamatan" id="apKecamatan" class="form-select form-control-custom">
+                                    <option value="">Pilih kecamatan</option>
+                                    @foreach ($kecamatanList as $kec)
+                                        <option value="{{ $kec }}" {{ old('kecamatan') === $kec ? 'selected' : '' }}>{{ $kec }}</option>
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="col-md-6">
-                                <label class="form-label-custom">Wilayah / Kecamatan <span>*</span></label>
-                                <select name="kecamatan" class="form-control-custom" required>
-                                    <option value="">Galang / Barelang</option>
-                                    @foreach($kecamatanList as $kec)
-                                        <option value="{{ $kec }}" {{ $kec === 'Galang' ? 'selected' : '' }}>{{ $kec }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
                         </div>
 
-                        <!-- Pencarian Lokasi (Google Places / OSM) -->
-                        <div class="mb-3">
-                            <label class="form-label-custom">Pencarian Lokasi (Google Places / OSM) <span>*</span></label>
-                            <div class="d-flex gap-2">
-                                <div class="position-relative flex-grow-1">
-                                    <i class="bi bi-search position-absolute text-primary" style="left: 14px; top: 12px; font-size: 14px;"></i>
-                                    <input type="text" id="inputSearchPlaces" class="form-control-custom ps-5" value="Viovio Beach & Bar, Sijantung Galang" placeholder="Viovio Beach & Bar, Sijantung Galang">
-                                </div>
-                                <button type="button" class="btn-kunci-titik" onclick="mockKunciTitik()">
-                                    <i class="bi bi-geo-alt-fill"></i>
-                                    <span>Kunci Titik</span>
-                                </button>
+                        <fieldset class="ap-field">
+                            <legend class="form-label-custom">Kategori <small>(boleh lebih dari satu)</small></legend>
+                            <div class="ap-chips">
+                                @foreach ($categories as $cat)
+                                    <input type="checkbox" class="btn-check" name="category_ids[]" id="apCat{{ $cat->categories_id }}" value="{{ $cat->categories_id }}" {{ in_array($cat->categories_id, $oldCategoryIds, true) ? 'checked' : '' }}>
+                                    <label for="apCat{{ $cat->categories_id }}">{{ $cat->name_id }}</label>
+                                @endforeach
                             </div>
-                        </div>
+                        </fieldset>
 
-                        <!-- Latitude & Longitude Box (Wrapped Container) -->
-                        <div class="latlng-container-box">
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <label class="form-label-custom mb-1">Garis lintang (lat) <span>*</span></label>
-                                    <input type="number" step="any" name="lat" id="inputLat" class="form-control-custom fw-bold" value="0.865421" placeholder="0.865421" required>
+                        <div class="ap-grid mb-0">
+                            <div>
+                                <label class="form-label-custom" for="apCost" id="apCostLabel">{{ $selectedPlaceType[2] }}</label>
+                                <div class="ap-affix @error('estimated_cost_idr') is-invalid @enderror">
+                                    <span>Rp</span>
+                                    <input type="number" name="estimated_cost_idr" id="apCost" min="0" step="1000" inputmode="numeric" value="{{ old('estimated_cost_idr') }}" placeholder="0" aria-describedby="apCostHint">
                                 </div>
-                                <div class="col-md-6">
-                                    <label class="form-label-custom mb-1">Garis bujur (lng) <span>*</span></label>
-                                    <input type="number" step="any" name="lng" id="inputLng" class="form-control-custom fw-bold" value="104.214589" placeholder="104.214589" required>
-                                </div>
+                                <p class="ap-hint mb-0" id="apCostHint">{{ $selectedPlaceType[3] }}</p>
+                                @error('estimated_cost_idr') <div class="ap-error">{{ $message }}</div> @enderror
                             </div>
-                        </div>
-
-                        <!-- Alamat Lengkap & Patokan -->
-                        <div class="mb-3">
-                            <label class="form-label-custom">Alamat Lengkap & Patokan <span>*</span></label>
-                            <textarea name="address" class="form-control-custom" style="height: 64px; padding: 10px 14px; resize: none;" placeholder="Jl. Trans Barelang Jembatan 5, Sijantung, Kec. Galang, Kota Batam" required>Jl. Trans Barelang Jembatan 5, Sijantung, Kec. Galang, Kota Batam</textarea>
-                        </div>
-
-                        <!-- Foto Destinasi Dropzone -->
-                        <div class="mb-3">
-                            <label class="form-label-custom">Foto Destinasi (unggah atau tautan) <span class="fw-normal text-muted" style="font-size: 12px;">(JPG, PNG maks. 2MB)</span></label>
-                            <div class="file-dropzone mb-2">
-                                <div class="dropzone-file-info">
-                                    <div class="dropzone-icon">
-                                        <i class="bi bi-image"></i>
-                                    </div>
-                                    <div>
-                                        <div class="fw-bold text-slate-800" style="font-size: 13px;" id="fileNamePreview">Viovio-sunset-panoramic.jpg</div>
-                                        <div class="text-slate-400" style="font-size: 11.5px;">1.2 MB • Siap diunggah</div>
-                                    </div>
+                            <div>
+                                <label class="form-label-custom" for="apMinutes">Lama kunjungan</label>
+                                <div class="ap-affix @error('estimated_visit_minutes') is-invalid @enderror">
+                                    <input type="number" name="estimated_visit_minutes" id="apMinutes" min="15" max="1440" step="15" inputmode="numeric" value="{{ old('estimated_visit_minutes', 60) }}">
+                                    <span>menit</span>
                                 </div>
-                                <div class="d-flex align-items-center gap-2">
-                                    <label for="inputPhotoFile" class="btn btn-outline-secondary btn-sm rounded-2 fw-semibold px-3" style="font-size: 12.5px; border-color: #DADCE0; color: #3C4043;">Ganti</label>
-                                    <input type="file" name="photo_file" id="inputPhotoFile" class="d-none" onchange="previewFile(this)">
-                                    <button type="button" class="btn text-slate-400 p-0 fs-5 ms-1" onclick="clearFile()"><i class="bi bi-trash"></i></button>
-                                </div>
-                            </div>
-                            <input type="url" name="photo_url" class="form-control-custom" placeholder="Atau URL Foto (https://...)">
-                        </div>
-
-                        <!-- Estimasi Biaya & Jam Operasional -->
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label-custom">Estimasi Biaya / Tiket</label>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-white border-end-0 text-slate-500 fw-bold" style="border-radius: 10px 0 0 10px; border-color: #DADCE0;">Rp</span>
-                                    <input type="number" name="estimated_cost_idr" id="inputCost" class="form-control-custom rounded-start-0 border-start-0" value="15000" placeholder="15000">
-                                </div>
-                                <div class="form-check mt-2">
-                                    <input type="checkbox" name="is_free" value="1" class="form-check-input" id="checkFree" onchange="toggleFree(this)">
-                                    <label class="form-check-label text-slate-600" for="checkFree" style="font-size: 12px; font-weight: 500;">Gratis / Bebas Biaya</label>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label-custom">Estimasi Durasi & Jam</label>
-                                <div class="input-group mb-2">
-                                    <input type="number" name="estimated_visit_minutes" class="form-control-custom rounded-end-0 border-end-0" value="90" placeholder="90">
-                                    <span class="input-group-text bg-slate-100 border-start-0 text-primary fw-bold" style="border-radius: 0 10px 10px 0; border-color: #DADCE0; font-size: 12.5px;">Menit</span>
-                                </div>
-                                <div class="d-flex align-items-center gap-2">
-                                    <input type="text" class="form-control-custom text-center" value="09:00" style="height: 38px;">
-                                    <span class="text-slate-400">-</span>
-                                    <input type="text" class="form-control-custom text-center" value="20:00" style="height: 38px;">
-                                    <span class="text-slate-500 fw-semibold" style="font-size: 12px;">WIB</span>
-                                </div>
+                                @error('estimated_visit_minutes') <div class="ap-error">{{ $message }}</div> @enderror
                             </div>
                         </div>
                     </div>
@@ -1138,7 +1171,7 @@
                     <div class="modal-footer-custom">
                         <button type="button" class="btn btn-light rounded-2 px-4 fw-bold border" style="font-size: 13.5px; border-color: #DADCE0; color: #3C4043;" data-bs-dismiss="modal">Batal</button>
                         <button type="submit" class="btn btn-primary rounded-2 px-4 fw-bold" style="background-color: #1672B8; border: none; font-size: 13.5px;">
-                            <i class="bi bi-check-lg me-1"></i> Simpan Destinasi
+                            <i class="bi bi-check-lg me-1"></i> Simpan
                         </button>
                     </div>
                 </form>
@@ -1150,7 +1183,7 @@
     <!-- MODAL RIWAYAT PERUBAHAN (F022 AUDIT TRAIL)                          -->
     <!-- ─────────────────────────────────────────────────────────────────── -->
     <div class="modal fade" id="modalHistory" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable modal-fullscreen-sm-down">
             <div class="modal-content modal-content-custom">
                 <!-- Header (Fixed Top) -->
                 <div class="modal-header-custom" style="padding: 18px 24px; border-bottom: 1px solid #E2E8F0; background: #FFFFFF; display: flex; align-items: center; justify-content: space-between;">
@@ -1220,36 +1253,138 @@
 
 @push('scripts')
 <script>
-    function mockKunciTitik() {
-        const query = document.getElementById('inputSearchPlaces').value;
-        if (!query) {
-            document.getElementById('inputSearchPlaces').value = 'Pantai Viovio Sunset Bar, Galang Batam';
-        }
-        document.getElementById('inputLat').value = '0.865421';
-        document.getElementById('inputLng').value = '104.214589';
-        alert('Kunci Titik Berhasil! Koordinat (0.865421, 104.214589) telah diisi dari lokasi.');
-    }
+    // Tambah Tempat Manual: location search (Geoapify via admin.places.geocode),
+    // OpenStreetMap preview of the typed coordinates, and the cost label per type.
+    (function () {
+        var modal = document.getElementById('modalTambahTempat');
+        if (!modal) return;
 
-    function toggleFree(checkbox) {
-        const costInput = document.getElementById('inputCost');
-        if (checkbox.checked) {
-            costInput.value = 0;
-            costInput.disabled = true;
-        } else {
-            costInput.disabled = false;
-        }
-    }
+        var search = document.getElementById('apSearch');
+        var searchButton = document.getElementById('apSearchButton');
+        var status = document.getElementById('apSearchStatus');
+        var results = document.getElementById('apResults');
+        var map = document.getElementById('apMap');
+        var mapEmpty = document.getElementById('apMapEmpty');
+        var lat = document.getElementById('apLat');
+        var lng = document.getElementById('apLng');
+        var address = document.getElementById('apAddress');
+        var kecamatan = document.getElementById('apKecamatan');
+        var name = document.getElementById('apName');
+        var costLabel = document.getElementById('apCostLabel');
+        var costHint = document.getElementById('apCostHint');
+        var mapTimer = null;
 
-    function previewFile(input) {
-        if (input.files && input.files[0]) {
-            document.getElementById('fileNamePreview').innerText = input.files[0].name;
+        function setStatus(text, isError) {
+            status.textContent = text;
+            status.classList.toggle('is-error', !!isError);
         }
-    }
 
-    function clearFile() {
-        document.getElementById('inputPhotoFile').value = '';
-        document.getElementById('fileNamePreview').innerText = 'Belum ada file dipilih';
-    }
+        function updateMap() {
+            var la = parseFloat(String(lat.value).replace(',', '.'));
+            var ln = parseFloat(String(lng.value).replace(',', '.'));
+            if (!isFinite(la) || !isFinite(ln) || Math.abs(la) > 90 || Math.abs(ln) > 180) {
+                map.hidden = true;
+                mapEmpty.hidden = false;
+                return;
+            }
+            var d = 0.004;
+            var src = 'https://www.openstreetmap.org/export/embed.html?bbox=' + (ln - d) + ',' + (la - d) + ',' + (ln + d) + ',' + (la + d)
+                + '&layer=mapnik&marker=' + la + ',' + ln;
+            if (map.getAttribute('src') !== src) map.setAttribute('src', src);
+            map.hidden = false;
+            mapEmpty.hidden = true;
+        }
+
+        function scheduleMap() {
+            clearTimeout(mapTimer);
+            mapTimer = setTimeout(updateMap, 500);
+        }
+
+        function choose(result) {
+            lat.value = Number(result.lat).toFixed(7);
+            lng.value = Number(result.lng).toFixed(7);
+            address.value = result.address || address.value;
+            if (result.kecamatan) kecamatan.value = result.kecamatan;
+            if (!name.value.trim() && result.name) name.value = result.name;
+            results.hidden = true;
+            results.innerHTML = '';
+            setStatus('Titik dipakai: ' + (result.name || result.address) + (result.kecamatan ? '' : '. Pilih kecamatannya sendiri.'), false);
+            updateMap();
+        }
+
+        function render(items) {
+            results.innerHTML = '';
+            if (!items.length) {
+                results.hidden = true;
+                setStatus('Tidak ditemukan di Batam. Coba kata lain, atau isi koordinat sendiri.', true);
+                return;
+            }
+            items.forEach(function (item) {
+                var li = document.createElement('li');
+                var button = document.createElement('button');
+                var title = document.createElement('b');
+                var line = document.createElement('span');
+                button.type = 'button';
+                title.textContent = item.name || item.address;
+                line.textContent = item.address;
+                button.append(title, line);
+                button.addEventListener('click', function () { choose(item); });
+                li.appendChild(button);
+                results.appendChild(li);
+            });
+            results.hidden = false;
+            setStatus(items.length + ' hasil. Pilih yang sesuai.', false);
+        }
+
+        function runSearch() {
+            var query = search.value.trim();
+            if (query.length < 3) {
+                setStatus('Ketik minimal 3 huruf.', true);
+                return;
+            }
+            searchButton.disabled = true;
+            setStatus('Mencari...', false);
+            fetch(search.dataset.url + '?q=' + encodeURIComponent(query), { headers: { 'Accept': 'application/json' } })
+                .then(function (response) {
+                    return response.json().catch(function () { return {}; }).then(function (body) {
+                        if (!response.ok) throw new Error(body.message || 'Pencarian gagal (' + response.status + ').');
+                        return body;
+                    });
+                })
+                .then(function (body) { render(body.results || []); })
+                .catch(function (error) {
+                    results.hidden = true;
+                    setStatus(error.message + ' Isi koordinat sendiri bila perlu.', true);
+                })
+                .finally(function () { searchButton.disabled = false; });
+        }
+
+        searchButton.addEventListener('click', runSearch);
+        // Enter searches instead of submitting the whole form.
+        search.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                runSearch();
+            }
+        });
+        lat.addEventListener('input', scheduleMap);
+        lng.addEventListener('input', scheduleMap);
+
+        modal.querySelectorAll('input[name="type"]').forEach(function (radio) {
+            radio.addEventListener('change', function () {
+                costLabel.textContent = radio.dataset.costLabel;
+                costHint.textContent = radio.dataset.costHint;
+            });
+        });
+
+        modal.addEventListener('shown.bs.modal', function () {
+            updateMap();
+            name.focus();
+        });
+        if (modal.dataset.reopen === '1') {
+            bootstrap.Modal.getOrCreateInstance(modal).show();
+        }
+    })();
 
     const FIELD_METADATA = {
         'name': { label: 'Nama Tempat', icon: 'bi-geo-alt-fill' },

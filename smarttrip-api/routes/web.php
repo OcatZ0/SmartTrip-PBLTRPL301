@@ -50,6 +50,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/places', [AdminPlaceController::class, 'index'])->name('places.index');
         Route::get('/places/create', [AdminPlaceController::class, 'create'])->name('places.create');
         Route::post('/places', [AdminPlaceController::class, 'store'])->name('places.store');
+        Route::get('/places/geocode', [AdminPlaceController::class, 'geocode'])->name('places.geocode');
         Route::get('/places/{place}/edit', [AdminPlaceController::class, 'edit'])->name('places.edit');
         Route::get('/places/{place}/activities', [AdminPlaceController::class, 'activities'])->name('places.activities');
         Route::get('/places/{place}/price-estimate', [AdminPlaceController::class, 'estimatePrice'])->name('places.price-estimate');

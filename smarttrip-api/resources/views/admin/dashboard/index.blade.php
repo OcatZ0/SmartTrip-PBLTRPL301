@@ -75,12 +75,13 @@
         {{-- Discovery is started from Kandidat Tempat, where its progress modal lives. --}}
         <x-admin.topbar title="Dashboard" :subtitle="$syncStatus" />
 
-        <main class="flex flex-col gap-7 px-6 pb-10 sm:px-8">
-            <div class="relative -mt-12 grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4">
+        {{-- Phones: 2 KPI columns, a smaller overlap into the (shorter) topbar, 16px sides. --}}
+        <main class="flex flex-col gap-6 px-4 pb-10 sm:gap-7 sm:px-8">
+            <div class="relative -mt-6 grid grid-cols-2 gap-3 md:-mt-12 md:grid-cols-[repeat(auto-fit,minmax(200px,1fr))] md:gap-4">
                 @foreach ($kpis as $kpi)
-                    <div class="flex flex-col gap-1 rounded-[18px] bg-white px-5 py-[18px] shadow-[0_18px_40px_-16px_rgba(10,36,64,0.3)]">
-                        <span class="text-[13px] font-semibold text-[#5d6b7c]">{{ $kpi['label'] }}</span>
-                        <span class="text-[30px] font-extrabold leading-9">{{ $kpi['value'] }}</span>
+                    <div class="flex min-w-0 flex-col gap-1 rounded-[18px] bg-white px-4 py-4 shadow-[0_18px_40px_-16px_rgba(10,36,64,0.3)] sm:px-5 sm:py-[18px]">
+                        <span class="text-[12px] font-semibold text-[#5d6b7c] sm:text-[13px]">{{ $kpi['label'] }}</span>
+                        <span class="text-[24px] font-extrabold leading-8 sm:text-[30px] sm:leading-9">{{ $kpi['value'] }}</span>
                         <span class="text-xs text-[#5d6b7c]">{{ $kpi['note'] }}</span>
                     </div>
                 @endforeach
@@ -90,7 +91,7 @@
                 <div role="status" class="rounded-xl bg-[#e3f6ec] px-4 py-3 text-sm font-semibold text-[#1d7a55]">{{ session('status') }}</div>
             @endif
 
-            <div class="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] items-start gap-5">
+            <div class="grid grid-cols-[repeat(auto-fit,minmax(min(280px,100%),1fr))] items-start gap-4 sm:gap-5">
                 @foreach ($columns as $col)
                     <section class="flex flex-col gap-2.5 rounded-[20px] bg-[#eef2f8] p-3.5">
                         <div class="flex items-center justify-between px-1.5 py-1">
@@ -124,7 +125,7 @@
                             <a href="{{ route('admin.places.edit', $place) }}" class="truncate text-sm font-bold text-[#14212f] no-underline hover:text-[#1f5f99]">{{ $place->name }}</a>
                             <span class="text-xs text-[#5d6b7c]">{{ ($place->kecamatan ?: '-') . ' · ' . $typeLabel($place->type) }}</span>
                         </div>
-                        <span class="shrink-0 text-[13px] font-bold">{{ $idNumber($place->wishlisted_in_count) }} wishlist</span>
+                        <span class="shrink-0 whitespace-nowrap text-[13px] font-bold">{{ $idNumber($place->wishlisted_in_count) }} wishlist</span>
                     </div>
                 @empty
                     <p class="m-0 text-[13px] text-[#5d6b7c]">Belum ada tempat yang masuk wishlist.</p>

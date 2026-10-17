@@ -87,8 +87,55 @@
     .cd-map { color: var(--cd-blue); }
     .cd-empty { padding: 48px 16px; text-align: center; color: var(--cd-muted); }
     .cd-empty .bi { display: block; margin-bottom: 8px; font-size: 36px; color: #cbd5e1; }
+    .cd-bulk-all { display: none; }
+    /* ── Small screens: each candidate row becomes a card (same pattern as Kelola Tempat) ── */
+    @media (max-width: 767.98px) {
+        .cd-bulk-all { display: inline-flex; }
+        /* Status tabs stack, each one full width (the selected one was cut short). */
+        .cd-tabs { flex-direction: column; flex: 1 1 100%; }
+        .cd-tab { width: 100%; padding: 10px 12px; }
+        /* Each candidate is its own white card on the page background, 12px apart;
+           the bulk bar and the footer are cards too. */
+        .cd-card { background: transparent; border: 0; border-radius: 0; overflow: visible; display: flex; flex-direction: column; gap: 12px; }
+        .cd-bulk { padding: 10px 12px; gap: 8px; border: 1px solid var(--cd-line); border-radius: 14px; }
+        .cd-bulk-count { flex-basis: 100%; }
+        .cd-bulk .cd-btn { flex: 1 1 auto; justify-content: center; }
+        .cd-card .table-responsive { overflow: visible; }
+        .cd-table, .cd-table tbody { display: block; width: 100%; }
+        .cd-table thead { display: none; }
+        /* Checkbox, name and status on top; then one "label: value" line each; actions at the bottom. */
+        .cd-table tbody { display: flex !important; flex-direction: column; gap: 12px; }
+        .cd-table tbody tr { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; column-gap: 10px; row-gap: 8px; padding: 14px; background: #fff; border: 1px solid var(--cd-line); border-radius: 14px; box-shadow: 0 6px 18px -12px rgba(10, 36, 64, .25); }
+        .cd-table td { display: block; padding: 0; border: 0; }
+        .cd-table td.cd-c-check { grid-column: 1; grid-row: 1; padding-top: 2px; }
+        .cd-table td.cd-c-name { grid-column: 2; grid-row: 1; min-width: 0; overflow-wrap: anywhere; }
+        .cd-table td.cd-c-status { grid-column: 3; grid-row: 1; }
+        .cd-table td.cd-c-type, .cd-table td.cd-c-area, .cd-table td.cd-c-found {
+            grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+            padding-top: 8px; border-top: 1px dashed var(--cd-line); white-space: normal; text-align: right;
+        }
+        .cd-table td[data-label]::before { content: attr(data-label); flex-shrink: 0; font-size: 12px; font-weight: 700; color: var(--cd-muted); text-align: left; }
+        .cd-table td.cd-c-actions { grid-column: 1 / -1; padding-top: 4px; }
+        .cd-table td.cd-c-actions .cd-actions { justify-content: stretch; }
+        .cd-table td.cd-c-actions .cd-btn:not(.is-icon) { flex: 1 1 auto; justify-content: center; }
+        .cd-table td.cd-empty { grid-column: 1 / -1; }
+        /* .cd-card prefix: the base .cd-foot rule comes later in this sheet. */
+        .cd-card .cd-foot { flex-direction: column; align-items: stretch; text-align: center; background: #fff; border: 1px solid var(--cd-line); border-radius: 14px; }
+        .cd-card .cd-foot .pagination { justify-content: center; flex-wrap: wrap; }
+        .cd-dt-map { height: 200px; }
+    }
     .cd-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-top: 1px solid var(--cd-line); font-size: 13px; color: var(--cd-muted); }
     .cd-dm .modal-content { border: 0; border-radius: 20px; box-shadow: 0 24px 64px rgba(10, 36, 64, .22); }
+    @media (max-width: 575.98px) {
+        /* modal-fullscreen-sm-down: square corners, and the footer buttons may wrap. */
+        .cd-dm .modal-content { border-radius: 0; box-shadow: none; }
+        .cd-dm-head, .cd-dm-body { padding-left: 16px; padding-right: 16px; }
+        .cd-dm .cd-dm-foot { flex-wrap: wrap; padding: 12px 16px 16px; }
+        .cd-dm .cd-dm-foot .cd-btn { flex: 1 1 auto; justify-content: center; }
+        .cd-dm-stats { grid-template-columns: 1fr; }
+        /* Approve and reject first; the OpenStreetMap link drops to its own row. */
+        .cd-dm #cdDtOsmLink { order: 2; flex-basis: 100%; margin-right: 0 !important; }
+    }
     .cd-dm-head { display: flex; align-items: center; gap: 14px; padding: 20px 24px; border-bottom: 1px solid #e2e8f0; }
     .cd-dm-icon { width: 44px; height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border-radius: 12px; background: #eaf2fa; color: #2b6fab; font-size: 20px; }
     .cd-dm-icon.is-finished { background: #e3f6ec; color: #1d7a55; }
@@ -196,6 +243,10 @@
         @if ($canSelect && $candidates->isNotEmpty())
             <div class="cd-bulk">
                 <span class="cd-bulk-count" id="cdBulkCount" aria-live="polite">Belum ada yang dipilih</span>
+                {{-- Small screens only: the table header (with "select all") is hidden there. --}}
+                <button type="button" class="cd-btn is-quiet cd-bulk-all" onclick="document.getElementById('cdCheckAll').click()">
+                    <i class="bi bi-check2-all" aria-hidden="true"></i>Pilih semua
+                </button>
                 <button type="submit" formaction="{{ route('admin.candidates.bulk-approve') }}" class="cd-btn is-approve" data-bulk-button
                     data-busy-label="Menyetujui..." disabled>
                     <i class="bi bi-check-lg" aria-hidden="true"></i>Setujui terpilih
@@ -247,22 +298,22 @@
                         @endphp
                         <tr>
                             @if ($canSelect)
-                                <td>
+                                <td class="cd-c-check">
                                     @if ($candidate->status !== 'approved')
                                         <input type="checkbox" class="cd-check candidate-check" name="ids[]" value="{{ $candidate->place_candidates_id }}"
                                             aria-label="Pilih {{ $candidate->name }}">
                                     @endif
                                 </td>
                             @endif
-                            <td>
+                            <td class="cd-c-name">
                                 <button type="button" class="cd-name cd-name-link" data-candidate="{{ json_encode($detail) }}">{{ $candidate->name }}</button>
                                 <div class="cd-id">{{ $candidate->external_place_id }}</div>
                             </td>
-                            <td><span class="cd-type {{ $type['class'] }}"><i class="bi {{ $type['icon'] }}" aria-hidden="true"></i>{{ $type['label'] }}</span></td>
-                            <td class="cd-muted"><i class="bi bi-geo-alt me-1" aria-hidden="true"></i>{{ $candidate->search_area }}</td>
-                            <td class="cd-muted">{{ $candidate->created_at?->format('d/m/Y') }}</td>
-                            <td><span class="cd-status is-{{ $candidate->status }}"><i class="bi {{ $status['icon'] }}" aria-hidden="true"></i>{{ $status['label'] }}</span></td>
-                            <td>
+                            <td class="cd-c-type" data-label="Jenis"><span class="cd-type {{ $type['class'] }}"><i class="bi {{ $type['icon'] }}" aria-hidden="true"></i>{{ $type['label'] }}</span></td>
+                            <td class="cd-muted cd-c-area" data-label="Kecamatan"><i class="bi bi-geo-alt me-1" aria-hidden="true"></i>{{ $candidate->search_area }}</td>
+                            <td class="cd-muted cd-c-found" data-label="Ditemukan">{{ $candidate->created_at?->format('d/m/Y') }}</td>
+                            <td class="cd-c-status"><span class="cd-status is-{{ $candidate->status }}"><i class="bi {{ $status['icon'] }}" aria-hidden="true"></i>{{ $status['label'] }}</span></td>
+                            <td class="cd-c-actions">
                                 <div class="cd-actions">
                                     <button type="button" class="cd-btn is-icon cd-map" data-candidate="{{ json_encode($detail) }}"
                                         title="Lihat detail" aria-label="Lihat detail {{ $candidate->name }}">
@@ -311,7 +362,7 @@
     </form>
 
     <div class="modal fade cd-dm" id="cdDiscoveryModal" tabindex="-1" aria-labelledby="cdDmTitle" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-dialog modal-dialog-centered modal-lg modal-fullscreen-sm-down">
             <div class="modal-content">
                 <div class="cd-dm-head">
                     <span class="cd-dm-icon" id="cdDmIcon" aria-hidden="true"><i class="bi bi-radar"></i></span>
@@ -329,7 +380,7 @@
 
     {{-- Candidate detail, filled from the row's data-candidate by openCandidateDetail(). --}}
     <div class="modal fade cd-dm" id="cdDetailModal" tabindex="-1" aria-labelledby="cdDtTitle" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-dialog modal-dialog-centered modal-lg modal-fullscreen-sm-down">
             <div class="modal-content">
                 <div class="cd-dm-head">
                     <span class="cd-dm-icon" aria-hidden="true"><i class="bi bi-geo-alt" id="cdDtIcon"></i></span>

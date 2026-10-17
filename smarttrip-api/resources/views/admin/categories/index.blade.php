@@ -285,6 +285,73 @@
         gap: 8px;
     }
 
+    /* Phones: the header stacks, each category becomes a card (icon, names,
+       actions on top; labelled rows below), modals go full screen. */
+    @media (max-width: 767.98px) {
+        .table-card-header { flex-direction: column; align-items: stretch; gap: 12px; padding: 16px; }
+        .table-search-box { width: 100%; }
+        .table-search-box input { height: 44px; font-size: 14px; }
+        .categories-table thead { display: none; }
+        /* Each category is its own white card on the page background, 12px apart. */
+        .categories-table-card { background: transparent; border: 0; border-radius: 0; overflow: visible; display: flex; flex-direction: column; gap: 12px; }
+        .table-card-header, .table-card-footer { border: 1px solid #E2E8F0; border-radius: 14px; }
+        .categories-table-card .table-responsive { overflow: visible; }
+        .categories-table { display: block; }
+        .categories-table tbody { display: flex; flex-direction: column; gap: 12px; }
+        .categories-table tr {
+            display: grid;
+            grid-template-columns: 44px minmax(0, 1fr) auto;
+            column-gap: 12px;
+            row-gap: 6px;
+            padding: 14px 16px;
+            background: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            border-radius: 14px;
+            box-shadow: 0 6px 18px -12px rgba(10, 36, 64, .25);
+        }
+        .categories-table tr:hover td { background-color: transparent; }
+        .categories-table td { display: block; padding: 0; border-bottom: none; text-align: left !important; }
+        .categories-table td[colspan] { grid-column: 1 / -1; text-align: center !important; padding: 32px 0; }
+        .categories-table .ct-icon { grid-row: 1; grid-column: 1; }
+        .categories-table .ct-name { grid-row: 1; grid-column: 2; align-self: center; }
+        .categories-table .ct-actions { grid-row: 1; grid-column: 3; align-self: center; }
+        .categories-table .ct-actions button { width: 40px; height: 40px; }
+        .categories-table [data-label] {
+            grid-column: 1 / -1;
+            display: grid;
+            grid-template-columns: 92px minmax(0, 1fr);
+            align-items: start;
+            gap: 8px;
+        }
+        .categories-table [data-label]::before {
+            content: attr(data-label);
+            color: #64748B;
+            font-size: 12px;
+            font-weight: 700;
+            padding-top: 2px;
+        }
+        .categories-table .ct-en { margin-top: 6px; }
+        .categories-table .ct-onboarding > span { justify-self: start; }
+        .cell-chips { max-width: none; }
+        .table-card-footer { padding: 12px 16px; }
+    }
+
+    @media (max-width: 575.98px) {
+        /* Prefixed: the base modal rules come later in this sheet. */
+        .modal-dialog .modal-content-custom { border-radius: 0; max-height: none; box-shadow: none; }
+        .modal-dialog .modal-body-scrollable { max-height: none; padding: 16px !important; }
+        #modalHistory .modal-header-custom { padding: 14px 16px !important; }
+        #modalCategoryForm .modal-header-custom { padding: 16px !important; }
+        #modalCategoryForm .modal-footer { padding: 12px 16px !important; }
+        #modalCategoryForm .modal-footer .btn { flex: 1 1 0; }
+        /* History diff: field name above its values instead of beside them. */
+        .modal-dialog .audit-diff-table, .modal-dialog .audit-diff-table tbody,
+        .modal-dialog .audit-diff-row, .modal-dialog .audit-diff-row td { display: block; width: 100%; }
+        .modal-dialog .audit-diff-label { padding: 10px 0 4px; }
+        .modal-dialog .audit-diff-content { padding: 0 0 10px; }
+        .modal-dialog .audit-diff-row { border-bottom: 1px solid #F1F5F9; }
+    }
+
     /* ─────────────────────────────────────────────────────────────────── */
     /* MODAL STYLING WITH SMOOTH VISIBLE SCROLLBAR                          */
     /* ─────────────────────────────────────────────────────────────────── */
@@ -753,19 +820,19 @@
                     @forelse($categories as $cat)
                         @php($icon = $cat->iconMeta())
                         <tr>
-                            <td>
+                            <td class="ct-icon">
                                 <div class="symbol-icon-box symbol-tone-{{ $icon['tone'] }}" title="{{ $icon['label'] }}">
                                     <i class="bi {{ $icon['icon'] }}"></i>
                                 </div>
                             </td>
-                            <td>
+                            <td class="ct-name">
                                 <div class="cat-title">{{ $cat->name_id }}</div>
                                 <div class="cat-subtitle">{{ $cat->subtitle_id ?? 'Kategori Destinasi' }}</div>
                             </td>
-                            <td>
+                            <td class="ct-en" data-label="Inggris">
                                 <div class="cat-en-title">{{ $cat->name_en }}</div>
                             </td>
-                            <td>
+                            <td class="ct-places" data-label="Destinasi">
                                 {{-- places is eager-loaded with at most 3 rows per category; places_count is the total. --}}
                                 @if ($cat->places_count === 0)
                                     <span class="cell-empty">Belum ada tempat</span>
@@ -780,14 +847,14 @@
                                     </div>
                                 @endif
                             </td>
-                            <td class="text-center">
+                            <td class="text-center ct-onboarding" data-label="Onboarding">
                                 @if ($cat->show_in_onboarding)
                                     <span class="badge-onboarding is-shown"><i class="bi bi-check-lg"></i> Ya</span>
                                 @else
                                     <span class="badge-onboarding is-hidden"><i class="bi bi-eye-slash"></i> Tidak</span>
                                 @endif
                             </td>
-                            <td class="text-center">
+                            <td class="text-center ct-actions">
                                 <div class="d-flex align-items-center justify-content-center gap-2">
                                     <button type="button" class="btn-action-edit" title="Edit Kategori"
                                             data-category="{{ json_encode($categoryPayload($cat)) }}"
@@ -828,7 +895,7 @@
     <!-- MODAL EDIT / TAMBAH KATEGORI                                        -->
     <!-- ─────────────────────────────────────────────────────────────────── -->
     <div class="modal fade" id="modalCategoryForm" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg modal-fullscreen-sm-down">
             <div class="modal-content modal-content-custom">
                 <!-- Header (Fixed Top) -->
                 <div class="modal-header-custom p-4 border-bottom d-flex justify-content-between align-items-start" style="flex-shrink: 0; background-color: #FFFFFF;">
@@ -986,7 +1053,7 @@
     <!-- MODAL RIWAYAT PERUBAHAN (F022 AUDIT TRAIL)                          -->
     <!-- ─────────────────────────────────────────────────────────────────── -->
     <div class="modal fade" id="modalHistory" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable modal-fullscreen-sm-down">
             <div class="modal-content modal-content-custom">
                 <!-- Header (Fixed Top) -->
                 <div class="modal-header-custom" style="padding: 18px 24px; border-bottom: 1px solid #E2E8F0; background: #FFFFFF; display: flex; align-items: center; justify-content: space-between;">

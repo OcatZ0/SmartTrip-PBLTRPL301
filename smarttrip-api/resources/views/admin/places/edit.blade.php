@@ -222,10 +222,36 @@
     .pe-btn.is-primary { padding: 0 20px; background: #2b6fab; color: #fff; }
     .pe-btn.is-primary:hover { background: #245f93; }
     .pe-page button:focus-visible, .pe-savebar button:focus-visible, .pe-savebar a:focus-visible { outline: 3px solid rgba(43, 111, 171, .45); outline-offset: 2px; }
+    /* The rail is a slide-in menu below 768px, so the save bar spans the full width. */
+    @media (max-width: 767.98px) {
+        .pe-savebar, .admin-shell:has(.admin-rail.is-expanded) .pe-savebar { left: 0; }
+        .pe-page { gap: 16px; padding-bottom: 140px; }
+        .pe-card { padding: 16px; border-radius: 16px; }
+        .pe-aside .pe-card { padding: 16px; }
+        .pe-summary { padding: 16px; gap: 14px; }
+        /* Riwayat Perubahan: field name above its old and new values, which stack full width. */
+        .pe-entry { gap: 10px; }
+        .pe-entry-head time { margin-left: 0; }
+        .pe-diffs li { flex-direction: column; gap: 6px; padding: 10px 12px; }
+        .pe-diff-field { flex: none; }
+        .pe-diff-values { flex-direction: column; align-items: flex-start; gap: 4px; }
+        .pe-diff-values .bi { transform: rotate(90deg); }
+        .pe-diff-old, .pe-diff-new { max-width: 100%; }
+        .pe-entry-fields { grid-template-columns: 1fr; }
+    }
     @media (max-width: 640px) {
         .pe-savebar { padding: 12px 16px; }
         .pe-dirty { flex-basis: 100%; order: -1; text-align: left; }
         .pe-photo { width: 100%; }
+        /* One row: delete and Batal at their size, Simpan takes the rest. */
+        .pe-savebar { gap: 10px; }
+        .pe-savebar .pe-delete { flex: none; }
+        .pe-savebar .pe-btn.is-quiet { flex: none; padding: 0 14px; }
+        .pe-savebar .pe-btn.is-primary { flex: 1 1 0; min-width: 0; padding: 0 12px; white-space: nowrap; }
+    }
+    /* Narrow phones: "Simpan" alone so the row still fits. */
+    @media (max-width: 400px) {
+        .pe-save-more { display: none; }
     }
     @media (prefers-reduced-motion: reduce) { .pe-savebar { transition: none; } }
 </style>
@@ -452,7 +478,7 @@
     </button>
     <span class="pe-dirty" id="peDirty" aria-live="polite">Belum ada perubahan</span>
     <a href="{{ route('admin.places.index') }}" class="pe-btn is-quiet"><i class="bi bi-x-lg" aria-hidden="true"></i>Batal</a>
-    <button type="submit" form="formEditPlace" class="pe-btn is-primary"><i class="bi bi-check2" aria-hidden="true"></i>Simpan perubahan</button>
+    <button type="submit" form="formEditPlace" class="pe-btn is-primary"><i class="bi bi-check2" aria-hidden="true"></i>Simpan<span class="pe-save-more">&nbsp;perubahan</span></button>
 </div>
 
 @include('admin.partials.confirm-modal')

@@ -29,10 +29,10 @@ class PlacePhotoController extends Controller
                 $store->storeUpload($place, $file);
             }
         } catch (RuntimeException $exception) {
-            return back()->with('error', $exception->getMessage());
+            return $this->answer($request, $place, $exception->getMessage(), failed: true);
         }
 
-        return back()->with('status', count($request->file('photos')).' foto diunggah.');
+        return $this->answer($request, $place, count($request->file('photos')).' foto diunggah.');
     }
 
     /**
@@ -71,7 +71,7 @@ class PlacePhotoController extends Controller
         }
 
         if ($savedCount === 0) {
-            return back()->with('error', 'Foto tidak bisa ditambahkan. '.$failures[0]);
+            return $this->answer($request, $place, 'Foto tidak bisa ditambahkan. '.$failures[0], failed: true);
         }
 
         $status = "{$savedCount} foto dari Google Gambar ditambahkan.";
@@ -79,7 +79,7 @@ class PlacePhotoController extends Controller
             $status .= ' '.count($failures).' foto gagal diunduh, pilih foto lain.';
         }
 
-        return back()->with('status', $status);
+        return $this->answer($request, $place, $status);
     }
 
     public function storeFromLink(Request $request, Place $place, PlacePhotoStore $store)
@@ -94,18 +94,43 @@ class PlacePhotoController extends Controller
         try {
             $store->storeFromLink($place, $data['image_url']);
         } catch (RuntimeException $exception) {
-            return back()->withInput()->with('error', $exception->getMessage());
+            if (! $request->expectsJson()) {
+                return back()->withInput()->with('error', $exception->getMessage());
+            }
+
+            return $this->answer($request, $place, $exception->getMessage(), failed: true);
         }
 
-        return back()->with('status', 'Foto dari tautan ditambahkan.');
+        return $this->answer($request, $place, 'Foto dari tautan ditambahkan.');
     }
 
-    public function destroy(Place $place, PlacePhoto $photo, PlacePhotoStore $store)
+    public function destroy(Request $request, Place $place, PlacePhoto $photo, PlacePhotoStore $store)
     {
         abort_unless($photo->places_id === $place->places_id, 404);
 
         $store->delete($photo);
 
-        return back()->with('status', 'Foto dihapus.');
+        return $this->answer($request, $place, 'Foto dihapus.');
+    }
+
+    /**
+     * The edit page sends these forms in the background (Accept: JSON) and
+     * redraws the photo cards from the answer; a plain form post still
+     * goes back with a flash message.
+     */
+    private function answer(Request $request, Place $place, string $message, bool $failed = false)
+    {
+        if (! $request->expectsJson()) {
+            return back()->with($failed ? 'error' : 'status', $message);
+        }
+
+        $place->load(['photos' => fn ($query) => $query->orderBy('sort_order')]);
+
+        return response()->json([
+            'message' => $message,
+            'html' => view('admin.places.photo-grid', ['place' => $place])->render(),
+            'count' => $place->photos->count(),
+            'primary_url' => $place->photos->first()?->photo_url,
+        ], $failed ? 422 : 200);
     }
 }

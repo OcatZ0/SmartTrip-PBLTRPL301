@@ -346,4 +346,58 @@ class AdminPlacePhotoTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.photos', [['url' => 'a.jpg']]);
     }
+
+    // --- background requests from the edit page (no reload) ---
+
+    public function test_a_background_pick_answers_with_the_redrawn_cards(): void
+    {
+        Http::fake(['93.184.216.34/*' => Http::response($this->jpegBytes(1000, 700))]);
+
+        $response = $this->actingAs($this->admin)
+            ->postJson(route('admin.places.photos.google.store', $this->place), ['image_urls' => [
+                'http://93.184.216.34/a.jpg', 'http://93.184.216.34/b.jpg',
+            ]]);
+
+        $first = $this->place->photos()->orderBy('sort_order')->first();
+        $response->assertOk()
+            ->assertJsonPath('message', '2 foto dari Google Gambar ditambahkan.')
+            ->assertJsonPath('count', 2)
+            ->assertJsonPath('primary_url', $first->photo_url);
+        $this->assertStringContainsString('id="photoGrid"', $response->json('html'));
+        $this->assertStringContainsString('value="'.$first->place_photos_id.'" form="formEditPlace"', $response->json('html'));
+    }
+
+    public function test_a_background_upload_and_delete_answer_with_json(): void
+    {
+        $upload = $this->actingAs($this->admin)->postJson(route('admin.places.photos.store', $this->place), [
+            'photos' => [UploadedFile::fake()->createWithContent('a.jpg', $this->jpegBytes(800, 600))],
+        ]);
+        $upload->assertOk()->assertJsonPath('count', 1);
+
+        $photo = $this->place->photos()->first();
+        $this->actingAs($this->admin)
+            ->deleteJson(route('admin.places.photos.destroy', [$this->place, $photo]))
+            ->assertOk()
+            ->assertJsonPath('message', 'Foto dihapus.')
+            ->assertJsonPath('count', 0)
+            ->assertJsonPath('primary_url', null);
+    }
+
+    public function test_a_background_pick_that_fails_answers_422_with_the_reason(): void
+    {
+        Http::fake(['93.184.216.34/*' => Http::response('', 403)]);
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.places.photos.google.store', $this->place), ['image_urls' => ['http://93.184.216.34/a.jpg']])
+            ->assertStatus(422)
+            ->assertJsonPath('count', 0);
+    }
+
+    public function test_the_photo_forms_are_marked_for_background_sending(): void
+    {
+        $this->actingAs($this->admin)->get(route('admin.places.edit', $this->place))
+            ->assertOk()
+            ->assertSee('id="photoStatus"', false)
+            ->assertSee('id="google-pick" method="POST" action="'.route('admin.places.photos.google.store', $this->place).'" class="mb-3" data-photo-ajax', false);
+    }
 }

@@ -1,44 +1,11 @@
 <div class="card mt-4" id="photos">
     <div class="card-header">Foto Tempat</div>
     <div class="card-body">
-        @if ($place->photos->isEmpty())
-            <p class="text-muted">Belum ada foto. Aplikasi menampilkan gambar kategori sampai foto ditambahkan.</p>
-        @else
-            <div class="row g-3 mb-4">
-                @foreach ($place->photos as $photo)
-                    <div class="col-6 col-md-3">
-                        <div class="card h-100">
-                            <img src="{{ $photo->photo_url }}" class="card-img-top object-fit-cover" style="height: 140px" alt="Foto {{ $place->name }}">
-                            {{-- One row on every card: main-photo choice on the left, delete on the right.
-                                 The radio belongs to the edit form (form="formEditPlace"), so a new
-                                 main photo is only saved with "Simpan perubahan". --}}
-                            <div class="card-footer p-2 d-flex align-items-center gap-2">
-                                <label class="primary-pick mb-0">
-                                    <input type="radio" name="primary_photo_id" value="{{ $photo->place_photos_id }}" form="formEditPlace"
-                                        @checked((int) old('primary_photo_id', $place->photos->first()->place_photos_id) === $photo->place_photos_id)>
-                                    <span class="primary-pick-on badge text-bg-primary d-inline-flex align-items-center gap-1 py-2 px-2">
-                                        <i class="bi bi-star-fill" aria-hidden="true"></i> Foto utama
-                                    </span>
-                                    <span class="primary-pick-off btn btn-link btn-sm text-decoration-none px-1">
-                                        <i class="bi bi-star" aria-hidden="true"></i> Jadikan utama
-                                    </span>
-                                </label>
-                                <form method="POST" action="{{ route('admin.places.photos.destroy', [$place, $photo]) }}" class="ms-auto"
-                                    data-confirm-title="Hapus foto ini?" data-confirm-ok="Hapus foto"
-                                    data-confirm-text="Foto dihapus dari server dan tidak bisa dikembalikan.">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-outline-danger btn-sm" aria-label="Hapus foto" title="Hapus foto"><i class="bi bi-trash3" aria-hidden="true"></i></button>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                @endforeach
-            </div>
-        @endif
+        <div id="photoStatus" class="alert py-2 px-3 small" role="status" hidden></div>
+        @include('admin.places.photo-grid', ['place' => $place])
 
         <h2 class="h6">Unggah foto</h2>
-        <form method="POST" action="{{ route('admin.places.photos.store', $place) }}" enctype="multipart/form-data" class="mb-4">
+        <form method="POST" action="{{ route('admin.places.photos.store', $place) }}" enctype="multipart/form-data" class="mb-4" data-photo-ajax>
             @csrf
             <div class="input-group">
                 <input type="file" name="photos[]" class="form-control" accept="image/jpeg,image/png,image/webp" multiple required>
@@ -61,7 +28,7 @@
             <input type="text" name="q" class="form-control" maxlength="100" required value="{{ $photoQuery }}">
             <button type="submit" class="btn btn-outline-primary"><i class="bi bi-google" aria-hidden="true"></i> Cari</button>
         </form>
-        <form id="google-pick" method="POST" action="{{ route('admin.places.photos.google.store', $place) }}" class="mb-3">
+        <form id="google-pick" method="POST" action="{{ route('admin.places.photos.google.store', $place) }}" class="mb-3" data-photo-ajax>
             @csrf
             <div id="google-results" class="row g-3"></div>
             <div id="google-pick-bar" class="d-flex flex-wrap align-items-center gap-2 mt-3" hidden>
@@ -78,7 +45,7 @@
             aria-expanded="{{ $linkFormOpen ? 'true' : 'false' }}" aria-controls="photo-link-form">
             <i class="bi bi-link-45deg" aria-hidden="true"></i> Tambah dari tautan
         </button>
-        <form method="POST" action="{{ route('admin.places.photos.link.store', $place) }}" id="photo-link-form"
+        <form method="POST" action="{{ route('admin.places.photos.link.store', $place) }}" id="photo-link-form" data-photo-ajax
             class="collapse {{ $linkFormOpen ? 'show' : '' }} border rounded-3 p-3 bg-light">
             @csrf
             <div class="row g-3">
@@ -166,9 +133,74 @@ document.addEventListener('DOMContentLoaded', function () {
         $results.find('.google-pick-check').prop('checked', true);
         updatePick();
     });
-    $pickForm.on('submit', function () {
-        $pickSubmit.prop('disabled', true)
-            .html('<span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Mengunduh foto...');
+    // Every photo form is sent in the background and the cards are redrawn
+    // from the answer, so the edit page is never left and its unsaved
+    // changes stay (the page used to reload and ask "Leave site?").
+    const $status = $('#photoStatus');
+    function showStatus(text, isError) {
+        $status.removeClass('alert-success alert-danger').addClass(isError ? 'alert-danger' : 'alert-success').text(text).prop('hidden', false);
+    }
+    function errorText(body) {
+        if (body && body.errors) {
+            const first = Object.values(body.errors)[0];
+            return Array.isArray(first) ? first[0] : String(first);
+        }
+        return (body && body.message) || 'Foto gagal diproses, coba lagi.';
+    }
+    function replaceGrid(body) {
+        // Keep the admin's main-photo choice if that photo is still there.
+        const picked = $('#photoGrid input[name="primary_photo_id"]:checked').val();
+        document.dispatchEvent(new CustomEvent('place-photos:before-change'));
+        $('#photoGrid').replaceWith(body.html);
+        if (picked) $('#photoGrid input[name="primary_photo_id"][value="' + picked + '"]').prop('checked', true);
+        $('[data-photo-count]').text(body.count);
+        const $hero = $('[data-photo-hero]');
+        $hero.find('img, .pe-photo-empty').remove();
+        $hero.prepend(body.primary_url
+            ? $('<img>').attr('src', body.primary_url).attr('alt', 'Foto utama')
+            : $('<div class="pe-photo-empty"><i class="bi bi-image" aria-hidden="true"></i>Belum ada foto</div>'));
+        document.dispatchEvent(new CustomEvent('place-photos:changed'));
+    }
+    function sendPhotoForm(form, $button, busyLabel) {
+        const original = $button.html();
+        $button.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>' + busyLabel);
+        return fetch(form.action, {
+            method: 'POST',
+            body: new FormData(form),
+            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            credentials: 'same-origin',
+        })
+            .then(function (response) {
+                return response.json().catch(function () { return {}; }).then(function (body) {
+                    if (body.html) replaceGrid(body);
+                    showStatus(response.ok ? body.message : errorText(body), !response.ok);
+                    return response.ok;
+                });
+            })
+            .catch(function () { showStatus('Koneksi terputus, coba lagi.', true); return false; })
+            .finally(function () { $button.prop('disabled', false).html(original); });
+    }
+
+    $(document).on('submit', 'form[data-photo-ajax]:not([data-confirm-ajax])', function (event) {
+        event.preventDefault();
+        const form = this;
+        const isPick = form.id === 'google-pick';
+        const $button = $(form).find('button[type="submit"]').first();
+        sendPhotoForm(form, $button, isPick ? 'Mengunduh foto...' : 'Menyimpan...').then(function (ok) {
+            if (!ok) return;
+            if (isPick) {
+                $results.find('.google-pick-check').prop('checked', false);
+                updatePick();
+            } else {
+                form.reset();
+            }
+        });
+    });
+    // Delete asks in the confirm modal first; the modal hands the form back here.
+    document.addEventListener('confirmed-ajax', function (event) {
+        const form = event.target;
+        if (!form.matches('form[data-photo-ajax]')) return;
+        sendPhotoForm(form, $(form).find('button[type="submit"]').first(), '');
     });
 
     $form.on('submit', function (event) {

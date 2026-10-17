@@ -328,13 +328,13 @@
             @method('PUT')
 
             <section class="pe-card pe-summary">
-                <div class="pe-photo">
+                <div class="pe-photo" data-photo-hero>
                     @if ($primaryPhoto)
                         <img src="{{ $primaryPhoto }}" alt="Foto utama {{ $place->name }}">
                     @else
                         <div class="pe-photo-empty"><i class="bi bi-image" aria-hidden="true"></i>Belum ada foto</div>
                     @endif
-                    <a href="#photos" class="pe-photo-link"><i class="bi bi-images" aria-hidden="true"></i> Kelola foto ({{ $photoCount }})</a>
+                    <a href="#photos" class="pe-photo-link"><i class="bi bi-images" aria-hidden="true"></i> Kelola foto (<span data-photo-count>{{ $photoCount }}</span>)</a>
                 </div>
                 <div class="pe-facts">
                     <div class="pe-name">
@@ -654,6 +654,16 @@
         document.addEventListener('input', updateDirtyFor);
         document.addEventListener('change', updateDirtyFor);
         form.addEventListener('submit', function () { submitting = true; });
+        // Foto Tempat redraws its cards after an upload or delete: an untouched
+        // main-photo choice follows the new cards instead of counting as an edit.
+        var primaryWasEdited = false;
+        document.addEventListener('place-photos:before-change', function () {
+            primaryWasEdited = snapshot().primary_photo_id !== initial.primary_photo_id;
+        });
+        document.addEventListener('place-photos:changed', function () {
+            if (!primaryWasEdited) initial.primary_photo_id = snapshot().primary_photo_id;
+            updateDirty();
+        });
         window.addEventListener('beforeunload', function (e) {
             if (!submitting && changedCount() > 0) {
                 e.preventDefault();

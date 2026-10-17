@@ -1,7 +1,8 @@
 {{-- Modal konfirmasi hapus, dipakai bersama Kelola Tempat dan Edit Tempat.
      Pemicu: tombol dengan data-confirm-url (DELETE ke URL itu), atau form dengan data-confirm-title
      (submit-nya ditahan dulu). Teks dari data-confirm-title, -text, -ok.
-     Form yang dikirim menerima event "confirmed" sesaat sebelum submit. --}}
+     Form yang dikirim menerima event "confirmed" sesaat sebelum submit; form dengan
+     data-confirm-ajax tidak di-submit, melainkan menerima event "confirmed-ajax". --}}
 <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalTitle" aria-describedby="confirmModalText" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content confirm-modal">
@@ -72,6 +73,12 @@
 
         okButton.addEventListener('click', function () {
             okButton.disabled = true;
+            // data-confirm-ajax: the page sends the form itself (no reload).
+            if (pendingForm.hasAttribute('data-confirm-ajax')) {
+                modal.hide();
+                pendingForm.dispatchEvent(new CustomEvent('confirmed-ajax', { bubbles: true }));
+                return;
+            }
             pendingForm.dispatchEvent(new CustomEvent('confirmed'));
             pendingForm.submit();
         });

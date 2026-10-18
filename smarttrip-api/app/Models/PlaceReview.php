@@ -13,6 +13,8 @@ class PlaceReview extends Model
 
     protected $primaryKey = 'place_reviews_id';
 
+    public const UPDATED_AT = null;
+
     protected $fillable = [
         'places_id',
         'users_id',

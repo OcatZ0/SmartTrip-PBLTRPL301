@@ -254,7 +254,7 @@ class PlaceEnrichmentTest extends TestCase
     {
         $this->fakeGemini();
         $place = $this->makePlace([
-            'types' => ['beach', 'natural'], 'website' => 'https://melur.example', 'opening_hours' => ['osm' => 'Mo-Su 08:00-18:00'],
+            'types' => ['beach', 'natural'], 'opening_hours' => ['osm' => 'Mo-Su 08:00-18:00'],
         ]);
 
         $this->enrich($place);
@@ -265,7 +265,6 @@ class PlaceEnrichmentTest extends TestCase
 
             return str_contains($prompt, 'Kategori Geoapify/OpenStreetMap: beach, natural')
                 && str_contains($prompt, 'Jam buka (format OpenStreetMap): Mo-Su 08:00-18:00')
-                && str_contains($prompt, 'Website: https://melur.example')
                 && $schema['properties']['is_outdoor']['type'] === 'BOOLEAN'
                 && $schema['properties']['category_tags']['items']['enum'] === ['pantai', 'sejarah']
                 && in_array('description_confidence', $schema['required'], true);

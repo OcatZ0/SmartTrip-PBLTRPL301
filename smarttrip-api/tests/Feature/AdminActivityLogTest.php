@@ -74,7 +74,7 @@ class AdminActivityLogTest extends TestCase
             'name' => 'Tanpa Riwayat', 'type' => 'attraction', 'lat' => 1.15, 'lng' => 104.05,
             'address' => 'Batam', 'source' => 'manual', 'business_status' => 'operational',
             'category_tags_reviewed' => false, 'review_count' => 0,
-            'created_at' => now(), 'updated_at' => now(),
+            'created_at' => now(),
         ], 'places_id');
 
         $response = $this->actingAs($admin)->get("/admin/places/{$placesId}/edit");

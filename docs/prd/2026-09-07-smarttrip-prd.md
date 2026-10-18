@@ -4,8 +4,8 @@
 
 **Type:** Full PRD
 **Status:** In progress — backend (`smarttrip-api`) and mobile (`smarttrip-mobile`) scaffolds exist with most F001-F024 implemented; see Sections 15 and 19
-**Version:** 1.36
-**Last Updated:** 2026-10-16
+**Version:** 1.37
+**Last Updated:** 2026-10-18
 **Source of truth for implementation detail:** `docs/superpowers/specs/2026-09-07-smarttrip-itinerary-recommendation-design.md` (this PRD is a reformatted, audience-oriented view of the same decisions — where they ever conflict, the design spec wins, since it carries finer-grained rationale)
 
 | Version | Date | Change |
@@ -33,6 +33,7 @@
 | 1.20 | 2026-10-04 | Resolved the `users.email`/`users.google_id` open decision from 1.19: partial unique index (`WHERE deleted_at IS NULL`) so a deactivated account's email can be re-registered; migration and the account-deactivation feature itself are not implemented yet |
 | 1.21 | 2026-10-04 | Implemented the 1.20 decision in `smarttrip-api`: migration converting `users.email`/`users.google_id` to partial unique indexes (`WHERE deleted_at IS NULL`) plus 3 `AuthTest` cases; full backend suite green (273 tests) |
 | 1.22 | 2026-10-10 | PRD audit (data model + consistency), fixes applied in docs AND `smarttrip-api`: (1) `ON DELETE RESTRICT` never protected soft-deleted categories (soft delete is an UPDATE), so `CategoryController::destroy` now refuses a category still referenced by `place_category`/`trip_interest_category`/`user_default_interest_category`; (2) trip-history relations (`itinerary_items.places_id`, `itinerary_days.start/end_places_id`, `trips.hotel_places_id`, `trip_wishlist_places.places_id`) now use `withTrashed()` so a soft-deleted place no longer vanishes from existing itineraries, while generate/swap/catalog still exclude it; (3) documented `itinerary_days.start/end_places_id` as nullable (migration `2026_09_29_071806`, custom-pin hotel) and `places.rating` as nullable with a new 3-tier rating fallback (`PlaceRatingEstimator`: blend, median of same type, neutral 3.5) replacing the old silent `?? 0.0`; (4) added `PATCH /api/trips/{id}` (owner-only edit; changing `num_days`/`budget_total`/daily times clears the existing itinerary, client calls generate again); (5) added DB uniques `trip_wishlist_places(trips_id, places_id)`, `itinerary_days(trips_id, day_number)`, `itinerary_items(itinerary_days_id, places_id)`, `place_photos(places_id, sort_order)` (migration `2026_10_10_000000`); (6) documented FK `ON DELETE` policy per table, framework-owned tables (`personal_access_tokens`, `password_reset_tokens`, `sessions`), the `activity_log.attribute_changes` column, review orphaning on regenerate, and `GET /api/user` + web reset-password routes; (7) consistency fixes: duplicate `users.email`/`google_id` validation rows removed, Section 9 component table un-split and its admin cross-reference corrected to Section 8, Figma link added, Section 15 file structure updated to what exists, sync status noted as part of the Dashboard. Backend suite 290 tests green |
+| 1.37 | 2026-10-18 | Unused columns dropped, applied in docs AND code: (0) timestamps nothing reads (migration `2026_10_18_000002_drop_unused_timestamps`): `categories` and `users` lose `created_at`/`updated_at`, `places`, `trips`, `place_reviews` and `activity_log` lose `updated_at` (`activity_log` through `App\Models\Activity`, set as `activitylog.activity_model`); `created_at` stays where it orders or dates something, `updated_at` only on `discovery_runs` (stale-run check) and `place_candidates`; (1) `places.phone` and `places.website` (F006, F018): OpenStreetMap had no contact for any catalog place, the app never showed them and an admin cannot really confirm a phone number, so a tourist who needs one looks the place up themselves; the detail API no longer sends them, Gemini loses the website fact (migration `2026_10_18_000001_drop_phone_and_website_from_places`); (2) `categories.subtitle_id` (F022): it only showed as a line under the name in the admin category list (falling back to "Kategori Destinasi"), the app never received it and no category had one. Migration `2026_10_18_000000_drop_subtitle_id_from_categories`; the Kelola Kategori field, search and list line are gone |
 | 1.36 | 2026-10-16 | Candidates page and background Discovery (F018, F019), applied in docs AND code: the Kandidat Tempat page is rebuilt (status tabs with counts, search by name or OSM id, type and kecamatan filters, Indonesian labels, map link, bulk bar, admin pagination). Discovery no longer runs inside the web request: "Jalankan Discovery" opens a modal, queues `RunPlaceDiscovery` on the database queue and polls `admin.candidates.discovery` for progress (searches done out of 36, the last area x type, new, skipped and failed counts, a per-search log, duration), so the admin can close the page. New table `discovery_runs` (progress and history) and `jobs`/`failed_jobs` come back (migration `2026_10_15_000002`, they were dropped on 2026-10-11 when nothing was queued). Production needs `QUEUE_CONNECTION=database` and a Windows Scheduled Task running `php artisan queue:work --stop-when-empty --tries=1 --timeout=900` every minute; a run that the worker does not pick up, or that stops reporting, is marked failed after 15 minutes so Discovery is never locked for good. The job is not retried, since every search spends Geoapify credits |
 | 1.35 | 2026-10-16 | Category display fields, onboarding flag, per-place search keywords and admin login, applied in docs AND code: (1) `categories` gains `subtitle_id`, `icon_symbol` (one of 40 keys in `Category::ICON_SYMBOLS`, drawn with Bootstrap Icons in the admin and the same glyphs in the app via the `bootstrap_icons` package; still-default rows get an icon guessed from the name) and `show_in_onboarding` (boolean, replaces the short-lived text column `visibility_onboarding`); `GET /api/categories` returns `icon_symbol` and `show_in_onboarding` and `?onboarding=1` returns only the A4 onboarding categories. (2) Kelola Kategori edits in a popup that shows validation errors and keeps what was typed, a duplicate auto-generated slug is a validation error instead of HTTP 500, and the list shows 3 related places then "+n" plus an Onboarding column. (3) Search keywords belong to each place, not each category: `places.search_keywords` (text, comma-separated); a short-lived `categories.search_keywords` (renamed from `ai_keywords`) was dropped and its only values (Pantai) were not copied, since category-wide keywords do not fit every place in it. `GET /api/places?search=` now matches the name OR `search_keywords`; Gemini enrichment also returns 6-10 keywords and fills them only when empty (a place without keywords counts as needing enrichment); Edit Tempat has a "Kata Kunci Pencarian" card with a "Sarankan dengan AI" button (`GET /admin/places/{place}/keyword-suggestions`, 20/min). (4) Admin login: `/` redirects to `/admin/login`; the login and new "Lupa Kata Sandi" page (`/admin/forgot-password`, same reset link as the mobile app, same reply for any email, 5/min) use Tailwind through Vite, so the deploy workflow now runs `npm ci && npm run build`. (5) `places.estimated_cost_is_ai` and its "Perkiraan AI" marks are dropped: an AI cost the admin accepts or keeps is the admin's decision, so a cost is treated the same whoever filled it in (Gemini still only fills an empty cost). Migrations `2026_10_16_000000` to `000003`. |
 | 1.34 | 2026-10-15 | Price lookup without grounding (F022) and Kelola Tempat UI, applied in docs AND code: Grounding with Google Search turned out to have no free tier for this project (Gemini 2.5 answers 404 "no longer available to new users", Gemini 3 grounding answers 429 on the free tier), so the edit page button becomes "Perkirakan harga dengan AI" (`admin.places.price-estimate`, `GeminiPriceEstimateClient`, the regular `GEMINI_MODEL`): Gemini estimates the price from its own knowledge, the admin sees the explanation and can fill the cost field with "Pakai Rp X", saved only with Simpan perubahan; `GEMINI_GROUNDING_MODEL` is removed. Kelola Tempat: the pencil opens the edit page instead of a modal, deletes on both pages use one shared confirm modal (`admin.partials.confirm-modal`), and the remaining English UI text is in Indonesian |
@@ -292,12 +293,12 @@ Backend is Laravel/Eloquent (not TypeScript) — schema shown as field lists per
 ```
 places(places_id, external_place_id?, name, type[attraction|culinary|lodging], lat, lng, address,
   kecamatan?, price_level?, rating?, review_count, opening_hours[json], photo_url?, description?,
-  phone?, website?, business_status[operational|closed_temporarily|closed_permanently],
+  business_status[operational|closed_temporarily|closed_permanently],
   types[json], source[google|geoapify|manual],
   category_tags_reviewed[bool], estimated_visit_minutes,
   is_outdoor[bool], estimated_cost_idr?, description_override?, description_en?,
   search_keywords?[text, comma-separated],
-  timestamps, deleted_at?[soft delete])
+  created_at, deleted_at?[soft delete])
   -- search_keywords added 2026-10-16: GET /api/places?search= matches name OR these; Gemini fills them when empty,
   -- admin edits them on Edit Tempat ("Sarankan dengan AI")
   -- digabung dari places + place_attributes (revisi 2026-09-22); kolom kurasi admin
@@ -316,11 +317,11 @@ places(places_id, external_place_id?, name, type[attraction|culinary|lodging], l
   -- else the median blend of the same `type` in the candidate pool, else a neutral 3.5 (mirrors the
   -- 4-tier budget fallback; previously an undocumented `?? 0.0` punished every unrated manual place)
 
-categories(categories_id, name_id, name_en, slug[unique, partial WHERE deleted_at IS NULL], subtitle_id?,
+categories(categories_id, name_id, name_en, slug[unique, partial WHERE deleted_at IS NULL],
   icon_symbol[default 'ombak', one of Category::ICON_SYMBOLS], show_in_onboarding[bool, default true],
-  timestamps, deleted_at?[soft delete])
+  deleted_at?[soft delete])
   -- delete diproteksi ON DELETE RESTRICT dari 3 tabel pivot di bawah
-  -- subtitle_id, icon_symbol, show_in_onboarding added 2026-10-16 (show_in_onboarding = offered in the A4 interest picker)
+  -- icon_symbol, show_in_onboarding added 2026-10-16 (subtitle_id too, dropped 2026-10-18) (show_in_onboarding = offered in the A4 interest picker)
   -- name_id/name_en are language-code suffixes (Indonesian/English label), unrelated to the id/FK convention
 
 place_category(places_id FK, categories_id FK[ON DELETE RESTRICT], unique[places_id, categories_id])
@@ -339,13 +340,13 @@ place_photos(place_photos_id, places_id FK, photo_url, sort_order, unique[places
   -- credit/license/license_url/source_url were added 2026-10-13 and dropped 2026-10-15 (v1.31)
 
 place_reviews(place_reviews_id, places_id FK, users_id FK, rating[1-5], comment?, itinerary_items_id? FK,
-  unique[users_id, places_id; partial WHERE deleted_at IS NULL], timestamps, deleted_at?[soft delete])
+  unique[users_id, places_id; partial WHERE deleted_at IS NULL], created_at, deleted_at?[soft delete])
   -- unique constraint revisi 2026-09-22: 1 user cuma boleh 1 review per tempat,
   -- review ulang = edit yang sudah ada, bukan baris baru (jaga integritas Bayesian blend)
 
 users(users_id, name, email[unique, partial WHERE deleted_at IS NULL], password?, email_verified_at?,
   remember_token?, google_id?[unique, partial WHERE deleted_at IS NULL], role[user|admin],
-  default_weight_kategori/jarak/anggaran/rating?[decimal], timestamps, deleted_at?[soft delete])
+  default_weight_kategori/jarak/anggaran/rating?[decimal], deleted_at?[soft delete])
   -- CHECK constraint revisi 2026-09-22: password IS NOT NULL OR google_id IS NOT NULL
   -- default_weight_kategori/jarak/anggaran/rating[decimal, nullable] - revisi 2026-09-22,
   -- ganti tabel EAV user_criteria_weights (4 kriteria fixed, tidak butuh bentuk EAV)
@@ -366,7 +367,7 @@ pending_registrations(email[unique], name, password[hash], token[hash], created_
 trips(trips_id, users_id FK, title, num_days, budget_total, has_own_hotel[bool], hotel_places_id? FK,
   hotel_custom_name?, hotel_lat?, hotel_lng?, start_date,
   daily_start_time, daily_end_time, viewer_invite_token?[unique], share_token?[unique],
-  timestamps, deleted_at?[soft delete])
+  created_at, deleted_at?[soft delete])
   -- weight_kategori/jarak/anggaran/rating[decimal] - revisi 2026-09-22, ganti tabel EAV
   -- trip_criteria_weights (snapshot bobot 4 kriteria buat trip ini)
   -- minat trip ini lewat pivot trip_interest_category, bukan kolom json lagi
@@ -406,7 +407,7 @@ trip_viewers(trip_viewers_id, trips_id FK, users_id FK, added_at, unique[trips_i
   -- read endpoints check owner OR trip_viewers row; every write endpoint stays owner-only, unchanged
 
 activity_log(id, log_name, description, subject_type, subject_id, causer_type, causer_id,
-  attribute_changes?[json], properties[json - old/attributes], event[created|updated|deleted], timestamps)
+  attribute_changes?[json], properties[json - old/attributes], event[created|updated|deleted], created_at)
   -- attribute_changes is a LOCAL addition in 2026_09_29_025036 on top of the package columns (noted 2026-10-10);
   -- the package's batch_uuid column was not included
   -- added 2026-09-22, provided by spatie/laravel-activitylog package (stock migration, not hand-written)

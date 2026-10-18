@@ -213,12 +213,6 @@
                 </div>
             </div>
 
-            <!-- Subtitle -->
-            <div class="mb-4">
-                <label class="form-label-custom">Deskripsi Singkat / Subtitle</label>
-                <input type="text" name="subtitle_id" class="form-control-custom" value="{{ old('subtitle_id', $category->subtitle_id ?? 'Prioritas Utama Pulau') }}" placeholder="contoh: Prioritas Utama Pulau">
-            </div>
-
             <!-- Info Callout Box Tautan Tempat -->
             <div class="info-callout-box">
                 <i class="bi bi-info-circle-fill info-callout-icon"></i>

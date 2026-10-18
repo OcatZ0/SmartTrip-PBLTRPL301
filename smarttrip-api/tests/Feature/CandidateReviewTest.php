@@ -38,8 +38,6 @@ class CandidateReviewTest extends TestCase
                     'lon' => 104.05,
                     'categories' => ['beach'],
                     'opening_hours' => 'Mo-Su 08:00-18:00',
-                    'website' => 'https://pantai.example',
-                    'contact' => ['phone' => '+62 778 123'],
                 ],
             ]]]),
             'generativelanguage.googleapis.com/*' => Http::response([
@@ -200,7 +198,6 @@ class CandidateReviewTest extends TestCase
         $this->assertSame(90, $place->estimated_visit_minutes);
         $this->assertTrue((bool) $place->is_outdoor);
         $this->assertSame('geoapify', $place->source);
-        $this->assertSame('+62 778 123', $place->phone);
         $this->assertSame(['osm' => 'Mo-Su 08:00-18:00'], $place->opening_hours);
         // Geoapify has no ratings or photos; the admin adds photos.
         $this->assertNull($place->rating);

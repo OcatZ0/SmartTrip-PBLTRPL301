@@ -332,10 +332,6 @@ class PlaceEnrichmentService
             $facts[] = "Jam buka (format OpenStreetMap): {$hours}";
         }
 
-        if (filled($place->website)) {
-            $facts[] = "Website: {$place->website}";
-        }
-
         return $facts;
     }
 

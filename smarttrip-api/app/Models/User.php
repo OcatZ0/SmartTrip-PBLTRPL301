@@ -20,6 +20,8 @@ class User extends Authenticatable
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
 
+    public $timestamps = false;
+
     /**
      * docs/prd Section 10 PK/FK naming convention: {table}_id, not `id`.
      */

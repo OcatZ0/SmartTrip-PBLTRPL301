@@ -15,6 +15,8 @@ class Trip extends Model
 
     protected $primaryKey = 'trips_id';
 
+    public const UPDATED_AT = null;
+
     protected $fillable = [
         'users_id',
         'title',

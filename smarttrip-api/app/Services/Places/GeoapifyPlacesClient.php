@@ -90,8 +90,8 @@ class GeoapifyPlacesClient
      * @return array{
      *     name: string, address: string, lat: float, lng: float, types: array<int, string>,
      *     rating: float|null, review_count: int|null, price_level: string|null,
-     *     opening_hours: array|null, description: string|null, phone: string|null,
-     *     website: string|null, business_status: string, osm_tags: array<string, string>,
+     *     opening_hours: array|null, description: string|null,
+     *     business_status: string, osm_tags: array<string, string>,
      * }
      */
     public function fetch(string $externalPlaceId): array
@@ -128,8 +128,6 @@ class GeoapifyPlacesClient
             // OSM opening_hours syntax, e.g. "Mo-Su 10:00-22:00".
             'opening_hours' => is_string($openingHours) && $openingHours !== '' ? ['osm' => $openingHours] : null,
             'description' => null,
-            'phone' => $details['contact']['phone'] ?? null,
-            'website' => $details['website'] ?? null,
             'business_status' => 'operational',
             'osm_tags' => self::osmFacts($details['datasource']['raw'] ?? []),
         ];

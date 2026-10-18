@@ -1434,7 +1434,6 @@
         'name': { label: 'Nama Tempat', icon: 'bi-geo-alt-fill' },
         'name_id': { label: 'Nama Kategori (ID)', icon: 'bi-tag-fill' },
         'name_en': { label: 'Nama Kategori (EN)', icon: 'bi-translate' },
-        'subtitle_id': { label: 'Subjudul / Tagline', icon: 'bi-card-heading' },
         'icon_symbol': { label: 'Simbol Visual', icon: 'bi-emoji-smile' },
         'ai_keywords': { label: 'Kata Kunci Pencarian', icon: 'bi-search', isLong: true },
         'search_keywords': { label: 'Kata Kunci Pencarian', icon: 'bi-search', isLong: true },

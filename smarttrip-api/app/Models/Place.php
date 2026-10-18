@@ -17,6 +17,8 @@ class Place extends Model
 
     protected $primaryKey = 'places_id';
 
+    public const UPDATED_AT = null;
+
     /**
      * Kolom kurasi admin (category_tags_reviewed..description_en, kecamatan)
      * WAJIB ditulis lewat whitelist eksplisit saat re-sync dari Google -
@@ -37,8 +39,6 @@ class Place extends Model
         'opening_hours',
         'photo_url',
         'description',
-        'phone',
-        'website',
         'business_status',
         'types',
         'source',

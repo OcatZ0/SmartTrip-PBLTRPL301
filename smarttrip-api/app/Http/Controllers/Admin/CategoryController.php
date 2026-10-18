@@ -29,8 +29,7 @@ class CategoryController extends Controller
             $term = '%'.mb_strtolower($search).'%';
             $query->where(function ($searchQuery) use ($term) {
                 $searchQuery->whereRaw('LOWER(name_id) LIKE ?', [$term])
-                    ->orWhereRaw('LOWER(name_en) LIKE ?', [$term])
-                    ->orWhereRaw('LOWER(subtitle_id) LIKE ?', [$term]);
+                    ->orWhereRaw('LOWER(name_en) LIKE ?', [$term]);
             });
         }
 
@@ -79,7 +78,6 @@ class CategoryController extends Controller
 
         $category = Category::create([
             'name_id' => $data['name_id'],
-            'subtitle_id' => $data['subtitle_id'] ?? null,
             'name_en' => $data['name_en'],
             'icon_symbol' => $data['icon_symbol'] ?? Category::DEFAULT_ICON_SYMBOL,
             'show_in_onboarding' => $data['show_in_onboarding'] ?? true,
@@ -109,7 +107,7 @@ class CategoryController extends Controller
         // Only fields the request sends are changed: a field emptied in the
         // popup arrives as null and is cleared, while a request that leaves a
         // field out keeps the stored value.
-        foreach (['subtitle_id', 'icon_symbol', 'show_in_onboarding'] as $field) {
+        foreach (['icon_symbol', 'show_in_onboarding'] as $field) {
             if ($request->exists($field)) {
                 $updateData[$field] = $data[$field];
             }
@@ -137,7 +135,6 @@ class CategoryController extends Controller
     {
         return [
             'name_id' => ['required', 'string', 'max:255'],
-            'subtitle_id' => ['nullable', 'string', 'max:255'],
             'name_en' => ['required', 'string', 'max:255'],
             'icon_symbol' => ['nullable', 'string', Rule::in(array_keys(Category::ICON_SYMBOLS))],
             'show_in_onboarding' => ['nullable', 'boolean'],

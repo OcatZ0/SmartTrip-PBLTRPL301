@@ -137,12 +137,6 @@
         line-height: 1.25;
     }
 
-    .cat-subtitle {
-        font-size: 11.5px;
-        color: #64748B;
-        font-weight: 500;
-    }
-
     .cat-en-title {
         font-weight: 600;
         color: #334155;
@@ -777,7 +771,6 @@
         'update_url' => route('admin.categories.update', $category),
         'name_id' => $category->name_id,
         'name_en' => $category->name_en,
-        'subtitle_id' => $category->subtitle_id,
         'icon_symbol' => $category->iconMeta()['key'],
         'show_in_onboarding' => $category->show_in_onboarding ?? true,
         'places_count' => $category->places_count ?? 0,
@@ -827,7 +820,6 @@
                             </td>
                             <td class="ct-name">
                                 <div class="cat-title">{{ $cat->name_id }}</div>
-                                <div class="cat-subtitle">{{ $cat->subtitle_id ?? 'Kategori Destinasi' }}</div>
                             </td>
                             <td class="ct-en" data-label="Inggris">
                                 <div class="cat-en-title">{{ $cat->name_en }}</div>
@@ -973,15 +965,6 @@
                                     <div class="field-error">{{ $message }}</div>
                                 @enderror
                             </div>
-                        </div>
-
-                        <!-- Subtitle -->
-                        <div class="mb-4">
-                            <label class="form-label-custom">Deskripsi Singkat / Subtitle</label>
-                            <input type="text" name="subtitle_id" id="inputSubtitleId" class="form-control-custom @error('subtitle_id') is-invalid @enderror" placeholder="contoh: Prioritas Utama Pulau">
-                            @error('subtitle_id')
-                                <div class="field-error">{{ $message }}</div>
-                            @enderror
                         </div>
 
                         <!-- Tampil di onboarding -->
@@ -1178,7 +1161,6 @@
     function fillForm(values) {
         document.getElementById('inputNameId').value = values.name_id || '';
         document.getElementById('inputNameEn').value = values.name_en || '';
-        document.getElementById('inputSubtitleId').value = values.subtitle_id || '';
         // Shown unless explicitly off (false, or "0" from old input after a failed save).
         document.getElementById('inputShowInOnboarding').checked =
             !(values.show_in_onboarding === false || values.show_in_onboarding === '0');
@@ -1227,7 +1209,6 @@
         'name': { label: 'Nama Tempat', icon: 'bi-geo-alt-fill' },
         'name_id': { label: 'Nama Kategori (ID)', icon: 'bi-tag-fill' },
         'name_en': { label: 'Nama Kategori (EN)', icon: 'bi-translate' },
-        'subtitle_id': { label: 'Subjudul / Tagline', icon: 'bi-card-heading' },
         'icon_symbol': { label: 'Simbol Visual', icon: 'bi-emoji-smile' },
         'ai_keywords': { label: 'Kata Kunci Pencarian', icon: 'bi-search', isLong: true },
         'search_keywords': { label: 'Kata Kunci Pencarian', icon: 'bi-search', isLong: true },

@@ -15,6 +15,8 @@ class Category extends Model
 
     protected $primaryKey = 'categories_id';
 
+    public $timestamps = false;
+
     /** Default of categories.icon_symbol (migration 2026_10_09). */
     public const DEFAULT_ICON_SYMBOL = 'ombak';
 
@@ -69,7 +71,6 @@ class Category extends Model
 
     protected $fillable = [
         'name_id',
-        'subtitle_id',
         'name_en',
         'slug',
         'icon_symbol',
@@ -92,7 +93,6 @@ class Category extends Model
         return LogOptions::defaults()
             ->logOnly([
                 'name_id',
-                'subtitle_id',
                 'name_en',
                 'slug',
                 'icon_symbol',

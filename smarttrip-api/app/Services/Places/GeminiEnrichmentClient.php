@@ -21,7 +21,7 @@ use RuntimeException;
  * mengisi biaya yang masih kosong, admin bisa mengubahnya kapan saja.
  *
  * Sejak 2026-10-17 jawabannya dikunci responseSchema dan Gemini diberi fakta
- * dari sumber data (kategori dan tag OpenStreetMap, jam buka, website) supaya
+ * dari sumber data (kategori dan tag OpenStreetMap, jam buka) supaya
  * deskripsi ditulis dari fakta, bukan dikarang; kalau Gemini tidak mengenal
  * tempatnya ia boleh menjawab null (description_confidence "rendah").
  */

@@ -30,8 +30,6 @@ class PlaceDetailResource extends JsonResource
                 ->values()),
             'description_id' => $this->description_override ?? $this->description,
             'description_en' => $this->description_en,
-            'phone' => $this->phone,
-            'website' => $this->website,
             'opening_hours' => $this->opening_hours,
             'business_status' => $this->business_status,
             'rating' => $this->ratingBlend(),

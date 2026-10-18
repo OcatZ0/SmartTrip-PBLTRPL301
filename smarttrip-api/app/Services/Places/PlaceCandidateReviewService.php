@@ -63,8 +63,6 @@ class PlaceCandidateReviewService
                 'review_count' => $details['review_count'] ?? 0,
                 'opening_hours' => $details['opening_hours'],
                 'description' => $details['description'],
-                'phone' => $details['phone'],
-                'website' => $details['website'],
                 'business_status' => $details['business_status'],
                 'types' => $details['types'],
                 'price_level' => $details['price_level'],

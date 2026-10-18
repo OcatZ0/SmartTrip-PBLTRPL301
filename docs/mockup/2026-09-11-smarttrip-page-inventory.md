@@ -46,7 +46,7 @@ Panduan buat tim UI/UX - isinya murni soal apa yang dilihat dan dilakukan user d
 
 ### B2. Detail Tempat
 **Tujuan:** Info lengkap satu tempat wisata/kuliner/hotel.
-**Konten:** Galeri foto (bisa digeser), nama tempat, tag kategori, alamat, nomor telepon, website, jam buka, rating, kisaran harga, deskripsi tempat (ada versi Indonesia & Inggris), link buka di Google Maps.
+**Konten:** Galeri foto (bisa digeser), nama tempat, tag kategori, alamat, jam buka, rating, kisaran harga, deskripsi tempat (ada versi Indonesia & Inggris), link buka di Google Maps.
 **Tombol:** "+ Wishlist" (kalau lagi dalam proses bikin trip), "Tulis Review", "Buka di Google Maps", tombol back.
 **Konten tambahan:** Daftar review dari user lain (rating + komentar), rata-rata rating di bagian atas.
 **Kalau kosong:** "Jadi yang pertama kasih review."

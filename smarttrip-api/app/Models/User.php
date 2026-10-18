@@ -28,6 +28,12 @@ class User extends Authenticatable
     protected $primaryKey = 'users_id';
 
     /**
+     * users.remember_token was dropped on 2026-10-18; an empty name makes the
+     * guard skip it instead of writing a missing column.
+     */
+    protected $rememberTokenName = '';
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var list<string>
@@ -52,7 +58,6 @@ class User extends Authenticatable
      */
     protected $hidden = [
         'password',
-        'remember_token',
     ];
 
     /**

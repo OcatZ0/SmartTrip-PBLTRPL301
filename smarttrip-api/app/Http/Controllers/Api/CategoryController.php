@@ -22,9 +22,8 @@ class CategoryController extends Controller
             ->when($request->boolean('onboarding'), fn ($query) => $query->where('show_in_onboarding', true))
             ->orderBy('name_id')
             ->get(['categories_id', 'name_id', 'name_en', 'slug', 'icon_symbol', 'show_in_onboarding'])
-            // icon_symbol as the admin list shows it (the stored icon, or one
-            // guessed from the name while it is still the default); the app
-            // draws it with the same Bootstrap Icons glyph.
+            // icon_symbol as the admin list shows it; the app draws it with
+            // the same Bootstrap Icons glyph.
             ->map(fn (Category $category) => [
                 'categories_id' => $category->categories_id,
                 'name_id' => $category->name_id,

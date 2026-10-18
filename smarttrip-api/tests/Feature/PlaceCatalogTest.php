@@ -134,6 +134,18 @@ class PlaceCatalogTest extends TestCase
         $this->assertSame(['Kuliner', 'Pantai'], array_column($response->json('data'), 'name_id'));
     }
 
+    public function test_the_category_list_sends_the_stored_icon_as_it_is(): void
+    {
+        // "Wisata Alam" with the ombak icon stays ombak: the icon is not guessed from the name.
+        Category::create(['name_id' => 'Wisata Alam', 'name_en' => 'Nature', 'slug' => 'alam', 'icon_symbol' => 'ombak']);
+        Category::create(['name_id' => 'Lain', 'name_en' => 'Other', 'slug' => 'lain', 'icon_symbol' => 'tidak-ada']);
+
+        $this->getJson('/api/categories')
+            ->assertOk()
+            ->assertJsonPath('data.0.icon_symbol', 'ombak')
+            ->assertJsonPath('data.1.icon_symbol', 'ombak');
+    }
+
     public function test_the_catalog_is_paginated(): void
     {
         for ($number = 0; $number < 25; $number++) {

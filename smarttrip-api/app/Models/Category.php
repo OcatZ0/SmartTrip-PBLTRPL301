@@ -103,36 +103,13 @@ class Category extends Model
     }
 
     /**
-     * Icon shown for this category in the admin list. Rows that still have
-     * the column default (set for every existing row when the column was
-     * added) get an icon guessed from the name, as the list did before.
+     * The stored icon; an empty or unknown key shows the default.
      */
     public function iconMeta(): array
     {
-        $symbol = $this->icon_symbol;
+        $symbol = array_key_exists((string) $this->icon_symbol, self::ICON_SYMBOLS) ? $this->icon_symbol : self::DEFAULT_ICON_SYMBOL;
 
-        if (($symbol === null || $symbol === self::DEFAULT_ICON_SYMBOL) && ($guess = $this->guessIconSymbol())) {
-            $symbol = $guess;
-        }
-
-        return ['key' => $symbol] + (self::ICON_SYMBOLS[$symbol] ?? self::ICON_SYMBOLS[self::DEFAULT_ICON_SYMBOL]);
-    }
-
-    private function guessIconSymbol(): ?string
-    {
-        $name = mb_strtolower($this->name_id ?? '');
-
-        // First match wins, so the more specific words come first.
-        foreach (['feri' => 'feri', 'pantai' => 'pantai', 'seafood' => 'kuliner', 'lokal' => 'restoran', 'kuliner' => 'kuliner',
-            'belanja' => 'belanja', 'sejarah' => 'sejarah', 'budaya' => 'budaya', 'religi' => 'religi', 'alam' => 'alam',
-            'keluarga' => 'keluarga', 'malam' => 'malam', 'spa' => 'spa', 'foto' => 'foto', 'landmark' => 'landmark',
-            'taman' => 'taman', 'rekreasi' => 'hiburan'] as $word => $key) {
-            if (str_contains($name, $word)) {
-                return $key;
-            }
-        }
-
-        return null;
+        return ['key' => $symbol] + self::ICON_SYMBOLS[$symbol];
     }
 
     public function places(): BelongsToMany

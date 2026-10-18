@@ -224,6 +224,17 @@ class PlaceCatalogTest extends TestCase
         $response->assertJsonPath('data.description_id', 'Deskripsi asli Google');
     }
 
+    public function test_the_detail_opening_hours_are_lines_made_from_the_hours_per_day(): void
+    {
+        $place = $this->makePlace(['opening_hours' => ['sun' => [], 'mon' => [['09:00', '19:00']]]]);
+        $without = $this->makePlace(['name' => 'Tanpa Jam', 'external_place_id' => 'gp-no-hours', 'opening_hours' => null]);
+
+        $this->getJson("/api/places/{$place->places_id}")
+            ->assertOk()
+            ->assertJsonPath('data.opening_hours', ['weekday_descriptions' => ['Senin: 09.00–19.00', 'Minggu: Tutup']]);
+        $this->getJson("/api/places/{$without->places_id}")->assertJsonPath('data.opening_hours', null);
+    }
+
     public function test_the_detail_endpoint_404s_for_a_missing_place(): void
     {
         $response = $this->getJson('/api/places/99999');

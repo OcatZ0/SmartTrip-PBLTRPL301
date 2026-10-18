@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Place;
 use App\Models\User;
 use App\Services\Places\GooglePlaceLookupClient;
+use App\Services\Places\OpeningHours;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
@@ -167,24 +168,13 @@ class AdminPlaceDataEstimateTest extends TestCase
 
     public function test_the_edit_page_has_one_data_button_and_the_seven_day_rows(): void
     {
-        $this->place->update(['opening_hours' => ['osm' => 'Mo-Fr 09:00-17:00; Sa 09:00-12:00']]);
+        $this->place->update(['opening_hours' => OpeningHours::fromOsm('Mo-Fr 09:00-17:00; Sa 09:00-12:00')]);
 
         $this->actingAs($this->admin)->get(route('admin.places.edit', $this->place))
             ->assertOk()
             ->assertSee('Perkiraan data dengan AI')
             ->assertDontSee('Perkirakan harga dengan AI')
-            ->assertSeeInOrder(['Senin', 'name="opening_hours[mon][open]" value="09:00"', 'Sabtu', 'value="12:00"', 'Minggu'], false)
-            // Read from the OSM string, so it is not listed as unreadable.
-            ->assertDontSee('Tersimpan dari OpenStreetMap');
-    }
-
-    public function test_an_osm_string_the_rows_cannot_show_is_listed_above_them(): void
-    {
-        $this->place->update(['opening_hours' => ['osm' => 'Mo-Fr 09:00-17:00; PH off']]);
-
-        $this->actingAs($this->admin)->get(route('admin.places.edit', $this->place))
-            ->assertOk()
-            ->assertSee('Tersimpan dari OpenStreetMap');
+            ->assertSeeInOrder(['Senin', 'name="opening_hours[mon][open]" value="09:00"', 'Sabtu', 'value="12:00"', 'Minggu'], false);
     }
 
     public function test_saving_the_seven_day_rows_and_a_closed_status(): void
@@ -198,10 +188,10 @@ class AdminPlaceDataEstimateTest extends TestCase
         ])->assertRedirect()->assertSessionHasNoErrors();
 
         $this->place->refresh();
-        $this->assertSame('Senin: 09.00–19.00', $this->place->opening_hours['weekday_descriptions'][0]);
-        $this->assertSame(['Sabtu: Tutup', 'Minggu: Buka 24 jam'], array_slice($this->place->opening_hours['weekday_descriptions'], 5));
-        $this->assertSame([], $this->place->opening_hours['periods']['sat']);
-        $this->assertSame([['09:00', '19:00']], $this->place->opening_hours['periods']['mon']);
+        $this->assertSame([['09:00', '19:00']], $this->place->opening_hours['mon']);
+        $this->assertSame([], $this->place->opening_hours['sat']);
+        $this->assertSame([['00:00', '24:00']], $this->place->opening_hours['sun']);
+        $this->assertArrayNotHasKey('weekday_descriptions', $this->place->opening_hours);
         $this->assertSame('closed_permanently', $this->place->business_status);
     }
 
@@ -218,19 +208,19 @@ class AdminPlaceDataEstimateTest extends TestCase
 
     public function test_untouched_rows_keep_the_stored_hours(): void
     {
-        $this->place->update(['opening_hours' => ['osm' => 'Mo-Su 12:00-24:00']]);
+        $this->place->update(['opening_hours' => ['mon' => [['12:00', '24:00']]]]);
 
         $this->actingAs($this->admin)->put(route('admin.places.update', $this->place), [
             'opening_hours_changed' => '0',
             'opening_hours' => ['mon' => ['state' => 'closed']],
         ])->assertRedirect();
 
-        $this->assertSame(['osm' => 'Mo-Su 12:00-24:00'], $this->place->fresh()->opening_hours);
+        $this->assertSame(['mon' => [['12:00', '24:00']]], $this->place->fresh()->opening_hours);
     }
 
     public function test_clearing_every_row_removes_the_hours(): void
     {
-        $this->place->update(['opening_hours' => ['osm' => 'Mo-Su 12:00-24:00']]);
+        $this->place->update(['opening_hours' => ['mon' => [['12:00', '24:00']]]]);
 
         $this->actingAs($this->admin)->put(route('admin.places.update', $this->place), [
             'opening_hours_changed' => '1',

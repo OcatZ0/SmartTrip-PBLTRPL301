@@ -201,12 +201,12 @@ class AdminDashboardTest extends TestCase
         $this->makePlace([
             'name' => 'Tanpa Biaya', 'estimated_cost_idr' => null, 'category_tags_reviewed' => true,
             'estimated_visit_minutes' => 60, 'description_en' => 'There.', 'search_keywords' => 'pantai',
-            'photo_url' => 'https://example.com/a.jpg', 'opening_hours' => ['osm' => '24/7'],
+            'photo_url' => 'https://example.com/a.jpg', 'opening_hours' => array_fill_keys(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'], [['00:00', '24:00']]),
         ]);
         $this->makePlace([
             'name' => 'Hotel Lengkap', 'type' => 'lodging', 'external_place_id' => 'gp-2', 'estimated_cost_idr' => 400000,
             'category_tags_reviewed' => true, 'estimated_visit_minutes' => null, 'description_en' => 'Hotel.',
-            'search_keywords' => 'hotel', 'photo_url' => 'https://example.com/b.jpg', 'opening_hours' => ['osm' => '24/7'],
+            'search_keywords' => 'hotel', 'photo_url' => 'https://example.com/b.jpg', 'opening_hours' => array_fill_keys(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'], [['00:00', '24:00']]),
         ]);
 
         $response = $this->actingAs($admin)->get('/admin/dashboard');
@@ -244,7 +244,7 @@ class AdminDashboardTest extends TestCase
         $this->makePlace([
             'name' => 'Lengkap Semua', 'estimated_cost_idr' => 0, 'category_tags_reviewed' => true,
             'estimated_visit_minutes' => 60, 'description_en' => 'There.', 'search_keywords' => 'pantai',
-            'photo_url' => 'https://example.com/a.jpg', 'opening_hours' => ['osm' => '24/7'],
+            'photo_url' => 'https://example.com/a.jpg', 'opening_hours' => array_fill_keys(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'], [['00:00', '24:00']]),
         ]);
         $this->makePlace([
             'name' => 'Kurang Dua', 'external_place_id' => 'gp-2', 'estimated_cost_idr' => null, 'category_tags_reviewed' => true,
@@ -270,9 +270,9 @@ class AdminDashboardTest extends TestCase
     public function test_ticking_several_gaps_shows_places_missing_any_of_them(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
-        $this->makePlace(['name' => 'Tanpa Biaya', 'estimated_cost_idr' => null, 'opening_hours' => ['osm' => '24/7']]);
+        $this->makePlace(['name' => 'Tanpa Biaya', 'estimated_cost_idr' => null, 'opening_hours' => array_fill_keys(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'], [['00:00', '24:00']])]);
         $this->makePlace(['name' => 'Tanpa Jam', 'external_place_id' => 'gp-2', 'estimated_cost_idr' => 0, 'opening_hours' => null]);
-        $this->makePlace(['name' => 'Ada Keduanya', 'external_place_id' => 'gp-3', 'estimated_cost_idr' => 0, 'opening_hours' => ['osm' => '24/7']]);
+        $this->makePlace(['name' => 'Ada Keduanya', 'external_place_id' => 'gp-3', 'estimated_cost_idr' => 0, 'opening_hours' => array_fill_keys(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'], [['00:00', '24:00']])]);
 
         $this->actingAs($admin)->get(route('admin.places.index', ['kurang' => ['harga', 'jam']]))
             ->assertOk()

@@ -122,7 +122,7 @@ class GeoapifyPlacesClient
             'lng' => (float) ($details['lon'] ?? 0),
             'types' => $details['categories'] ?? [],
             // OSM opening_hours syntax, e.g. "Mo-Su 10:00-22:00".
-            'opening_hours' => is_string($openingHours) && $openingHours !== '' ? ['osm' => $openingHours] : null,
+            'opening_hours' => is_string($openingHours) && $openingHours !== '' ? OpeningHours::fromOsm($openingHours) : null,
             'description' => null,
             'business_status' => 'operational',
             'osm_tags' => self::osmFacts($details['datasource']['raw'] ?? []),

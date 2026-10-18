@@ -327,9 +327,9 @@ class PlaceEnrichmentService
             $facts[] = "Tag OpenStreetMap {$tag}: {$value}";
         }
 
-        $hours = is_array($place->opening_hours) ? ($place->opening_hours['osm'] ?? null) : null;
-        if (is_string($hours) && $hours !== '') {
-            $facts[] = "Jam buka (format OpenStreetMap): {$hours}";
+        $hours = OpeningHours::describe($place->opening_hours);
+        if ($hours !== []) {
+            $facts[] = 'Jam buka: '.implode('; ', $hours);
         }
 
         return $facts;

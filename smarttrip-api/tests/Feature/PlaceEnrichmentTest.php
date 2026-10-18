@@ -254,7 +254,7 @@ class PlaceEnrichmentTest extends TestCase
     {
         $this->fakeGemini();
         $place = $this->makePlace([
-            'types' => ['beach', 'natural'], 'opening_hours' => ['osm' => 'Mo-Su 08:00-18:00'],
+            'types' => ['beach', 'natural'], 'opening_hours' => ['mon' => [['08:00', '18:00']], 'sun' => []],
         ]);
 
         $this->enrich($place);
@@ -264,7 +264,7 @@ class PlaceEnrichmentTest extends TestCase
             $schema = $request['generationConfig']['responseSchema'];
 
             return str_contains($prompt, 'Kategori Geoapify/OpenStreetMap: beach, natural')
-                && str_contains($prompt, 'Jam buka (format OpenStreetMap): Mo-Su 08:00-18:00')
+                && str_contains($prompt, 'Jam buka: Senin: 08.00–18.00; Minggu: Tutup')
                 && $schema['properties']['is_outdoor']['type'] === 'BOOLEAN'
                 && $schema['properties']['category_tags']['items']['enum'] === ['pantai', 'sejarah']
                 && in_array('description_confidence', $schema['required'], true);
@@ -325,7 +325,7 @@ class PlaceEnrichmentTest extends TestCase
     public function test_hours_in_the_description_are_fine_when_the_source_has_opening_hours(): void
     {
         $this->fakeGemini(['description_id' => 'Buka sejak 08.00 setiap hari.', 'description_confidence' => 'tinggi']);
-        $place = $this->makePlace(['opening_hours' => ['osm' => 'Mo-Su 08:00-17:00']]);
+        $place = $this->makePlace(['opening_hours' => ['mon' => [['08:00', '17:00']]]]);
 
         $this->enrich($place);
 
@@ -424,7 +424,7 @@ class PlaceEnrichmentTest extends TestCase
         $filled = $this->enrich($place);
 
         $this->assertContains('opening_hours', $filled);
-        $this->assertSame(['weekday_descriptions' => ['Senin: 08.00–18.00', 'Minggu: 07.00–19.00']], $place->fresh()->opening_hours);
+        $this->assertSame(['mon' => [['08:00', '18:00']], 'sun' => [['07:00', '19:00']]], $place->fresh()->opening_hours);
         Http::assertSent(fn ($request) => str_contains($request->url(), 'generativelanguage')
             && str_contains($request['contents'][0]['parts'][0]['text'], 'Jam buka di Google Maps: Senin: 08.00–18.00')
             && str_contains($request['contents'][0]['parts'][0]['text'], 'Tiket masuk Rp 10.000.'));
@@ -444,9 +444,9 @@ class PlaceEnrichmentTest extends TestCase
     public function test_existing_hours_are_not_replaced(): void
     {
         $this->fakeGeminiAndGoogle(200);
-        $place = $this->makePlace(['opening_hours' => ['osm' => 'Mo-Su 06:00-18:00']]);
+        $place = $this->makePlace(['opening_hours' => ['mon' => [['06:00', '18:00']]]]);
 
         $this->assertNotContains('opening_hours', $this->enrich($place));
-        $this->assertSame(['osm' => 'Mo-Su 06:00-18:00'], $place->fresh()->opening_hours);
+        $this->assertSame(['mon' => [['06:00', '18:00']]], $place->fresh()->opening_hours);
     }
 }

@@ -21,10 +21,7 @@
     $primaryPhoto = $place->photos->first()?->photo_url ?? $place->photo_url;
     $photoCount = $place->photos->count();
     $hasCoordinates = $place->lat !== null && $place->lng !== null;
-    // Seven day rows; a stored OSM string they cannot show is listed above them.
     $hourRows = \App\Services\Places\OpeningHours::formRows($place->opening_hours);
-    $unreadableHours = filled($place->openingHoursText()) && \App\Services\Places\OpeningHours::periods($place->opening_hours) === null
-        ? $place->openingHoursText() : null;
 
     $checks = [
         ['label' => 'Biaya', 'done' => $place->estimated_cost_idr !== null,
@@ -51,7 +48,12 @@
         'estimated_cost_idr' => $value === null ? 'kosong' : ($value == 0 ? 'gratis' : 'Rp ' . $idNumber($value)),
         'is_outdoor' => $value ? 'Outdoor' : 'Indoor',
         'category_tags_reviewed' => $value ? 'sudah dicek' : 'belum dicek',
-        'opening_hours' => is_array($value) ? implode('; ', array_filter(is_array($value['weekday_descriptions'] ?? null) ? $value['weekday_descriptions'] : [$value['osm'] ?? ''], 'is_string')) : (string) $value,
+        // Log entries from before 2026-10-18 keep the old weekday_descriptions or osm shape.
+        'opening_hours' => is_array($value) ? implode('; ', array_filter(match (true) {
+            is_array($value['weekday_descriptions'] ?? null) => $value['weekday_descriptions'],
+            is_string($value['osm'] ?? null) => [$value['osm']],
+            default => \App\Services\Places\OpeningHours::describe($value),
+        }, 'is_string')) : (string) $value,
         'business_status' => match ($value) { 'closed_permanently' => 'tutup permanen', 'closed_temporarily' => 'tutup sementara', default => 'aktif' },
         default => is_array($value) ? json_encode($value, JSON_UNESCAPED_UNICODE) : (string) $value,
     };
@@ -206,7 +208,6 @@
     .pe-hours-note { font-size: 13px; color: var(--pe-muted); }
     .pe-hours-row.is-closed .pe-hours-note { color: #b42318; font-weight: 600; }
     .pe-hours-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-    .pe-hours-old { margin: 0; padding: 8px 12px; border-radius: 10px; background: var(--pe-fill); font-size: 12px; color: var(--pe-soft); }
     @media (max-width: 575.98px) {
         .pe-hours-row { grid-template-columns: 56px minmax(0, 1fr); padding: 10px; }
         .pe-hours-slot { grid-column: 1 / -1; }
@@ -399,9 +400,6 @@
                             <span class="pe-label" id="peHoursLabel">Jam operasional</span>
                             <button type="button" class="pe-price-button" id="peHoursCopy"><i class="bi bi-files" aria-hidden="true"></i> Salin Senin ke semua hari</button>
                         </div>
-                        @if ($unreadableHours)
-                            <p class="pe-hours-old">Tersimpan dari OpenStreetMap: <b>{{ $unreadableHours }}</b>. Isi baris di bawah untuk menggantinya.</p>
-                        @endif
                         {{-- 1 once a row changes: untouched rows leave the stored hours alone. --}}
                         <input type="hidden" name="opening_hours_changed" value="{{ old('opening_hours_changed', 0) }}" id="peHoursChanged">
                         <div class="pe-hours">

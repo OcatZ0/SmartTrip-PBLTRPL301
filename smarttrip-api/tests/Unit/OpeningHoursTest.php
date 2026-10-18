@@ -12,13 +12,14 @@ class OpeningHoursTest extends TestCase
         'Jumat: 09.00–19.00', 'Sabtu: Tutup', 'Minggu: Tutup',
     ];
 
-    public function test_google_maps_lines_become_periods(): void
+    public function test_google_maps_lines_become_the_hours_per_day(): void
     {
         $hours = OpeningHours::fromLines(self::MAPS_WEEK);
 
-        $this->assertSame(self::MAPS_WEEK, $hours['weekday_descriptions']);
-        $this->assertSame([['09:00', '19:00']], $hours['periods']['mon']);
-        $this->assertSame([], $hours['periods']['sat']);
+        $this->assertSame([['09:00', '19:00']], $hours['mon']);
+        $this->assertSame([], $hours['sat']);
+        $this->assertArrayNotHasKey('weekday_descriptions', $hours);
+        $this->assertSame(self::MAPS_WEEK, OpeningHours::describe($hours));
         $this->assertSame([6, 7], OpeningHours::closedWeekdays($hours));
         $this->assertTrue(OpeningHours::isOpenOn($hours, 1));
         $this->assertFalse(OpeningHours::isOpenOn($hours, 7));
@@ -31,41 +32,47 @@ class OpeningHoursTest extends TestCase
             'Thursday: 18.00–02.00', 'Friday: 9:30–17:00', 'Saturday: 12 PM–12 AM',
         ]);
 
-        $this->assertSame([['09:00', '18:00']], $hours['periods']['mon']);
-        $this->assertSame([['11:00', '14:00'], ['17:00', '22:00']], $hours['periods']['tue']);
-        $this->assertSame([], $hours['periods']['wed']);
-        $this->assertSame([['18:00', '02:00']], $hours['periods']['thu']);
-        $this->assertSame([['12:00', '00:00']], $hours['periods']['sat']);
-        $this->assertSame([['00:00', '24:00']], $hours['periods']['sun']);
-        $this->assertSame('Senin: 09.00–18.00', $hours['weekday_descriptions'][0]);
-        $this->assertSame('Minggu: Buka 24 jam', $hours['weekday_descriptions'][6]);
+        $this->assertSame(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'], array_keys($hours));
+        $this->assertSame([['09:00', '18:00']], $hours['mon']);
+        $this->assertSame([['11:00', '14:00'], ['17:00', '22:00']], $hours['tue']);
+        $this->assertSame([], $hours['wed']);
+        $this->assertSame([['18:00', '02:00']], $hours['thu']);
+        $this->assertSame([['12:00', '00:00']], $hours['sat']);
+        $this->assertSame([['00:00', '24:00']], $hours['sun']);
+        $this->assertSame('Senin: 09.00–18.00', OpeningHours::describe($hours)[0]);
+        $this->assertSame('Minggu: Buka 24 jam', OpeningHours::describe($hours)[6]);
     }
 
-    public function test_a_partial_or_unreadable_week_keeps_the_lines_but_is_unknown(): void
+    public function test_days_that_cannot_be_read_are_unknown(): void
     {
         $partial = OpeningHours::fromLines(['Senin: 08.00–18.00', 'Minggu: 07.00–19.00']);
         $odd = OpeningHours::fromLines([...array_slice(self::MAPS_WEEK, 0, 6), 'Minggu: tergantung cuaca']);
 
-        $this->assertSame(['weekday_descriptions' => ['Senin: 08.00–18.00', 'Minggu: 07.00–19.00']], $partial);
-        $this->assertArrayNotHasKey('periods', $odd);
+        $this->assertSame(['mon' => [['08:00', '18:00']], 'sun' => [['07:00', '19:00']]], $partial);
+        $this->assertNull(OpeningHours::isOpenOn($partial, 3));
+        $this->assertArrayNotHasKey('sun', $odd);
         $this->assertNull(OpeningHours::isOpenOn($odd, 7));
-        $this->assertSame([], OpeningHours::closedWeekdays($odd));
+        // The known days still count: Saturday is closed.
+        $this->assertSame([6], OpeningHours::closedWeekdays($odd));
+        $this->assertNull(OpeningHours::fromLines(['Buka saat musim liburan']));
     }
 
     public function test_simple_osm_strings_are_read(): void
     {
-        $this->assertSame([7], OpeningHours::closedWeekdays(['osm' => 'Mo-Fr 09:00-17:00; Sa 09:00-12:00']));
-        $this->assertSame([], OpeningHours::closedWeekdays(['osm' => 'Mo-Su 12:00-24:00']));
-        $this->assertSame([], OpeningHours::closedWeekdays(['osm' => '24/7']));
-        $this->assertSame([1], OpeningHours::closedWeekdays(['osm' => 'Tu-Su 10:00-22:00; Mo off']));
-        // Public holidays and the like are not read: unknown, so open.
-        $this->assertNull(OpeningHours::isOpenOn(['osm' => 'Mo-Fr 09:00-17:00; PH off'], 6));
+        $this->assertSame([7], OpeningHours::closedWeekdays(OpeningHours::fromOsm('Mo-Fr 09:00-17:00; Sa 09:00-12:00')));
+        $this->assertSame([], OpeningHours::closedWeekdays(OpeningHours::fromOsm('Mo-Su 12:00-24:00')));
+        $this->assertSame([], OpeningHours::closedWeekdays(OpeningHours::fromOsm('24/7')));
+        $this->assertSame([1], OpeningHours::closedWeekdays(OpeningHours::fromOsm('Tu-Su 10:00-22:00; Mo off')));
+        // Public holiday rules are skipped, the rest is read.
+        $this->assertSame([6, 7], OpeningHours::closedWeekdays(OpeningHours::fromOsm('Mo-Fr 09:00-17:00; PH off')));
+        $this->assertNull(OpeningHours::fromOsm('Jan-Mar Mo-Fr 09:00-17:00'));
     }
 
     public function test_nothing_stored_is_unknown(): void
     {
         $this->assertNull(OpeningHours::isOpenOn(null, 1));
         $this->assertSame([], OpeningHours::closedWeekdays(null));
+        $this->assertSame([], OpeningHours::describe(null));
     }
 
     public function test_the_form_rows_round_trip(): void
@@ -80,17 +87,19 @@ class OpeningHoursTest extends TestCase
 
         $hours = OpeningHours::fromForm($rows);
 
-        $this->assertSame(['Senin: 09.00–19.00', 'Selasa: 09.00–19.00', 'Rabu: Tutup', 'Kamis: Buka 24 jam', 'Jumat: 18.00–02.00', 'Sabtu: Tutup', 'Minggu: Tutup'], $hours['weekday_descriptions']);
+        $this->assertSame(['Senin: 09.00–19.00', 'Selasa: 09.00–19.00', 'Rabu: Tutup', 'Kamis: Buka 24 jam', 'Jumat: 18.00–02.00', 'Sabtu: Tutup', 'Minggu: Tutup'], OpeningHours::describe($hours));
         $this->assertSame(['state' => 'open', 'open' => '18:00', 'close' => '02:00'], OpeningHours::formRows($hours)['fri']);
         $this->assertSame(['state' => '24h', 'open' => '', 'close' => ''], OpeningHours::formRows($hours)['thu']);
     }
 
-    public function test_a_partly_filled_form_is_shown_but_not_used_by_the_itinerary(): void
+    public function test_a_partly_filled_form_keeps_only_the_filled_days(): void
     {
         $hours = OpeningHours::fromForm(['mon' => ['state' => 'closed'], 'tue' => ['state' => '']]);
 
-        $this->assertSame(['weekday_descriptions' => ['Senin: Tutup']], $hours);
-        $this->assertNull(OpeningHours::isOpenOn($hours, 1));
+        $this->assertSame(['mon' => []], $hours);
+        $this->assertFalse(OpeningHours::isOpenOn($hours, 1));
+        $this->assertNull(OpeningHours::isOpenOn($hours, 2));
+        $this->assertSame(['state' => '', 'open' => '', 'close' => ''], OpeningHours::formRows($hours)['tue']);
         $this->assertNull(OpeningHours::fromForm(['mon' => ['state' => '']]));
     }
 }

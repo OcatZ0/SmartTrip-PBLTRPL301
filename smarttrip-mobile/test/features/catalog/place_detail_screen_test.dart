@@ -270,7 +270,9 @@ void main() {
       ],
       'description_id': 'Deskripsi',
       'description_en': ' ',
-      'opening_hours': {'osm': 'Mo-Su 08:00-18:00'},
+      'opening_hours': {
+        'weekday_descriptions': ['Senin: 08.00–18.00', 'Minggu: Tutup'],
+      },
       'estimated_visit_minutes': 45,
       'review_count_in_app': 1,
       'reviews': [
@@ -288,7 +290,7 @@ void main() {
     expect(detail.description('id'), 'Deskripsi');
     // A blank English text falls back to Indonesian.
     expect(detail.description('en'), 'Deskripsi');
-    expect(detail.openingHours, 'Mo-Su 08:00-18:00');
+    expect(detail.openingHours, 'Senin: 08.00–18.00\nMinggu: Tutup');
     expect(detail.heroPhotoUrl, endsWith('a.jpg'));
     expect(detail.summary.reviewCount, 1);
     expect(detail.reviews.single.userName, 'Budi');

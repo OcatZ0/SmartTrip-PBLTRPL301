@@ -198,7 +198,8 @@ class CandidateReviewTest extends TestCase
         $this->assertSame(90, $place->estimated_visit_minutes);
         $this->assertTrue((bool) $place->is_outdoor);
         $this->assertSame('geoapify', $place->source);
-        $this->assertSame(['osm' => 'Mo-Su 08:00-18:00'], $place->opening_hours);
+        // Geoapify's OSM string is stored as the hours per day.
+        $this->assertSame(array_fill_keys(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'], [['08:00', '18:00']]), $place->opening_hours);
         // Geoapify has no photos; the admin adds them.
         $this->assertNull($place->photo_url);
         $this->assertTrue($place->categories->contains('categories_id', $category->categories_id));

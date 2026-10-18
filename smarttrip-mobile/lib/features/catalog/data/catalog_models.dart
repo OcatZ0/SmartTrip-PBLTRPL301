@@ -193,16 +193,11 @@ class PlaceDetail {
 
   static String? _nonEmpty(String? value) => value == null || value.trim().isEmpty ? null : value.trim();
 
-  // Geoapify places store {'osm': 'Mo-Su 08:00-21:00'}; places imported from
-  // Google kept its weekday_descriptions list.
+  // The API sends {'weekday_descriptions': ['Senin: 09.00–19.00', ...]}.
   static String? _openingHours(Object? value) {
-    if (value is String) return _nonEmpty(value);
     if (value is! Map) return null;
 
-    final osm = value['osm'];
-    if (osm is String) return _nonEmpty(osm);
-
-    final weekdays = value['weekday_descriptions'] ?? value['weekdayDescriptions'];
+    final weekdays = value['weekday_descriptions'];
     if (weekdays is List && weekdays.isNotEmpty) return weekdays.join('\n');
 
     return null;

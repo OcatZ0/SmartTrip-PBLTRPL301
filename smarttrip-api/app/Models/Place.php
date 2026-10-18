@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\Places\OpeningHours;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -142,22 +143,10 @@ class Place extends Model
             ->dontLogEmptyChanges();
     }
 
-    /**
-     * opening_hours as text, one line per day (see OpeningHours for the
-     * stored shape). Older Geoapify places hold {"osm": "Mo-Su 08:00-21:00"}.
-     */
+    /** opening_hours as text, one line per known day (see OpeningHours). */
     public function openingHoursText(): string
     {
-        $hours = $this->opening_hours;
-        if (! is_array($hours)) {
-            return '';
-        }
-
-        if (is_array($hours['weekday_descriptions'] ?? null)) {
-            return implode("\n", array_filter($hours['weekday_descriptions'], 'is_string'));
-        }
-
-        return is_string($hours['osm'] ?? null) ? $hours['osm'] : '';
+        return implode("\n", OpeningHours::describe($this->opening_hours));
     }
 
     /** search_keywords as a list, e.g. "pulau, diving" -> ["pulau", "diving"]. */

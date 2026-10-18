@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Services\Places\OpeningHours;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -30,7 +31,8 @@ class PlaceDetailResource extends JsonResource
                 ->values()),
             'description_id' => $this->description_override ?? $this->description,
             'description_en' => $this->description_en,
-            'opening_hours' => $this->opening_hours,
+            // The app shows these lines; places.opening_hours keeps only the hours per day.
+            'opening_hours' => $this->opening_hours === null ? null : ['weekday_descriptions' => OpeningHours::describe($this->opening_hours)],
             'business_status' => $this->business_status,
             'rating' => $this->ratingBlend(),
             'review_count_in_app' => (int) ($this->reviews_count ?? 0),

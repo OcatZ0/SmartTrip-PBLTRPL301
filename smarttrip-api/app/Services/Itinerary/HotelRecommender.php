@@ -4,6 +4,7 @@ namespace App\Services\Itinerary;
 
 use App\Models\Place;
 use App\Models\Trip;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use RuntimeException;
 
@@ -24,7 +25,6 @@ class HotelRecommender
 
         $lodgings = Place::query()
             ->where('type', 'lodging')
-            ->where('business_status', '!=', 'closed_permanently')
             ->withAvg('reviews', 'rating')
             ->withCount('reviews')
             ->get();
@@ -72,26 +72,17 @@ class HotelRecommender
             return KMeans::centroid($wishlistPoints->all());
         }
 
-        // Wishlist kosong: fallback ke centroid top-5 kandidat berskor
-        // tinggi di kategori minat trip (rating desc sebagai tie-break,
-        // PRD tidak merinci skor gabungan yang dipakai).
+        // Wishlist kosong: fallback ke centroid top-5 kandidat di kategori
+        // minat trip, diurutkan rating ulasan in-app (PRD tidak merinci skor
+        // gabungan yang dipakai).
         $categoryIds = $trip->interestCategories()->pluck('categories.categories_id')->all();
 
-        $candidates = Place::query()
+        $candidates = $this->topRated(Place::query()
             ->whereIn('type', ['attraction', 'culinary'])
-            ->where('business_status', '!=', 'closed_permanently')
-            ->when($categoryIds !== [], fn ($hotelQuery) => $hotelQuery->whereHas('categories', fn ($categoryQuery) => $categoryQuery->whereIn('categories.categories_id', $categoryIds)))
-            ->orderByDesc('rating')
-            ->limit(5)
-            ->get();
+            ->when($categoryIds !== [], fn ($hotelQuery) => $hotelQuery->whereHas('categories', fn ($categoryQuery) => $categoryQuery->whereIn('categories.categories_id', $categoryIds))));
 
         if ($candidates->isEmpty()) {
-            $candidates = Place::query()
-                ->whereIn('type', ['attraction', 'culinary'])
-                ->where('business_status', '!=', 'closed_permanently')
-                ->orderByDesc('rating')
-                ->limit(5)
-                ->get();
+            $candidates = $this->topRated(Place::query()->whereIn('type', ['attraction', 'culinary']));
         }
 
         if ($candidates->isEmpty()) {
@@ -99,6 +90,19 @@ class HotelRecommender
         }
 
         return KMeans::centroid($candidates->map(fn (Place $hotel) => ['lat' => (float) $hotel->lat, 'lng' => (float) $hotel->lng])->all());
+    }
+
+    /**
+     * The five places with the best in-app rating; places without reviews come last.
+     *
+     * @return Collection<int, Place>
+     */
+    private function topRated(Builder $query): Collection
+    {
+        return $query->withAvg('reviews', 'rating')->get()
+            ->sortByDesc(fn (Place $place) => $place->reviews_avg_rating ?? -1)
+            ->take(5)
+            ->values();
     }
 
     /**

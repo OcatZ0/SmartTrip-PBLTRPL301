@@ -18,7 +18,7 @@ class AdminPlaceManagementTest extends TestCase
         return Place::create(array_merge([
             'name' => 'Pantai Melur', 'type' => 'attraction', 'lat' => 1.15, 'lng' => 104.05,
             'address' => 'Nongsa, Batam', 'kecamatan' => 'Nongsa', 'source' => 'google',
-            'external_place_id' => uniqid('gp-'), 'business_status' => 'operational',
+            'external_place_id' => uniqid('gp-'),
         ], $overrides));
     }
 
@@ -175,7 +175,7 @@ class AdminPlaceManagementTest extends TestCase
 
         $response->assertRedirect();
         $this->assertDatabaseHas('places', [
-            'name' => 'Warung Baru', 'source' => 'manual', 'business_status' => 'operational', 'external_place_id' => null,
+            'name' => 'Warung Baru', 'source' => 'manual', 'external_place_id' => null,
         ]);
     }
 

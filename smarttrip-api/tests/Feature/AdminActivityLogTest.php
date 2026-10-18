@@ -20,7 +20,7 @@ class AdminActivityLogTest extends TestCase
         $admin = User::factory()->create(['role' => 'admin']);
         $place = Place::create([
             'name' => 'Pantai Melur', 'type' => 'attraction', 'lat' => 1.15, 'lng' => 104.05,
-            'address' => 'Nongsa, Batam', 'source' => 'manual', 'business_status' => 'operational',
+            'address' => 'Nongsa, Batam', 'source' => 'manual',
         ]);
 
         $response = $this->actingAs($admin)->get("/admin/places/{$place->places_id}/edit");
@@ -36,7 +36,7 @@ class AdminActivityLogTest extends TestCase
         $admin = User::factory()->create(['role' => 'admin']);
         $place = Place::create([
             'name' => 'Pantai Melur', 'type' => 'attraction', 'lat' => 1.15, 'lng' => 104.05,
-            'address' => 'Nongsa, Batam', 'kecamatan' => 'Nongsa', 'source' => 'manual', 'business_status' => 'operational',
+            'address' => 'Nongsa, Batam', 'kecamatan' => 'Nongsa', 'source' => 'manual',
         ]);
 
         $this->actingAs($admin)->put("/admin/places/{$place->places_id}", ['kecamatan' => 'Batam Kota'])->assertRedirect();
@@ -54,7 +54,7 @@ class AdminActivityLogTest extends TestCase
         $admin = User::factory()->create(['role' => 'admin', 'name' => 'Admin Satu']);
         $place = Place::create([
             'name' => 'Pantai Melur', 'type' => 'attraction', 'lat' => 1.15, 'lng' => 104.05,
-            'address' => 'Nongsa, Batam', 'source' => 'manual', 'business_status' => 'operational',
+            'address' => 'Nongsa, Batam', 'source' => 'manual',
         ]);
 
         $this->actingAs($admin)->put("/admin/places/{$place->places_id}", ['kecamatan' => 'Batam Kota'])->assertRedirect();
@@ -72,7 +72,7 @@ class AdminActivityLogTest extends TestCase
         // jadi memang tidak ada baris activity_log sama sekali buat baris ini.
         $placesId = DB::table('places')->insertGetId([
             'name' => 'Tanpa Riwayat', 'type' => 'attraction', 'lat' => 1.15, 'lng' => 104.05,
-            'address' => 'Batam', 'source' => 'manual', 'business_status' => 'operational',
+            'address' => 'Batam', 'source' => 'manual',
             'category_tags_reviewed' => false,
             'created_at' => now(),
         ], 'places_id');
@@ -112,7 +112,7 @@ class AdminActivityLogTest extends TestCase
         $user = User::factory()->create(['role' => 'user']);
         $place = Place::create([
             'name' => 'Pantai Melur', 'type' => 'attraction', 'lat' => 1.15, 'lng' => 104.05,
-            'address' => 'Nongsa, Batam', 'source' => 'manual', 'business_status' => 'operational',
+            'address' => 'Nongsa, Batam', 'source' => 'manual',
         ]);
 
         $response = $this->actingAs($user)->get("/admin/places/{$place->places_id}/edit");

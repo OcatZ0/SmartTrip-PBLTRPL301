@@ -814,9 +814,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get detailTitle => 'Detail Destinasi';
 
   @override
-  String get detailClosedTemporarily => 'Tutup sementara';
-
-  @override
   String get detailFactTicket => 'Tiket masuk';
 
   @override

@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Category;
 use App\Models\Place;
+use App\Models\PlaceReview;
 use App\Models\Trip;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -157,6 +158,21 @@ class ItineraryGenerationTest extends TestCase
         ]);
         $anchor = Place::where('name', 'Wishlist Anchor')->first();
         $trip->wishlistPlaces()->create(['places_id' => $anchor->places_id]);
+
+        $response = $this->withHeaders($this->authHeader($user))
+            ->getJson("/api/trips/{$trip->trips_id}/hotel-options");
+
+        $response->assertOk();
+        $this->assertSame('Hotel Dekat', $response->json('data.0.name'));
+    }
+
+    public function test_hotel_options_without_a_wishlist_center_on_the_best_rated_places(): void
+    {
+        $user = User::factory()->create();
+        $trip = $this->makeTrip($user);
+        $near = $this->makePlace(['type' => 'attraction', 'name' => 'Disukai', 'lat' => 1.150, 'lng' => 104.050, 'external_place_id' => 'gp-liked']);
+        PlaceReview::create(['places_id' => $near->places_id, 'users_id' => $user->users_id, 'rating' => 5]);
+        $this->makePlace(['type' => 'lodging', 'name' => 'Hotel Dekat', 'lat' => 1.151, 'lng' => 104.051, 'external_place_id' => 'gp-h1']);
 
         $response = $this->withHeaders($this->authHeader($user))
             ->getJson("/api/trips/{$trip->trips_id}/hotel-options");

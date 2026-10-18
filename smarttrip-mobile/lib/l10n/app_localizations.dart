@@ -1556,12 +1556,6 @@ abstract class AppLocalizations {
   /// **'Detail Destinasi'**
   String get detailTitle;
 
-  /// No description provided for @detailClosedTemporarily.
-  ///
-  /// In id, this message translates to:
-  /// **'Tutup sementara'**
-  String get detailClosedTemporarily;
-
   /// No description provided for @detailFactTicket.
   ///
   /// In id, this message translates to:

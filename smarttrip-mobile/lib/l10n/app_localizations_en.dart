@@ -850,9 +850,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get detailTitle => 'Place Details';
 
   @override
-  String get detailClosedTemporarily => 'Temporarily closed';
-
-  @override
   String get detailFactTicket => 'Entry ticket';
 
   @override

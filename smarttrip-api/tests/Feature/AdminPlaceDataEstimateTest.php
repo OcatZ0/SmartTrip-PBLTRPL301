@@ -138,13 +138,25 @@ class AdminPlaceDataEstimateTest extends TestCase
         Http::assertNotSent(fn ($request) => str_contains($request->url(), 'generativelanguage'));
     }
 
-    public function test_a_permanently_closed_place_is_flagged(): void
+    public function test_a_permanently_closed_place_is_flagged_without_asking_gemini(): void
     {
         $this->fakeAll($this->mapsResult(['open_state' => 'Permanently closed', 'hours' => null]), $this->webResult(), $this->answer());
 
         $this->actingAs($this->admin)->getJson(route('admin.places.data-estimate', $this->place))
             ->assertOk()
-            ->assertJsonPath('closed', 'permanent');
+            ->assertJsonPath('closed', 'permanent')
+            ->assertJsonPath('fields.estimated_cost_idr.value', null)
+            ->assertJsonPath('sources.0.source', 'Google Maps');
+        Http::assertNotSent(fn ($request) => str_contains($request->url(), 'generativelanguage'));
+    }
+
+    public function test_the_edit_page_offers_to_delete_a_permanently_closed_place(): void
+    {
+        $this->actingAs($this->admin)->get(route('admin.places.edit', $this->place))
+            ->assertOk()
+            ->assertSee('Hapus dari katalog')
+            ->assertDontSee('Tandai tutup permanen')
+            ->assertDontSee('business_status');
     }
 
     public function test_the_lookup_is_cached_so_a_second_click_spends_no_search(): void
@@ -177,14 +189,13 @@ class AdminPlaceDataEstimateTest extends TestCase
             ->assertSeeInOrder(['Senin', 'name="opening_hours[mon][open]" value="09:00"', 'Sabtu', 'value="12:00"', 'Minggu'], false);
     }
 
-    public function test_saving_the_seven_day_rows_and_a_closed_status(): void
+    public function test_saving_the_seven_day_rows(): void
     {
         $this->actingAs($this->admin)->put(route('admin.places.update', $this->place), [
             'opening_hours_changed' => '1',
             'opening_hours' => ['mon' => ['state' => 'open', 'open' => '09:00', 'close' => '19:00'], 'tue' => ['state' => 'open', 'open' => '09:00', 'close' => '19:00'],
                 'wed' => ['state' => 'open', 'open' => '09:00', 'close' => '19:00'], 'thu' => ['state' => 'open', 'open' => '09:00', 'close' => '19:00'],
                 'fri' => ['state' => 'open', 'open' => '09:00', 'close' => '19:00'], 'sat' => ['state' => 'closed'], 'sun' => ['state' => '24h']],
-            'business_status' => 'closed_permanently',
         ])->assertRedirect()->assertSessionHasNoErrors();
 
         $this->place->refresh();
@@ -192,7 +203,6 @@ class AdminPlaceDataEstimateTest extends TestCase
         $this->assertSame([], $this->place->opening_hours['sat']);
         $this->assertSame([['00:00', '24:00']], $this->place->opening_hours['sun']);
         $this->assertArrayNotHasKey('weekday_descriptions', $this->place->opening_hours);
-        $this->assertSame('closed_permanently', $this->place->business_status);
     }
 
     public function test_an_open_day_needs_both_times(): void

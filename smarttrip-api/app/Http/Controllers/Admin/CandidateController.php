@@ -152,9 +152,13 @@ class CandidateController extends Controller
     public function approve(PlaceCandidate $candidate, PlaceCandidateReviewService $service)
     {
         try {
-            $service->approve($candidate);
+            $place = $service->approve($candidate);
         } catch (RuntimeException $exception) {
             return back()->with('error', "Gagal menyetujui \"{$candidate->name}\": {$exception->getMessage()}");
+        }
+
+        if ($place === null) {
+            return back()->with('error', "\"{$candidate->name}\" tidak ditambahkan: Google Maps mencatat tempat ini tutup permanen, jadi kandidatnya ditolak. Kalau tempatnya masih buka, tambahkan lewat Tambah Tempat.");
         }
 
         return back()->with('status', "\"{$candidate->name}\" disetujui dan dipromosikan ke katalog.");
@@ -176,18 +180,20 @@ class CandidateController extends Controller
         $data = $request->validate(['ids' => ['required', 'array'], 'ids.*' => ['integer']]);
 
         $approved = 0;
+        $closed = 0;
         $failed = 0;
 
         foreach (PlaceCandidate::whereIn('place_candidates_id', $data['ids'])->get() as $candidate) {
             try {
-                $service->approve($candidate);
-                $approved++;
+                $service->approve($candidate) === null ? $closed++ : $approved++;
             } catch (RuntimeException) {
                 $failed++;
             }
         }
 
-        return back()->with('status', "{$approved} kandidat disetujui, {$failed} gagal.");
+        $closedNote = $closed > 0 ? ", {$closed} ditolak karena tutup permanen di Google Maps" : '';
+
+        return back()->with('status', "{$approved} kandidat disetujui{$closedNote}, {$failed} gagal.");
     }
 
     public function bulkReject(Request $request, PlaceCandidateReviewService $service)

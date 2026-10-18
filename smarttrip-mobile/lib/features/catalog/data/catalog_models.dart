@@ -141,7 +141,6 @@ class PlaceDetail {
     this.descriptionId,
     this.descriptionEn,
     this.openingHours,
-    this.businessStatus = 'operational',
     this.estimatedVisitMinutes,
     this.reviews = const [],
   });
@@ -160,7 +159,6 @@ class PlaceDetail {
       descriptionId: json['description_id'] as String?,
       descriptionEn: json['description_en'] as String?,
       openingHours: _openingHours(json['opening_hours']),
-      businessStatus: json['business_status'] as String? ?? 'operational',
       estimatedVisitMinutes: (json['estimated_visit_minutes'] as num?)?.toInt(),
       reviews: (json['reviews'] as List? ?? const []).cast<Map<String, dynamic>>().map(PlaceReview.fromJson).toList(),
     );
@@ -176,9 +174,8 @@ class PlaceDetail {
   final String? descriptionId;
   final String? descriptionEn;
 
-  /// Human-readable hours, e.g. the OSM "Mo-Su 08:00-21:00" from Geoapify.
+  /// Human-readable hours, one line per day, e.g. "Senin: 09.00–19.00".
   final String? openingHours;
-  final String businessStatus;
   final int? estimatedVisitMinutes;
   final List<PlaceReview> reviews;
 

@@ -244,8 +244,6 @@ class _TitleBlock extends StatelessWidget {
           ],
         ),
       if (kecamatan != null && kecamatan.isNotEmpty) Text(kecamatan, style: catalogText(13, FontWeight.w500, muted)),
-      if (detail.businessStatus == 'closed_temporarily')
-        Text(l10n.detailClosedTemporarily, style: catalogText(13, FontWeight.w700, CatalogColors.sun400)),
     ];
 
     return Column(

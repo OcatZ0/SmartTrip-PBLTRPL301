@@ -8,11 +8,6 @@
         'lodging' => ['Harga kamar per malam', 'Harga kamar standar.'],
         default => ['Biaya masuk per orang', 'Isi 0 kalau gratis.'],
     };
-    $statusLabel = match ($place->business_status) {
-        'closed_temporarily' => 'Tutup sementara',
-        'closed_permanently' => 'Tutup permanen',
-        default => 'Aktif di katalog',
-    };
     $sourceLabel = match (true) {
         str_starts_with((string) $place->external_place_id, 'osm:') => 'Data dari OpenStreetMap',
         $place->source === 'google' => 'Data dari Google Maps',
@@ -41,7 +36,7 @@
         'name' => 'nama', 'type' => 'jenis', 'kecamatan' => 'kecamatan', 'address' => 'alamat', 'estimated_cost_idr' => 'biaya',
         'estimated_visit_minutes' => 'lama kunjungan', 'is_outdoor' => 'area', 'category_tags_reviewed' => 'status tag',
         'description_override' => 'deskripsi', 'description_en' => 'deskripsi English', 'photo_url' => 'foto utama',
-        'search_keywords' => 'kata kunci pencarian', 'opening_hours' => 'jam operasional', 'business_status' => 'status',
+        'search_keywords' => 'kata kunci pencarian', 'opening_hours' => 'jam operasional',
     ];
     $formatValue = fn ($field, $value) => match ($field) {
         'estimated_visit_minutes' => $value . ' menit',
@@ -54,7 +49,6 @@
             is_string($value['osm'] ?? null) => [$value['osm']],
             default => \App\Services\Places\OpeningHours::describe($value),
         }, 'is_string')) : (string) $value,
-        'business_status' => match ($value) { 'closed_permanently' => 'tutup permanen', 'closed_temporarily' => 'tutup sementara', default => 'aktif' },
         default => is_array($value) ? json_encode($value, JSON_UNESCAPED_UNICODE) : (string) $value,
     };
     $describeActivity = function ($activity) use ($fieldLabels, $formatValue) {
@@ -79,7 +73,7 @@
 
 @section('title', 'Edit ' . $place->name)
 @section('heading', 'Edit tempat')
-@section('subtitle', $statusLabel)
+@section('subtitle', 'Aktif di katalog')
 @section('back_url', route('admin.places.index'))
 @section('back_label', 'Kelola Tempat')
 
@@ -777,29 +771,30 @@
             dataResult.classList.remove('is-error');
             dataResult.replaceChildren();
 
+            var closedForGood = body.closed === 'permanent';
             if (body.closed) {
                 var closed = document.createElement('p');
                 closed.className = 'pe-data-closed';
-                closed.textContent = body.closed === 'permanent'
-                    ? 'Google Maps mencatat tempat ini TUTUP PERMANEN. Periksa dulu; kalau benar, tandai agar tidak masuk rekomendasi itinerary.'
+                closed.textContent = closedForGood
+                    ? 'Google Maps mencatat tempat ini TUTUP PERMANEN. Periksa dulu; kalau benar, hapus dari katalog supaya tidak muncul di aplikasi dan rekomendasi itinerary.'
                     : 'Google Maps mencatat tempat ini tutup sementara.';
                 dataResult.appendChild(closed);
-                if (body.closed === 'permanent') {
-                    dataResult.appendChild(useButton('Tandai tutup permanen', function () {
-                        var status = form.querySelector('input[name="business_status"]') || document.createElement('input');
-                        status.type = 'hidden';
-                        status.name = 'business_status';
-                        status.value = 'closed_permanently';
-                        form.appendChild(status);
-                        status.dispatchEvent(new Event('change', { bubbles: true }));
-                        this.disabled = true;
-                        this.lastChild.textContent = 'Ditandai, tersimpan setelah Simpan perubahan';
-                    }));
+                if (closedForGood) {
+                    // The same confirm modal as the trash button in the save bar.
+                    var remove = document.createElement('button');
+                    remove.type = 'button';
+                    remove.className = 'pe-price-button pe-price-use';
+                    remove.innerHTML = '<i class="bi bi-trash3" aria-hidden="true"></i> Hapus dari katalog';
+                    ['confirmUrl', 'confirmTitle', 'confirmOk', 'confirmText'].forEach(function (key) {
+                        remove.dataset[key] = document.querySelector('.pe-delete').dataset[key];
+                    });
+                    dataResult.appendChild(remove);
                 }
             }
 
             var usable = [];
-            Object.keys(dataFields).forEach(function (field) {
+            // No estimates come back for a permanently closed place.
+            if (!closedForGood) Object.keys(dataFields).forEach(function (field) {
                 var item = body.fields[field];
                 var row = document.createElement('div');
                 row.className = 'pe-data-row';
@@ -866,9 +861,11 @@
 
             var footnote = document.createElement('span');
             footnote.className = 'pe-price-note';
-            footnote.textContent = body.sources.length
-                ? 'Dari pencarian Google, dibaca AI. Klik sumbernya untuk memastikan. Data baru tersimpan setelah Simpan perubahan.'
-                : 'Google tidak menemukan tempat ini, jadi tidak ada yang bisa diperkirakan.';
+            footnote.textContent = closedForGood
+                ? 'Data tidak diperkirakan untuk tempat yang tutup permanen. Klik sumbernya untuk memastikan.'
+                : body.sources.length
+                    ? 'Dari pencarian Google, dibaca AI. Klik sumbernya untuk memastikan. Data baru tersimpan setelah Simpan perubahan.'
+                    : 'Google tidak menemukan tempat ini, jadi tidak ada yang bisa diperkirakan.';
             dataResult.appendChild(footnote);
             dataResult.hidden = false;
         }

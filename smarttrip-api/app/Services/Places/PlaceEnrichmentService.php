@@ -106,8 +106,16 @@ class PlaceEnrichmentService
      */
     public function enrich(Place $place, ?array $osmTags = null): array
     {
-        $plan = $this->plan($place, $osmTags);
+        return $this->apply($place, $this->plan($place, $osmTags));
+    }
 
+    /**
+     * Writes a plan() and returns the fields it filled.
+     *
+     * @return array<int, string>
+     */
+    public function apply(Place $place, array $plan): array
+    {
         foreach ($plan['notes'] as $note) {
             Log::info("Enrichment place {$place->places_id}: {$note}");
         }
@@ -127,13 +135,22 @@ class PlaceEnrichmentService
      * What enrich() would write, without writing it (places:enrich --dry-run).
      *
      * @param  array<string, string>|null  $osmTags
-     * @return array{facts: array<int, string>, answer: array, notes: array<int, string>, updates: array<string, mixed>, category_ids: array<int, int>|null, filled: array<int, string>}
+     * @return array{facts: array<int, string>, answer: array, notes: array<int, string>, updates: array<string, mixed>, category_ids: array<int, int>|null, filled: array<int, string>, closed_permanently: bool}
      */
     public function plan(Place $place, ?array $osmTags = null): array
     {
         $availableCategories = Category::query()->pluck('name_id', 'slug')->all();
         $description = $this->sourceDescription($place);
         $google = $this->lookUpGoogle($place);
+
+        // Nothing to fill for a place that no longer exists, so no Gemini call.
+        if (($google['maps']['closed'] ?? null) === 'permanent') {
+            return [
+                'facts' => [], 'answer' => [], 'notes' => ['Google Maps mencatat tempat ini TUTUP PERMANEN'],
+                'updates' => [], 'category_ids' => null, 'filled' => [], 'closed_permanently' => true,
+            ];
+        }
+
         $mapsHours = $google['maps']['hours'] ?? [];
         $facts = [...$this->facts($place, $osmTags ?? $this->lookUpOsmTags($place)), ...$this->googleFacts($google)];
 
@@ -144,10 +161,6 @@ class PlaceEnrichmentService
         ], $facts);
 
         [$result, $notes] = $this->plausible($place, $answer, $description !== null, $mapsHours !== []);
-
-        if (($google['maps']['closed'] ?? null) === 'permanent') {
-            $notes[] = 'Google Maps mencatat tempat ini TUTUP PERMANEN, periksa sebelum ditampilkan';
-        }
 
         $updates = [];
 
@@ -212,6 +225,7 @@ class PlaceEnrichmentService
             'updates' => $updates,
             'category_ids' => $categoryIds,
             'filled' => $filled,
+            'closed_permanently' => false,
         ];
     }
 

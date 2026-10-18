@@ -243,7 +243,6 @@
   "notificationArrivedTitle": "You have reached {name}",
   "notificationArrivedBody": "Your visit was marked automatically. Enjoy!",
   "detailTitle": "Place Details",
-  "detailClosedTemporarily": "Temporarily closed",
   "detailFactTicket": "Entry ticket",
   "detailFactVisit": "Visit length",
   "detailFactHours": "Opening hours",

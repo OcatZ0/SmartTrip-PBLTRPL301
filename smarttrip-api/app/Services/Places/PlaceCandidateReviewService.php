@@ -31,8 +31,13 @@ class PlaceCandidateReviewService
      * lengkapi manual lewat CRUD places (F021). Kandidat yang ternyata
      * sudah ada di katalog (misal admin menambah tempatnya manual setelah
      * Discovery) ditolak sebelum memakai kredit Geoapify.
+     *
+     * Null when Google Maps lists the place as permanently closed: the
+     * place is deleted from the catalog again and the candidate rejected,
+     * so Discovery does not bring it back. An admin who knows better adds
+     * it by hand.
      */
-    public function approve(PlaceCandidate $candidate): Place
+    public function approve(PlaceCandidate $candidate): ?Place
     {
         // A rejected candidate may still be approved (the admin changed their mind), an approved one is final.
         if ($candidate->status === 'approved') {
@@ -43,7 +48,9 @@ class PlaceCandidateReviewService
             $candidate->external_place_id, $candidate->name, (float) $candidate->lat, (float) $candidate->lng
         );
         if ($existing !== null) {
-            throw new RuntimeException("sudah ada di katalog sebagai \"{$existing->name}\"");
+            throw new RuntimeException($existing->trashed()
+                ? "pernah dihapus dari katalog sebagai \"{$existing->name}\""
+                : "sudah ada di katalog sebagai \"{$existing->name}\"");
         }
 
         $details = $this->detailsClient->fetch($candidate->external_place_id);
@@ -59,7 +66,6 @@ class PlaceCandidateReviewService
                 'kecamatan' => $candidate->search_area,
                 'opening_hours' => $details['opening_hours'],
                 'description' => $details['description'],
-                'business_status' => $details['business_status'],
                 'types' => $details['types'],
                 'source' => 'geoapify',
                 'category_tags_reviewed' => false,
@@ -71,7 +77,12 @@ class PlaceCandidateReviewService
         });
 
         // The OSM tags from this fetch are the facts Gemini describes from.
-        $this->tryEnrichWithGemini($place, $details['osm_tags'] ?? []);
+        if ($this->tryEnrichWithGemini($place, $details['osm_tags'] ?? [])) {
+            $place->delete();
+            $candidate->update(['status' => 'rejected']);
+
+            return null;
+        }
 
         return $place->fresh();
     }
@@ -116,12 +127,21 @@ class PlaceCandidateReviewService
         return $rejected;
     }
 
-    private function tryEnrichWithGemini(Place $place, array $osmTags): void
+    /**
+     * True when Google Maps lists the place as permanently closed.
+     */
+    private function tryEnrichWithGemini(Place $place, array $osmTags): bool
     {
         try {
-            $this->enrichment->enrich($place, $osmTags);
+            $plan = $this->enrichment->plan($place, $osmTags);
+            if ($plan['closed_permanently']) {
+                return true;
+            }
+            $this->enrichment->apply($place, $plan);
         } catch (RuntimeException $exception) {
             Log::warning("Gagal enrichment Gemini buat place {$place->places_id}: {$exception->getMessage()}");
         }
+
+        return false;
     }
 }

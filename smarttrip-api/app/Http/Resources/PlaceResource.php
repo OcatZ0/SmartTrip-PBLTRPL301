@@ -25,7 +25,6 @@ class PlaceResource extends JsonResource
             'review_count_in_app' => (int) ($this->reviews_count ?? 0),
             'estimated_cost_idr' => $this->estimated_cost_idr,
             'is_outdoor' => $this->is_outdoor,
-            'business_status' => $this->business_status,
             'categories' => $this->whenLoaded('categories', fn () => $this->categories->map(fn ($category) => [
                 'categories_id' => $category->categories_id,
                 'name_id' => $category->name_id,

@@ -54,8 +54,13 @@ class EnrichPlaces extends Command
                     continue;
                 }
 
-                $filled = $enrichment->enrich($place);
-                $rows[] = [$place->places_id, $place->name, $filled === [] ? '-' : implode(', ', $filled)];
+                $plan = $enrichment->plan($place);
+                $filled = $enrichment->apply($place, $plan);
+                $rows[] = [$place->places_id, $place->name, match (true) {
+                    $plan['closed_permanently'] => 'TUTUP PERMANEN di Google Maps, periksa lalu hapus dari katalog',
+                    $filled === [] => '-',
+                    default => implode(', ', $filled),
+                }];
             } catch (RuntimeException $exception) {
                 $failed++;
                 // Gemini errors are multi-line JSON; keep the table one row per place.

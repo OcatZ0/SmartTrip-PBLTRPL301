@@ -37,7 +37,6 @@ class Place extends Model
         'opening_hours',
         'photo_url',
         'description',
-        'business_status',
         'types',
         'source',
         'category_tags_reviewed',
@@ -137,7 +136,7 @@ class Place extends Model
                 'name', 'type', 'address', 'kecamatan',
                 'estimated_cost_idr', 'description_override', 'description_en',
                 'estimated_visit_minutes', 'is_outdoor', 'category_tags_reviewed', 'search_keywords',
-                'opening_hours', 'business_status',
+                'opening_hours',
             ])
             ->logOnlyDirty()
             ->dontLogEmptyChanges();

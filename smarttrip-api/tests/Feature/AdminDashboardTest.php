@@ -23,7 +23,7 @@ class AdminDashboardTest extends TestCase
     {
         return Place::create(array_merge([
             'name' => 'Pantai Melur', 'type' => 'attraction', 'lat' => 1.15, 'lng' => 104.05,
-            'address' => 'Nongsa, Batam', 'source' => 'manual', 'business_status' => 'operational',
+            'address' => 'Nongsa, Batam', 'source' => 'manual',
         ], $overrides));
     }
 

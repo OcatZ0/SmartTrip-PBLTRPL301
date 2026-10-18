@@ -54,7 +54,8 @@ class GeminiPlaceDataClient
             'closed' => $maps['closed'] ?? null,
         ];
 
-        if ($sources === []) {
+        // Nothing to estimate for a place that no longer exists.
+        if ($sources === [] || $result['closed'] === 'permanent') {
             return $result;
         }
 

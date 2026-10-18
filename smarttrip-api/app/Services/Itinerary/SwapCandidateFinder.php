@@ -49,7 +49,6 @@ class SwapCandidateFinder
                 fn ($placeQuery) => $placeQuery->where('type', $item->place->type),
                 fn ($placeQuery) => $placeQuery->whereIn('type', ['attraction', 'culinary'])
             )
-            ->where('business_status', '!=', 'closed_permanently')
             ->whereNotIn('places_id', $usedElsewhereInTrip)
             ->with('categories')
             ->withAvg('reviews', 'rating')

@@ -36,7 +36,6 @@ class PlaceController extends Controller
         $perPage = min(max((int) $request->integer('per_page', 20), 1), 50);
 
         $query = Place::query()
-            ->where('business_status', '!=', 'closed_permanently')
             ->when($request->filled('search'), function ($query) use ($request) {
                 $term = '%'.mb_strtolower($request->string('search')->trim()).'%';
                 // Also the place's own search keywords (set by the admin or
@@ -74,7 +73,6 @@ class PlaceController extends Controller
     public function kecamatan()
     {
         $rows = Place::query()
-            ->where('business_status', '!=', 'closed_permanently')
             ->whereNotNull('kecamatan')
             ->where('kecamatan', '!=', '')
             ->selectRaw('kecamatan, COUNT(*) as places_count')

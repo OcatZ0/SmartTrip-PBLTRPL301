@@ -169,9 +169,6 @@ class PlaceController extends Controller
             'is_outdoor' => true,
             'category_tags_reviewed' => true,
             'source' => 'manual',
-            'business_status' => 'operational',
-            // No rating: a manual place has no Google rating, and the
-            // itinerary ranking (PlaceRatingEstimator) handles null.
         ]);
 
         if (! empty($data['category_ids'])) {
@@ -264,7 +261,6 @@ class PlaceController extends Controller
             'opening_hours.*.state' => ['nullable', Rule::in(['', 'open', 'closed', '24h'])],
             'opening_hours.*.open' => ['nullable', 'date_format:H:i', 'required_if:opening_hours.*.state,open'],
             'opening_hours.*.close' => ['nullable', 'date_format:H:i', 'required_if:opening_hours.*.state,open', 'different:opening_hours.*.open'],
-            'business_status' => ['sometimes', Rule::in(['operational', 'closed_temporarily', 'closed_permanently'])],
             // "Jadikan utama" on Foto Tempat: applied with the rest of the form.
             'primary_photo_id' => ['nullable', 'integer', Rule::exists('place_photos', 'place_photos_id')->where('places_id', $place->places_id)],
         ]);
@@ -302,14 +298,9 @@ class PlaceController extends Controller
             $updateData['search_keywords'] = Place::normalizeSearchKeywords($data['search_keywords']);
         }
 
-        // Also edit page only. Untouched rows keep what is stored (an OSM
-        // string the rows cannot show stays as it is).
+        // Also edit page only. Untouched rows keep what is stored.
         if ($request->boolean('opening_hours_changed')) {
             $updateData['opening_hours'] = OpeningHours::fromForm($data['opening_hours'] ?? []);
-        }
-
-        if (isset($data['business_status'])) {
-            $updateData['business_status'] = $data['business_status'];
         }
 
         $place->update($updateData);

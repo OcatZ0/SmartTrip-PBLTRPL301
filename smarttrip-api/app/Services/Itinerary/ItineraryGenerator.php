@@ -209,7 +209,6 @@ class ItineraryGenerator
 
         $places = Place::query()
             ->whereIn('type', ['attraction', 'culinary'])
-            ->where('business_status', '!=', 'closed_permanently')
             ->when($excludedIds !== [], fn ($placeQuery) => $placeQuery->whereNotIn('places_id', $excludedIds))
             ->with('categories')
             ->withAvg('reviews', 'rating')

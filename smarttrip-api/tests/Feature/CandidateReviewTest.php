@@ -25,6 +25,20 @@ class CandidateReviewTest extends TestCase
         ], $overrides));
     }
 
+    /** Geoapify details, Gemini, and SerpApi with Google Maps saying the place is permanently closed. */
+    private function fakeDetailsAndAClosedGoogleMapsPlace(): void
+    {
+        config(['services.serpapi.api_key' => 'serp-key', 'services.serpapi.reserve' => 50]);
+        Http::fake([
+            'serpapi.com/account*' => Http::response(['total_searches_left' => 200]),
+            'serpapi.com/search*' => Http::response(['place_results' => [
+                'title' => 'Pantai Kandidat Lengkap', 'gps_coordinates' => ['latitude' => 1.15, 'longitude' => 104.05],
+                'open_state' => 'Tutup permanen',
+            ]]),
+        ]);
+        $this->fakeDetailsAndGemini();
+    }
+
     private function fakeDetailsAndGemini(): void
     {
         Http::fake([
@@ -176,6 +190,33 @@ class CandidateReviewTest extends TestCase
     }
 
     // --- approve ---
+
+    public function test_a_candidate_google_maps_lists_as_permanently_closed_is_not_added(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $candidate = $this->makeCandidate();
+        $this->fakeDetailsAndAClosedGoogleMapsPlace();
+
+        $this->actingAs($admin)->post("/admin/candidates/{$candidate->place_candidates_id}/approve")
+            ->assertRedirect()
+            ->assertSessionHas('error', fn ($message) => str_contains($message, 'tutup permanen'));
+
+        $this->assertSame('rejected', $candidate->fresh()->status);
+        $this->assertNull(Place::where('external_place_id', 'osm:n2001')->first());
+        // Kept as deleted, so a later Discovery or approval does not add it again.
+        $this->assertNotNull(Place::onlyTrashed()->where('external_place_id', 'osm:n2001')->first());
+        Http::assertNotSent(fn ($request) => str_contains($request->url(), 'generativelanguage'));
+    }
+
+    public function test_bulk_approve_counts_the_permanently_closed_candidates(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $candidate = $this->makeCandidate();
+        $this->fakeDetailsAndAClosedGoogleMapsPlace();
+
+        $this->actingAs($admin)->post('/admin/candidates/bulk-approve', ['ids' => [$candidate->place_candidates_id]])
+            ->assertSessionHas('status', '0 kandidat disetujui, 1 ditolak karena tutup permanen di Google Maps, 0 gagal.');
+    }
 
     public function test_approving_a_candidate_promotes_it_to_a_full_place_with_gemini_tags(): void
     {

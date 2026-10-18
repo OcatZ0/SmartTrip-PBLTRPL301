@@ -35,10 +35,10 @@ class PlaceCatalogTest extends TestCase
         $this->assertCount(2, $response->json('data'));
     }
 
-    public function test_the_catalog_excludes_permanently_closed_places(): void
+    public function test_the_catalog_excludes_places_deleted_from_it(): void
     {
-        $this->makePlace(['name' => 'Tempat Tutup', 'business_status' => 'closed_permanently']);
-        $this->makePlace(['name' => 'Tempat Buka']);
+        $this->makePlace(['name' => 'Tempat Tutup'])->delete();
+        $this->makePlace(['name' => 'Tempat Buka', 'external_place_id' => 'gp-open']);
 
         $response = $this->getJson('/api/places');
 
@@ -94,7 +94,7 @@ class PlaceCatalogTest extends TestCase
         $this->makePlace(['name' => 'A', 'kecamatan' => 'Nongsa']);
         $this->makePlace(['name' => 'B', 'kecamatan' => 'nongsa ', 'external_place_id' => 'gp-2']);
         $this->makePlace(['name' => 'C', 'kecamatan' => 'Batam Kota', 'external_place_id' => 'gp-3']);
-        $this->makePlace(['name' => 'D', 'kecamatan' => 'Galang', 'external_place_id' => 'gp-4', 'business_status' => 'closed_permanently']);
+        $this->makePlace(['name' => 'D', 'kecamatan' => 'Galang', 'external_place_id' => 'gp-4'])->delete();
         $this->makePlace(['name' => 'E', 'kecamatan' => null, 'external_place_id' => 'gp-5']);
 
         $response = $this->getJson('/api/places/kecamatan');

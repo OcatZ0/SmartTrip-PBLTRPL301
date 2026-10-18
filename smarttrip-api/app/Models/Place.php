@@ -36,7 +36,7 @@ class Place extends Model
         'kecamatan',
         'opening_hours',
         'photo_url',
-        'description',
+        'description_id',
         'types',
         'source',
         'category_tags_reviewed',

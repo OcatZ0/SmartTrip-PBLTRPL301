@@ -29,7 +29,7 @@ class GeminiKeywordSuggestionClient
         $type = match ($place->type) { 'culinary' => 'tempat makan', 'lodging' => 'penginapan', default => 'tempat wisata' };
         $placeText = implode(', ', array_filter([$place->name, $place->kecamatan, 'Batam']));
         $categories = $place->categories->pluck('name_id')->join(', ');
-        $description = trim((string) ($place->description_override ?: $place->description));
+        $description = trim((string) ($place->description_override ?: $place->description_id));
 
         $context = implode("\n", array_filter([
             $categories !== '' ? "Kategori: {$categories}." : null,

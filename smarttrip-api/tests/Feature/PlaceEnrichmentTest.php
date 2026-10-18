@@ -69,7 +69,7 @@ class PlaceEnrichmentTest extends TestCase
         $filled = $this->enrich($place);
 
         $place->refresh();
-        $this->assertSame('Pantai berpasir putih di Nongsa.', $place->description);
+        $this->assertSame('Pantai berpasir putih di Nongsa.', $place->description_id);
         $this->assertSame('A white sand beach in Nongsa.', $place->description_en);
         $this->assertSame(90, $place->estimated_visit_minutes);
         $this->assertTrue($place->is_outdoor);
@@ -77,7 +77,7 @@ class PlaceEnrichmentTest extends TestCase
         $this->assertSame(['pantai'], $place->categories->pluck('slug')->all());
         $this->assertFalse($place->category_tags_reviewed);
         $this->assertEqualsCanonicalizing(
-            ['description', 'description_en', 'estimated_visit_minutes', 'is_outdoor', 'categories', 'estimated_cost_idr'],
+            ['description_id', 'description_en', 'estimated_visit_minutes', 'is_outdoor', 'categories', 'estimated_cost_idr'],
             $filled
         );
         Http::assertSent(fn ($request) => str_contains($request['contents'][0]['parts'][0]['text'], 'belum punya deskripsi')
@@ -88,14 +88,14 @@ class PlaceEnrichmentTest extends TestCase
     {
         $this->fakeGemini(['description_id' => 'Gemini tidak boleh menimpa ini.']);
         $place = $this->makePlace([
-            'description' => 'Deskripsi sumber.',
+            'description_id' => 'Deskripsi sumber.',
             'description_override' => 'Deskripsi versi admin.',
         ]);
 
         $this->enrich($place);
 
         $place->refresh();
-        $this->assertSame('Deskripsi sumber.', $place->description);
+        $this->assertSame('Deskripsi sumber.', $place->description_id);
         $this->assertSame('Deskripsi versi admin.', $place->description_override);
         $this->assertSame('A white sand beach in Nongsa.', $place->description_en);
         Http::assertSent(fn ($request) => str_contains($request['contents'][0]['parts'][0]['text'], 'Deskripsi versi admin.'));
@@ -112,7 +112,7 @@ class PlaceEnrichmentTest extends TestCase
         $filled = $this->enrich($place);
 
         $place->refresh();
-        $this->assertSame(['description', 'description_en', 'estimated_cost_idr'], $filled);
+        $this->assertSame(['description_id', 'description_en', 'estimated_cost_idr'], $filled);
         $this->assertSame(45, $place->estimated_visit_minutes);
         $this->assertFalse($place->is_outdoor);
         $this->assertSame(['sejarah'], $place->categories->pluck('slug')->all());
@@ -128,7 +128,7 @@ class PlaceEnrichmentTest extends TestCase
         $filled = $this->enrich($place);
 
         $place->refresh();
-        $this->assertSame(['description', 'description_en', 'is_outdoor', 'estimated_cost_idr'], $filled);
+        $this->assertSame(['description_id', 'description_en', 'is_outdoor', 'estimated_cost_idr'], $filled);
         $this->assertNull($place->estimated_visit_minutes);
         $this->assertSame(0, $place->categories()->count());
     }
@@ -142,7 +142,7 @@ class PlaceEnrichmentTest extends TestCase
             $this->enrich($place);
             $this->fail('Expected a RuntimeException.');
         } catch (RuntimeException) {
-            $this->assertNull($place->fresh()->description);
+            $this->assertNull($place->fresh()->description_id);
         }
     }
 
@@ -170,7 +170,7 @@ class PlaceEnrichmentTest extends TestCase
     {
         $this->fakeGemini();
         $place = $this->makePlace([
-            'description' => 'Ada.', 'description_en' => 'There.', 'estimated_visit_minutes' => 60,
+            'description_id' => 'Ada.', 'description_en' => 'There.', 'estimated_visit_minutes' => 60,
             'is_outdoor' => true, 'category_tags_reviewed' => true,
         ]);
         $place->categories()->attach($this->pantai->categories_id);
@@ -196,7 +196,7 @@ class PlaceEnrichmentTest extends TestCase
         $this->fakeGemini();
         $gap = $this->makePlace(['name' => 'Pantai Kosong']);
         $complete = $this->makePlace([
-            'name' => 'Sudah Lengkap', 'description' => 'Ada.', 'description_en' => 'There.',
+            'name' => 'Sudah Lengkap', 'description_id' => 'Ada.', 'description_en' => 'There.',
             'estimated_visit_minutes' => 60, 'is_outdoor' => true, 'category_tags_reviewed' => true,
             'estimated_cost_idr' => 0, 'search_keywords' => 'pasir putih, sunset',
         ]);
@@ -206,8 +206,8 @@ class PlaceEnrichmentTest extends TestCase
             ->expectsOutputToContain('Enrichment 1 tempat')
             ->assertExitCode(0);
 
-        $this->assertNotNull($gap->fresh()->description);
-        $this->assertSame('Ada.', $complete->fresh()->description);
+        $this->assertNotNull($gap->fresh()->description_id);
+        $this->assertSame('Ada.', $complete->fresh()->description_id);
         Http::assertSentCount(1);
     }
 
@@ -217,7 +217,7 @@ class PlaceEnrichmentTest extends TestCase
         // A hotel after a first enrichment: described, unreviewed, and with no
         // visit length or categories on purpose.
         $this->makePlace([
-            'name' => 'Mercure Batam', 'type' => 'lodging', 'description' => 'Hotel.',
+            'name' => 'Mercure Batam', 'type' => 'lodging', 'description_id' => 'Hotel.',
             'description_en' => 'Hotel.', 'is_outdoor' => false, 'category_tags_reviewed' => false,
             'estimated_cost_idr' => 650000, 'search_keywords' => 'kolam renang, dekat pelabuhan',
         ]);
@@ -301,9 +301,9 @@ class PlaceEnrichmentTest extends TestCase
         $filled = $this->enrich($place);
 
         $place->refresh();
-        $this->assertNull($place->description);
+        $this->assertNull($place->description_id);
         $this->assertNull($place->description_en);
-        $this->assertNotContains('description', $filled);
+        $this->assertNotContains('description_id', $filled);
     }
 
     public function test_a_written_description_with_a_price_phone_or_made_up_hours_is_dropped(): void
@@ -318,7 +318,7 @@ class PlaceEnrichmentTest extends TestCase
 
             $this->enrich($place);
 
-            $this->assertNull($place->fresh()->description, $text);
+            $this->assertNull($place->fresh()->description_id, $text);
         }
     }
 
@@ -329,7 +329,7 @@ class PlaceEnrichmentTest extends TestCase
 
         $this->enrich($place);
 
-        $this->assertSame('Buka sejak 08.00 setiap hari.', $place->fresh()->description);
+        $this->assertSame('Buka sejak 08.00 setiap hari.', $place->fresh()->description_id);
     }
 
     public function test_an_unreasonable_visit_length_or_cost_for_the_type_is_dropped(): void
@@ -387,7 +387,7 @@ class PlaceEnrichmentTest extends TestCase
             ->expectsOutputToContain('Dry run: tidak ada yang disimpan.')
             ->assertExitCode(0);
 
-        $this->assertNull($place->fresh()->description);
+        $this->assertNull($place->fresh()->description_id);
         $this->assertSame(0, $place->categories()->count());
     }
 

@@ -165,7 +165,7 @@ class PlaceEnrichmentService
         $updates = [];
 
         if ($description === null && $result['description_id'] !== null) {
-            $updates['description'] = $result['description_id'];
+            $updates['description_id'] = $result['description_id'];
         }
 
         if (blank($place->description_en) && filled($result['description_en'])) {
@@ -433,7 +433,7 @@ class PlaceEnrichmentService
      */
     private function sourceDescription(Place $place): ?string
     {
-        foreach ([$place->description_override, $place->description] as $text) {
+        foreach ([$place->description_override, $place->description_id] as $text) {
             if (filled($text)) {
                 return trim($text);
             }

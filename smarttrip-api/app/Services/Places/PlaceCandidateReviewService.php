@@ -65,7 +65,7 @@ class PlaceCandidateReviewService
                 'address' => $details['address'],
                 'kecamatan' => $candidate->search_area,
                 'opening_hours' => $details['opening_hours'],
-                'description' => $details['description'],
+                'description_id' => $details['description'],
                 'types' => $details['types'],
                 'source' => 'geoapify',
                 'category_tags_reviewed' => false,

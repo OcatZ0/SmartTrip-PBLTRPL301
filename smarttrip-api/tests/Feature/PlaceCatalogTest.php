@@ -193,7 +193,7 @@ class PlaceCatalogTest extends TestCase
     {
         $category = Category::create(['name_id' => 'Pantai', 'name_en' => 'Beach', 'slug' => 'pantai']);
         $place = $this->makePlace([
-            'name' => 'Pantai Melur', 'description' => 'Deskripsi asli Google',
+            'name' => 'Pantai Melur', 'description_id' => 'Deskripsi asli Google',
             'description_override' => 'Deskripsi versi admin', 'description_en' => 'Admin English description',
             'estimated_visit_minutes' => 90,
         ]);
@@ -216,7 +216,7 @@ class PlaceCatalogTest extends TestCase
 
     public function test_the_detail_description_falls_back_to_the_google_description_without_admin_override(): void
     {
-        $place = $this->makePlace(['description' => 'Deskripsi asli Google', 'description_override' => null]);
+        $place = $this->makePlace(['description_id' => 'Deskripsi asli Google', 'description_override' => null]);
 
         $response = $this->getJson("/api/places/{$place->places_id}");
 

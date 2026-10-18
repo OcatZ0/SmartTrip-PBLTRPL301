@@ -8,7 +8,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
  * F006 - layar detail tempat (foto carousel, deskripsi bilingual, rating
- * blend). description_override menang atas description mentah Google
+ * blend). description_override menang atas description_id dari sumber/AI
  * kalau admin sudah isi, sesuai docs/prd design spec Section 4.
  */
 class PlaceDetailResource extends JsonResource
@@ -29,7 +29,7 @@ class PlaceDetailResource extends JsonResource
                 ->sortBy('sort_order')
                 ->map(fn ($photo) => ['url' => $photo->photo_url])
                 ->values()),
-            'description_id' => $this->description_override ?? $this->description,
+            'description_id' => $this->description_override ?? $this->description_id,
             'description_en' => $this->description_en,
             // The app shows these lines; places.opening_hours keeps only the hours per day.
             'opening_hours' => $this->opening_hours === null ? null : ['weekday_descriptions' => OpeningHours::describe($this->opening_hours)],

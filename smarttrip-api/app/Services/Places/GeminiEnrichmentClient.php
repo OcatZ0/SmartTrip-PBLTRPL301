@@ -11,7 +11,7 @@ use RuntimeException;
 /**
  * F019/F020 (docs/prd design spec Section 3 fase 4 - Tagging, Section 5).
  * Satu call Gemini langsung nyambung ke akhir Enrichment (fase 3), begitu
- * description tersimpan dari Place Details - hasilnya description_en
+ * description_id tersimpan dari Place Details - hasilnya description_en
  * (auto-translate), category_tags (disarankan dari categories yang ada),
  * estimated_visit_minutes, dan is_outdoor. Sejak 2026-10-13 juga menulis
  * deskripsi singkat Bahasa Indonesia kalau sumber data tidak punya (Geoapify

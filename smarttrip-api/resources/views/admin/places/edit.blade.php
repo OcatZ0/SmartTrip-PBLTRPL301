@@ -479,7 +479,7 @@
                 </div>
                 <div id="pePanelId" role="tabpanel" aria-labelledby="peTabId">
                     <textarea name="description_override" class="pe-textarea" rows="6" aria-labelledby="peTabId"
-                        placeholder="{{ $place->description ?: 'Tulis deskripsi tempat ini.' }}">{{ old('description_override', $place->description_override) }}</textarea>
+                        placeholder="{{ $place->description_id ?: 'Tulis deskripsi tempat ini.' }}">{{ old('description_override', $place->description_override) }}</textarea>
                 </div>
                 <div id="pePanelEn" role="tabpanel" aria-labelledby="peTabEn" hidden>
                     <textarea name="description_en" class="pe-textarea" rows="6" aria-labelledby="peTabEn"

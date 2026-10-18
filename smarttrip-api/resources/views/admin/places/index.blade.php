@@ -1446,7 +1446,7 @@
         'is_outdoor': { label: 'Karakteristik Area', icon: 'bi-sun-fill' },
         'description_override': { label: 'Deskripsi Tempat (Bahasa Indonesia)', icon: 'bi-card-text', isLong: true },
         'description_en': { label: 'Deskripsi Tempat (Bahasa Inggris)', icon: 'bi-card-text', isLong: true },
-        'description': { label: 'Deskripsi Lengkap', icon: 'bi-card-text', isLong: true },
+        'description_id': { label: 'Deskripsi Lengkap', icon: 'bi-card-text', isLong: true },
         'lat': { label: 'Titik Koordinat (Garis Lintang)', icon: 'bi-geo' },
         'lng': { label: 'Titik Koordinat (Garis Bujur)', icon: 'bi-geo' },
         'photo_url': { label: 'URL Foto Sampul', icon: 'bi-image' }

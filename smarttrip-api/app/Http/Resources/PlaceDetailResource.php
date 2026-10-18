@@ -33,10 +33,7 @@ class PlaceDetailResource extends JsonResource
             'opening_hours' => $this->opening_hours,
             'business_status' => $this->business_status,
             'rating' => $this->ratingBlend(),
-            'rating_google' => $this->rating !== null ? (float) $this->rating : null,
-            'review_count_google' => $this->review_count,
             'review_count_in_app' => (int) ($this->reviews_count ?? 0),
-            'price_level' => $this->price_level,
             'estimated_cost_idr' => $this->estimated_cost_idr,
             'is_outdoor' => $this->is_outdoor,
             // B2 "Lama kunjungan" fact; the same estimate the generator uses.

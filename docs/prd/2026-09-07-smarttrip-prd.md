@@ -4,7 +4,7 @@
 
 **Type:** Full PRD
 **Status:** In progress — backend (`smarttrip-api`) and mobile (`smarttrip-mobile`) scaffolds exist with most F001-F024 implemented; see Sections 15 and 19
-**Version:** 1.37
+**Version:** 1.38
 **Last Updated:** 2026-10-18
 **Source of truth for implementation detail:** `docs/superpowers/specs/2026-09-07-smarttrip-itinerary-recommendation-design.md` (this PRD is a reformatted, audience-oriented view of the same decisions — where they ever conflict, the design spec wins, since it carries finer-grained rationale)
 
@@ -33,6 +33,7 @@
 | 1.20 | 2026-10-04 | Resolved the `users.email`/`users.google_id` open decision from 1.19: partial unique index (`WHERE deleted_at IS NULL`) so a deactivated account's email can be re-registered; migration and the account-deactivation feature itself are not implemented yet |
 | 1.21 | 2026-10-04 | Implemented the 1.20 decision in `smarttrip-api`: migration converting `users.email`/`users.google_id` to partial unique indexes (`WHERE deleted_at IS NULL`) plus 3 `AuthTest` cases; full backend suite green (273 tests) |
 | 1.22 | 2026-10-10 | PRD audit (data model + consistency), fixes applied in docs AND `smarttrip-api`: (1) `ON DELETE RESTRICT` never protected soft-deleted categories (soft delete is an UPDATE), so `CategoryController::destroy` now refuses a category still referenced by `place_category`/`trip_interest_category`/`user_default_interest_category`; (2) trip-history relations (`itinerary_items.places_id`, `itinerary_days.start/end_places_id`, `trips.hotel_places_id`, `trip_wishlist_places.places_id`) now use `withTrashed()` so a soft-deleted place no longer vanishes from existing itineraries, while generate/swap/catalog still exclude it; (3) documented `itinerary_days.start/end_places_id` as nullable (migration `2026_09_29_071806`, custom-pin hotel) and `places.rating` as nullable with a new 3-tier rating fallback (`PlaceRatingEstimator`: blend, median of same type, neutral 3.5) replacing the old silent `?? 0.0`; (4) added `PATCH /api/trips/{id}` (owner-only edit; changing `num_days`/`budget_total`/daily times clears the existing itinerary, client calls generate again); (5) added DB uniques `trip_wishlist_places(trips_id, places_id)`, `itinerary_days(trips_id, day_number)`, `itinerary_items(itinerary_days_id, places_id)`, `place_photos(places_id, sort_order)` (migration `2026_10_10_000000`); (6) documented FK `ON DELETE` policy per table, framework-owned tables (`personal_access_tokens`, `password_reset_tokens`, `sessions`), the `activity_log.attribute_changes` column, review orphaning on regenerate, and `GET /api/user` + web reset-password routes; (7) consistency fixes: duplicate `users.email`/`google_id` validation rows removed, Section 9 component table un-split and its admin cross-reference corrected to Section 8, Figma link added, Section 15 file structure updated to what exists, sync status noted as part of the Dashboard. Backend suite 290 tests green |
+| 1.38 | 2026-10-18 | Google rating fields and day endpoints dropped (F005, F006, F008), applied in docs AND code: `places.price_level`, `rating` and `review_count` came from Google Places and stayed empty since Geoapify replaced it, so the rating the app shows (`Place::ratingBlend()`) is now the in-app review average only, the API no longer sends `rating_google`, `review_count_google` or `price_level`, and the budget fallback has 3 tiers (admin cost, same-type median, per-type default). `itinerary_days.start_places_id`/`end_places_id` only copied `trips.hotel_places_id` and were never read (migration `2026_10_18_000003_drop_google_rating_fields_and_day_endpoints`). Until places get in-app reviews, every place gets the same estimated rating, so the rating slider has no effect on TOPSIS |
 | 1.37 | 2026-10-18 | Unused columns dropped, applied in docs AND code: (0) timestamps nothing reads (migration `2026_10_18_000002_drop_unused_timestamps`): `categories` and `users` lose `created_at`/`updated_at`, `places`, `trips`, `place_reviews` and `activity_log` lose `updated_at` (`activity_log` through `App\Models\Activity`, set as `activitylog.activity_model`); `created_at` stays where it orders or dates something, `updated_at` only on `discovery_runs` (stale-run check) and `place_candidates`; (1) `places.phone` and `places.website` (F006, F018): OpenStreetMap had no contact for any catalog place, the app never showed them and an admin cannot really confirm a phone number, so a tourist who needs one looks the place up themselves; the detail API no longer sends them, Gemini loses the website fact (migration `2026_10_18_000001_drop_phone_and_website_from_places`); (2) `categories.subtitle_id` (F022): it only showed as a line under the name in the admin category list (falling back to "Kategori Destinasi"), the app never received it and no category had one. Migration `2026_10_18_000000_drop_subtitle_id_from_categories`; the Kelola Kategori field, search and list line are gone |
 | 1.36 | 2026-10-16 | Candidates page and background Discovery (F018, F019), applied in docs AND code: the Kandidat Tempat page is rebuilt (status tabs with counts, search by name or OSM id, type and kecamatan filters, Indonesian labels, map link, bulk bar, admin pagination). Discovery no longer runs inside the web request: "Jalankan Discovery" opens a modal, queues `RunPlaceDiscovery` on the database queue and polls `admin.candidates.discovery` for progress (searches done out of 36, the last area x type, new, skipped and failed counts, a per-search log, duration), so the admin can close the page. New table `discovery_runs` (progress and history) and `jobs`/`failed_jobs` come back (migration `2026_10_15_000002`, they were dropped on 2026-10-11 when nothing was queued). Production needs `QUEUE_CONNECTION=database` and a Windows Scheduled Task running `php artisan queue:work --stop-when-empty --tries=1 --timeout=900` every minute; a run that the worker does not pick up, or that stops reporting, is marked failed after 15 minutes so Discovery is never locked for good. The job is not retried, since every search spends Geoapify credits |
 | 1.35 | 2026-10-16 | Category display fields, onboarding flag, per-place search keywords and admin login, applied in docs AND code: (1) `categories` gains `subtitle_id`, `icon_symbol` (one of 40 keys in `Category::ICON_SYMBOLS`, drawn with Bootstrap Icons in the admin and the same glyphs in the app via the `bootstrap_icons` package; still-default rows get an icon guessed from the name) and `show_in_onboarding` (boolean, replaces the short-lived text column `visibility_onboarding`); `GET /api/categories` returns `icon_symbol` and `show_in_onboarding` and `?onboarding=1` returns only the A4 onboarding categories. (2) Kelola Kategori edits in a popup that shows validation errors and keeps what was typed, a duplicate auto-generated slug is a validation error instead of HTTP 500, and the list shows 3 related places then "+n" plus an Onboarding column. (3) Search keywords belong to each place, not each category: `places.search_keywords` (text, comma-separated); a short-lived `categories.search_keywords` (renamed from `ai_keywords`) was dropped and its only values (Pantai) were not copied, since category-wide keywords do not fit every place in it. `GET /api/places?search=` now matches the name OR `search_keywords`; Gemini enrichment also returns 6-10 keywords and fills them only when empty (a place without keywords counts as needing enrichment); Edit Tempat has a "Kata Kunci Pencarian" card with a "Sarankan dengan AI" button (`GET /admin/places/{place}/keyword-suggestions`, 20/min). (4) Admin login: `/` redirects to `/admin/login`; the login and new "Lupa Kata Sandi" page (`/admin/forgot-password`, same reset link as the mobile app, same reply for any email, 5/min) use Tailwind through Vite, so the deploy workflow now runs `npm ci && npm run build`. (5) `places.estimated_cost_is_ai` and its "Perkiraan AI" marks are dropped: an AI cost the admin accepts or keeps is the admin's decision, so a cost is treated the same whoever filled it in (Gemini still only fills an empty cost). Migrations `2026_10_16_000000` to `000003`. |
@@ -98,7 +99,7 @@ Sources: [Best AI Trip Planner Apps 2026 (Lindy)](https://www.lindy.ai/blog/trip
 **Success Metrics** *(proxies appropriate for a pre-launch student project, not live-usage metrics — adjust if you have specific skripsi/demo-day targets)*:
 - A generated itinerary for a realistic Batam trip (3-5 days, real preferences) completes end-to-end (weights → TOPSIS → K-Means → NN → OpenRouteService) in a single demo run without manual intervention
 - The initial place-data bootstrap (Discovery → admin review → Enrichment) reaches the ~300-500 place target while staying inside Google's free API tiers (Pro 5,000/mo, Enterprise 1,000/mo)
-- Core algorithm units (weight normalization, TOPSIS scoring, Haversine, K-Means, Bayesian rating blend) pass deterministic unit tests, since this is the part most likely to be questioned in a demo/defense
+- Core algorithm units (weight normalization, TOPSIS scoring, Haversine, K-Means, rating and cost fallbacks) pass deterministic unit tests, since this is the part most likely to be questioned in a demo/defense
 - Live map + geofencing visit-tracking demonstrably works on at least one real Android device outdoors (not just emulator)
 
 **Anti-goals** *(explicitly NOT trying to do — see Section 5 for the full list)*:
@@ -292,7 +293,7 @@ Backend is Laravel/Eloquent (not TypeScript) — schema shown as field lists per
 
 ```
 places(places_id, external_place_id?, name, type[attraction|culinary|lodging], lat, lng, address,
-  kecamatan?, price_level?, rating?, review_count, opening_hours[json], photo_url?, description?,
+  kecamatan?, opening_hours[json], photo_url?, description?,
   business_status[operational|closed_temporarily|closed_permanently],
   types[json], source[google|geoapify|manual],
   category_tags_reviewed[bool], estimated_visit_minutes,
@@ -312,10 +313,10 @@ places(places_id, external_place_id?, name, type[attraction|culinary|lodging], l
   -- powers GET /api/places?kecamatan= filter -- zero extra API cost, data already collected by Discovery
   -- google_maps_uri REMOVED 2026-09-22: not stored -- built on the fly from lat/lng
   -- instead, so it never goes stale if an admin later corrects the coordinates
-  -- rating is NULLABLE (documented 2026-10-10): source=manual places have no Google rating, so the TOPSIS
-  -- rating criterion uses a 3-tier fallback (PlaceRatingEstimator): Bayesian blend if any rating exists,
-  -- else the median blend of the same `type` in the candidate pool, else a neutral 3.5 (mirrors the
-  -- 4-tier budget fallback; previously an undocumented `?? 0.0` punished every unrated manual place)
+  -- the rating is the in-app review average (places.rating, review_count and price_level from Google
+  -- Places were dropped 2026-10-18); the TOPSIS rating criterion uses a 3-tier fallback
+  -- (PlaceRatingEstimator): the review average if the place has reviews, else the median of the same
+  -- `type` in the candidate pool, else a neutral 3.5 (mirrors the 3-tier budget fallback)
 
 categories(categories_id, name_id, name_en, slug[unique, partial WHERE deleted_at IS NULL],
   icon_symbol[default 'ombak', one of Category::ICON_SYMBOLS], show_in_onboarding[bool, default true],
@@ -342,7 +343,7 @@ place_photos(place_photos_id, places_id FK, photo_url, sort_order, unique[places
 place_reviews(place_reviews_id, places_id FK, users_id FK, rating[1-5], comment?, itinerary_items_id? FK,
   unique[users_id, places_id; partial WHERE deleted_at IS NULL], created_at, deleted_at?[soft delete])
   -- unique constraint revisi 2026-09-22: 1 user cuma boleh 1 review per tempat,
-  -- review ulang = edit yang sudah ada, bukan baris baru (jaga integritas Bayesian blend)
+  -- review ulang = edit yang sudah ada, bukan baris baru (jaga integritas rata-rata rating)
 
 users(users_id, name, email[unique, partial WHERE deleted_at IS NULL], password?, email_verified_at?,
   remember_token?, google_id?[unique, partial WHERE deleted_at IS NULL], role[user|admin],
@@ -392,7 +393,8 @@ user_wishlist_place(users_id FK, places_id FK, added_at, unique[users_id, places
   -- the user pick from this list (plus custom pins) for a trip (planned, C2 is still a stub)
   -- soft-deleted places drop out through Place's SoftDeletes scope and reappear if the admin restores them
 
-itinerary_days(itinerary_days_id, trips_id FK, day_number, start_places_id? FK, end_places_id? FK, unique[trips_id, day_number])
+itinerary_days(itinerary_days_id, trips_id FK, day_number, unique[trips_id, day_number])
+  -- start_places_id/end_places_id dropped 2026-10-18: every day starts and ends at trips.hotel_places_id
   -- start/end NULLABLE since migration 2026_09_29_071806 (documented 2026-10-10): a custom-pin hotel has no
   -- places row, NULL means the day starts/ends at trips.hotel_lat/hotel_lng; unique added 2026-10-10
 
@@ -724,7 +726,7 @@ SmartTrip-Batam/
 **US10 — Beri rating/review**
 - [ ] Any authenticated user can submit a rating (1-5) plus an optional comment on any place, at any time (open review policy — no visit proof required)
 - [ ] `itinerary_items_id` is populated only when the review is submitted from a post-visit "rate your trip" flow; otherwise it's null
-- [ ] A submitted review is reflected in that place's Bayesian-blended rating on the next TOPSIS scoring run
+- [ ] A submitted review is reflected in that place's rating (in-app review average) on the next TOPSIS scoring run
 
 **US11 — Trigger discovery (Admin)**
 - [ ] Discovery re-runs do not re-insert `external_place_id`s already present in `places` or `place_candidates`, in any status (including `rejected`)
@@ -866,7 +868,7 @@ Key pivots made during the design process (all 2026-09-07, in one extended desig
 | **Nearest-Neighbor (NN)** | A routing heuristic that always visits the closest unvisited stop next — used to order each day's visit sequence |
 | **Haversine distance** | Straight-line ("as the crow flies") distance between two lat/lng coordinates on a sphere |
 | **Circuity/detour multiplier** | A correction factor (~1.3-1.4x here) applied to straight-line distance to approximate real road distance |
-| **Bayesian rating blend** | A weighted-average technique (same principle as IMDB's rating formula) blending a place's Google rating with its in-app review average, weighted by how many in-app reviews exist |
+| **Bayesian rating blend** | A weighted-average technique (same principle as IMDB's rating formula) blending a place's Google rating with its in-app review average. Not used since v1.38: Geoapify has no ratings, so the rating is the in-app review average |
 | **Geofencing** | OS-level detection of a device entering/exiting a defined radius around a coordinate — used here to auto-detect a visited stop |
 | **Enterprise / Pro SKU** | Google Places API pricing tiers — Enterprise (rating, hours, price fields) has a much tighter free quota (1,000/mo) than Pro (Nearby/Text Search, 5,000/mo), which shaped the two-phase Discovery/Enrichment design |
 | **Trip viewer** | A user invited by a trip's owner (by email or link) to see that trip read-only — itinerary, live progress, status — with no ability to modify it. Requires an account and login (added 2026-09-23, US16) |

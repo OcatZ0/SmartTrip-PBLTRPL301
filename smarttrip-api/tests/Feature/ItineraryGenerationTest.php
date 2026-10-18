@@ -32,7 +32,7 @@ class ItineraryGenerationTest extends TestCase
         return Place::create(array_merge([
             'name' => 'Tempat', 'type' => 'attraction', 'lat' => 1.15, 'lng' => 104.05,
             'address' => 'Batam', 'source' => 'google', 'external_place_id' => uniqid('gp-'),
-            'estimated_visit_minutes' => 60, 'rating' => 4.0,
+            'estimated_visit_minutes' => 60,
         ], $overrides));
     }
 
@@ -142,14 +142,14 @@ class ItineraryGenerationTest extends TestCase
         $trip = $this->makeTrip($user);
         $trip->update(['weight_kategori' => 0.25, 'weight_jarak' => 0.25, 'weight_anggaran' => 0.25, 'weight_rating' => 0.25]);
 
-        // Near + cheap + highly rated should clearly outrank far + expensive + poorly rated.
+        // Near + cheap should clearly outrank far + expensive.
         $this->makePlace([
             'type' => 'lodging', 'name' => 'Hotel Dekat', 'lat' => 1.150, 'lng' => 104.050,
-            'estimated_cost_idr' => 100000, 'rating' => 4.8,
+            'estimated_cost_idr' => 100000,
         ]);
         $this->makePlace([
             'type' => 'lodging', 'name' => 'Hotel Jauh', 'lat' => 1.500, 'lng' => 104.500,
-            'estimated_cost_idr' => 900000, 'rating' => 2.5, 'external_place_id' => 'gp-far',
+            'estimated_cost_idr' => 900000, 'external_place_id' => 'gp-far',
         ]);
         $this->makePlace([
             'type' => 'attraction', 'name' => 'Wishlist Anchor', 'lat' => 1.151, 'lng' => 104.051,

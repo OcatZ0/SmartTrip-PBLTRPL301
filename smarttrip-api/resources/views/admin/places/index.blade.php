@@ -1004,7 +1004,7 @@
                             <td class="pt-rating" data-label="Rating">
                                 @php
                                     $rating = $place->ratingBlend();
-                                    $ratingCount = (int) $place->review_count + (int) $place->reviews_count;
+                                    $ratingCount = (int) $place->reviews_count;
                                 @endphp
                                 @if ($rating === null)
                                     <div class="rating-empty">Belum ada rating</div>

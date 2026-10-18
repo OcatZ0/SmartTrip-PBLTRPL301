@@ -73,7 +73,7 @@ class AdminActivityLogTest extends TestCase
         $placesId = DB::table('places')->insertGetId([
             'name' => 'Tanpa Riwayat', 'type' => 'attraction', 'lat' => 1.15, 'lng' => 104.05,
             'address' => 'Batam', 'source' => 'manual', 'business_status' => 'operational',
-            'category_tags_reviewed' => false, 'review_count' => 0,
+            'category_tags_reviewed' => false,
             'created_at' => now(),
         ], 'places_id');
 

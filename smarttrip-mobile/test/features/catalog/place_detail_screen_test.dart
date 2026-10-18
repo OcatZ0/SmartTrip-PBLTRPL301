@@ -272,7 +272,6 @@ void main() {
       'description_en': ' ',
       'opening_hours': {'osm': 'Mo-Su 08:00-18:00'},
       'estimated_visit_minutes': 45,
-      'review_count_google': null,
       'review_count_in_app': 1,
       'reviews': [
         {

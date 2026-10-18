@@ -161,36 +161,25 @@ class PlaceCatalogTest extends TestCase
 
     // --- rating blend ---
 
-    public function test_rating_falls_back_to_google_rating_with_no_in_app_reviews(): void
+    public function test_rating_is_the_average_of_the_in_app_reviews(): void
     {
-        $this->makePlace(['name' => 'A', 'rating' => 4.2]);
+        $place = $this->makePlace(['name' => 'A']);
+        foreach ([3, 5] as $rating) {
+            PlaceReview::create(['places_id' => $place->places_id, 'users_id' => User::factory()->create()->users_id, 'rating' => $rating]);
+        }
 
         $response = $this->getJson('/api/places');
 
         $response->assertOk();
-        $this->assertSame(4.2, $response->json('data.0.rating'));
-        $this->assertSame(4.2, $response->json('data.0.rating_google'));
-    }
-
-    public function test_rating_blend_shifts_toward_in_app_average_as_reviews_accumulate(): void
-    {
-        $place = $this->makePlace(['name' => 'A', 'rating' => 3.0]);
-        $user = User::factory()->create();
-
-        PlaceReview::create(['places_id' => $place->places_id, 'users_id' => $user->users_id, 'rating' => 5]);
-
-        $response = $this->getJson('/api/places');
-
-        $response->assertOk();
-        $blend = $response->json('data.0.rating');
-        // 1 in-app review of 5 against a Google prior of 3.0 with m=10: still much closer to 3.0.
-        $this->assertGreaterThan(3.0, $blend);
-        $this->assertLessThan(3.5, $blend);
+        $this->assertEquals(4.0, $response->json('data.0.rating'));
+        $this->assertSame(2, $response->json('data.0.review_count_in_app'));
+        $response->assertJsonMissingPath('data.0.rating_google');
+        $response->assertJsonMissingPath('data.0.price_level');
     }
 
     public function test_rating_is_null_when_there_is_no_data_at_all(): void
     {
-        $this->makePlace(['name' => 'A', 'rating' => null]);
+        $this->makePlace(['name' => 'A']);
 
         $response = $this->getJson('/api/places');
 

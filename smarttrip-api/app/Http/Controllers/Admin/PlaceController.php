@@ -228,7 +228,7 @@ class PlaceController extends Controller
     public function edit(Place $place)
     {
         $place->load(['categories', 'photos' => fn ($query) => $query->orderBy('sort_order')]);
-        $place->loadCount(['wishlistedIn', 'itineraryItems']);
+        $place->loadCount(['wishlistedIn', 'itineraryItems', 'reviews'])->loadAvg('reviews', 'rating');
 
         return view('admin.places.edit', [
             'place' => $place,

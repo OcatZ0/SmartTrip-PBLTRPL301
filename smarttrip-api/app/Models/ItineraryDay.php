@@ -18,23 +18,11 @@ class ItineraryDay extends Model
     protected $fillable = [
         'trips_id',
         'day_number',
-        'start_places_id',
-        'end_places_id',
     ];
 
     public function trip(): BelongsTo
     {
         return $this->belongsTo(Trip::class, 'trips_id');
-    }
-
-    public function startPlace(): BelongsTo
-    {
-        return $this->belongsTo(Place::class, 'start_places_id')->withTrashed();
-    }
-
-    public function endPlace(): BelongsTo
-    {
-        return $this->belongsTo(Place::class, 'end_places_id')->withTrashed();
     }
 
     public function items(): HasMany

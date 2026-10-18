@@ -9,36 +9,36 @@ use PHPUnit\Framework\TestCase;
 
 class PlaceRatingEstimatorTest extends TestCase
 {
-    private function place(array $attributes): Place
+    private function place(?float $averageRating, array $attributes = []): Place
     {
-        return (new Place)->forceFill(array_merge(['type' => 'attraction', 'reviews_count' => 0, 'reviews_avg_rating' => null], $attributes));
+        return (new Place)->forceFill(array_merge([
+            'type' => 'attraction',
+            'reviews_count' => $averageRating === null ? 0 : 3,
+            'reviews_avg_rating' => $averageRating,
+        ], $attributes));
     }
 
-    public function test_tier_1_uses_the_rating_blend_when_present(): void
+    public function test_tier_1_uses_the_in_app_review_average(): void
     {
-        $place = $this->place(['rating' => 4.3]);
-
-        $this->assertSame(4.3, (new PlaceRatingEstimator(new Collection))->estimate($place));
+        $this->assertSame(4.3, (new PlaceRatingEstimator(new Collection))->estimate($this->place(4.3)));
     }
 
-    public function test_tier_2_uses_the_median_blend_of_the_same_type(): void
+    public function test_tier_2_uses_the_median_rating_of_the_same_type(): void
     {
         $pool = new Collection([
-            $this->place(['rating' => 3.0]),
-            $this->place(['rating' => 4.0]),
-            $this->place(['rating' => 5.0]),
-            $this->place(['rating' => 1.0, 'type' => 'culinary']),
+            $this->place(3.0),
+            $this->place(4.0),
+            $this->place(5.0),
+            $this->place(1.0, ['type' => 'culinary']),
         ]);
-        $unrated = $this->place(['rating' => null]);
 
-        $this->assertSame(4.0, (new PlaceRatingEstimator($pool))->estimate($unrated));
+        $this->assertSame(4.0, (new PlaceRatingEstimator($pool))->estimate($this->place(null)));
     }
 
     public function test_tier_3_falls_back_to_a_neutral_rating(): void
     {
-        $pool = new Collection([$this->place(['rating' => null])]);
-        $unrated = $this->place(['rating' => null]);
+        $pool = new Collection([$this->place(null)]);
 
-        $this->assertSame(PlaceRatingEstimator::NEUTRAL_FALLBACK, (new PlaceRatingEstimator($pool))->estimate($unrated));
+        $this->assertSame(PlaceRatingEstimator::NEUTRAL_FALLBACK, (new PlaceRatingEstimator($pool))->estimate($this->place(null)));
     }
 }

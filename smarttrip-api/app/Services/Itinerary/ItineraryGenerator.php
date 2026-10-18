@@ -484,8 +484,6 @@ class ItineraryGenerator
         $itineraryDay = ItineraryDay::create([
             'trips_id' => $trip->trips_id,
             'day_number' => $dayNumber,
-            'start_places_id' => $trip->hotel_places_id,
-            'end_places_id' => $trip->hotel_places_id,
         ]);
 
         $waypoints = array_merge([$start], array_map(fn ($stop) => ['lat' => $stop['lat'], 'lng' => $stop['lng']], $orderedStops), [$start]);

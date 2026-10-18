@@ -339,10 +339,10 @@
                 <div class="pe-facts">
                     <div class="pe-name">
                         <h2>{{ $place->name }}</h2>
-                        @if ($place->rating !== null)
+                        @if ($place->ratingBlend() !== null)
                             <span class="pe-rating">
                                 <i class="bi bi-star-fill" aria-hidden="true"></i>
-                                {{ number_format((float) $place->rating, 1, ',', '.') }}@if ($place->review_count) · {{ $idNumber($place->review_count) }} ulasan @endif
+                                {{ number_format($place->ratingBlend(), 1, ',', '.') }} · {{ $idNumber($place->reviews_count) }} ulasan
                             </span>
                         @endif
                     </div>

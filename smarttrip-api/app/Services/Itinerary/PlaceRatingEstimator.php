@@ -7,10 +7,9 @@ use Illuminate\Support\Collection;
 
 /**
  * docs/prd design spec Section 7 langkah 5 (kriteria rating), 3 tingkat
- * fallback - pola yang sama dengan PlaceCostEstimator. Dibutuhkan karena
- * places.rating nullable (tempat source=manual tidak punya rating Google)
- * dan sebelum ini nilai null jatuh ke 0.0, yang menghukum tempat manual
- * tanpa review ke posisi terburuk di kriteria rating.
+ * fallback - pola yang sama dengan PlaceCostEstimator. Tempat tanpa ulasan
+ * in-app tidak punya rating; tanpa fallback nilainya jatuh ke 0.0, yang
+ * menghukumnya ke posisi terburuk di kriteria rating.
  */
 class PlaceRatingEstimator
 {
@@ -23,13 +22,13 @@ class PlaceRatingEstimator
 
     public function estimate(Place $place): float
     {
-        // Tingkat 1: blend Bayesian Google + in-app (Section 6).
+        // Tingkat 1: rata-rata ulasan in-app.
         $blend = $place->ratingBlend();
         if ($blend !== null) {
             return $blend;
         }
 
-        // Tingkat 2: median blend tempat lain di `type` yang sama yang datanya ada.
+        // Tingkat 2: median rating tempat lain di `type` yang sama yang punya ulasan.
         $resolved = $this->places
             ->where('type', $place->type)
             ->map(fn (Place $place) => $place->ratingBlend())

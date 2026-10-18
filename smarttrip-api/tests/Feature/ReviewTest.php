@@ -234,7 +234,7 @@ class ReviewTest extends TestCase
     public function test_place_detail_includes_the_blended_rating_and_review_list(): void
     {
         $user = User::factory()->create(['name' => 'Budi']);
-        $place = $this->makePlace(['rating' => 4.5]);
+        $place = $this->makePlace();
         PlaceReview::create(['places_id' => $place->places_id, 'users_id' => $user->users_id, 'rating' => 5, 'comment' => 'Mantap']);
 
         $response = $this->getJson("/api/places/{$place->places_id}");
@@ -243,6 +243,6 @@ class ReviewTest extends TestCase
         $this->assertCount(1, $response->json('data.reviews'));
         $this->assertSame('Budi', $response->json('data.reviews.0.user_name'));
         $this->assertSame('Mantap', $response->json('data.reviews.0.comment'));
-        $this->assertNotNull($response->json('data.rating'));
+        $this->assertEquals(5.0, $response->json('data.rating'));
     }
 }

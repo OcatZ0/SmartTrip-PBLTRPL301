@@ -26,7 +26,7 @@ class CatalogPlace {
       // Same count the rating blend is built from: source reviews plus
       // reviews written in the app.
       reviewCount:
-          ((json['review_count_google'] as num?) ?? 0).toInt() + ((json['review_count_in_app'] as num?) ?? 0).toInt(),
+          ((json['review_count_in_app'] as num?) ?? 0).toInt(),
       estimatedCostIdr: (json['estimated_cost_idr'] as num?)?.toInt(),
       categories: (json['categories'] as List? ?? const [])
           .cast<Map<String, dynamic>>()

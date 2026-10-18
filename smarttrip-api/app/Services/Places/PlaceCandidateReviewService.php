@@ -57,15 +57,10 @@ class PlaceCandidateReviewService
                 'lng' => $details['lng'] ?: $candidate->lng,
                 'address' => $details['address'],
                 'kecamatan' => $candidate->search_area,
-                'rating' => $details['rating'],
-                // places.review_count NOT NULL default 0, tapi Eloquent
-                // create() kirim NULL eksplisit kalau tidak di-coalesce.
-                'review_count' => $details['review_count'] ?? 0,
                 'opening_hours' => $details['opening_hours'],
                 'description' => $details['description'],
                 'business_status' => $details['business_status'],
                 'types' => $details['types'],
-                'price_level' => $details['price_level'],
                 'source' => 'geoapify',
                 'category_tags_reviewed' => false,
             ]);

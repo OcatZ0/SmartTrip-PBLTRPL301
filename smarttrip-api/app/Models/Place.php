@@ -33,9 +33,6 @@ class Place extends Model
         'lng',
         'address',
         'kecamatan',
-        'price_level',
-        'rating',
-        'review_count',
         'opening_hours',
         'photo_url',
         'description',
@@ -56,7 +53,6 @@ class Place extends Model
         return [
             'lat' => 'decimal:7',
             'lng' => 'decimal:7',
-            'rating' => 'decimal:2',
             'opening_hours' => 'array',
             'types' => 'array',
             'category_tags_reviewed' => 'boolean',
@@ -213,35 +209,21 @@ class Place extends Model
     }
 
     /**
-     * docs/prd design spec Section 6: Bayesian blend Google + in-app rating,
-     * dekat ke rating Google saat review in-app masih sedikit/nol, makin
-     * condong ke rata-rata in-app seiring jumlah review in-app bertambah
-     * (mencegah 1 review 5 bintang baru mengalahkan tempat dengan ribuan
-     * review Google). PRD tidak menetapkan angka `$priorWeight` (ambang "cukup
-     * review") secara eksplisit - 10 dipilih sebagai asumsi wajar.
+     * The rating the app shows: the average of the in-app reviews, null
+     * without any. It used to blend in the Google rating (design spec
+     * Section 6), but Geoapify has no ratings, so places.rating was dropped
+     * on 2026-10-18.
      *
-     * Butuh `reviews_avg_rating`/`reviews_count` sudah di-load lewat
-     * withAvg('reviews','rating')/withCount('reviews') di query pemanggil,
-     * supaya tidak N+1.
+     * Needs `reviews_avg_rating`/`reviews_count` loaded with
+     * withAvg('reviews','rating')/withCount('reviews') by the caller, to
+     * avoid N+1.
      */
-    public function ratingBlend(int $priorWeight = 10): ?float
+    public function ratingBlend(): ?float
     {
-        $googleRating = $this->rating !== null ? (float) $this->rating : null;
-        $inAppCount = (int) ($this->reviews_count ?? 0);
-        $inAppAvg = $this->reviews_avg_rating !== null ? (float) $this->reviews_avg_rating : null;
-
-        if ($googleRating === null && $inAppCount === 0) {
+        if ((int) ($this->reviews_count ?? 0) === 0 || $this->reviews_avg_rating === null) {
             return null;
         }
 
-        if ($googleRating === null) {
-            return round($inAppAvg, 2);
-        }
-
-        if ($inAppCount === 0) {
-            return round($googleRating, 2);
-        }
-
-        return round(($inAppCount / ($inAppCount + $priorWeight)) * $inAppAvg + ($priorWeight / ($inAppCount + $priorWeight)) * $googleRating, 2);
+        return round((float) $this->reviews_avg_rating, 2);
     }
 }

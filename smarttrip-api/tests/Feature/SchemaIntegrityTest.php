@@ -75,7 +75,6 @@ class SchemaIntegrityTest extends TestCase
 
         $day1 = ItineraryDay::create([
             'trips_id' => $trip->trips_id, 'day_number' => 1,
-            'start_places_id' => $hotel->places_id, 'end_places_id' => $hotel->places_id,
         ]);
 
         $item1 = ItineraryItem::create([
@@ -184,7 +183,7 @@ class SchemaIntegrityTest extends TestCase
     {
         [$trip, $place] = $this->scaffoldTripWithPlace();
         $trip->update(['hotel_places_id' => $place->places_id]);
-        $day = ItineraryDay::create(['trips_id' => $trip->trips_id, 'day_number' => 1, 'start_places_id' => $place->places_id]);
+        $day = ItineraryDay::create(['trips_id' => $trip->trips_id, 'day_number' => 1]);
         $item = ItineraryItem::create(['itinerary_days_id' => $day->itinerary_days_id, 'places_id' => $place->places_id, 'visit_order' => 1, 'source' => 'wishlist']);
         $wishlist = TripWishlistPlace::create(['trips_id' => $trip->trips_id, 'places_id' => $place->places_id]);
 
@@ -192,7 +191,6 @@ class SchemaIntegrityTest extends TestCase
 
         $this->assertSame('Tempat', $item->fresh()->place->name);
         $this->assertSame('Tempat', $wishlist->fresh()->place->name);
-        $this->assertSame('Tempat', $day->fresh()->startPlace->name);
         $this->assertSame('Tempat', $trip->fresh()->hotelPlace->name);
         $this->assertNull(Place::find($place->places_id));
     }

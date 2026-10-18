@@ -21,7 +21,6 @@ void main() {
           'type': 'attraction',
           'photo_url': null,
           'rating': 4.25,
-          'review_count_google': null,
           'review_count_in_app': 3,
           'estimated_cost_idr': 0,
           'categories': [

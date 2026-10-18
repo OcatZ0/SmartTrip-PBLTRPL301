@@ -16,28 +16,21 @@ class PlaceCostEstimatorTest extends TestCase
 
     public function test_tier_1_uses_estimated_cost_idr_when_present(): void
     {
-        $place = $this->place(['estimated_cost_idr' => 123000, 'price_level' => '4']);
+        $place = $this->place(['estimated_cost_idr' => 123000]);
         $estimator = new PlaceCostEstimator(new Collection);
 
         $this->assertSame(123000, $estimator->estimate($place));
     }
 
-    public function test_tier_2_falls_back_to_price_level_mapping(): void
+    public function test_tier_2_falls_back_to_median_of_same_type_places(): void
     {
-        $place = $this->place(['estimated_cost_idr' => null, 'price_level' => '2']);
-        $estimator = new PlaceCostEstimator(new Collection);
-
-        $this->assertSame(75000, $estimator->estimate($place));
-    }
-
-    public function test_tier_3_falls_back_to_median_of_same_type_places(): void
-    {
-        $place = $this->place(['estimated_cost_idr' => null, 'price_level' => null]);
+        $place = $this->place(['estimated_cost_idr' => null]);
 
         $pool = new Collection([
             $this->place(['estimated_cost_idr' => 10000]),
             $this->place(['estimated_cost_idr' => 20000]),
             $this->place(['estimated_cost_idr' => 30000]),
+            $this->place(['estimated_cost_idr' => null]),
             $this->place(['type' => 'lodging', 'estimated_cost_idr' => 900000]), // different type, excluded
         ]);
 
@@ -46,10 +39,10 @@ class PlaceCostEstimatorTest extends TestCase
         $this->assertSame(20000.0, (float) $estimator->estimate($place));
     }
 
-    public function test_tier_4_falls_back_to_the_hardcoded_default_per_type(): void
+    public function test_tier_3_falls_back_to_the_hardcoded_default_per_type(): void
     {
-        $attraction = $this->place(['type' => 'attraction', 'estimated_cost_idr' => null, 'price_level' => null]);
-        $lodging = $this->place(['type' => 'lodging', 'estimated_cost_idr' => null, 'price_level' => null]);
+        $attraction = $this->place(['type' => 'attraction', 'estimated_cost_idr' => null]);
+        $lodging = $this->place(['type' => 'lodging', 'estimated_cost_idr' => null]);
 
         $estimator = new PlaceCostEstimator(new Collection);
 

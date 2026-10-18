@@ -89,7 +89,6 @@ class GeoapifyPlacesClient
      *
      * @return array{
      *     name: string, address: string, lat: float, lng: float, types: array<int, string>,
-     *     rating: float|null, review_count: int|null, price_level: string|null,
      *     opening_hours: array|null, description: string|null,
      *     business_status: string, osm_tags: array<string, string>,
      * }
@@ -122,9 +121,6 @@ class GeoapifyPlacesClient
             'lat' => (float) ($details['lat'] ?? 0),
             'lng' => (float) ($details['lon'] ?? 0),
             'types' => $details['categories'] ?? [],
-            'rating' => null,
-            'review_count' => null,
-            'price_level' => null,
             // OSM opening_hours syntax, e.g. "Mo-Su 10:00-22:00".
             'opening_hours' => is_string($openingHours) && $openingHours !== '' ? ['osm' => $openingHours] : null,
             'description' => null,

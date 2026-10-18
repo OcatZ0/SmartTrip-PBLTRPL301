@@ -27,7 +27,7 @@ class SwapTest extends TestCase
         return Place::create(array_merge([
             'name' => 'Tempat', 'type' => 'attraction', 'lat' => 1.15, 'lng' => 104.05,
             'address' => 'Batam', 'source' => 'google', 'external_place_id' => uniqid('gp-'),
-            'estimated_visit_minutes' => 60, 'rating' => 4.0,
+            'estimated_visit_minutes' => 60,
         ], $overrides));
     }
 
@@ -80,7 +80,6 @@ class SwapTest extends TestCase
 
         $day = ItineraryDay::create([
             'trips_id' => $trip->trips_id, 'day_number' => 1,
-            'start_places_id' => $hotel->places_id, 'end_places_id' => $hotel->places_id,
         ]);
         $item = ItineraryItem::create([
             'itinerary_days_id' => $day->itinerary_days_id, 'places_id' => $original->places_id,
@@ -98,7 +97,7 @@ class SwapTest extends TestCase
         $user = User::factory()->create();
         ['item' => $item, 'category' => $category] = $this->tripWithOneItem($user);
 
-        $alt1 = $this->makePlace(['name' => 'Alternatif Bagus', 'lat' => 1.1311, 'lng' => 104.0311, 'external_place_id' => 'gp-alt1', 'rating' => 4.8]);
+        $alt1 = $this->makePlace(['name' => 'Alternatif Bagus', 'lat' => 1.1311, 'lng' => 104.0311, 'external_place_id' => 'gp-alt1']);
         $alt1->categories()->attach($category->categories_id);
         $lodgingNoise = $this->makePlace(['type' => 'lodging', 'name' => 'Hotel Lain', 'external_place_id' => 'gp-lodging-noise']);
 
@@ -271,7 +270,6 @@ class SwapTest extends TestCase
         $otherDayPlace = $this->makePlace(['name' => 'Hari Lain', 'lat' => 1.5000, 'lng' => 104.5000, 'external_place_id' => 'gp-otherday']);
         $otherDay = ItineraryDay::create([
             'trips_id' => $trip->trips_id, 'day_number' => 2,
-            'start_places_id' => $hotel->places_id, 'end_places_id' => $hotel->places_id,
         ]);
         $otherDayItem = ItineraryItem::create([
             'itinerary_days_id' => $otherDay->itinerary_days_id, 'places_id' => $otherDayPlace->places_id,

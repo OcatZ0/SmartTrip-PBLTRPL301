@@ -199,8 +199,7 @@ class CandidateReviewTest extends TestCase
         $this->assertTrue((bool) $place->is_outdoor);
         $this->assertSame('geoapify', $place->source);
         $this->assertSame(['osm' => 'Mo-Su 08:00-18:00'], $place->opening_hours);
-        // Geoapify has no ratings or photos; the admin adds photos.
-        $this->assertNull($place->rating);
+        // Geoapify has no photos; the admin adds them.
         $this->assertNull($place->photo_url);
         $this->assertTrue($place->categories->contains('categories_id', $category->categories_id));
     }

@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Category;
 use App\Models\Place;
+use App\Models\PlaceReview;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -113,7 +114,7 @@ class AdminPlaceManagementTest extends TestCase
     public function test_the_list_shows_no_made_up_rating(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
-        $this->makePlace(['name' => 'Tanpa Rating', 'rating' => null, 'review_count' => 0]);
+        $this->makePlace(['name' => 'Tanpa Rating']);
 
         $response = $this->actingAs($admin)->get('/admin/places');
 
@@ -122,15 +123,18 @@ class AdminPlaceManagementTest extends TestCase
         $response->assertDontSee('4,5');
     }
 
-    public function test_the_list_shows_the_source_rating_with_its_review_count(): void
+    public function test_the_list_shows_the_in_app_rating_with_its_review_count(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
-        $this->makePlace(['rating' => 4.3, 'review_count' => 120]);
+        $place = $this->makePlace();
+        foreach ([4, 5] as $rating) {
+            PlaceReview::create(['places_id' => $place->places_id, 'users_id' => User::factory()->create()->users_id, 'rating' => $rating]);
+        }
 
         $response = $this->actingAs($admin)->get('/admin/places');
 
-        $response->assertSee('4,3');
-        $response->assertSee('(120 ulasan)');
+        $response->assertSee('4,5');
+        $response->assertSee('(2 ulasan)');
     }
 
     public function test_the_list_shows_three_categories_and_counts_the_rest(): void

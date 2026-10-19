@@ -73,6 +73,7 @@ dependencies:
 
   # Routing/navigation
   go_router: ^14.6.2
+  share_plus: ^10.0.0
 
   # Opens Google Maps turn-by-turn navigation from the live map (E1)
   url_launcher: ^6.3.2

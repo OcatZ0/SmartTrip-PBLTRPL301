@@ -48,7 +48,10 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
 
   void _onSearchChanged(String value) {
     _debounce?.cancel();
-    _debounce = Timer(_searchDebounce, () => ref.read(catalogControllerProvider.notifier).search(value));
+    _debounce = Timer(
+      _searchDebounce,
+      () => ref.read(catalogControllerProvider.notifier).search(value),
+    );
   }
 
   void _clearSearch() {
@@ -61,14 +64,25 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
 
   // Only the catalog exists so far; the other tabs get their screens later.
   void _selectTab(AppTab tab) {
-    if (tab == AppTab.home) return;
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(AppLocalizations.of(context).comingSoon)));
+    switch (tab) {
+      case AppTab.home:
+        break;
+      case AppTab.trips:
+        context.push(AppRoutes.trips);
+      case AppTab.profile:
+        context.push(AppRoutes.profile);
+      case AppTab.wishlist:
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(content: Text(AppLocalizations.of(context).comingSoon)),
+          );
+    }
   }
 
   bool _onScroll(ScrollNotification notification) {
-    if (notification.metrics.axis == Axis.vertical && notification.metrics.extentAfter < _loadMoreThreshold) {
+    if (notification.metrics.axis == Axis.vertical &&
+        notification.metrics.extentAfter < _loadMoreThreshold) {
       ref.read(catalogControllerProvider.notifier).loadMore();
     }
     return false;
@@ -86,7 +100,11 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text(AppLocalizations.of(context).catalogWishlistFailed)));
+        ..showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context).catalogWishlistFailed),
+          ),
+        );
     }
   }
 
@@ -96,15 +114,16 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
     final firstPage = state.places.take(CatalogRepository.pageSize).toList();
     if (firstPage.length < _minPlacesForFeatured) return const [];
 
-    final rated = [
-      for (var i = 0; i < firstPage.length; i++)
-        if (firstPage[i].rating != null) (index: i, place: firstPage[i]),
-    ]..sort((a, b) {
-        final byRating = b.place.rating!.compareTo(a.place.rating!);
-        if (byRating != 0) return byRating;
-        final byReviews = b.place.reviewCount.compareTo(a.place.reviewCount);
-        return byReviews != 0 ? byReviews : a.index.compareTo(b.index);
-      });
+    final rated =
+        [
+          for (var i = 0; i < firstPage.length; i++)
+            if (firstPage[i].rating != null) (index: i, place: firstPage[i]),
+        ]..sort((a, b) {
+          final byRating = b.place.rating!.compareTo(a.place.rating!);
+          if (byRating != 0) return byRating;
+          final byReviews = b.place.reviewCount.compareTo(a.place.reviewCount);
+          return byReviews != 0 ? byReviews : a.index.compareTo(b.index);
+        });
 
     return [for (final entry in rated.take(_featuredCount)) entry.place];
   }
@@ -114,12 +133,16 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
     final l10n = AppLocalizations.of(context);
     final state = ref.watch(catalogControllerProvider);
     final isLoggedIn = ref.watch(sessionControllerProvider).valueOrNull != null;
-    final savedIds = ref.watch(userWishlistControllerProvider).valueOrNull ?? const <int>{};
+    final savedIds =
+        ref.watch(userWishlistControllerProvider).valueOrNull ?? const <int>{};
     final featured = _featured(state);
     final featuredIds = {for (final place in featured) place.placesId};
     final rest = featuredIds.isEmpty
         ? state.places
-        : [for (final place in state.places) if (!featuredIds.contains(place.placesId)) place];
+        : [
+            for (final place in state.places)
+              if (!featuredIds.contains(place.placesId)) place,
+          ];
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
@@ -132,7 +155,9 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
           onRefresh: () async {
             await Future.wait([
               ref.read(catalogControllerProvider.notifier).refresh(),
-              ref.refresh(userWishlistControllerProvider.future).catchError((_) => const <int>{}),
+              ref
+                  .refresh(userWishlistControllerProvider.future)
+                  .catchError((_) => const <int>{}),
             ]);
           },
           child: NotificationListener<ScrollNotification>(
@@ -155,7 +180,9 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
                 if (featured.isNotEmpty) ...[
                   SliverPadding(
                     padding: const EdgeInsets.fromLTRB(16, 22, 16, 12),
-                    sliver: SliverToBoxAdapter(child: _SectionTitle(l10n.catalogSectionTopRated)),
+                    sliver: SliverToBoxAdapter(
+                      child: _SectionTitle(l10n.catalogSectionTopRated),
+                    ),
                   ),
                   SliverToBoxAdapter(
                     child: SizedBox(
@@ -184,7 +211,12 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
                   ),
                 ],
                 SliverPadding(
-                  padding: EdgeInsets.fromLTRB(16, featured.isEmpty ? 20 : 24, 16, 10),
+                  padding: EdgeInsets.fromLTRB(
+                    16,
+                    featured.isEmpty ? 20 : 24,
+                    16,
+                    10,
+                  ),
                   sliver: SliverToBoxAdapter(
                     child: _SectionHeader(
                       filter: state.filter,
@@ -195,7 +227,11 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
                 ..._content(context, state, rest, savedIds),
                 SliverPadding(
                   padding: EdgeInsets.only(
-                    bottom: AppBottomBar.barHeight + AppBottomBar.fabRise + 16 + MediaQuery.paddingOf(context).bottom,
+                    bottom:
+                        AppBottomBar.barHeight +
+                        AppBottomBar.fabRise +
+                        16 +
+                        MediaQuery.paddingOf(context).bottom,
                   ),
                 ),
               ],
@@ -218,7 +254,12 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
     );
   }
 
-  List<Widget> _content(BuildContext context, CatalogState state, List<CatalogPlace> places, Set<int> savedIds) {
+  List<Widget> _content(
+    BuildContext context,
+    CatalogState state,
+    List<CatalogPlace> places,
+    Set<int> savedIds,
+  ) {
     final l10n = AppLocalizations.of(context);
 
     if (state.places.isEmpty) {
@@ -226,7 +267,9 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
         return const [
           SliverPadding(
             padding: EdgeInsets.only(top: 48),
-            sliver: SliverToBoxAdapter(child: Center(child: CircularProgressIndicator())),
+            sliver: SliverToBoxAdapter(
+              child: Center(child: CircularProgressIndicator()),
+            ),
           ),
         ];
       }
@@ -237,7 +280,8 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
           SliverToBoxAdapter(
             child: LoadErrorView(
               message: tripErrorMessage(error, l10n),
-              onRetry: () => ref.read(catalogControllerProvider.notifier).retry(),
+              onRetry: () =>
+                  ref.read(catalogControllerProvider.notifier).retry(),
             ),
           ),
         ];
@@ -245,7 +289,11 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
 
       return [
         SliverToBoxAdapter(
-          child: _EmptyState(message: state.filter.isUnfiltered ? l10n.catalogEmpty : l10n.catalogNoResults),
+          child: _EmptyState(
+            message: state.filter.isUnfiltered
+                ? l10n.catalogEmpty
+                : l10n.catalogNoResults,
+          ),
         ),
       ];
     }
@@ -262,7 +310,10 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
             // child to the card shape.
             return DecoratedBox(
               key: ValueKey(place.placesId),
-              decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), boxShadow: CatalogColors.cardShadow),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: CatalogColors.cardShadow,
+              ),
               child: PlaceOpenContainer(
                 placesId: place.placesId,
                 radius: 16,
@@ -281,7 +332,9 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
       if (state.isLoading)
         const SliverPadding(
           padding: EdgeInsets.only(top: 24),
-          sliver: SliverToBoxAdapter(child: Center(child: CircularProgressIndicator())),
+          sliver: SliverToBoxAdapter(
+            child: Center(child: CircularProgressIndicator()),
+          ),
         )
       else if (state.error != null)
         SliverPadding(
@@ -290,9 +343,13 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
             child: Center(
               child: Column(
                 children: [
-                  Text(tripErrorMessage(state.error!, l10n), textAlign: TextAlign.center),
+                  Text(
+                    tripErrorMessage(state.error!, l10n),
+                    textAlign: TextAlign.center,
+                  ),
                   TextButton.icon(
-                    onPressed: () => ref.read(catalogControllerProvider.notifier).retry(),
+                    onPressed: () =>
+                        ref.read(catalogControllerProvider.notifier).retry(),
                     icon: const Icon(Icons.refresh),
                     label: Text(l10n.actionRetry),
                   ),
@@ -306,7 +363,11 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
 }
 
 class _CatalogHeader extends StatelessWidget {
-  const _CatalogHeader({required this.isLoggedIn, required this.onLogin, required this.search});
+  const _CatalogHeader({
+    required this.isLoggedIn,
+    required this.onLogin,
+    required this.search,
+  });
 
   static const _panoramaHeight = 200.0;
   static const _searchOverlap = 26.0;
@@ -363,14 +424,26 @@ class _CatalogHeader extends StatelessWidget {
                     children: [
                       Text(
                         l10n.catalogEyebrow,
-                        style: catalogText(11, FontWeight.w700, CatalogColors.sun400, height: 16, letterSpacing: 0.88),
+                        style: catalogText(
+                          11,
+                          FontWeight.w700,
+                          CatalogColors.sun400,
+                          height: 16,
+                          letterSpacing: 0.88,
+                        ),
                       ),
                       const SizedBox(height: 4),
                       ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 240),
                         child: Text(
                           l10n.catalogGreeting,
-                          style: catalogText(24, FontWeight.w800, Colors.white, height: 30, letterSpacing: -0.48),
+                          style: catalogText(
+                            24,
+                            FontWeight.w800,
+                            Colors.white,
+                            height: 30,
+                            letterSpacing: -0.48,
+                          ),
                         ),
                       ),
                     ],
@@ -380,7 +453,11 @@ class _CatalogHeader extends StatelessWidget {
                   const SizedBox(width: 12),
                   Material(
                     color: Colors.white.withValues(alpha: 0.16),
-                    shape: StadiumBorder(side: BorderSide(color: Colors.white.withValues(alpha: 0.28))),
+                    shape: StadiumBorder(
+                      side: BorderSide(
+                        color: Colors.white.withValues(alpha: 0.28),
+                      ),
+                    ),
                     child: InkWell(
                       customBorder: const StadiumBorder(),
                       onTap: onLogin,
@@ -388,7 +465,10 @@ class _CatalogHeader extends StatelessWidget {
                         height: 36,
                         padding: const EdgeInsets.symmetric(horizontal: 14),
                         alignment: Alignment.center,
-                        child: Text(l10n.catalogLogin, style: catalogText(12, FontWeight.w600, Colors.white)),
+                        child: Text(
+                          l10n.catalogLogin,
+                          style: catalogText(12, FontWeight.w600, Colors.white),
+                        ),
                       ),
                     ),
                   ),
@@ -404,7 +484,11 @@ class _CatalogHeader extends StatelessWidget {
 }
 
 class _SearchField extends StatelessWidget {
-  const _SearchField({required this.controller, required this.onChanged, required this.onClear});
+  const _SearchField({
+    required this.controller,
+    required this.onChanged,
+    required this.onClear,
+  });
 
   final TextEditingController controller;
   final ValueChanged<String> onChanged;
@@ -438,7 +522,11 @@ class _SearchField extends StatelessWidget {
                 border: InputBorder.none,
                 hintText: l10n.catalogSearchHint,
                 hintMaxLines: 1,
-                hintStyle: catalogText(14, FontWeight.w400, CatalogColors.inkMuted),
+                hintStyle: catalogText(
+                  14,
+                  FontWeight.w400,
+                  CatalogColors.inkMuted,
+                ),
               ),
             ),
           ),
@@ -451,7 +539,11 @@ class _SearchField extends StatelessWidget {
                 : IconButton(
                     tooltip: l10n.catalogClearSearch,
                     onPressed: onClear,
-                    icon: const Icon(Icons.close, size: 18, color: CatalogColors.inkMuted),
+                    icon: const Icon(
+                      Icons.close,
+                      size: 18,
+                      color: CatalogColors.inkMuted,
+                    ),
                   ),
           ),
         ],
@@ -469,7 +561,9 @@ class _ChipBar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final languageCode = Localizations.localeOf(context).languageCode;
-    final categories = ref.watch(catalogCategoriesProvider).valueOrNull ?? const <TripCategory>[];
+    final categories =
+        ref.watch(catalogCategoriesProvider).valueOrNull ??
+        const <TripCategory>[];
     final controller = ref.read(catalogControllerProvider.notifier);
 
     final kecamatan = filter.kecamatan;
@@ -529,7 +623,9 @@ class _KecamatanSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final selected = ref.watch(catalogControllerProvider.select((state) => state.filter.kecamatan));
+    final selected = ref.watch(
+      catalogControllerProvider.select((state) => state.filter.kecamatan),
+    );
     final options = ref.watch(catalogKecamatanProvider);
 
     void choose(String? kecamatan) {
@@ -540,11 +636,23 @@ class _KecamatanSheet extends ConsumerWidget {
     Widget tile(String label, String? value, {String? subtitle}) {
       final isSelected = value == selected;
       return ListTile(
-        title: Text(label, style: catalogText(15, isSelected ? FontWeight.w700 : FontWeight.w500, CatalogColors.ink)),
+        title: Text(
+          label,
+          style: catalogText(
+            15,
+            isSelected ? FontWeight.w700 : FontWeight.w500,
+            CatalogColors.ink,
+          ),
+        ),
         subtitle: subtitle == null
             ? null
-            : Text(subtitle, style: catalogText(12, FontWeight.w400, CatalogColors.inkMuted)),
-        trailing: isSelected ? const Icon(Icons.check, color: CatalogColors.sea600) : null,
+            : Text(
+                subtitle,
+                style: catalogText(12, FontWeight.w400, CatalogColors.inkMuted),
+              ),
+        trailing: isSelected
+            ? const Icon(Icons.check, color: CatalogColors.sea600)
+            : null,
         selected: isSelected,
         onTap: () => choose(value),
       );
@@ -559,7 +667,12 @@ class _KecamatanSheet extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
             child: Text(
               l10n.catalogKecamatanPick,
-              style: catalogText(18, FontWeight.w700, CatalogColors.ink, height: 24),
+              style: catalogText(
+                18,
+                FontWeight.w700,
+                CatalogColors.ink,
+                height: 24,
+              ),
             ),
           ),
           tile(l10n.catalogKecamatanAll, null),
@@ -569,7 +682,11 @@ class _KecamatanSheet extends ConsumerWidget {
                 shrinkWrap: true,
                 children: [
                   for (final option in items)
-                    tile(option.name, option.name, subtitle: l10n.catalogKecamatanCount(option.placesCount)),
+                    tile(
+                      option.name,
+                      option.name,
+                      subtitle: l10n.catalogKecamatanCount(option.placesCount),
+                    ),
                 ],
               ),
               loading: () => const Padding(
@@ -589,7 +706,13 @@ class _KecamatanSheet extends ConsumerWidget {
 }
 
 class _FilterChip extends StatelessWidget {
-  const _FilterChip({required this.label, required this.selected, required this.onTap, this.leading, this.trailing});
+  const _FilterChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    this.leading,
+    this.trailing,
+  });
 
   final String label;
   final bool selected;
@@ -604,19 +727,32 @@ class _FilterChip extends StatelessWidget {
       selected: selected,
       child: Material(
         color: selected ? CatalogColors.navy900 : Colors.white,
-        shape: StadiumBorder(side: selected ? BorderSide.none : const BorderSide(color: CatalogColors.line)),
+        shape: StadiumBorder(
+          side: selected
+              ? BorderSide.none
+              : const BorderSide(color: CatalogColors.line),
+        ),
         child: InkWell(
           customBorder: const StadiumBorder(),
           onTap: onTap,
           child: Container(
             height: 36,
-            padding: EdgeInsets.only(left: leading == null ? 16 : 12, right: trailing == null ? 16 : 10),
+            padding: EdgeInsets.only(
+              left: leading == null ? 16 : 12,
+              right: trailing == null ? 16 : 10,
+            ),
             alignment: Alignment.center,
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (leading != null) ...[
-                  Icon(leading, size: 16, color: selected ? CatalogColors.sun400 : CatalogColors.sea600),
+                  Icon(
+                    leading,
+                    size: 16,
+                    color: selected
+                        ? CatalogColors.sun400
+                        : CatalogColors.sea600,
+                  ),
                   const SizedBox(width: 6),
                 ],
                 Text(
@@ -629,7 +765,11 @@ class _FilterChip extends StatelessWidget {
                 ),
                 if (trailing != null) ...[
                   const SizedBox(width: 4),
-                  Icon(trailing, size: 18, color: selected ? Colors.white : CatalogColors.inkMuted),
+                  Icon(
+                    trailing,
+                    size: 18,
+                    color: selected ? Colors.white : CatalogColors.inkMuted,
+                  ),
                 ],
               ],
             ),
@@ -668,19 +808,33 @@ class _SectionHeader extends ConsumerWidget {
 
     return Row(
       children: [
-        Expanded(child: _SectionTitle(_title(ref, l10n, Localizations.localeOf(context).languageCode))),
+        Expanded(
+          child: _SectionTitle(
+            _title(ref, l10n, Localizations.localeOf(context).languageCode),
+          ),
+        ),
         if (savedCount > 0)
           Container(
             height: 24,
             padding: const EdgeInsets.symmetric(horizontal: 10),
             alignment: Alignment.center,
-            decoration: BoxDecoration(color: CatalogColors.field, borderRadius: BorderRadius.circular(999)),
+            decoration: BoxDecoration(
+              color: CatalogColors.field,
+              borderRadius: BorderRadius.circular(999),
+            ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.favorite_rounded, size: 12, color: CatalogColors.sun400),
+                const Icon(
+                  Icons.favorite_rounded,
+                  size: 12,
+                  color: CatalogColors.sun400,
+                ),
                 const SizedBox(width: 4),
-                Text(l10n.catalogFavoriteCount(savedCount), style: catalogText(11, FontWeight.w700, CatalogColors.ink)),
+                Text(
+                  l10n.catalogFavoriteCount(savedCount),
+                  style: catalogText(11, FontWeight.w700, CatalogColors.ink),
+                ),
               ],
             ),
           ),
@@ -692,16 +846,25 @@ class _SectionHeader extends ConsumerWidget {
     final kecamatan = filter.kecamatan;
     final title = _filterTitle(ref, l10n, languageCode);
     if (kecamatan == null) return title ?? l10n.catalogSectionAll;
-    return title == null ? l10n.catalogSectionKecamatan(kecamatan) : l10n.catalogSectionInKecamatan(title, kecamatan);
+    return title == null
+        ? l10n.catalogSectionKecamatan(kecamatan)
+        : l10n.catalogSectionInKecamatan(title, kecamatan);
   }
 
-  String? _filterTitle(WidgetRef ref, AppLocalizations l10n, String languageCode) {
-    if (filter.search.isNotEmpty) return l10n.catalogSectionSearch(filter.search);
+  String? _filterTitle(
+    WidgetRef ref,
+    AppLocalizations l10n,
+    String languageCode,
+  ) {
+    if (filter.search.isNotEmpty)
+      return l10n.catalogSectionSearch(filter.search);
     if (filter.type == 'lodging') return l10n.catalogFilterLodging;
 
     final slug = filter.categorySlug;
     if (slug != null) {
-      final categories = ref.watch(catalogCategoriesProvider).valueOrNull ?? const <TripCategory>[];
+      final categories =
+          ref.watch(catalogCategoriesProvider).valueOrNull ??
+          const <TripCategory>[];
       for (final category in categories) {
         if (category.slug == slug) return category.localizedName(languageCode);
       }
@@ -722,12 +885,21 @@ class _EmptyState extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(32, 48, 32, 0),
       child: Column(
         children: [
-          const Icon(Icons.travel_explore, size: 48, color: CatalogColors.inkMuted),
+          const Icon(
+            Icons.travel_explore,
+            size: 48,
+            color: CatalogColors.inkMuted,
+          ),
           const SizedBox(height: 12),
           Text(
             message,
             textAlign: TextAlign.center,
-            style: catalogText(14, FontWeight.w400, CatalogColors.inkMuted, height: 20),
+            style: catalogText(
+              14,
+              FontWeight.w400,
+              CatalogColors.inkMuted,
+              height: 20,
+            ),
           ),
         ],
       ),

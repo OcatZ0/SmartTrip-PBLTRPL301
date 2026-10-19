@@ -1,8 +1,9 @@
-
-
-/// Profil wisatawan (F008: Wisatawan dapat mengelola preferensi wisatawan).
+// Profil wisatawan (F008: Wisatawan dapat mengelola preferensi wisatawan).
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/router/app_routes.dart';
+import '../../core/widgets/app_bottom_bar.dart';
+import '../../l10n/app_localizations.dart';
 
 const kPrimary = Color(0xFF1B6CB0);
 const kBackground = Color(0xFFF4F6FC);
@@ -40,7 +41,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   double _budgetWeight = 7;
 
   String _language = 'ID';
-  int _navIndex = 3; 
 
   void _toggleInterest(String interest, bool selected) {
     setState(() {
@@ -58,12 +58,65 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  void _selectTab(AppTab tab) {
+    switch (tab) {
+      case AppTab.home:
+        context.go(AppRoutes.catalog);
+      case AppTab.trips:
+        context.push(AppRoutes.trips);
+      case AppTab.wishlist:
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(content: Text(AppLocalizations.of(context).comingSoon)),
+          );
+      case AppTab.profile:
+        break;
+    }
+  }
+
+  Future<void> _showExitDialog() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Keluar Akun'),
+        content: const Text('Apakah kamu yakin ingin keluar dari akun?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text(
+              'Keluar',
+              style: TextStyle(color: kDanger, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true && mounted) {
+      context.go(AppRoutes.login);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: kBackground,
+      extendBody: true,
       appBar: _buildAppBar(),
       body: ListView(
+        padding: EdgeInsets.only(
+          bottom:
+              AppBottomBar.barHeight +
+              AppBottomBar.fabRise +
+              16 +
+              MediaQuery.paddingOf(context).bottom,
+        ),
         children: [
           const _ProfileHeader(
             name: 'Ahmad Rizki',
@@ -74,28 +127,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const _SectionTitle('Cara Login'),
+                const _SectionTitle('Ganti Kata Sandi'),
                 const SizedBox(height: 12),
-                const Row(
-                  children: [
-                    Expanded(
-                      child: _LoginMethodCard(
-                        icon: Icons.lock_outline,
-                        title: 'Password',
-                        status: 'Aktif',
-                      ),
-                    ),
-                    SizedBox(width: 12),
-                    Expanded(
-                      child: _LoginMethodCard(
-                        icon: Icons.cancel_outlined,
-                        title: 'Google',
-                        status: 'Tersambung',
-                      ),
-                    ),
-                  ],
-                ),
+                _buildChangePasswordTile(),
                 const SizedBox(height: 24),
+
                 const _SectionTitle('Minat Default'),
                 const SizedBox(height: 12),
                 _buildInterestChips(),
@@ -120,7 +156,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 const SizedBox(height: 12),
                 OutlinedButton(
-                  onPressed: () => context.go('/login'),
+                  onPressed: () => _showExitDialog(),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: kDanger,
                     backgroundColor: const Color(0xFFFFEBEE),
@@ -140,7 +176,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: _buildBottomNav(),
+      bottomNavigationBar: AppBottomBar(
+        current: AppTab.profile,
+        onSelect: _selectTab,
+        onCreateTrip: () => context.push(AppRoutes.newTrip),
+        labels: {
+          AppTab.home: l10n.navHome,
+          AppTab.wishlist: l10n.navWishlist,
+          AppTab.trips: l10n.navTrips,
+          AppTab.profile: l10n.navProfile,
+        },
+        createLabel: l10n.catalogCreateTrip,
+      ),
     );
   }
 
@@ -149,10 +196,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       backgroundColor: Colors.white,
       surfaceTintColor: Colors.white,
       elevation: 0,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back, color: kTextDark),
-        onPressed: () => context.canPop() ? context.pop() : context.go('/home'),
-      ),
+      automaticallyImplyLeading: false,
       title: const Row(
         children: [
           CircleAvatar(
@@ -286,10 +330,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             padding: EdgeInsets.only(left: 4),
             child: Text(
               'Bahasa Aplikasi',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: kTextDark,
-              ),
+              style: TextStyle(fontWeight: FontWeight.bold, color: kTextDark),
             ),
           ),
           SegmentedButton<String>(
@@ -312,31 +353,55 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildBottomNav() {
-    return BottomNavigationBar(
-      currentIndex: _navIndex,
-      type: BottomNavigationBarType.fixed,
-      selectedItemColor: kPrimary,
-      unselectedItemColor: kTextGrey,
-      selectedFontSize: 12,
-      unselectedFontSize: 12,
-      onTap: (index) => setState(() => _navIndex = index),
-      items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-        BottomNavigationBarItem(
-            icon: Icon(Icons.favorite_border), label: 'Wishlist'),
-        BottomNavigationBarItem(icon: Icon(Icons.explore), label: 'Trip Saya'),
-        BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
-      ],
+  Widget _buildChangePasswordTile() {
+    return Material(
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: kBorder),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: _showChangePasswordSheet,
+        child: const Padding(
+          padding: EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Icon(Icons.lock_outline, color: kPrimary, size: 22),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Ganti Password',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: kTextDark,
+                  ),
+                ),
+              ),
+              Icon(Icons.chevron_right, color: kTextGrey),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showChangePasswordSheet() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true, 
+      showDragHandle: true,
+      backgroundColor: Colors.white,
+      builder: (_) => const _ChangePasswordSheet(),
     );
   }
 }
 
 BoxDecoration _cardDecoration() => BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: kBorder),
-    );
+  color: Colors.white,
+  borderRadius: BorderRadius.circular(12),
+  border: Border.all(color: kBorder),
+);
 
 class _SectionTitle extends StatelessWidget {
   final String text;
@@ -396,43 +461,211 @@ class _ProfileHeader extends StatelessWidget {
   }
 }
 
-class _LoginMethodCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String status;
-  const _LoginMethodCard({
-    required this.icon,
-    required this.title,
-    required this.status,
-  });
+class _ChangePasswordSheet extends StatefulWidget {
+  const _ChangePasswordSheet();
+
+  @override
+  State<_ChangePasswordSheet> createState() => _ChangePasswordSheetState();
+}
+
+class _ChangePasswordSheetState extends State<_ChangePasswordSheet> {
+  final _formKey = GlobalKey<FormState>();
+  final _oldController = TextEditingController();
+  final _newController = TextEditingController();
+  final _confirmController = TextEditingController();
+
+  bool _hideOld = true;
+  bool _hideNew = true;
+  bool _hideConfirm = true;
+  bool _submitting = false;
+  String? _errorMessage;
+
+  @override
+  void dispose() {
+    _oldController.dispose();
+    _newController.dispose();
+    _confirmController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() {
+      _submitting = true;
+      _errorMessage = null;
+    });
+
+    try {
+      await Future.delayed(const Duration(seconds: 1)); 
+
+      if (!mounted) return;
+      final messenger = ScaffoldMessenger.of(context);
+      Navigator.of(context).pop();
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Password berhasil diganti')),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _submitting = false;
+        _errorMessage = 'Gagal mengganti password. Periksa password lama.';
+      });
+    }
+  }
+
+  InputDecoration _decoration(String label, bool hidden, VoidCallback onToggle) {
+    OutlineInputBorder border(Color color) => OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: color),
+        );
+
+    return InputDecoration(
+      labelText: label,
+      labelStyle: const TextStyle(color: kTextGrey, fontSize: 14),
+      suffixIcon: IconButton(
+        icon: Icon(
+          hidden ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+          color: kTextGrey,
+          size: 20,
+        ),
+        onPressed: onToggle,
+      ),
+      enabledBorder: border(kBorder),
+      focusedBorder: border(kPrimary),
+      errorBorder: border(kDanger),
+      focusedErrorBorder: border(kDanger),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: _cardDecoration(),
-      child: Row(
-        children: [
-          Icon(icon, color: kPrimary, size: 22),
-          const SizedBox(width: 10),
-          Column(
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        24,
+        0,
+        24,
+        24 + MediaQuery.viewInsetsOf(context).bottom,
+      ),
+      child: SingleChildScrollView(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                title,
-                style: const TextStyle(
+              const Text(
+                'Ganti Password',
+                style: TextStyle(
+                  fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  fontSize: 13,
                   color: kTextDark,
                 ),
               ),
-              Text(
-                status,
-                style: const TextStyle(fontSize: 11, color: kTextGrey),
+              const SizedBox(height: 4),
+              const Text(
+                'Masukkan password lama untuk verifikasi, lalu buat password baru.',
+                style: TextStyle(fontSize: 13, color: kTextGrey),
+              ),
+              const SizedBox(height: 20),
+              TextFormField(
+                controller: _oldController,
+                obscureText: _hideOld,
+                decoration: _decoration(
+                  'Password Lama',
+                  _hideOld,
+                  () => setState(() => _hideOld = !_hideOld),
+                ),
+                validator: (v) => (v == null || v.isEmpty)
+                    ? 'Password lama wajib diisi'
+                    : null,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _newController,
+                obscureText: _hideNew,
+                decoration: _decoration(
+                  'Password Baru',
+                  _hideNew,
+                  () => setState(() => _hideNew = !_hideNew),
+                ),
+                validator: (v) {
+                  if (v == null || v.isEmpty) return 'Password baru wajib diisi';
+                  if (v.length < 8) return 'Minimal 8 karakter';
+                  if (v == _oldController.text) {
+                    return 'Password baru harus berbeda dari password lama';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _confirmController,
+                obscureText: _hideConfirm,
+                decoration: _decoration(
+                  'Konfirmasi Password Baru',
+                  _hideConfirm,
+                  () => setState(() => _hideConfirm = !_hideConfirm),
+                ),
+                validator: (v) =>
+                    v != _newController.text ? 'Konfirmasi tidak cocok' : null,
+              ),
+              if (_errorMessage != null) ...[
+                const SizedBox(height: 12),
+                Text(
+                  _errorMessage!,
+                  style: const TextStyle(color: kDanger, fontSize: 13),
+                ),
+              ],
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed:
+                          _submitting ? null : () => Navigator.of(context).pop(),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: kTextDark,
+                        side: const BorderSide(color: kBorder),
+                        minimumSize: const Size.fromHeight(48),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: const Text('Batal'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: _submitting ? null : _submit,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: kPrimary,
+                        minimumSize: const Size.fromHeight(48),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: _submitting
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Text(
+                              'Simpan',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -471,8 +704,7 @@ class _PrioritySlider extends StatelessWidget {
                 ),
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
                   color: const Color(0xFFE3F0FA),
                   borderRadius: BorderRadius.circular(4),
@@ -502,10 +734,14 @@ class _PrioritySlider extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(leftLabel,
-                    style: const TextStyle(fontSize: 11, color: kTextGrey)),
-                Text(rightLabel,
-                    style: const TextStyle(fontSize: 11, color: kTextGrey)),
+                Text(
+                  leftLabel,
+                  style: const TextStyle(fontSize: 11, color: kTextGrey),
+                ),
+                Text(
+                  rightLabel,
+                  style: const TextStyle(fontSize: 11, color: kTextGrey),
+                ),
               ],
             ),
           ),

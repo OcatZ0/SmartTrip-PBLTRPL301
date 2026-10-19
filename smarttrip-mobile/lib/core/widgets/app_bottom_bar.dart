@@ -64,7 +64,13 @@ class AppBottomBar extends StatelessWidget {
               decoration: const BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-                boxShadow: [BoxShadow(color: Color(0x140A2440), offset: Offset(0, -8), blurRadius: 24)],
+                boxShadow: [
+                  BoxShadow(
+                    color: Color(0x140A2440),
+                    offset: Offset(0, -8),
+                    blurRadius: 24,
+                  ),
+                ],
               ),
               child: Padding(
                 padding: EdgeInsets.fromLTRB(4, 0, 4, 10 + bottomInset),
@@ -72,19 +78,32 @@ class AppBottomBar extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     _tab(AppTab.home, Icons.home_outlined, Icons.home_rounded),
-                    _tab(AppTab.wishlist, Icons.favorite_border_rounded, Icons.favorite_rounded),
+                    _tab(
+                      AppTab.wishlist,
+                      Icons.favorite_border_rounded,
+                      Icons.favorite_rounded,
+                    ),
                     SizedBox(
                       width: 84,
                       child: Align(
                         alignment: Alignment.bottomCenter,
                         child: Padding(
                           padding: const EdgeInsets.only(bottom: 2),
-                          child: ExcludeSemantics(child: Text(createLabel, style: _text(FontWeight.w700, _ink))),
+                          child: ExcludeSemantics(
+                            child: Text(
+                              createLabel,
+                              style: _text(FontWeight.w700, _ink),
+                            ),
+                          ),
                         ),
                       ),
                     ),
                     _tab(AppTab.trips, Icons.explore_outlined, Icons.explore),
-                    _tab(AppTab.profile, Icons.person_outline_rounded, Icons.person_rounded),
+                    _tab(
+                      AppTab.profile,
+                      Icons.person_outline_rounded,
+                      Icons.person_rounded,
+                    ),
                   ],
                 ),
               ),
@@ -106,10 +125,19 @@ class AppBottomBar extends StatelessWidget {
                     shape: BoxShape.circle,
                     border: Border.all(color: Colors.white, width: 5),
                     boxShadow: const [
-                      BoxShadow(color: Color(0x730A2440), offset: Offset(0, 10), blurRadius: 22, spreadRadius: -6),
+                      BoxShadow(
+                        color: Color(0x730A2440),
+                        offset: Offset(0, 10),
+                        blurRadius: 22,
+                        spreadRadius: -6,
+                      ),
                     ],
                   ),
-                  child: const Icon(Icons.add_rounded, size: 28, color: _navy900),
+                  child: const Icon(
+                    Icons.add_rounded,
+                    size: 28,
+                    color: _navy900,
+                  ),
                 ),
               ),
             ),
@@ -143,7 +171,10 @@ class AppBottomBar extends StatelessWidget {
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: _text(selected ? FontWeight.w700 : FontWeight.w500, color),
+                  style: _text(
+                    selected ? FontWeight.w700 : FontWeight.w500,
+                    color,
+                  ),
                 ),
               ],
             ),

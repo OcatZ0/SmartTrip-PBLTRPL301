@@ -182,7 +182,12 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
                 child: day.items.isEmpty
                     ? Text(l10n.itineraryDayEmpty, style: theme.textTheme.bodyMedium)
-                    : _Timeline(day: day, hotel: trip.hotel),
+                    : _Timeline(
+                        day: day,
+                        hotel: trip.hotel,
+                        tripsId: trip.tripsId,
+                        tripTitle: trip.title,
+                      ),
               ),
             ],
           ),
@@ -255,10 +260,17 @@ class _NoticeBanner extends StatelessWidget {
 }
 
 class _Timeline extends StatelessWidget {
-  const _Timeline({required this.day, required this.hotel});
+  const _Timeline({
+    required this.day,
+    required this.hotel,
+    required this.tripsId,
+    required this.tripTitle,
+  });
 
   final ItineraryDay day;
   final TripHotel? hotel;
+  final int tripsId;
+  final String tripTitle;
 
   @override
   Widget build(BuildContext context) {
@@ -298,7 +310,13 @@ class _Timeline extends StatelessWidget {
 
       children.add(Padding(
         padding: const EdgeInsets.only(bottom: 12),
-        child: _StopRow(item: item),
+        child: _StopRow(
+          item: item,
+          dayNumber: day.dayNumber,
+          itineraryDaysId: day.itineraryDaysId,
+          tripsId: tripsId,
+          tripTitle: tripTitle,
+        ),
       ));
     }
 
@@ -307,9 +325,19 @@ class _Timeline extends StatelessWidget {
 }
 
 class _StopRow extends StatelessWidget {
-  const _StopRow({required this.item});
+  const _StopRow({
+    required this.item,
+    required this.dayNumber,
+    required this.itineraryDaysId,
+    required this.tripsId,
+    required this.tripTitle,
+  });
 
   final ItineraryItem item;
+  final int dayNumber;
+  final int itineraryDaysId;
+  final int tripsId;
+  final String tripTitle;
 
   void _showPlaceModal(BuildContext context, ItineraryItem item) {
     final l10n = AppLocalizations.of(context);
@@ -420,6 +448,10 @@ class _StopRow extends StatelessWidget {
                     MaterialPageRoute(
                       builder: (_) => ReplacePlaceScreen(
                         currentItem: item,
+                        dayNumber: dayNumber,
+                        itineraryDaysId: itineraryDaysId,
+                        tripsId: tripsId,
+                        tripTitle: tripTitle,
                       ),
                     ),
                   );

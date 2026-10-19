@@ -182,6 +182,53 @@ class TripRepository {
     return visitedAt == null ? null : DateTime.tryParse(visitedAt.toString());
   }
 
+  /// Fetches ranked alternative places from TOPSIS algorithm for swapping a stop.
+  Future<List<SwapCandidate>> fetchSwapCandidates(int itineraryItemsId, {int limit = 50}) async {
+    final body = await _call(() => _dio.get<Map<String, dynamic>>(
+          '/itinerary-items/$itineraryItemsId/swap-candidates',
+          queryParameters: {'limit': limit},
+        ));
+    final list = body['data'] as List? ?? const [];
+    return list
+        .cast<Map<String, dynamic>>()
+        .map(SwapCandidate.fromJson)
+        .toList();
+  }
+
+  /// Searches and lists places ordered by proximity to the itinerary day cluster.
+  Future<List<TripPlace>> fetchNearDayPlaces({
+    required int itineraryDaysId,
+    String? search,
+    String? category,
+    String? type,
+    int perPage = 20,
+  }) async {
+    final body = await _call(() => _dio.get<Map<String, dynamic>>(
+          '/places',
+          queryParameters: {
+            'near_itinerary_day': itineraryDaysId,
+            if (search != null && search.trim().isNotEmpty) 'search': search.trim(),
+            if (category != null && category.trim().isNotEmpty && category != 'Semua')
+              'category': category.trim(),
+            if (type != null && type.trim().isNotEmpty) 'type': type.trim(),
+            'per_page': perPage,
+          },
+        ));
+    final list = body['data'] as List? ?? const [];
+    return list
+        .cast<Map<String, dynamic>>()
+        .map(TripPlace.fromJson)
+        .toList();
+  }
+
+  /// Swaps an itinerary stop with a new place, automatically resequencing routes on the server.
+  Future<void> swapItineraryItem(int itineraryItemsId, int newPlacesId) async {
+    await _call(() => _dio.patch<Map<String, dynamic>>(
+          '/itinerary-items/$itineraryItemsId',
+          data: {'places_id': newPlacesId},
+        ));
+  }
+
   Map<String, dynamic> _preferenceBody(Set<int> categoryIds, List<double> ratings) {
     return {
       'category_ids': categoryIds.toList(),

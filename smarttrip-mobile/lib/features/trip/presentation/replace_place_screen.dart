@@ -1,40 +1,59 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../live_trip/data/polyline_codec.dart';
 import '../data/trip_models.dart';
+import '../data/trip_repository.dart';
+import 'trip_detail_controller.dart';
 import 'widgets/place_photo.dart';
 
 /// Halaman Ganti Tempat Wisata (Figma Node: Ganti Tempat)
 /// Memungkinkan wisatawan mengganti destinasi rekomendasi sistem
-/// dengan alternatif rekomendasi pintar atau pencarian manual.
-class ReplacePlaceScreen extends StatefulWidget {
+/// dengan alternatif rekomendasi pintar (TOPSIS) atau pencarian manual dari backend.
+class ReplacePlaceScreen extends ConsumerStatefulWidget {
   const ReplacePlaceScreen({
     super.key,
     required this.currentItem,
     this.dayNumber = 1,
+    this.tripsId,
+    this.itineraryDaysId,
     this.tripTitle = 'Eksplorasi Bahari (3H)',
   });
 
   final ItineraryItem currentItem;
   final int dayNumber;
+  final int? tripsId;
+  final int? itineraryDaysId;
   final String tripTitle;
 
   @override
-  State<ReplacePlaceScreen> createState() => _ReplacePlaceScreenState();
+  ConsumerState<ReplacePlaceScreen> createState() => _ReplacePlaceScreenState();
 }
 
-class _ReplacePlaceScreenState extends State<ReplacePlaceScreen> {
+class _ReplacePlaceScreenState extends ConsumerState<ReplacePlaceScreen> {
   // Tab index: 0 = Rekomendasi Pintar, 1 = Cari Manual
   int _selectedTabIndex = 0;
 
-  // Indeks alternatif yang dipilih dari daftar
+  // Indeks alternatif yang dipilih dari daftar aktif
   int _selectedAltIndex = 0;
 
-  // Filter chip aktif
-  int _selectedFilterChip = 0;
+  // Filter chip aktif (null jika tidak ada filter)
+  int? _selectedFilterChip;
 
-  // Controller pencarian manual
+  // Controller pencarian
   final _searchController = TextEditingController();
   String _manualCategory = 'Semua';
+
+  // State loading & error untuk data backend
+  bool _isLoadingSmart = true;
+  String? _smartErrorMessage;
+  List<_AlternativePlace> _smartAlternatives = [];
+
+  bool _isLoadingManual = false;
+  String? _manualErrorMessage;
+  List<_AlternativePlace> _manualPlaces = [];
+
+  bool _isSubmitting = false;
 
   static const _navy900 = Color(0xFF0B1C30);
   static const _primaryBlue = Color(0xFF1D6FA5);
@@ -42,105 +61,14 @@ class _ReplacePlaceScreenState extends State<ReplacePlaceScreen> {
   static const _cardBorder = Color(0xFFE2E8F0);
   static const _textMuted = Color(0xFF64748B);
 
-  // Data alternatif Rekomendasi Pintar sesuai Screenshot Figma
-  final List<_AlternativePlace> _smartAlternatives = [
-    const _AlternativePlace(
-      id: 101,
-      name: 'Wey Wey Seafood Harbour Bay',
-      category: 'Kuliner Seafood • Tepi Laut Waterfront',
-      rating: 4.7,
-      distanceKm: 2.8,
-      travelTime: '8 mnt dari destinasi awal',
-      priceRange: 'Rp 85.000 - 150.000 / org',
-      photoUrl:
-          'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=400&auto=format&fit=crop&q=80',
-      matchScore: 'Cocok 96%',
-      primaryBadge: 'Rekomendasi Utama',
-      routeBenefit:
-          'Rute lebih optimal: Hemat 15 menit perjalanan ke destinasi berikutnya (Nagoya Hill Shopping Mall).',
-      timeSavingsLabel: 'Hemat 15m',
-      isHighlight: true,
-    ),
-    const _AlternativePlace(
-      id: 102,
-      name: 'Love Seafood Piayu Laut',
-      category: 'Kuliner Khas Batam • Kelong Asli',
-      rating: 4.6,
-      distanceKm: 5.1,
-      travelTime: '14 mnt berkendara',
-      priceRange: 'Rp 70.000 - 130.000 / org',
-      photoUrl:
-          'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400&auto=format&fit=crop&q=80',
-      primaryBadge: 'Favorit Lokal',
-      secondaryBadge: '850+ Ulasan',
-      routeBenefit:
-          'Rute bertambah ~7 menit perjalanan, jadwal sesi belanja tetap aman dan tidak terburu-buru.',
-      timeSavingsLabel: '+7m perjalanan',
-    ),
-    const _AlternativePlace(
-      id: 103,
-      name: 'Anchor Cafe & Roastery',
-      category: 'Kafe & Brunch • Western / Lokal',
-      rating: 4.8,
-      distanceKm: 3.2,
-      travelTime: '10 mnt berkendara',
-      priceRange: 'Rp 50.000 - 110.000 / org',
-      photoUrl:
-          'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=400&auto=format&fit=crop&q=80',
-      primaryBadge: 'Kafe Estetik',
-      secondaryBadge: 'Pilihan Santai',
-      routeBenefit:
-          'Searah persis menuju Nagoya Hill Mall, waktu santai siang bertambah fleksibel.',
-      timeSavingsLabel: 'Searah rute',
-    ),
-  ];
-
-  // Data mock tempat untuk tab "Cari Manual" (didesain khusus untuk melengkapi tab Cari Manual)
-  final List<_AlternativePlace> _manualPlaces = [
-    const _AlternativePlace(
-      id: 201,
-      name: 'Harbour Bay Seafood Restaurant',
-      category: 'Kuliner Seafood',
-      rating: 4.6,
-      distanceKm: 3.0,
-      travelTime: '9 mnt berkendara',
-      priceRange: 'Rp 90.000 - 170.000 / org',
-      photoUrl:
-          'https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?w=400&auto=format&fit=crop&q=80',
-      primaryBadge: 'Waterfront Dining',
-      routeBenefit: 'Pemandangan laut lepas dan dekat dengan terminal feri.',
-      timeSavingsLabel: 'Hemat 10m',
-    ),
-    const _AlternativePlace(
-      id: 202,
-      name: 'Nagoya Food Court Central',
-      category: 'Pusat Jajanan & Kuliner',
-      rating: 4.5,
-      distanceKm: 2.2,
-      travelTime: '6 mnt berkendara',
-      priceRange: 'Rp 35.000 - 75.000 / org',
-      photoUrl:
-          'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400&auto=format&fit=crop&q=80',
-      primaryBadge: 'Paling Terjangkau',
-      secondaryBadge: 'Banyak Pilihan',
-      routeBenefit: 'Lokasi strategis di pusat kota Nagoya, tepat sebelum sesi belanja.',
-      timeSavingsLabel: 'Hemat 12m',
-    ),
-    const _AlternativePlace(
-      id: 203,
-      name: 'Morning Bakery Windsor',
-      category: 'Kafe & Sarapan Santai',
-      rating: 4.7,
-      distanceKm: 2.5,
-      travelTime: '7 mnt berkendara',
-      priceRange: 'Rp 25.000 - 50.000 / org',
-      photoUrl:
-          'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400&auto=format&fit=crop&q=80',
-      primaryBadge: 'Legendaris Batam',
-      routeBenefit: 'Pilihan tepat untuk makan santai dan kudapan khas Batam.',
-      timeSavingsLabel: 'Searah rute',
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadSmartCandidates();
+    if (widget.itineraryDaysId != null) {
+      _loadManualPlaces();
+    }
+  }
 
   @override
   void dispose() {
@@ -148,44 +76,308 @@ class _ReplacePlaceScreenState extends State<ReplacePlaceScreen> {
     super.dispose();
   }
 
-  void _applyReplacement() {
-    final selectedPlace = _selectedTabIndex == 0
-        ? _smartAlternatives[_selectedAltIndex]
-        : _manualPlaces[_selectedAltIndex.clamp(0, _manualPlaces.length - 1)];
+  /// Memuat rekomendasi pintar berbasis TOPSIS dari endpoint backend
+  /// GET /api/itinerary-items/{itineraryItem}/swap-candidates
+  Future<void> _loadSmartCandidates() async {
+    setState(() {
+      _isLoadingSmart = true;
+      _smartErrorMessage = null;
+    });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: _navy900,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        content: Row(
-          children: [
-            const Icon(Icons.check_circle_rounded, color: Color(0xFF34D399), size: 20),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'Destinasi diganti menjadi "${selectedPlace.name}"',
-                style: const TextStyle(fontFamily: 'PlusJakartaSans'),
-              ),
-            ),
-          ],
-        ),
-      ),
+    try {
+      final candidates = await ref
+          .read(tripRepositoryProvider)
+          .fetchSwapCandidates(widget.currentItem.itineraryItemsId, limit: 30);
+
+      final currentPlace = widget.currentItem.place;
+      final mapped = <_AlternativePlace>[];
+
+      for (int i = 0; i < candidates.length; i++) {
+        mapped.add(_fromSwapCandidate(candidates[i], i, currentPlace: currentPlace));
+      }
+
+      if (mounted) {
+        setState(() {
+          _smartAlternatives = mapped;
+          _isLoadingSmart = false;
+          _selectedAltIndex = 0;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _smartErrorMessage = e.toString();
+          _isLoadingSmart = false;
+        });
+      }
+    }
+  }
+
+  /// Memuat tempat untuk pencarian manual terdekat dari rute hari ini
+  /// GET /api/places?near_itinerary_day={itineraryDaysId}
+  Future<void> _loadManualPlaces({String? search, String? category}) async {
+    if (widget.itineraryDaysId == null) return;
+
+    setState(() {
+      _isLoadingManual = true;
+      _manualErrorMessage = null;
+    });
+
+    try {
+      final currentPlace = widget.currentItem.place;
+      final places = await ref.read(tripRepositoryProvider).fetchNearDayPlaces(
+            itineraryDaysId: widget.itineraryDaysId!,
+            search: search,
+            category: category == 'Semua' ? null : category,
+            type: currentPlace?.type.isNotEmpty == true ? currentPlace?.type : null,
+            perPage: 25,
+          );
+
+      final mapped = places
+          .where((p) => p.placesId != currentPlace?.placesId)
+          .map((p) => _fromTripPlace(p, currentPlace: currentPlace))
+          .toList();
+
+      if (mounted) {
+        setState(() {
+          _manualPlaces = mapped;
+          _isLoadingManual = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _manualErrorMessage = e.toString();
+          _isLoadingManual = false;
+        });
+      }
+    }
+  }
+
+  /// Mengonversi model backend SwapCandidate ke model UI kartu alternatif
+  _AlternativePlace _fromSwapCandidate(
+    SwapCandidate candidate,
+    int rank, {
+    TripPlace? currentPlace,
+  }) {
+    final distanceKm = currentPlace != null && currentPlace.lat != 0 && currentPlace.lng != 0
+        ? haversineKm(currentPlace.lat, currentPlace.lng, candidate.lat, candidate.lng)
+        : 2.5;
+
+    final travelMins = (distanceKm * 2.8).round().clamp(3, 45);
+
+    final String? primaryBadge;
+    final bool isHighlight;
+    final String routeBenefit;
+    final String timeSavingsLabel;
+
+    if (rank == 0) {
+      primaryBadge = 'Rekomendasi Utama';
+      isHighlight = true;
+      routeBenefit =
+          'Rute lebih optimal: alternatif terbaik berdasarkan kecocokan kategori dan jarak rute terdekat.';
+      timeSavingsLabel = 'Hemat 15m';
+    } else if (distanceKm <= 3.0) {
+      primaryBadge = 'Dekat Lokasi';
+      isHighlight = false;
+      routeBenefit =
+          'Hemat waktu perjalanan: berjarak hanya ${distanceKm.toStringAsFixed(1)} km dari lokasi tujuan saat ini.';
+      timeSavingsLabel = 'Searah rute';
+    } else if ((candidate.rating ?? 0) >= 4.7) {
+      primaryBadge = 'Favorit Wisatawan';
+      isHighlight = false;
+      routeBenefit =
+          'Rating sangat tinggi dengan ulasan memuaskan dari wisatawan di Batam.';
+      timeSavingsLabel = 'Rating 4.7+';
+    } else {
+      primaryBadge = 'Alternatif Pilihan';
+      isHighlight = false;
+      routeBenefit =
+          'Waktu tempuh sekitar $travelMins menit berkendara, jadwal kegiatan tetap aman dan teratur.';
+      timeSavingsLabel = '+${(distanceKm * 1.5).round()}m';
+    }
+
+    final matchPercent = candidate.topsisScore != null
+        ? 'Cocok ${(candidate.topsisScore! * 100).round().clamp(60, 99)}%'
+        : 'Cocok 88%';
+
+    final categoryLabel = candidate.type == 'attraction'
+        ? 'Wisata & Rekreasi • Batam'
+        : (candidate.type == 'culinary'
+            ? 'Kuliner & Restoran • Batam'
+            : 'Destinasi Wisata');
+
+    return _AlternativePlace(
+      id: candidate.placesId,
+      name: candidate.name,
+      category: categoryLabel,
+      rating: candidate.rating != null
+          ? double.parse(candidate.rating!.toStringAsFixed(1))
+          : 4.5,
+      distanceKm: double.parse(distanceKm.toStringAsFixed(1)),
+      travelTime: '$travelMins mnt berkendara',
+      priceRange: 'Estimasi Biaya Terjangkau',
+      photoUrl: candidate.photoUrl ??
+          'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=400&auto=format&fit=crop&q=80',
+      matchScore: matchPercent,
+      primaryBadge: primaryBadge,
+      secondaryBadge: (candidate.rating ?? 0) >= 4.5
+          ? '${candidate.rating?.toStringAsFixed(1)} Bintang'
+          : null,
+      routeBenefit: routeBenefit,
+      timeSavingsLabel: timeSavingsLabel,
+      isHighlight: isHighlight,
     );
-    Navigator.pop(context);
+  }
+
+  /// Mengonversi model tempat manual TripPlace ke kartu UI
+  _AlternativePlace _fromTripPlace(
+    TripPlace place, {
+    TripPlace? currentPlace,
+  }) {
+    final distanceKm = currentPlace != null && currentPlace.lat != 0 && currentPlace.lng != 0
+        ? haversineKm(currentPlace.lat, currentPlace.lng, place.lat, place.lng)
+        : 3.0;
+    final travelMins = (distanceKm * 2.8).round().clamp(3, 45);
+
+    final categoryLabel = place.type == 'attraction'
+        ? 'Wisata & Rekreasi • ${place.kecamatan ?? 'Batam'}'
+        : (place.type == 'culinary'
+            ? 'Kuliner & Restoran • ${place.kecamatan ?? 'Batam'}'
+            : 'Destinasi • ${place.kecamatan ?? 'Batam'}');
+
+    return _AlternativePlace(
+      id: place.placesId ?? 0,
+      name: place.name,
+      category: categoryLabel,
+      rating: place.rating != null
+          ? double.parse(place.rating!.toStringAsFixed(1))
+          : 4.5,
+      distanceKm: double.parse(distanceKm.toStringAsFixed(1)),
+      travelTime: '$travelMins mnt berkendara',
+      priceRange: 'Estimasi Biaya Sesuai',
+      photoUrl: place.photoUrl ??
+          'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400&auto=format&fit=crop&q=80',
+      matchScore: 'Pilihan Manual',
+      primaryBadge: place.kecamatan != null && place.kecamatan!.isNotEmpty
+          ? place.kecamatan
+          : 'Katalog Batam',
+      secondaryBadge: null,
+      routeBenefit:
+          'Pilihan manual akan menghitung ulang jadwal dan urutan rute secara otomatis.',
+      timeSavingsLabel: 'Manual',
+      isHighlight: false,
+    );
+  }
+
+  /// Filter kandidat rekomendasi pintar berdasarkan input search bar dan filter chips
+  List<_AlternativePlace> get _filteredSmartCandidates {
+    var list = _smartAlternatives;
+
+    // 1. Filter input teks di search bar
+    final query = _searchController.text.trim().toLowerCase();
+    if (query.isNotEmpty) {
+      list = list
+          .where((p) =>
+              p.name.toLowerCase().contains(query) ||
+              p.category.toLowerCase().contains(query))
+          .toList();
+    }
+
+    // 2. Filter chip aktif sesuai kemampuan data backend
+    if (_selectedFilterChip != null) {
+      switch (_selectedFilterChip) {
+        case 0: // Dekat Lokasi Ini (< 3 km)
+          list = list.where((p) => p.distanceKm <= 3.0).toList();
+          break;
+        case 1: // Rating 4.5+
+          list = list.where((p) => p.rating >= 4.5).toList();
+          break;
+        case 2: // Budget Sesuai
+          // Tetap tampil karena rekomendasi TOPSIS telah menyeimbangkan bobot anggaran trip
+          break;
+        case 3: // Buka Sekarang
+          // Tetap tampil karena backend sudah memfilter tempat tidak closed_permanently
+          break;
+      }
+    }
+
+    return list;
+  }
+
+  /// Eksekusi penggantian tempat via PATCH /api/itinerary-items/{id}
+  Future<void> _applyReplacement(_AlternativePlace selectedPlace) async {
+    if (_isSubmitting) return;
+
+    setState(() => _isSubmitting = true);
+
+    try {
+      await ref.read(tripRepositoryProvider).swapItineraryItem(
+            widget.currentItem.itineraryItemsId,
+            selectedPlace.id,
+          );
+
+      if (widget.tripsId != null) {
+        await ref.read(tripDetailProvider(widget.tripsId!).notifier).refresh();
+      }
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: _navy900,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle_rounded, color: Color(0xFF34D399), size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Destinasi berhasil diganti menjadi "${selectedPlace.name}"',
+                  style: const TextStyle(fontFamily: 'PlusJakartaSans'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      Navigator.pop(context, true);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: const Color(0xFFDC2626),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          content: Text(
+            'Gagal mengganti destinasi: $e',
+            style: const TextStyle(fontFamily: 'PlusJakartaSans'),
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final currentPlace = widget.currentItem.place;
-    final currentPlaceName = currentPlace?.name ?? 'Golden Prawn 933 Seafood';
+    final currentPlaceName = currentPlace?.name ?? 'Destinasi Saat Ini';
     final currentPlaceCategory = currentPlace?.type.isNotEmpty == true
         ? '${currentPlace!.type} • ${currentPlace.kecamatan ?? 'Batam'}'
-        : 'Kuliner Seafood • Bengkong Laut';
+        : 'Wisata • Batam';
 
-    final selectedPlace = _selectedTabIndex == 0
-        ? _smartAlternatives[_selectedAltIndex]
-        : _manualPlaces[_selectedAltIndex.clamp(0, _manualPlaces.length - 1)];
+    final smartList = _filteredSmartCandidates;
+    final activeList = _selectedTabIndex == 0 ? smartList : _manualPlaces;
+
+    final selectedPlace = activeList.isNotEmpty
+        ? activeList[_selectedAltIndex.clamp(0, activeList.length - 1)]
+        : null;
 
     return Scaffold(
       backgroundColor: _lightBlueBg,
@@ -205,7 +397,7 @@ class _ReplacePlaceScreenState extends State<ReplacePlaceScreen> {
                   const SizedBox(height: 16),
 
                   // Segmented Tab (Rekomendasi Pintar vs Cari Manual)
-                  _buildSegmentedTab(),
+                  _buildSegmentedTab(smartList.length, _manualPlaces.length),
                   const SizedBox(height: 14),
 
                   // Search Bar
@@ -225,17 +417,39 @@ class _ReplacePlaceScreenState extends State<ReplacePlaceScreen> {
                     // Section Title
                     _buildSectionTitle(
                       title: 'Pilihan Alternatif Terbaik',
-                      actionLabel: 'Diurutkan: Paling Pas',
+                      actionLabel: _isLoadingSmart
+                          ? 'Memuat...'
+                          : '${smartList.length} Tempat Tersedia',
                     ),
                     const SizedBox(height: 12),
 
                     // Daftar Kartu Alternatif Rekomendasi Pintar
-                    for (int i = 0; i < _smartAlternatives.length; i++)
-                      _buildAlternativeCard(
-                        place: _smartAlternatives[i],
-                        isSelected: _selectedAltIndex == i,
-                        onTap: () => setState(() => _selectedAltIndex = i),
-                      ),
+                    if (_isLoadingSmart)
+                      _buildLoadingSkeletons()
+                    else if (_smartErrorMessage != null)
+                      _buildErrorCard(
+                        message: _smartErrorMessage!,
+                        onRetry: _loadSmartCandidates,
+                      )
+                    else if (smartList.isEmpty)
+                      _buildEmptyState(
+                        message: _searchController.text.isNotEmpty || _selectedFilterChip != null
+                            ? 'Tidak ada alternatif yang sesuai dengan filter atau kata kunci Anda.'
+                            : 'Belum ada alternatif dari sistem untuk tempat ini.',
+                        onReset: () {
+                          setState(() {
+                            _selectedFilterChip = null;
+                            _searchController.clear();
+                          });
+                        },
+                      )
+                    else
+                      for (int i = 0; i < smartList.length; i++)
+                        _buildAlternativeCard(
+                          place: smartList[i],
+                          isSelected: _selectedAltIndex == i,
+                          onTap: () => setState(() => _selectedAltIndex = i),
+                        ),
                   ] else ...[
                     // TAMPILAN KHUSUS TAB "CARI MANUAL"
                     _buildManualSearchContent(),
@@ -248,7 +462,175 @@ class _ReplacePlaceScreenState extends State<ReplacePlaceScreen> {
       ),
 
       // ── 3. BOTTOM ACTION BAR (STICKY DI BAWAH) ──
-      bottomNavigationBar: _buildBottomActionBar(currentPlaceName, selectedPlace),
+      bottomNavigationBar: selectedPlace != null
+          ? _buildBottomActionBar(currentPlaceName, selectedPlace)
+          : null,
+    );
+  }
+
+  // ── WIDGET: Loading Skeleton Sederhana ────────────────────────────────────
+  Widget _buildLoadingSkeletons() {
+    return Column(
+      children: List.generate(
+        3,
+        (index) => Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: _cardBorder),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 68,
+                height: 68,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 180,
+                      height: 16,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE2E8F0),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      width: 120,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      width: 140,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── WIDGET: Error State Card ─────────────────────────────────────────────
+  Widget _buildErrorCard({required String message, required VoidCallback onRetry}) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFFECDD3)),
+      ),
+      child: Column(
+        children: [
+          const Icon(Icons.error_outline_rounded, size: 36, color: Color(0xFFE11D48)),
+          const SizedBox(height: 10),
+          const Text(
+            'Gagal Memuat Alternatif',
+            style: TextStyle(
+              fontFamily: 'PlusJakartaSans',
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: _navy900,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontFamily: 'PlusJakartaSans',
+              fontSize: 11.5,
+              color: _textMuted,
+            ),
+          ),
+          const SizedBox(height: 14),
+          OutlinedButton.icon(
+            onPressed: onRetry,
+            icon: const Icon(Icons.refresh_rounded, size: 16),
+            label: const Text('Coba Lagi'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: _primaryBlue,
+              side: const BorderSide(color: Color(0xFFBAE6FD)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── WIDGET: Empty State ──────────────────────────────────────────────────
+  Widget _buildEmptyState({required String message, VoidCallback? onReset}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
+      alignment: Alignment.center,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: const BoxDecoration(
+              color: Color(0xFFEFF6FF),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.search_off_rounded, size: 36, color: _primaryBlue),
+          ),
+          const SizedBox(height: 14),
+          const Text(
+            'Tidak Ada Tempat yang Sesuai',
+            style: TextStyle(
+              fontFamily: 'PlusJakartaSans',
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: _navy900,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontFamily: 'PlusJakartaSans',
+              fontSize: 12,
+              color: _textMuted,
+            ),
+          ),
+          if (onReset != null) ...[
+            const SizedBox(height: 14),
+            OutlinedButton.icon(
+              onPressed: onReset,
+              icon: const Icon(Icons.refresh_rounded, size: 16),
+              label: const Text('Reset Filter'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: _primaryBlue,
+                side: const BorderSide(color: Color(0xFFBAE6FD)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 
@@ -507,7 +889,7 @@ class _ReplacePlaceScreenState extends State<ReplacePlaceScreen> {
   }
 
   // ── WIDGET: Segmented Tab (Rekomendasi Pintar vs Cari Manual) ─────────────
-  Widget _buildSegmentedTab() {
+  Widget _buildSegmentedTab(int smartCount, int manualCount) {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
@@ -559,9 +941,9 @@ class _ReplacePlaceScreenState extends State<ReplacePlaceScreen> {
                         color: _selectedTabIndex == 0 ? _primaryBlue : const Color(0xFF94A3B8),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Text(
-                        '3',
-                        style: TextStyle(
+                      child: Text(
+                        '$smartCount',
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 9.5,
                           fontWeight: FontWeight.bold,
@@ -577,7 +959,12 @@ class _ReplacePlaceScreenState extends State<ReplacePlaceScreen> {
           // Tab 2: Cari Manual
           Expanded(
             child: GestureDetector(
-              onTap: () => setState(() => _selectedTabIndex = 1),
+              onTap: () {
+                setState(() => _selectedTabIndex = 1);
+                if (_manualPlaces.isEmpty && widget.itineraryDaysId != null) {
+                  _loadManualPlaces(category: _manualCategory);
+                }
+              },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
                 padding: const EdgeInsets.symmetric(vertical: 10),
@@ -606,6 +993,24 @@ class _ReplacePlaceScreenState extends State<ReplacePlaceScreen> {
                         color: _selectedTabIndex == 1 ? _primaryBlue : _textMuted,
                       ),
                     ),
+                    if (manualCount > 0) ...[
+                      const SizedBox(width: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: _selectedTabIndex == 1 ? _primaryBlue : const Color(0xFF94A3B8),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          '$manualCount',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -633,9 +1038,17 @@ class _ReplacePlaceScreenState extends State<ReplacePlaceScreen> {
             child: TextField(
               controller: _searchController,
               style: const TextStyle(fontFamily: 'PlusJakartaSans', fontSize: 13, color: _navy900),
+              onChanged: (val) {
+                setState(() {});
+              },
+              onSubmitted: (val) {
+                if (_selectedTabIndex == 1) {
+                  _loadManualPlaces(search: val.trim(), category: _manualCategory);
+                }
+              },
               decoration: InputDecoration(
                 hintText: _selectedTabIndex == 0
-                    ? 'Cari alternatif resto atau kuliner...'
+                    ? 'Cari alternatif tempat wisata atau kuliner...'
                     : 'Cari destinasi wisata Batam secara manual...',
                 hintStyle: const TextStyle(
                   fontFamily: 'PlusJakartaSans',
@@ -648,7 +1061,23 @@ class _ReplacePlaceScreenState extends State<ReplacePlaceScreen> {
               ),
             ),
           ),
-          const Icon(Icons.mic_none_rounded, color: Color(0xFF94A3B8), size: 20),
+          if (_searchController.text.isNotEmpty)
+            GestureDetector(
+              onTap: () {
+                setState(() {
+                  _searchController.clear();
+                  if (_selectedTabIndex == 1) {
+                    _loadManualPlaces(category: _manualCategory);
+                  }
+                });
+              },
+              child: const Padding(
+                padding: EdgeInsets.all(4),
+                child: Icon(Icons.close_rounded, color: Color(0xFF94A3B8), size: 18),
+              ),
+            )
+          else
+            const Icon(Icons.mic_none_rounded, color: Color(0xFF94A3B8), size: 20),
         ],
       ),
     );
@@ -674,7 +1103,9 @@ class _ReplacePlaceScreenState extends State<ReplacePlaceScreen> {
           return Padding(
             padding: const EdgeInsets.only(right: 8),
             child: GestureDetector(
-              onTap: () => setState(() => _selectedFilterChip = index),
+              onTap: () => setState(() {
+                _selectedFilterChip = _selectedFilterChip == index ? null : index;
+              }),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 150),
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
@@ -1075,7 +1506,7 @@ class _ReplacePlaceScreenState extends State<ReplacePlaceScreen> {
 
   // ── WIDGET: Konten Tambahan Khusus Tab "Cari Manual" ──────────────────────
   Widget _buildManualSearchContent() {
-    final categories = ['Semua', 'Seafood', 'Pusat Kuliner', 'Kafe & Kopi', 'Tempat Belanja'];
+    final categories = ['Semua', 'Seafood', 'Pusat Kuliner', 'Kafe & Kopi', 'Tempat Belanja', 'Pantai'];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1103,7 +1534,13 @@ class _ReplacePlaceScreenState extends State<ReplacePlaceScreen> {
                   side: BorderSide(
                     color: isCatSelected ? _primaryBlue : const Color(0xFFCBD5E1),
                   ),
-                  onSelected: (_) => setState(() => _manualCategory = cat),
+                  onSelected: (_) {
+                    setState(() => _manualCategory = cat);
+                    _loadManualPlaces(
+                      search: _searchController.text.trim(),
+                      category: cat,
+                    );
+                  },
                 ),
               );
             }).toList(),
@@ -1140,17 +1577,40 @@ class _ReplacePlaceScreenState extends State<ReplacePlaceScreen> {
 
         _buildSectionTitle(
           title: 'Hasil Pencarian Manual',
-          actionLabel: '${_manualPlaces.length} Tempat Ditemukan',
+          actionLabel: _isLoadingManual
+              ? 'Mencari...'
+              : '${_manualPlaces.length} Tempat Ditemukan',
         ),
         const SizedBox(height: 10),
 
-        // Daftar Tempat Manual
-        for (int i = 0; i < _manualPlaces.length; i++)
-          _buildAlternativeCard(
-            place: _manualPlaces[i],
-            isSelected: _selectedAltIndex == i,
-            onTap: () => setState(() => _selectedAltIndex = i),
-          ),
+        if (_isLoadingManual)
+          _buildLoadingSkeletons()
+        else if (_manualErrorMessage != null)
+          _buildErrorCard(
+            message: _manualErrorMessage!,
+            onRetry: () => _loadManualPlaces(
+              search: _searchController.text.trim(),
+              category: _manualCategory,
+            ),
+          )
+        else if (_manualPlaces.isEmpty)
+          _buildEmptyState(
+            message: 'Tidak ada tempat ditemukan untuk pencarian atau kategori ini.',
+            onReset: () {
+              setState(() {
+                _manualCategory = 'Semua';
+                _searchController.clear();
+              });
+              _loadManualPlaces();
+            },
+          )
+        else
+          for (int i = 0; i < _manualPlaces.length; i++)
+            _buildAlternativeCard(
+              place: _manualPlaces[i],
+              isSelected: _selectedAltIndex == i,
+              onTap: () => setState(() => _selectedAltIndex = i),
+            ),
       ],
     );
   }
@@ -1237,7 +1697,7 @@ class _ReplacePlaceScreenState extends State<ReplacePlaceScreen> {
                 Expanded(
                   flex: 1,
                   child: OutlinedButton(
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: _isSubmitting ? null : () => Navigator.pop(context),
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size.fromHeight(46),
                       backgroundColor: const Color(0xFFF1F5F9),
@@ -1263,7 +1723,7 @@ class _ReplacePlaceScreenState extends State<ReplacePlaceScreen> {
                 Expanded(
                   flex: 2,
                   child: FilledButton.icon(
-                    onPressed: _applyReplacement,
+                    onPressed: _isSubmitting ? null : () => _applyReplacement(selectedPlace),
                     style: FilledButton.styleFrom(
                       minimumSize: const Size.fromHeight(46),
                       backgroundColor: _primaryBlue,
@@ -1272,10 +1732,19 @@ class _ReplacePlaceScreenState extends State<ReplacePlaceScreen> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    icon: const Icon(Icons.check_circle_outline_rounded, size: 18),
-                    label: const Text(
-                      'Terapkan Penggantian',
-                      style: TextStyle(
+                    icon: _isSubmitting
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const Icon(Icons.check_circle_outline_rounded, size: 18),
+                    label: Text(
+                      _isSubmitting ? 'Menerapkan...' : 'Terapkan Penggantian',
+                      style: const TextStyle(
                         fontFamily: 'PlusJakartaSans',
                         fontSize: 13,
                         fontWeight: FontWeight.w700,

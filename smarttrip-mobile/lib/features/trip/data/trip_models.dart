@@ -163,6 +163,42 @@ class HotelOption {
   final int rank;
 }
 
+/// A ranked alternative place returned by `GET /api/itinerary-items/{id}/swap-candidates`.
+class SwapCandidate {
+  const SwapCandidate({
+    required this.placesId,
+    required this.name,
+    required this.type,
+    this.photoUrl,
+    required this.lat,
+    required this.lng,
+    this.rating,
+    this.topsisScore,
+  });
+
+  factory SwapCandidate.fromJson(Map<String, dynamic> json) {
+    return SwapCandidate(
+      placesId: json['places_id'] as int,
+      name: json['name'] as String,
+      type: json['type'] as String? ?? '',
+      photoUrl: AppConfig.resolveMediaUrl(json['photo_url'] as String?),
+      lat: _toDouble(json['lat']) ?? 0.0,
+      lng: _toDouble(json['lng']) ?? 0.0,
+      rating: _toDouble(json['rating']),
+      topsisScore: _toDouble(json['topsis_score']),
+    );
+  }
+
+  final int placesId;
+  final String name;
+  final String type;
+  final String? photoUrl;
+  final double lat;
+  final double lng;
+  final double? rating;
+  final double? topsisScore;
+}
+
 class ItineraryItem {
   const ItineraryItem({
     required this.itineraryItemsId,

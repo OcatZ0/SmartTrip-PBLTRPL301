@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/router/app_routes.dart';
+import '../../../core/widgets/app_bottom_bar.dart';
+
 class ReviewFormScreen extends StatefulWidget {
   const ReviewFormScreen({
     super.key,
@@ -18,6 +21,24 @@ class ReviewFormScreen extends StatefulWidget {
 class _ReviewFormScreenState extends State<ReviewFormScreen> {
   double _rating = 5.0;
   late final TextEditingController _reviewController;
+
+  // Peta tab -> halaman utama agar dapat dipanggil otomatis.
+  void _selectTab(AppTab tab) {
+    switch (tab) {
+      case AppTab.home:
+        context.go(AppRoutes.catalog);
+      case AppTab.wishlist:
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            const SnackBar(content: Text('Wishlist — segera hadir!')),
+          );
+      case AppTab.trips:
+        break; // Halaman ulasan bagian dari tab 'Trip Saya'.
+      case AppTab.profile:
+        context.go(AppRoutes.profile);
+    }
+  }
 
   // Foto dokumentasi awal desain mockup
   final List<String> _photos = [
@@ -613,6 +634,13 @@ class _ReviewFormScreenState extends State<ReviewFormScreen> {
             const SizedBox(height: 16),
           ],
         ),
+      ),
+
+      // ── BOTTOM NAVIGATION BAR (shared AppBottomBar) ────────────────────────
+      bottomNavigationBar: AppBottomBar(
+        current: AppTab.trips,
+        onSelect: _selectTab,
+        onCreateTrip: () => context.push(AppRoutes.newTrip),
       ),
     );
   }

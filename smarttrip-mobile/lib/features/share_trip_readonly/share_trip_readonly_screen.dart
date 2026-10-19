@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../core/router/app_routes.dart';
+import '../../../core/widgets/app_bottom_bar.dart';
 import 'shared_trip_model.dart';
 
 class ShareTripReadonlyScreen extends StatefulWidget {
@@ -12,13 +15,29 @@ class ShareTripReadonlyScreen extends StatefulWidget {
 
 class _ShareTripReadonlyScreenState extends State<ShareTripReadonlyScreen> {
   int _selectedDayIndex = 0;
-  int _currentNavIndex = 2; // Default aktif di tab 'Trip Saya'
+
+  // Peta tab -> halaman utama agar dapat dipanggil otomatis.
+  void _selectTab(AppTab tab) {
+    switch (tab) {
+      case AppTab.home:
+        context.go(AppRoutes.catalog);
+      case AppTab.wishlist:
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            const SnackBar(content: Text('Wishlist — segera hadir!')),
+          );
+      case AppTab.trips:
+        context.go(AppRoutes.trips);
+      case AppTab.profile:
+        context.go(AppRoutes.profile);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     const textColorPrimary = Color(0xFF0B1C30);
     const textColorSecondary = Color(0xFF64748B);
-    const primaryBlue = Color(0xFF1D6FA5);
 
     final currentSchedule = SharedTripData.schedules[_selectedDayIndex];
 
@@ -162,14 +181,18 @@ class _ShareTripReadonlyScreenState extends State<ShareTripReadonlyScreen> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                const Text(
-                  SharedTripData.sharedBy,
-                  style: TextStyle(
-                    fontFamily: 'PlusJakartaSans',
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF1D6FA5),
-                    letterSpacing: 0.3,
+                Flexible(
+                  child: Text(
+                    SharedTripData.sharedBy,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontFamily: 'PlusJakartaSans',
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF1D6FA5),
+                      letterSpacing: 0.3,
+                    ),
                   ),
                 ),
               ],
@@ -262,9 +285,11 @@ class _ShareTripReadonlyScreenState extends State<ShareTripReadonlyScreen> {
                         children: [
                           Icon(Icons.info_outline, color: Colors.white),
                           SizedBox(width: 10),
-                          Text(
-                            'Mode Viewer: Membuka navigasi rute (Read-Only)',
-                            style: TextStyle(fontFamily: 'PlusJakartaSans'),
+                          Expanded(
+                            child: Text(
+                              'Mode Viewer: Membuka navigasi rute (Read-Only)',
+                              style: TextStyle(fontFamily: 'PlusJakartaSans'),
+                            ),
                           ),
                         ],
                       ),
@@ -292,59 +317,11 @@ class _ShareTripReadonlyScreenState extends State<ShareTripReadonlyScreen> {
         ),
       ),
 
-      // ── BOTTOM NAVIGATION BAR ──────────────────────────────────────────────
-      bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          border: Border(
-            top: BorderSide(color: Color(0xFFE2E8F0), width: 1),
-          ),
-        ),
-        child: BottomNavigationBar(
-          currentIndex: _currentNavIndex,
-          onTap: (index) {
-            setState(() {
-              _currentNavIndex = index;
-            });
-          },
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: Colors.white,
-          selectedItemColor: primaryBlue,
-          unselectedItemColor: const Color(0xFF94A3B8),
-          selectedLabelStyle: const TextStyle(
-            fontFamily: 'PlusJakartaSans',
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
-          ),
-          unselectedLabelStyle: const TextStyle(
-            fontFamily: 'PlusJakartaSans',
-            fontSize: 11,
-            fontWeight: FontWeight.w500,
-          ),
-          elevation: 0,
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home_outlined),
-              activeIcon: Icon(Icons.home_rounded),
-              label: 'Home',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.favorite_outline_rounded),
-              activeIcon: Icon(Icons.favorite_rounded),
-              label: 'Wishlist',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.explore_outlined),
-              activeIcon: Icon(Icons.explore_rounded),
-              label: 'Trip Saya',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline_rounded),
-              activeIcon: Icon(Icons.person_rounded),
-              label: 'Profil',
-            ),
-          ],
-        ),
+      // ── BOTTOM NAVIGATION BAR (shared AppBottomBar) ────────────────────────
+      bottomNavigationBar: AppBottomBar(
+        current: AppTab.trips,
+        onSelect: _selectTab,
+        onCreateTrip: () => context.push(AppRoutes.newTrip),
       ),
     );
   }
@@ -394,13 +371,17 @@ class _ShareTripReadonlyScreenState extends State<ShareTripReadonlyScreen> {
                           ),
                         ),
                         const SizedBox(width: 6),
-                        Text(
-                          schedule.weatherLocation,
-                          style: const TextStyle(
-                            fontFamily: 'PlusJakartaSans',
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xFF64748B),
+                        Flexible(
+                          child: Text(
+                            schedule.weatherLocation,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontFamily: 'PlusJakartaSans',
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xFF64748B),
+                            ),
                           ),
                         ),
                       ],
@@ -703,13 +684,17 @@ class _ShareTripReadonlyScreenState extends State<ShareTripReadonlyScreen> {
                               color: Color(0xFF64748B),
                             ),
                             const SizedBox(width: 6),
-                            Text(
-                              item.transitInfo!,
-                              style: const TextStyle(
-                                fontFamily: 'PlusJakartaSans',
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF475569),
+                            Flexible(
+                              child: Text(
+                                item.transitInfo!,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontFamily: 'PlusJakartaSans',
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF475569),
+                                ),
                               ),
                             ),
                           ],

@@ -1,11 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../core/router/app_routes.dart';
 import 'trip_model.dart';
 
 class TripCard extends StatelessWidget {
   const TripCard({super.key, required this.trip});
 
   final TripModel trip;
+
+  void _handleCardTap(BuildContext context) {
+    switch (trip.status) {
+      case TripStatus.berlangsung:
+        context.push(AppRoutes.liveMap(trip.id, trip.currentDay));
+      case TripStatus.akanDatang:
+      case TripStatus.selesai:
+        context.push(AppRoutes.trip(trip.id));
+      case TripStatus.draft:
+        context.push(AppRoutes.tripPreferences(trip.id));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,14 +37,22 @@ class TripCard extends StatelessWidget {
           ),
         ],
       ),
-      child: ClipRRect(
+      child: Material(
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _buildBanner(),
-            _buildBody(context),
-          ],
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () => _handleCardTap(context),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildBanner(),
+                _buildBody(context),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -275,29 +297,38 @@ class TripCard extends StatelessWidget {
         return Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            RichText(
-              text: TextSpan(
-                style: const TextStyle(fontFamily: 'PlusJakartaSans'),
-                children: [
-                  TextSpan(
-                    text: trip.budgetSpentLabel,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF0B1C30),
+            Flexible(
+              child: RichText(
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                text: TextSpan(
+                  style: const TextStyle(fontFamily: 'PlusJakartaSans'),
+                  children: [
+                    TextSpan(
+                      text: trip.budgetSpentLabel,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF0B1C30),
+                      ),
                     ),
-                  ),
-                  TextSpan(
-                    text: ' / ${trip.budgetTotalLabel}',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Color(0xFF94A3B8),
+                    TextSpan(
+                      text: ' / ${trip.budgetTotalLabel}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF94A3B8),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-            _linkButton('Lihat Live Map'),
+            _linkButton(
+              'Lihat Live Map',
+              onTap: () => context.push(
+                AppRoutes.liveMap(trip.id, trip.currentDay),
+              ),
+            ),
           ],
         );
 
@@ -306,26 +337,33 @@ class TripCard extends StatelessWidget {
         return Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            RichText(
-              text: TextSpan(
-                style: const TextStyle(fontFamily: 'PlusJakartaSans'),
-                children: [
-                  const TextSpan(
-                    text: 'Anggaran ',
-                    style: TextStyle(fontSize: 12, color: Color(0xFF475569)),
-                  ),
-                  TextSpan(
-                    text: trip.budgetTotalLabel,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF0B1C30),
+            Flexible(
+              child: RichText(
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                text: TextSpan(
+                  style: const TextStyle(fontFamily: 'PlusJakartaSans'),
+                  children: [
+                    const TextSpan(
+                      text: 'Anggaran ',
+                      style: TextStyle(fontSize: 12, color: Color(0xFF475569)),
                     ),
-                  ),
-                ],
+                    TextSpan(
+                      text: trip.budgetTotalLabel,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF0B1C30),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-            _linkButton('Lihat Detail'),
+            _linkButton(
+              'Lihat Detail',
+              onTap: () => context.push(AppRoutes.trip(trip.id)),
+            ),
           ],
         );
 
@@ -334,26 +372,33 @@ class TripCard extends StatelessWidget {
         return Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            RichText(
-              text: TextSpan(
-                style: const TextStyle(fontFamily: 'PlusJakartaSans'),
-                children: [
-                  const TextSpan(
-                    text: 'Terpakai ',
-                    style: TextStyle(fontSize: 12, color: Color(0xFF475569)),
-                  ),
-                  TextSpan(
-                    text: trip.budgetSpentLabel,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF0B1C30),
+            Flexible(
+              child: RichText(
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                text: TextSpan(
+                  style: const TextStyle(fontFamily: 'PlusJakartaSans'),
+                  children: [
+                    const TextSpan(
+                      text: 'Terpakai ',
+                      style: TextStyle(fontSize: 12, color: Color(0xFF475569)),
                     ),
-                  ),
-                ],
+                    TextSpan(
+                      text: trip.budgetSpentLabel,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF0B1C30),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-            _linkButton('Beri Ulasan'),
+            _linkButton(
+              'Beri Ulasan',
+              onTap: () => context.push(AppRoutes.review),
+            ),
           ],
         );
 
@@ -362,22 +407,29 @@ class TripCard extends StatelessWidget {
         return Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
-              'Lanjutkan pengaturan trip',
-              style: TextStyle(
-                fontFamily: 'PlusJakartaSans',
-                fontSize: 12,
-                color: Color(0xFF64748B),
+            const Flexible(
+              child: Text(
+                'Lanjutkan pengaturan trip',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontFamily: 'PlusJakartaSans',
+                  fontSize: 12,
+                  color: Color(0xFF64748B),
+                ),
               ),
             ),
-            _linkButton('Lanjutkan'),
+            _linkButton(
+              'Lanjutkan',
+              onTap: () => context.push(AppRoutes.tripPreferences(trip.id)),
+            ),
           ],
         );
     }
   }
 
-  static Widget _linkButton(String label) {
-    return Row(
+  static Widget _linkButton(String label, {VoidCallback? onTap}) {
+    final content = Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
@@ -396,6 +448,16 @@ class TripCard extends StatelessWidget {
           color: Color(0xFF1D6FA5),
         ),
       ],
+    );
+
+    if (onTap == null) return content;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(6),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+        child: content,
+      ),
     );
   }
 }

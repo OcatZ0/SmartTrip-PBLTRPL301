@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../core/router/app_routes.dart';
+import '../../../core/widgets/app_bottom_bar.dart';
 import 'trip_model.dart';
 import 'trip_card.dart';
 
@@ -20,6 +23,24 @@ class _TripTersimpanScreenState extends State<TripTersimpanScreen> {
     TripStatus.selesai,
     TripStatus.draft,
   ];
+
+  // Peta tab -> halaman utama agar dapat dipanggil otomatis.
+  void _selectTab(AppTab tab) {
+    switch (tab) {
+      case AppTab.home:
+        context.go(AppRoutes.catalog);
+      case AppTab.wishlist:
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            const SnackBar(content: Text('Wishlist — segera hadir!')),
+          );
+      case AppTab.trips:
+        break; // Sudah berada di halaman Trip Saya.
+      case AppTab.profile:
+        context.go(AppRoutes.profile);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,7 +78,14 @@ class _TripTersimpanScreenState extends State<TripTersimpanScreen> {
                   ? _buildEmptyState()
                   : ListView.builder(
                       physics: const BouncingScrollPhysics(),
-                      padding: const EdgeInsets.only(top: 4, bottom: 96),
+                      padding: EdgeInsets.only(
+                        top: 4,
+                        bottom:
+                            AppBottomBar.barHeight +
+                            AppBottomBar.fabRise +
+                            16 +
+                            MediaQuery.paddingOf(context).bottom,
+                      ),
                       itemCount: trips.length,
                       itemBuilder: (_, i) => TripCard(trip: trips[i]),
                     ),
@@ -66,27 +94,12 @@ class _TripTersimpanScreenState extends State<TripTersimpanScreen> {
         ),
       ),
 
-      // ── FAB (+) ──────────────────────────────────────────────────────────
-      floatingActionButton: SizedBox(
-        width: 52,
-        height: 52,
-        child: FloatingActionButton(
-          heroTag: 'tripFab',
-          backgroundColor: const Color(0xFF1D6FA5),
-          shape: const CircleBorder(),
-          elevation: 3,
-          onPressed: () {
-            // Placeholder: navigasi ke halaman buat trip
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Buat Trip — segera hadir!')),
-            );
-          },
-          child: const Icon(Icons.add, color: Colors.white, size: 26),
-        ),
+      // ── Bottom Navigation Bar (shared AppBottomBar) ─────────────────────────
+      bottomNavigationBar: AppBottomBar(
+        current: AppTab.trips,
+        onSelect: _selectTab,
+        onCreateTrip: () => context.push(AppRoutes.newTrip),
       ),
-
-      // ── Bottom Navigation Bar ─────────────────────────────────────────────
-      bottomNavigationBar: _buildBottomNavBar(),
     );
   }
 
@@ -184,80 +197,6 @@ class _TripTersimpanScreenState extends State<TripTersimpanScreen> {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  // ── Bottom Navigation Bar (Home / Wishlist / Trip Saya / Profil) ──────────
-  Widget _buildBottomNavBar() {
-    const activeColor = Color(0xFF1D6FA5);
-    const inactiveColor = Color(0xFF8A94A6);
-
-    final items = [
-      (icon: Icons.home_outlined, filled: Icons.home_rounded, label: 'Home'),
-      (icon: Icons.favorite_border_rounded, filled: Icons.favorite_rounded, label: 'Wishlist'),
-      (icon: Icons.explore_outlined, filled: Icons.explore_rounded, label: 'Trip Saya'),
-      (icon: Icons.person_outline_rounded, filled: Icons.person_rounded, label: 'Profil'),
-    ];
-    // index 2 = Trip Saya (halaman ini aktif)
-    const int currentIndex = 2;
-
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
-      ),
-      child: SafeArea(
-        top: false,
-        child: SizedBox(
-          height: 64,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: List.generate(items.length, (i) {
-              final isSelected = i == currentIndex;
-              final item = items[i];
-              return Expanded(
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () {
-                    // Navigasi tab lain ditambahkan jika sudah ada route-nya
-                  },
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // garis atas indikator aktif
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 180),
-                        width: isSelected ? 22 : 0,
-                        height: 3,
-                        decoration: BoxDecoration(
-                          color: isSelected ? activeColor : Colors.transparent,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Icon(
-                        isSelected ? item.filled : item.icon,
-                        size: 22,
-                        color: isSelected ? activeColor : inactiveColor,
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        item.label,
-                        style: TextStyle(
-                          fontFamily: 'PlusJakartaSans',
-                          fontSize: 11,
-                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                          color: isSelected ? activeColor : inactiveColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }),
-          ),
         ),
       ),
     );

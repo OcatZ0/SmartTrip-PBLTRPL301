@@ -48,13 +48,20 @@ Future<void> _pumpCatalog(
 
 /// Taps the filter chip labelled [label], scrolling the chip bar to it first.
 Future<void> _tapChip(WidgetTester tester, String label) async {
-  final chipBar = find.byType(ListView).first;
+  // The chip bar is the horizontal list that holds the "Semua" chip.
+  final chipBar = find.ancestor(of: find.text('Semua'), matching: find.byType(ListView)).first;
   final chip = find.descendant(of: chipBar, matching: find.text(label));
-  await tester.scrollUntilVisible(
-    chip,
-    80,
-    scrollable: find.descendant(of: chipBar, matching: find.byType(Scrollable)),
-  );
+  // Drags only the chip bar: scrollUntilVisible and dragUntilVisible end with
+  // ensureVisible, which would also scroll the page under the pinned header.
+  final position = tester.state<ScrollableState>(find.descendant(of: chipBar, matching: find.byType(Scrollable))).position;
+  var step = const Offset(-80, 0);
+  for (var tries = 0; tries < 40 && chip.hitTestable().evaluate().isEmpty; tries++) {
+    final before = position.pixels;
+    await tester.drag(chipBar, step);
+    await tester.pump();
+    // At the end of the bar without finding it: the chip is the other way.
+    if (position.pixels == before) step = -step;
+  }
   await tester.pumpAndSettle();
   await tester.tap(chip);
   await tester.pumpAndSettle();
@@ -144,6 +151,18 @@ void main() {
 
     expect(catalog.calls.map((call) => call.page), [1, 2]);
     expect(find.text('Tempat 30'), findsOneWidget);
+  });
+
+  testWidgets('scrolling down keeps the search field and chips pinned and fades the greeting', (tester) async {
+    await _pumpCatalog(tester, catalog: FakePlaceService(total: 30));
+
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -800));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(TextField).hitTestable(), findsOneWidget);
+    expect(find.text('Semua').hitTestable(), findsOneWidget);
+    final greeting = tester.widget<Opacity>(find.ancestor(of: find.text(_greeting), matching: find.byType(Opacity)).first);
+    expect(greeting.opacity, 0);
   });
 
   testWidgets('a category chip and the hotel chip filter the grid', (tester) async {

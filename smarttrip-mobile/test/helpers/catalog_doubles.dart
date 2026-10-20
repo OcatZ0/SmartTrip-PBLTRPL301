@@ -5,11 +5,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:smarttrip_mobile/core/auth/auth_user.dart';
 import 'package:smarttrip_mobile/core/auth/session_controller.dart';
 import 'package:smarttrip_mobile/core/error/api_failure.dart';
-import 'package:smarttrip_mobile/features/catalog/data/catalog_models.dart';
-import 'package:smarttrip_mobile/features/catalog/data/catalog_repository.dart';
-import 'package:smarttrip_mobile/features/trip/data/trip_models.dart';
-import 'package:smarttrip_mobile/features/trip/data/trip_repository.dart';
-import 'package:smarttrip_mobile/features/wishlist/data/user_wishlist_repository.dart';
+import 'package:smarttrip_mobile/models/place.dart';
+import 'package:smarttrip_mobile/models/trip.dart';
+import 'package:smarttrip_mobile/services/place_service.dart';
+import 'package:smarttrip_mobile/services/trip_service.dart';
+import 'package:smarttrip_mobile/services/wishlist_service.dart';
 
 const pantai = TripCategory(categoriesId: 1, nameId: 'Pantai', nameEn: 'Beach', slug: 'pantai');
 const kulinerSeafood = TripCategory(
@@ -40,8 +40,8 @@ CatalogPlace catalogPlace(int index) {
 typedef CatalogCall = ({int page, String search, String? categorySlug, String? type, String? kecamatan});
 
 /// [total] places served 20 per page, like the API.
-class FakeCatalogRepository implements CatalogRepository {
-  FakeCatalogRepository({this.total = 30});
+class FakePlaceService implements PlaceService {
+  FakePlaceService({this.total = 30});
 
   int total;
   Object? failWith;
@@ -64,7 +64,7 @@ class FakeCatalogRepository implements CatalogRepository {
     final error = failWith;
     if (error != null) throw error;
 
-    const size = CatalogRepository.pageSize;
+    const size = PlaceService.pageSize;
     final start = (page - 1) * size;
     final end = min(start + size, total);
     return CatalogPage(
@@ -147,8 +147,8 @@ PlaceDetail placeDetail(
   );
 }
 
-class FakeTripRepository implements TripRepository {
-  FakeTripRepository({List<TripSummary>? trips}) : trips = trips ?? const [];
+class FakeTripService implements TripService {
+  FakeTripService({List<TripSummary>? trips}) : trips = trips ?? const [];
 
   final List<TripSummary> trips;
 
@@ -172,8 +172,8 @@ class FakeTripRepository implements TripRepository {
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError(invocation.memberName.toString());
 }
 
-class FakeUserWishlistRepository implements UserWishlistRepository {
-  FakeUserWishlistRepository({Set<int>? saved}) : saved = saved ?? {};
+class FakeWishlistService implements WishlistService {
+  FakeWishlistService({Set<int>? saved}) : saved = saved ?? {};
 
   final Set<int> saved;
   bool failNext = false;
@@ -217,13 +217,13 @@ class FakeSessionController extends SessionController {
 /// Keeps the catalog (the logged-in landing screen) off the network in
 /// tests that only pass through it.
 List<Override> catalogOverrides({
-  FakeCatalogRepository? catalog,
-  FakeUserWishlistRepository? wishlist,
-  FakeTripRepository? trips,
+  FakePlaceService? catalog,
+  FakeWishlistService? wishlist,
+  FakeTripService? trips,
 }) {
   return [
-    catalogRepositoryProvider.overrideWithValue(catalog ?? FakeCatalogRepository()),
-    tripRepositoryProvider.overrideWithValue(trips ?? FakeTripRepository()),
-    userWishlistRepositoryProvider.overrideWithValue(wishlist ?? FakeUserWishlistRepository()),
+    placeServiceProvider.overrideWithValue(catalog ?? FakePlaceService()),
+    tripServiceProvider.overrideWithValue(trips ?? FakeTripService()),
+    wishlistServiceProvider.overrideWithValue(wishlist ?? FakeWishlistService()),
   ];
 }

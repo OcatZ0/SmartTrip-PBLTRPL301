@@ -2,14 +2,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smarttrip_mobile/core/api/api_client.dart';
 import 'package:smarttrip_mobile/core/error/api_failure.dart';
-import 'package:smarttrip_mobile/features/live_trip/data/visit_sync.dart';
-import 'package:smarttrip_mobile/features/trip/data/trip_models.dart';
-import 'package:smarttrip_mobile/features/trip/data/trip_repository.dart';
+import 'package:smarttrip_mobile/models/trip.dart';
+import 'package:smarttrip_mobile/services/trip_service.dart';
+import 'package:smarttrip_mobile/services/visit_sync.dart';
 
 import '../../helpers/test_doubles.dart';
 
 /// Mimics the server toggle of `POST /itinerary-items/{id}/visit`.
-class FakeVisitRepository extends TripRepository {
+class FakeVisitRepository extends TripService {
   FakeVisitRepository({Map<int, bool>? serverVisited})
       : serverVisited = serverVisited ?? {},
         super(ApiClient(tokenStorage: InMemoryTokenStorage()));

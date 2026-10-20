@@ -6,9 +6,9 @@ import 'package:smarttrip_mobile/app.dart';
 import 'package:smarttrip_mobile/core/api/api_client.dart';
 import 'package:smarttrip_mobile/core/api/providers.dart';
 import 'package:smarttrip_mobile/core/error/api_failure.dart';
-import 'package:smarttrip_mobile/features/auth/data/auth_repository.dart';
-import 'package:smarttrip_mobile/features/auth/data/google_auth_service.dart';
-import 'package:smarttrip_mobile/features/auth/presentation/widgets/auth_layout.dart';
+import 'package:smarttrip_mobile/screens/auth/widgets/auth_layout.dart';
+import 'package:smarttrip_mobile/services/auth_service.dart';
+import 'package:smarttrip_mobile/services/google_auth_service.dart';
 
 import '../../helpers/catalog_doubles.dart';
 import '../../helpers/test_doubles.dart';
@@ -18,7 +18,7 @@ const _submit = 'Masuk';
 Future<void> _pumpApp(
   WidgetTester tester, {
   required InMemoryTokenStorage tokenStorage,
-  required FakeAuthRepository repository,
+  required FakeAuthService repository,
   FakeGoogleAuthService? google,
 }) async {
   tester.view.physicalSize = const Size(1200, 2800);
@@ -31,7 +31,7 @@ Future<void> _pumpApp(
     ProviderScope(
       overrides: [
         tokenStorageProvider.overrideWithValue(tokenStorage),
-        authRepositoryProvider.overrideWithValue(repository),
+        authServiceProvider.overrideWithValue(repository),
         googleAuthServiceProvider
             .overrideWithValue(google ?? FakeGoogleAuthService()),
         ...catalogOverrides(),
@@ -57,11 +57,11 @@ void main() {
   setUpAll(loadAppFont);
 
   late InMemoryTokenStorage tokenStorage;
-  late FakeAuthRepository repository;
+  late FakeAuthService repository;
 
   setUp(() {
     tokenStorage = InMemoryTokenStorage();
-    repository = FakeAuthRepository();
+    repository = FakeAuthService();
   });
 
   testWidgets('logged-out launch lands on the login screen', (tester) async {

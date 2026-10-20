@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:smarttrip_mobile/features/trip/data/trip_models.dart';
+import 'package:smarttrip_mobile/models/trip.dart';
 
 Map<String, dynamic> tripJson({Map<String, dynamic>? hotelPlace}) => {
       'trips_id': 5,

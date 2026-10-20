@@ -982,4 +982,85 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get detailAreaIndoor => 'Indoor';
+
+  @override
+  String get profileInterests => 'Your interests';
+
+  @override
+  String get profileInterestsHint => 'Picked automatically for every new trip.';
+
+  @override
+  String get profilePriorities => 'Route priorities';
+
+  @override
+  String get profileWeightInterest => 'Matches your interests';
+
+  @override
+  String get profileWeightInterestHint =>
+      'Favor places in your chosen categories';
+
+  @override
+  String get profileWeightDistance => 'Distance & travel time';
+
+  @override
+  String get profileWeightDistanceHint => 'Favor places close to each other';
+
+  @override
+  String get profileWeightBudget => 'Save money';
+
+  @override
+  String get profileWeightBudgetHint => 'Favor cheap or free places';
+
+  @override
+  String get profileWeightRating => 'Place rating';
+
+  @override
+  String get profileWeightRatingHint => 'Favor well-reviewed places';
+
+  @override
+  String get profileNeedInterest => 'Pick at least one interest.';
+
+  @override
+  String get profileLoadFailed => 'Couldn\'t load your preferences.';
+
+  @override
+  String get profileChangePassword => 'Change password';
+
+  @override
+  String get profileLanguage => 'Language';
+
+  @override
+  String get profileLanguageName => 'English';
+
+  @override
+  String get profileLogout => 'Log out';
+
+  @override
+  String get profileLogoutTitle => 'Log out?';
+
+  @override
+  String get profileLogoutBody =>
+      'You\'ll need to sign in again to open your trips.';
+
+  @override
+  String get profilePasswordCurrent => 'Current password';
+
+  @override
+  String get profilePasswordNew => 'New password';
+
+  @override
+  String get profilePasswordConfirm => 'Repeat the new password';
+
+  @override
+  String get profilePasswordSubmit => 'Save password';
+
+  @override
+  String get profileEyebrow => 'PROFILE';
+
+  @override
+  String get profileHeadline => 'Plan trips your way';
+
+  @override
+  String get profilePasswordGoogleOnly =>
+      'Your account was made with Google, so it has no password yet. Set one here to also sign in with your email.';
 }

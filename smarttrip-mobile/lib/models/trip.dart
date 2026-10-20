@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import '../core/config/app_config.dart';
 
 // Laravel's `decimal:7` casts arrive as strings, plain numbers as num.
@@ -107,6 +109,17 @@ class PreferenceDefaults {
   /// Normalized weights (sum 1) in kategori, jarak, anggaran, rating order,
   /// or null when the profile has none yet.
   final List<double>? weights;
+
+  /// [weights] scaled back to the 0-10 sliders, the strongest criterion at 10.
+  List<double> get ratings {
+    final values = weights;
+    if (values == null) return [5, 5, 5, 5];
+
+    final strongest = values.reduce(math.max);
+    if (strongest <= 0) return [5, 5, 5, 5];
+
+    return [for (final weight in values) (weight / strongest * 10).roundToDouble()];
+  }
 }
 
 /// The subset of a `places` row the trip screens need. [placesId] is null for

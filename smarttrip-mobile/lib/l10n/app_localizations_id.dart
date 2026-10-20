@@ -1027,4 +1027,104 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get profilePasswordGoogleOnly =>
       'Akunmu dibuat lewat Google, jadi belum punya kata sandi. Buat kata sandi di sini supaya bisa masuk juga dengan email.';
+
+  @override
+  String get swapTitle => 'Ganti Tempat';
+
+  @override
+  String swapSubtitle(String name) {
+    return 'Pilih pengganti untuk $name.';
+  }
+
+  @override
+  String swapRainSubtitle(String name) {
+    return 'Hari ini diprediksi hujan. Tempat dalam ruangan untuk mengganti $name ada di atas.';
+  }
+
+  @override
+  String get swapTabRecommended => 'Rekomendasi';
+
+  @override
+  String get swapTabSearch => 'Cari Manual';
+
+  @override
+  String get swapSearchHint => 'Cari nama tempat';
+
+  @override
+  String get swapEmpty => 'Belum ada tempat pengganti yang cocok.';
+
+  @override
+  String get swapIndoor => 'Dalam ruangan';
+
+  @override
+  String get swapOutdoor => 'Luar ruangan';
+
+  @override
+  String swapDone(String name) {
+    return 'Diganti dengan $name.';
+  }
+
+  @override
+  String get weatherClear => 'Cerah';
+
+  @override
+  String get weatherCloudy => 'Berawan';
+
+  @override
+  String get weatherFog => 'Berkabut';
+
+  @override
+  String get weatherRain => 'Hujan';
+
+  @override
+  String get weatherThunderstorm => 'Hujan petir';
+
+  @override
+  String weatherSummary(int min, int max, int chance) {
+    return '$min-$max°C · peluang hujan $chance%';
+  }
+
+  @override
+  String weatherRainWarning(int count) {
+    return 'Diprediksi hujan, ada $count tempat luar ruangan hari ini. Pertimbangkan menggantinya dengan tempat dalam ruangan.';
+  }
+
+  @override
+  String get weatherSwapAction => 'Ganti tempat luar ruangan';
+
+  @override
+  String get weatherRainBadge => 'Hujan, ganti?';
+
+  @override
+  String weatherReminderTitle(String title) {
+    return 'Cek cuaca untuk $title';
+  }
+
+  @override
+  String get weatherReminderBody =>
+      'Trip kamu tinggal 7 hari lagi. Prakiraan cuaca sudah bisa dilihat di itinerary.';
+
+  @override
+  String get weatherReminderChannel => 'Pengingat cuaca';
+
+  @override
+  String get weatherReminderChannelDescription =>
+      'Pengingat cek prakiraan cuaca menjelang trip';
+
+  @override
+  String dayReminderTitle(String title, int day) {
+    return '$title: hari ke-$day';
+  }
+
+  @override
+  String dayReminderBody(int count, String first, String time) {
+    return '$count tempat menunggu hari ini, mulai dari $first pukul $time.';
+  }
+
+  @override
+  String get dayReminderChannel => 'Pengingat hari trip';
+
+  @override
+  String get dayReminderChannelDescription =>
+      'Pengingat di awal setiap hari trip';
 }

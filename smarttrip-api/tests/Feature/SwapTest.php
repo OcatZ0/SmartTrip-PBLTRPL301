@@ -108,6 +108,8 @@ class SwapTest extends TestCase
         $names = collect($response->json('data'))->pluck('name');
         $this->assertContains('Alternatif Bagus', $names);
         $this->assertNotContains('Hotel Lain', $names);
+        $alternative = collect($response->json('data'))->firstWhere('name', 'Alternatif Bagus');
+        $this->assertSame((bool) $alt1->is_outdoor, $alternative['is_outdoor']);
     }
 
     public function test_swap_candidates_excludes_places_already_used_elsewhere_in_the_trip(): void

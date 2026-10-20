@@ -61,6 +61,7 @@ dependencies:
 
   # Local notifications (day-start / proximity / weather-window alerts)
   flutter_local_notifications: ^18.0.1
+  timezone: ^0.10.1
 
   # Bilingual ID/EN support (gen-l10n, see l10n.yaml). intl is pinned by
   # flutter_localizations, so it must stay `any`.

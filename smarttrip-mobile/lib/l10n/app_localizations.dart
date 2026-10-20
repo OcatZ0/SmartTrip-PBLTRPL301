@@ -1945,6 +1945,168 @@ abstract class AppLocalizations {
   /// In id, this message translates to:
   /// **'Akunmu dibuat lewat Google, jadi belum punya kata sandi. Buat kata sandi di sini supaya bisa masuk juga dengan email.'**
   String get profilePasswordGoogleOnly;
+
+  /// No description provided for @swapTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Ganti Tempat'**
+  String get swapTitle;
+
+  /// No description provided for @swapSubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih pengganti untuk {name}.'**
+  String swapSubtitle(String name);
+
+  /// No description provided for @swapRainSubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Hari ini diprediksi hujan. Tempat dalam ruangan untuk mengganti {name} ada di atas.'**
+  String swapRainSubtitle(String name);
+
+  /// No description provided for @swapTabRecommended.
+  ///
+  /// In id, this message translates to:
+  /// **'Rekomendasi'**
+  String get swapTabRecommended;
+
+  /// No description provided for @swapTabSearch.
+  ///
+  /// In id, this message translates to:
+  /// **'Cari Manual'**
+  String get swapTabSearch;
+
+  /// No description provided for @swapSearchHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Cari nama tempat'**
+  String get swapSearchHint;
+
+  /// No description provided for @swapEmpty.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada tempat pengganti yang cocok.'**
+  String get swapEmpty;
+
+  /// No description provided for @swapIndoor.
+  ///
+  /// In id, this message translates to:
+  /// **'Dalam ruangan'**
+  String get swapIndoor;
+
+  /// No description provided for @swapOutdoor.
+  ///
+  /// In id, this message translates to:
+  /// **'Luar ruangan'**
+  String get swapOutdoor;
+
+  /// No description provided for @swapDone.
+  ///
+  /// In id, this message translates to:
+  /// **'Diganti dengan {name}.'**
+  String swapDone(String name);
+
+  /// No description provided for @weatherClear.
+  ///
+  /// In id, this message translates to:
+  /// **'Cerah'**
+  String get weatherClear;
+
+  /// No description provided for @weatherCloudy.
+  ///
+  /// In id, this message translates to:
+  /// **'Berawan'**
+  String get weatherCloudy;
+
+  /// No description provided for @weatherFog.
+  ///
+  /// In id, this message translates to:
+  /// **'Berkabut'**
+  String get weatherFog;
+
+  /// No description provided for @weatherRain.
+  ///
+  /// In id, this message translates to:
+  /// **'Hujan'**
+  String get weatherRain;
+
+  /// No description provided for @weatherThunderstorm.
+  ///
+  /// In id, this message translates to:
+  /// **'Hujan petir'**
+  String get weatherThunderstorm;
+
+  /// No description provided for @weatherSummary.
+  ///
+  /// In id, this message translates to:
+  /// **'{min}-{max}°C · peluang hujan {chance}%'**
+  String weatherSummary(int min, int max, int chance);
+
+  /// No description provided for @weatherRainWarning.
+  ///
+  /// In id, this message translates to:
+  /// **'Diprediksi hujan, ada {count} tempat luar ruangan hari ini. Pertimbangkan menggantinya dengan tempat dalam ruangan.'**
+  String weatherRainWarning(int count);
+
+  /// No description provided for @weatherSwapAction.
+  ///
+  /// In id, this message translates to:
+  /// **'Ganti tempat luar ruangan'**
+  String get weatherSwapAction;
+
+  /// No description provided for @weatherRainBadge.
+  ///
+  /// In id, this message translates to:
+  /// **'Hujan, ganti?'**
+  String get weatherRainBadge;
+
+  /// No description provided for @weatherReminderTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Cek cuaca untuk {title}'**
+  String weatherReminderTitle(String title);
+
+  /// No description provided for @weatherReminderBody.
+  ///
+  /// In id, this message translates to:
+  /// **'Trip kamu tinggal 7 hari lagi. Prakiraan cuaca sudah bisa dilihat di itinerary.'**
+  String get weatherReminderBody;
+
+  /// No description provided for @weatherReminderChannel.
+  ///
+  /// In id, this message translates to:
+  /// **'Pengingat cuaca'**
+  String get weatherReminderChannel;
+
+  /// No description provided for @weatherReminderChannelDescription.
+  ///
+  /// In id, this message translates to:
+  /// **'Pengingat cek prakiraan cuaca menjelang trip'**
+  String get weatherReminderChannelDescription;
+
+  /// No description provided for @dayReminderTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'{title}: hari ke-{day}'**
+  String dayReminderTitle(String title, int day);
+
+  /// No description provided for @dayReminderBody.
+  ///
+  /// In id, this message translates to:
+  /// **'{count} tempat menunggu hari ini, mulai dari {first} pukul {time}.'**
+  String dayReminderBody(int count, String first, String time);
+
+  /// No description provided for @dayReminderChannel.
+  ///
+  /// In id, this message translates to:
+  /// **'Pengingat hari trip'**
+  String get dayReminderChannel;
+
+  /// No description provided for @dayReminderChannelDescription.
+  ///
+  /// In id, this message translates to:
+  /// **'Pengingat di awal setiap hari trip'**
+  String get dayReminderChannelDescription;
 }
 
 class _AppLocalizationsDelegate

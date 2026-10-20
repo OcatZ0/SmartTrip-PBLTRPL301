@@ -8,7 +8,7 @@
     <!-- Weather check reminder 7 days before a trip (F025) survives a reboot -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <application
-        android:label="smarttrip_mobile"
+        android:label="SmartTrip"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

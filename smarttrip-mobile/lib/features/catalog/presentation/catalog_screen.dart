@@ -20,7 +20,7 @@ import '../data/catalog_repository.dart';
 import 'catalog_controller.dart';
 import 'widgets/catalog_style.dart';
 import 'widgets/featured_place_card.dart';
-import 'widgets/place_list_tile.dart';
+import 'widgets/place_grid_card.dart';
 import 'widgets/place_open_container.dart';
 
 class CatalogScreen extends ConsumerStatefulWidget {
@@ -301,9 +301,14 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
     return [
       SliverPadding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        sliver: SliverList.separated(
+        sliver: SliverGrid.builder(
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
+            mainAxisExtent: PlaceGridCard.height,
+          ),
           itemCount: places.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 10),
           itemBuilder: (context, index) {
             final place = places[index];
             // The shadow sits outside the container, which clips its closed
@@ -318,7 +323,7 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
                 placesId: place.placesId,
                 radius: 16,
                 closedColor: Colors.white,
-                builder: (open) => PlaceListTile(
+                builder: (open) => PlaceGridCard(
                   place: place,
                   isSaved: savedIds.contains(place.placesId),
                   onToggleSaved: () => _toggleSaved(place.placesId),

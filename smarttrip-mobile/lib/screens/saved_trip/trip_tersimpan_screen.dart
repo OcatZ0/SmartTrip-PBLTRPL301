@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/router/app_routes.dart';
+import '../../core/theme/app_colors.dart';
 import '../../models/saved_trip.dart';
 import '../../widgets/app_bottom_bar.dart';
 import 'widgets/trip_card.dart';
@@ -15,6 +17,13 @@ class TripTersimpanScreen extends StatefulWidget {
 
 class _TripTersimpanScreenState extends State<TripTersimpanScreen> {
   TripStatus _activeTab = TripStatus.berlangsung;
+
+  static const _tabIcons = {
+    TripStatus.berlangsung: Icons.near_me_rounded,
+    TripStatus.akanDatang: Icons.event_rounded,
+    TripStatus.selesai: Icons.task_alt_rounded,
+    TripStatus.draft: Icons.edit_note_rounded,
+  };
 
   static const _tabs = [
     TripStatus.berlangsung,
@@ -44,53 +53,26 @@ class _TripTersimpanScreenState extends State<TripTersimpanScreen> {
   @override
   Widget build(BuildContext context) {
     final trips = TripData.byStatus(_activeTab);
+    final bottomSpace = AppBottomBar.barHeight + AppBottomBar.fabRise + 16 + MediaQuery.paddingOf(context).bottom;
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Judul Halaman ─────────────────────────────────────────────
-            const Padding(
-              padding: EdgeInsets.fromLTRB(16, 14, 16, 10),
-              child: Text(
-                'Trip Tersimpan',
-                style: TextStyle(
-                  fontFamily: 'PlusJakartaSans',
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF0B1C30),
-                  letterSpacing: -0.4,
-                ),
+      backgroundColor: AppColors.surface,
+      body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          SliverToBoxAdapter(child: _Header(tabs: _buildTabBar())),
+          const SliverToBoxAdapter(child: SizedBox(height: 18)),
+          if (trips.isEmpty)
+            SliverFillRemaining(hasScrollBody: false, child: _buildEmptyState())
+          else
+            SliverPadding(
+              padding: EdgeInsets.only(bottom: bottomSpace),
+              sliver: SliverList.builder(
+                itemCount: trips.length,
+                itemBuilder: (_, i) => TripCard(trip: trips[i]),
               ),
             ),
-
-            // ── Tab Bar Filter ────────────────────────────────────────────
-            _buildTabBar(),
-            const SizedBox(height: 6),
-
-            // ── Daftar Kartu Trip ─────────────────────────────────────────
-            Expanded(
-              child: trips.isEmpty
-                  ? _buildEmptyState()
-                  : ListView.builder(
-                      physics: const BouncingScrollPhysics(),
-                      padding: EdgeInsets.only(
-                        top: 4,
-                        bottom:
-                            AppBottomBar.barHeight +
-                            AppBottomBar.fabRise +
-                            16 +
-                            MediaQuery.paddingOf(context).bottom,
-                      ),
-                      itemCount: trips.length,
-                      itemBuilder: (_, i) => TripCard(trip: trips[i]),
-                    ),
-            ),
-          ],
-        ),
+        ],
       ),
 
       // ── Bottom Navigation Bar (shared AppBottomBar) ─────────────────────────
@@ -102,100 +84,207 @@ class _TripTersimpanScreenState extends State<TripTersimpanScreen> {
     );
   }
 
-  // ── Tab Pills (Berlangsung, Akan Datang, Selesai, Draft) ──────────────────
+  // ── Status tabs: four equal segments on a white bar over the header ─────
+  // An icon with the count as a small badge above a short label, so all
+  // four fit on a phone without scrolling.
   Widget _buildTabBar() {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      physics: const BouncingScrollPhysics(),
+    return Container(
+      height: 62,
+      padding: const EdgeInsets.all(5),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: AppColors.floatShadow,
+      ),
       child: Row(
-        children: _tabs.map((status) {
-          final isActive = status == _activeTab;
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: GestureDetector(
-              onTap: () => setState(() => _activeTab = status),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-                decoration: BoxDecoration(
-                  color: isActive ? const Color(0xFF1D6FA5) : Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: isActive
-                        ? const Color(0xFF1D6FA5)
-                        : const Color(0xFFD0D7DE),
-                  ),
-                  boxShadow: isActive
-                      ? [
-                          BoxShadow(
-                            color: const Color(0xFF1D6FA5).withValues(alpha: 0.22),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Text(
-                  status.label,
-                  style: TextStyle(
-                    fontFamily: 'PlusJakartaSans',
-                    fontSize: 13,
-                    fontWeight:
-                        isActive ? FontWeight.w700 : FontWeight.w500,
-                    color: isActive ? Colors.white : const Color(0xFF475569),
-                  ),
-                ),
+        children: [
+          for (final status in _tabs)
+            Expanded(
+              child: _StatusTab(
+                icon: _tabIcons[status]!,
+                label: status.label,
+                count: TripData.byStatus(status).length,
+                isActive: status == _activeTab,
+                onTap: () => setState(() => _activeTab = status),
               ),
             ),
-          );
-        }).toList(),
+        ],
       ),
     );
   }
 
   // ── Empty State ───────────────────────────────────────────────────────────
   Widget _buildEmptyState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 40),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: const BoxDecoration(
-                color: Color(0xFFEFF6FF),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.luggage_outlined,
-                size: 44,
-                color: Color(0xFF1D6FA5),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(40, 24, 40, 140),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: const BoxDecoration(color: AppColors.field, shape: BoxShape.circle),
+            child: const Icon(Icons.luggage_outlined, size: 44, color: AppColors.sea600),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Belum ada trip ${_activeTab.label.toLowerCase()}',
+            textAlign: TextAlign.center,
+            style: appText(16, FontWeight.w800, AppColors.ink),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Trip pertamamu tinggal 1 tap lagi!',
+            textAlign: TextAlign.center,
+            style: appText(13, FontWeight.w500, AppColors.inkMuted),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Barelang panorama with the page title, like the catalog, and the status
+/// tabs floating over its bottom edge.
+class _Header extends StatelessWidget {
+  const _Header({required this.tabs});
+
+  final Widget tabs;
+
+  static const _panoramaHeight = 132.0;
+  static const _tabOverlap = 30.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final topInset = MediaQuery.paddingOf(context).top;
+
+    return SizedBox(
+      height: topInset + _panoramaHeight + _tabOverlap,
+      child: Stack(
+        children: [
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: topInset + _panoramaHeight,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                SvgPicture.asset('assets/images/login_panorama.svg', fit: BoxFit.cover, alignment: Alignment.bottomCenter),
+                const DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Color(0x8C0A2440), Color(0x000A2440)],
+                      stops: [0, 0.75],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Positioned(
+            top: topInset + 18,
+            left: 16,
+            right: 16,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'PERJALANANMU',
+                  style: appText(11, FontWeight.w700, AppColors.sun400, height: 16, letterSpacing: 0.88),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Trip Tersimpan',
+                  style: appText(24, FontWeight.w800, Colors.white, height: 30, letterSpacing: -0.48),
+                ),
+              ],
+            ),
+          ),
+          Positioned(left: 16, right: 16, bottom: 0, child: tabs),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatusTab extends StatelessWidget {
+  const _StatusTab({
+    required this.icon,
+    required this.label,
+    required this.count,
+    required this.isActive,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final int count;
+  final bool isActive;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final foreground = isActive ? Colors.white : AppColors.inkMuted;
+
+    return Semantics(
+      selected: isActive,
+      button: true,
+      label: '$label, $count trip',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
+            decoration: BoxDecoration(
+              color: isActive ? AppColors.navy900 : Colors.transparent,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: ExcludeSemantics(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Icon(icon, size: 20, color: isActive ? AppColors.sun400 : AppColors.inkMuted),
+                      if (count > 0)
+                        Positioned(
+                          top: -4,
+                          right: -9,
+                          child: Container(
+                            constraints: const BoxConstraints(minWidth: 15),
+                            height: 15,
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: isActive ? AppColors.sun400 : AppColors.field,
+                              borderRadius: BorderRadius.circular(999),
+                              border: Border.all(color: isActive ? AppColors.navy900 : Colors.white, width: 1.5),
+                            ),
+                            child: Text(
+                              '$count',
+                              style: appText(9, FontWeight.w800, isActive ? AppColors.navy900 : AppColors.inkMuted),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: appText(11, FontWeight.w700, foreground, height: 14),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 16),
-            Text(
-              'Belum ada trip ${_activeTab.label.toLowerCase()}',
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontFamily: 'PlusJakartaSans',
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF0B1C30),
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Trip pertamamu tinggal 1 tap lagi!',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: 'PlusJakartaSans',
-                fontSize: 13,
-                color: Color(0xFF64748B),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

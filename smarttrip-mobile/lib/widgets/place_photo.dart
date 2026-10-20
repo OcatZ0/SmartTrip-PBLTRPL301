@@ -24,6 +24,9 @@ class PlacePhoto extends StatelessWidget {
     return Image.network(
       photoUrl,
       fit: BoxFit.cover,
+      // Web: the photo server sends no CORS headers, so fall back to a plain
+      // <img> element instead of failing. No effect on Android or iOS.
+      webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
       errorBuilder: (_, __, ___) => placeholder,
       loadingBuilder: (_, child, progress) => progress == null ? child : placeholder,
     );

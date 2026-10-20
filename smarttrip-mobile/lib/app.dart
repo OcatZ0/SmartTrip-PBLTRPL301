@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -14,6 +15,16 @@ class SmartTripApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'SmartTrip',
       theme: AppTheme.light(),
+      // Lists scroll by dragging with a mouse too, as with a finger (the web
+      // build in a desktop browser); phones are unaffected.
+      scrollBehavior: const MaterialScrollBehavior().copyWith(
+        dragDevices: {
+          PointerDeviceKind.touch,
+          PointerDeviceKind.mouse,
+          PointerDeviceKind.trackpad,
+          PointerDeviceKind.stylus,
+        },
+      ),
       routerConfig: ref.watch(routerProvider),
       locale: ref.watch(localeControllerProvider),
       localizationsDelegates: AppLocalizations.localizationsDelegates,

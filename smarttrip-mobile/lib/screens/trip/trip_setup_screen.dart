@@ -7,7 +7,7 @@ import 'package:intl/intl.dart';
 
 import '../../core/error/trip_error_message.dart';
 import '../../core/router/app_routes.dart';
-import '../../core/theme/app_tokens.dart';
+import '../../core/theme/app_colors.dart';
 import '../../l10n/app_localizations.dart';
 import '../../services/trip_service.dart';
 import '../../widgets/bottom_action_bar.dart';
@@ -35,9 +35,18 @@ class _TripSetupScreenState extends ConsumerState<TripSetupScreen> {
     _BudgetTier.standard: 1500000,
     _BudgetTier.premium: 3000000,
   };
+  static const _tierIcons = {
+    _BudgetTier.economy: Icons.savings_outlined,
+    _BudgetTier.standard: Icons.account_balance_wallet_outlined,
+    _BudgetTier.premium: Icons.diamond_outlined,
+  };
 
   final _budgetController =
       TextEditingController(text: RupiahInputFormatter.format(1500000));
+  final _titleController = TextEditingController();
+
+  /// The name follows the dates until the user types their own.
+  bool _titleEdited = false;
 
   int _numDays = 3;
   DateTime _startDate = DateUtils.dateOnly(DateTime.now()).add(const Duration(days: 7));
@@ -49,10 +58,13 @@ class _TripSetupScreenState extends ConsumerState<TripSetupScreen> {
   @override
   void dispose() {
     _budgetController.dispose();
+    _titleController.dispose();
     super.dispose();
   }
 
   int? get _budget => RupiahInputFormatter.parse(_budgetController.text);
+
+  DateTime get _endDate => _startDate.add(Duration(days: _numDays - 1));
 
   _BudgetTier? get _selectedTier {
     final budget = _budget;
@@ -70,6 +82,32 @@ class _TripSetupScreenState extends ConsumerState<TripSetupScreen> {
     return '$hour:$minute';
   }
 
+  /// "Trip Batam 12–14 Sep", "Trip Batam 30 Sep – 2 Okt" or "Trip Batam 12 Sep".
+  String _defaultTitle(AppLocalizations l10n, String languageCode) {
+    final dayMonth = DateFormat('d MMM', languageCode);
+    final start = _startDate;
+    final end = _endDate;
+    final dates = start == end
+        ? dayMonth.format(start)
+        : start.month == end.month
+            ? '${start.day}–${dayMonth.format(end)}'
+            : '${dayMonth.format(start)} – ${dayMonth.format(end)}';
+    return l10n.tripNameDefault(dates);
+  }
+
+  /// Keeps the suggested name in step with the dates.
+  void _syncTitle() {
+    if (_titleEdited || !mounted) return;
+    final l10n = AppLocalizations.of(context);
+    _titleController.text = _defaultTitle(l10n, Localizations.localeOf(context).languageCode);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _syncTitle();
+  }
+
   void _submit(AppLocalizations l10n) {
     final budget = _budget;
     final hasValidBudget = budget != null && budget > 0;
@@ -81,7 +119,9 @@ class _TripSetupScreenState extends ConsumerState<TripSetupScreen> {
     });
     if (!hasValidBudget || !hasValidTimes) return;
 
+    final typed = _titleController.text.trim();
     ref.read(tripSetupControllerProvider.notifier).submit(
+          title: typed.isEmpty ? _defaultTitle(l10n, Localizations.localeOf(context).languageCode) : typed,
           numDays: _numDays,
           budgetTotal: budget,
           startDate: _startDate,
@@ -90,15 +130,27 @@ class _TripSetupScreenState extends ConsumerState<TripSetupScreen> {
         );
   }
 
-  Future<void> _pickStartDate() async {
+  void _setNumDays(int days) {
+    setState(() => _numDays = days);
+    _syncTitle();
+  }
+
+  /// The calendar picks both ends; the number of days follows.
+  Future<void> _pickDateRange() async {
     final today = DateUtils.dateOnly(DateTime.now());
-    final picked = await showDatePicker(
+    final start = _startDate.isBefore(today) ? today : _startDate;
+    final picked = await showDateRangePicker(
       context: context,
-      initialDate: _startDate.isBefore(today) ? today : _startDate,
+      initialDateRange: DateTimeRange(start: start, end: start.add(Duration(days: _numDays - 1))),
       firstDate: today,
       lastDate: today.add(const Duration(days: 365 * 2)),
     );
-    if (picked != null) setState(() => _startDate = picked);
+    if (picked == null) return;
+    setState(() {
+      _startDate = DateUtils.dateOnly(picked.start);
+      _numDays = DateUtils.dateOnly(picked.end).difference(_startDate).inDays + 1;
+    });
+    _syncTitle();
   }
 
   Future<void> _pickTime({required bool isStart}) async {
@@ -152,12 +204,9 @@ class _TripSetupScreenState extends ConsumerState<TripSetupScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    final tokens = context.tokens;
     final setupState = ref.watch(tripSetupControllerProvider);
     final languageCode = Localizations.localeOf(context).languageCode;
     final dateFormat = DateFormat('d MMM y', languageCode);
-    final endDate = _startDate.add(Duration(days: _numDays - 1));
 
     ref.listen(tripSetupControllerProvider, (previous, next) {
       if (previous?.isLoading != true) return;
@@ -179,17 +228,32 @@ class _TripSetupScreenState extends ConsumerState<TripSetupScreen> {
         if (!didPop) _confirmLeave(l10n);
       },
       child: Scaffold(
-        backgroundColor: tokens.screenBackground,
+        backgroundColor: AppColors.surface,
         appBar: ScreenHeader(
           subtitle: l10n.tripSetupHeader,
           onBack: () => _confirmLeave(l10n),
         ),
         bottomNavigationBar: BottomActionBar(
-          child: PrimaryButton(
-            label: l10n.tripSetupNext,
-            trailingIcon: Icons.arrow_forward,
-            isLoading: setupState.isLoading,
-            onPressed: () => _submit(l10n),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _SetupSummary(
+                items: [
+                  (Icons.calendar_today_rounded, l10n.tripDays(_numDays)),
+                  if (_budget case final budget? when budget > 0)
+                    (Icons.payments_outlined, 'Rp${RupiahInputFormatter.format(budget)}'),
+                  (Icons.schedule_rounded, '${_formatTime(_dailyStart)}–${_formatTime(_dailyEnd)}'),
+                ],
+              ),
+              const SizedBox(height: 10),
+              PrimaryButton(
+                label: l10n.tripSetupNext,
+                trailingIcon: Icons.arrow_forward_rounded,
+                isLoading: setupState.isLoading,
+                onPressed: () => _submit(l10n),
+              ),
+            ],
           ),
         ),
         body: ListView(
@@ -201,7 +265,7 @@ class _TripSetupScreenState extends ConsumerState<TripSetupScreen> {
               label: l10n.tripStepLabel(1, 4, l10n.tripSetupHeader),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 18),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -211,25 +275,25 @@ class _TripSetupScreenState extends ConsumerState<TripSetupScreen> {
                       children: [
                         Text(
                           l10n.tripSetupTitle,
-                          style: theme.textTheme.headlineSmall?.copyWith(fontSize: 22),
+                          style: appText(24, FontWeight.w800, AppColors.ink, height: 30, letterSpacing: -0.48),
                         ),
-                        const SizedBox(height: 2),
+                        const SizedBox(height: 4),
                         Text(
                           l10n.tripSetupSubtitle,
-                          style: theme.textTheme.bodyMedium?.copyWith(color: tokens.textSecondary),
+                          style: appText(13, FontWeight.w500, AppColors.inkMuted, height: 19),
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(width: 12),
                   Container(
-                    width: 40,
-                    height: 40,
+                    width: 44,
+                    height: 44,
                     decoration: BoxDecoration(
-                      color: tokens.accentSoft,
-                      borderRadius: BorderRadius.circular(AppTokens.radius),
+                      color: AppColors.navy900,
+                      borderRadius: BorderRadius.circular(14),
                     ),
-                    child: Icon(Icons.explore_outlined, size: 22, color: tokens.link),
+                    child: const Icon(Icons.explore_outlined, size: 22, color: AppColors.sun400),
                   ),
                 ],
               ),
@@ -238,103 +302,40 @@ class _TripSetupScreenState extends ConsumerState<TripSetupScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 children: [
-                  _buildDurationCard(l10n, theme, tokens),
-                  const SizedBox(height: 16),
-                  _buildBudgetCard(l10n, theme, tokens),
-                  const SizedBox(height: 16),
-                  SetupCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        SetupCardHeading(
-                          icon: Icons.date_range_outlined,
-                          title: l10n.tripDateLabel,
-                          caption: l10n.tripDateHint,
-                        ),
-                        const SizedBox(height: 12),
-                        _FilledTile(
-                          onTap: _pickStartDate,
-                          child: Row(
-                            children: [
-                              Icon(Icons.calendar_month, size: 18, color: tokens.link),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Text(
-                                  '${dateFormat.format(_startDate)} - ${dateFormat.format(endDate)}',
-                                  style: theme.textTheme.labelLarge,
-                                ),
-                              ),
-                              Icon(Icons.edit_calendar_outlined, size: 18, color: tokens.textSecondary),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _TimeCard(
-                          icon: Icons.wb_sunny_outlined,
-                          label: l10n.tripStartTimeLabel,
-                          time: _formatTime(_dailyStart),
-                          timeZone: l10n.tripTimeZone,
-                          onTap: () => _pickTime(isStart: true),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _TimeCard(
-                          icon: Icons.dark_mode_outlined,
-                          label: l10n.tripEndTimeLabel,
-                          time: _formatTime(_dailyEnd),
-                          timeZone: l10n.tripTimeZone,
-                          onTap: () => _pickTime(isStart: false),
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (_timeError != null) ...[
-                    const SizedBox(height: 6),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        _timeError!,
-                        style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error),
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 16),
+                  _buildTitleCard(l10n),
+                  const SizedBox(height: 14),
+                  _buildScheduleCard(l10n, dateFormat),
+                  const SizedBox(height: 14),
+                  _buildHoursCard(l10n),
+                  const SizedBox(height: 14),
+                  _buildBudgetCard(l10n),
+                  const SizedBox(height: 14),
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: tokens.badgeFill.withValues(alpha: 0.4),
-                      borderRadius: BorderRadius.circular(AppTokens.radius),
+                      color: const Color(0xFFFFF4DF),
+                      borderRadius: BorderRadius.circular(16),
                     ),
                     child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        CircleAvatar(
-                          radius: 16,
-                          backgroundColor: tokens.badgeFill,
-                          child: Icon(Icons.tips_and_updates_outlined, size: 17, color: tokens.link),
-                        ),
-                        const SizedBox(width: 12),
+                        const Icon(Icons.tips_and_updates_outlined, size: 20, color: Color(0xFF7A4B00)),
+                        const SizedBox(width: 10),
                         Expanded(
                           child: Text.rich(
                             TextSpan(
                               children: [
                                 TextSpan(
                                   text: l10n.tripTipTitle,
-                                  style: const TextStyle(fontWeight: FontWeight.w700),
+                                  style: appText(12, FontWeight.w800, const Color(0xFF7A4B00)),
                                 ),
                                 TextSpan(
                                   text: l10n.tripTipBody,
-                                  style: TextStyle(color: tokens.textSecondary),
+                                  style: appText(12, FontWeight.w500, const Color(0xFF7A4B00)),
                                 ),
                               ],
                             ),
-                            style: theme.textTheme.bodySmall?.copyWith(height: 1.4),
+                            style: const TextStyle(height: 1.45),
                           ),
                         ),
                       ],
@@ -349,68 +350,181 @@ class _TripSetupScreenState extends ConsumerState<TripSetupScreen> {
     );
   }
 
-  Widget _buildDurationCard(AppLocalizations l10n, ThemeData theme, AppTokens tokens) {
+  Widget _buildTitleCard(AppLocalizations l10n) {
     return SetupCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           SetupCardHeading(
-            icon: Icons.calendar_today_outlined,
-            title: l10n.tripDurationLabel,
-            caption: l10n.tripDurationHint,
+            icon: Icons.edit_outlined,
+            title: l10n.tripNameLabel,
+            caption: l10n.tripNameHint,
           ),
           const SizedBox(height: 12),
+          TextField(
+            controller: _titleController,
+            maxLength: 255,
+            textCapitalization: TextCapitalization.sentences,
+            onChanged: (_) => _titleEdited = true,
+            style: appText(15, FontWeight.w700, AppColors.ink),
+            decoration: InputDecoration(
+              counterText: '',
+              filled: true,
+              fillColor: AppColors.field,
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppColors.sea600, width: 1.5),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Dates and duration together: the range opens the calendar, the stepper
+  /// moves the last day.
+  Widget _buildScheduleCard(AppLocalizations l10n, DateFormat dateFormat) {
+    return SetupCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SetupCardHeading(
+            icon: Icons.date_range_outlined,
+            title: l10n.tripScheduleLabel,
+            caption: l10n.tripScheduleHint,
+          ),
+          const SizedBox(height: 12),
+          _FilledTile(
+            onTap: _pickDateRange,
+            child: Row(
+              children: [
+                Expanded(child: _DateEnd(label: l10n.tripStartDateShort, date: dateFormat.format(_startDate))),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8),
+                  child: Icon(Icons.arrow_forward_rounded, size: 18, color: AppColors.inkMuted),
+                ),
+                Expanded(child: _DateEnd(label: l10n.tripEndDateShort, date: dateFormat.format(_endDate))),
+                const SizedBox(width: 8),
+                const Icon(Icons.edit_calendar_outlined, size: 18, color: AppColors.sea600),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
-              color: tokens.fieldFill,
-              borderRadius: BorderRadius.circular(8),
+              color: AppColors.field,
+              borderRadius: BorderRadius.circular(14),
             ),
             child: Row(
               children: [
                 _StepperButton(
-                  icon: Icons.remove,
+                  icon: Icons.remove_rounded,
                   tooltip: l10n.tripDurationDecrease,
-                  onPressed: _numDays > 1 ? () => setState(() => _numDays--) : null,
+                  onPressed: _numDays > 1 ? () => _setNumDays(_numDays - 1) : null,
                 ),
                 Expanded(
                   child: Column(
                     children: [
-                      Text(
-                        l10n.tripDays(_numDays),
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          fontVariations: const [FontVariation.weight(700)],
-                        ),
-                      ),
+                      Text(l10n.tripDays(_numDays), style: appText(17, FontWeight.w800, AppColors.ink, height: 22)),
                       Text(
                         l10n.tripNights(_numDays - 1),
-                        style: theme.textTheme.labelSmall?.copyWith(color: tokens.textSecondary),
+                        style: appText(11, FontWeight.w600, AppColors.inkMuted, height: 14),
                       ),
                     ],
                   ),
                 ),
                 _StepperButton(
-                  icon: Icons.add,
+                  icon: Icons.add_rounded,
                   tooltip: l10n.tripDurationIncrease,
-                  onPressed: () => setState(() => _numDays++),
+                  onPressed: () => _setNumDays(_numDays + 1),
                 ),
               ],
             ),
           ),
           if (_numDays > _softMaxDays) ...[
             const SizedBox(height: 8),
-            Text(
-              l10n.tripDurationLongWarning,
-              style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF744A00)),
-            ),
+            Text(l10n.tripDurationLongWarning, style: appText(12, FontWeight.w600, const Color(0xFF7A4B00))),
           ],
         ],
       ),
     );
   }
 
-  Widget _buildBudgetCard(AppLocalizations l10n, ThemeData theme, AppTokens tokens) {
+  /// Start and end of each day in one card, with how many hours that gives.
+  Widget _buildHoursCard(AppLocalizations l10n) {
+    final minutes = _minutes(_dailyEnd) - _minutes(_dailyStart);
+    final isShort = minutes > 0 && minutes < 4 * 60;
+
+    return SetupCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SetupCardHeading(
+            icon: Icons.schedule_rounded,
+            title: l10n.tripDailyHoursLabel,
+            caption: l10n.tripDailyHoursHint,
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _TimeTile(
+                  icon: Icons.wb_sunny_outlined,
+                  label: l10n.tripStartTimeLabel,
+                  time: _formatTime(_dailyStart),
+                  onTap: () => _pickTime(isStart: true),
+                ),
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 8),
+                child: Icon(Icons.arrow_forward_rounded, size: 18, color: AppColors.inkMuted),
+              ),
+              Expanded(
+                child: _TimeTile(
+                  icon: Icons.dark_mode_outlined,
+                  label: l10n.tripEndTimeLabel,
+                  time: _formatTime(_dailyEnd),
+                  onTap: () => _pickTime(isStart: false),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          if (_timeError != null)
+            Text(_timeError!, style: appText(12, FontWeight.w600, const Color(0xFFB42318)))
+          else
+            Row(
+              children: [
+                Icon(
+                  isShort ? Icons.warning_amber_rounded : Icons.timelapse_rounded,
+                  size: 16,
+                  color: isShort ? const Color(0xFF7A4B00) : AppColors.sea600,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    isShort
+                        ? l10n.tripShortDayWarning
+                        : '${l10n.tripHoursPerDay(minutes ~/ 60)} · ${l10n.tripTimeZone}',
+                    style: appText(12, FontWeight.w700, isShort ? const Color(0xFF7A4B00) : AppColors.inkMuted),
+                  ),
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBudgetCard(AppLocalizations l10n) {
     final selectedTier = _selectedTier;
     final tiers = {
       _BudgetTier.economy: (l10n.tripBudgetEconomy, l10n.tripBudgetEconomyRange),
@@ -433,32 +547,41 @@ class _TripSetupScreenState extends ConsumerState<TripSetupScreen> {
             keyboardType: TextInputType.number,
             inputFormatters: [RupiahInputFormatter()],
             onChanged: (_) => setState(() => _budgetError = null),
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-              fontVariations: const [FontVariation.weight(700)],
-            ),
+            style: appText(17, FontWeight.w800, AppColors.ink),
             decoration: InputDecoration(
               filled: true,
-              fillColor: tokens.fieldFill,
+              fillColor: AppColors.field,
               errorText: _budgetError,
+              isDense: true,
               prefixIcon: Padding(
-                padding: const EdgeInsets.only(left: 12, right: 8),
-                child: Text(
-                  'Rp',
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    color: tokens.link,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
+                padding: const EdgeInsets.only(left: 14, right: 8),
+                child: Text('Rp', style: appText(14, FontWeight.w800, AppColors.sea600)),
               ),
               prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppColors.sea600, width: 1.5),
               ),
             ),
           ),
+          if (_budgetError == null && (_budget ?? 0) > 0) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const Icon(Icons.today_rounded, size: 15, color: AppColors.sea600),
+                const SizedBox(width: 6),
+                Text(
+                  l10n.tripBudgetPerDay(RupiahInputFormatter.format((_budget! / _numDays).round())),
+                  style: appText(12, FontWeight.w700, AppColors.inkMuted),
+                ),
+              ],
+            ),
+          ],
           const SizedBox(height: 12),
           Row(
             children: [
@@ -466,6 +589,7 @@ class _TripSetupScreenState extends ConsumerState<TripSetupScreen> {
                 if (entry.key != _BudgetTier.economy) const SizedBox(width: 8),
                 Expanded(
                   child: _BudgetChip(
+                    icon: _tierIcons[entry.key]!,
                     title: entry.value.$1,
                     range: entry.value.$2,
                     isSelected: entry.key == selectedTier,
@@ -480,6 +604,37 @@ class _TripSetupScreenState extends ConsumerState<TripSetupScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// "3 Hari · Rp1.500.000 · 09:00–19:00" above the button, so the choices
+/// can be checked before moving on.
+class _SetupSummary extends StatelessWidget {
+  const _SetupSummary({required this.items});
+
+  final List<(IconData, String)> items;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      alignment: WrapAlignment.center,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: 6,
+      runSpacing: 4,
+      children: [
+        for (var i = 0; i < items.length; i++) ...[
+          if (i > 0) Text('·', style: appText(12, FontWeight.w800, AppColors.line)),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(items[i].$1, size: 14, color: AppColors.sea600),
+              const SizedBox(width: 4),
+              Text(items[i].$2, style: appText(12, FontWeight.w700, AppColors.ink)),
+            ],
+          ),
+        ],
+      ],
     );
   }
 }
@@ -501,9 +656,10 @@ class _StepperButton extends StatelessWidget {
         onPressed: onPressed,
         style: IconButton.styleFrom(
           backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          disabledBackgroundColor: Colors.white.withValues(alpha: 0.5),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(11)),
         ),
-        icon: Icon(icon, size: 20, color: context.tokens.link),
+        icon: Icon(icon, size: 20, color: onPressed == null ? AppColors.line : AppColors.navy900),
       ),
     );
   }
@@ -511,12 +667,14 @@ class _StepperButton extends StatelessWidget {
 
 class _BudgetChip extends StatelessWidget {
   const _BudgetChip({
+    required this.icon,
     required this.title,
     required this.range,
     required this.isSelected,
     required this.onTap,
   });
 
+  final IconData icon;
   final String title;
   final String range;
   final bool isSelected;
@@ -524,33 +682,24 @@ class _BudgetChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final tokens = context.tokens;
-
     return Material(
-      color: isSelected ? tokens.accent : tokens.chipFill,
-      borderRadius: BorderRadius.circular(8),
+      color: isSelected ? AppColors.navy900 : AppColors.field,
+      borderRadius: BorderRadius.circular(14),
       child: InkWell(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(14),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(4, 8, 4, 12),
+          padding: const EdgeInsets.fromLTRB(6, 10, 6, 10),
           child: Column(
             children: [
-              Text(
-                title,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: isSelected ? Colors.white : null,
-                ),
-              ),
-              const SizedBox(height: 6),
+              Icon(icon, size: 18, color: isSelected ? AppColors.sun400 : AppColors.sea600),
+              const SizedBox(height: 4),
+              Text(title, style: appText(12, FontWeight.w800, isSelected ? Colors.white : AppColors.ink)),
+              const SizedBox(height: 2),
               Text(
                 range,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  fontSize: 10,
-                  color: isSelected ? const Color(0xFFE3EEFF) : tokens.textSecondary,
-                ),
+                textAlign: TextAlign.center,
+                style: appText(10.5, FontWeight.w600, isSelected ? Colors.white70 : AppColors.inkMuted),
               ),
             ],
           ),
@@ -569,13 +718,13 @@ class _FilledTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: context.tokens.fieldFill,
-      borderRadius: BorderRadius.circular(8),
+      color: AppColors.field,
+      borderRadius: BorderRadius.circular(12),
       child: InkWell(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
           child: child,
         ),
       ),
@@ -583,52 +732,58 @@ class _FilledTile extends StatelessWidget {
   }
 }
 
-class _TimeCard extends StatelessWidget {
-  const _TimeCard({
-    required this.icon,
-    required this.label,
-    required this.time,
-    required this.timeZone,
-    required this.onTap,
-  });
+class _TimeTile extends StatelessWidget {
+  const _TimeTile({required this.icon, required this.label, required this.time, required this.onTap});
 
   final IconData icon;
   final String label;
   final String time;
-  final String timeZone;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final tokens = context.tokens;
-
-    return SetupCard(
+    return _FilledTile(
+      onTap: onTap,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(icon, size: 16, color: tokens.link),
-              const SizedBox(width: 6),
-              Text(label, style: theme.textTheme.labelSmall),
+              Icon(icon, size: 14, color: AppColors.sea600),
+              const SizedBox(width: 5),
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: appText(11, FontWeight.w700, AppColors.inkMuted),
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: 8),
-          _FilledTile(
-            onTap: onTap,
-            child: Row(
-              children: [
-                Expanded(child: Text(time, style: theme.textTheme.labelLarge)),
-                Text(
-                  timeZone,
-                  style: theme.textTheme.labelSmall?.copyWith(color: tokens.textSecondary),
-                ),
-              ],
-            ),
-          ),
+          const SizedBox(height: 4),
+          Text(time, style: appText(18, FontWeight.w800, AppColors.ink, height: 22)),
         ],
       ),
+    );
+  }
+}
+
+class _DateEnd extends StatelessWidget {
+  const _DateEnd({required this.label, required this.date});
+
+  final String label;
+  final String date;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: appText(11, FontWeight.w700, AppColors.inkMuted)),
+        const SizedBox(height: 2),
+        Text(date, maxLines: 1, overflow: TextOverflow.ellipsis, style: appText(14, FontWeight.w800, AppColors.ink)),
+      ],
     );
   }
 }
@@ -643,6 +798,7 @@ class TripSetupController extends AutoDisposeAsyncNotifier<int?> {
   FutureOr<int?> build() => null;
 
   Future<void> submit({
+    required String title,
     required int numDays,
     required int budgetTotal,
     required DateTime startDate,
@@ -656,6 +812,7 @@ class TripSetupController extends AutoDisposeAsyncNotifier<int?> {
       final tripId = _tripId;
       if (tripId == null) {
         return _tripId = await repository.createTrip(
+          title: title,
           numDays: numDays,
           budgetTotal: budgetTotal,
           startDate: startDate,
@@ -666,6 +823,7 @@ class TripSetupController extends AutoDisposeAsyncNotifier<int?> {
 
       await repository.updateTrip(
         tripId,
+        title: title,
         numDays: numDays,
         budgetTotal: budgetTotal,
         startDate: startDate,

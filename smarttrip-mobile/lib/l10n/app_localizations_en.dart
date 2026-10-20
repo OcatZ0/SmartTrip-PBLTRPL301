@@ -323,6 +323,51 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get tripNameLabel => 'Trip Name';
+
+  @override
+  String get tripNameHint => 'So you can find it in Saved Trips';
+
+  @override
+  String tripNameDefault(String dates) {
+    return 'Batam trip $dates';
+  }
+
+  @override
+  String tripHoursPerDay(int hours) {
+    return '$hours hours a day';
+  }
+
+  @override
+  String get tripScheduleLabel => 'Dates & Duration';
+
+  @override
+  String get tripScheduleHint =>
+      'Tap the dates to pick a range on the calendar';
+
+  @override
+  String get tripDailyHoursLabel => 'Daily Sightseeing Hours';
+
+  @override
+  String get tripDailyHoursHint =>
+      'Each day of the itinerary fits within these hours';
+
+  @override
+  String get tripShortDayWarning =>
+      'Under 4 hours: each day only fits a few places.';
+
+  @override
+  String get tripStartDateShort => 'Start';
+
+  @override
+  String get tripEndDateShort => 'End';
+
+  @override
+  String tripBudgetPerDay(String amount) {
+    return '≈ Rp$amount a day';
+  }
+
+  @override
   String get tripSetupHeader => 'Trip Setup';
 
   @override

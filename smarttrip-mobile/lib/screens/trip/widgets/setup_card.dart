@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/theme/app_tokens.dart';
+import '../../../core/theme/app_colors.dart';
 
-/// White rounded card used by the trip setup forms (Figma C1/C3 cards).
+/// White rounded card used by the trip setup forms, the same card style as
+/// the catalog and Trip Tersimpan.
 class SetupCard extends StatelessWidget {
   const SetupCard({
     super.key,
@@ -20,10 +21,8 @@ class SetupCard extends StatelessWidget {
       padding: padding,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(AppTokens.radius),
-        boxShadow: const [
-          BoxShadow(color: Color(0x0D000000), blurRadius: 1, offset: Offset(0, 1)),
-        ],
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: AppColors.cardShadow,
       ),
       child: child,
     );
@@ -45,31 +44,25 @@ class SetupCardHeading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final tokens = context.tokens;
-
     return Row(
       children: [
         Container(
-          width: 32,
-          height: 32,
+          width: 36,
+          height: 36,
           decoration: BoxDecoration(
-            color: tokens.chipFill,
-            borderRadius: BorderRadius.circular(8),
+            color: AppColors.field,
+            borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(icon, size: 18, color: tokens.link),
+          child: Icon(icon, size: 19, color: AppColors.sea600),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 10),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: theme.textTheme.labelLarge),
-              const SizedBox(height: 2),
-              Text(
-                caption,
-                style: theme.textTheme.bodySmall?.copyWith(color: tokens.textSecondary),
-              ),
+              Text(title, style: appText(14, FontWeight.w800, AppColors.ink, height: 20)),
+              const SizedBox(height: 1),
+              Text(caption, style: appText(12, FontWeight.w500, AppColors.inkMuted, height: 16)),
             ],
           ),
         ),

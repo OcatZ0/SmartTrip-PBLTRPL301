@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/router/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
@@ -305,13 +306,11 @@ class _Body extends StatelessWidget {
           spacing: 12,
           runSpacing: 4,
           children: [
-            _Fact(icon: Icons.calendar_today_rounded, text: trip.dateRange),
+            _Fact(icon: Icons.calendar_today_rounded, text: _dateRange(context)),
             if (trip.status == TripStatus.draft)
               _Fact(icon: Icons.favorite_border_rounded, text: '${trip.wishlistCount} di wishlist')
-            else ...[
-              _Fact(icon: Icons.group_outlined, text: '${trip.numPersons} orang'),
+            else
               _Fact(icon: Icons.place_outlined, text: '${trip.numDestinations} tempat'),
-            ],
           ],
         ),
         if (trip.status == TripStatus.berlangsung) ...[
@@ -324,6 +323,24 @@ class _Body extends StatelessWidget {
         _Footer(trip: trip),
       ],
     );
+  }
+}
+
+/// "12–14 Sep 2026", "30 Sep – 2 Okt 2026" or "12 Sep 2026".
+extension on _Body {
+  String _dateRange(BuildContext context) {
+    final start = trip.startDate;
+    final end = trip.endDate;
+    if (start == null || end == null) return 'Tanggal belum diatur';
+
+    final language = Localizations.localeOf(context).languageCode;
+    final full = DateFormat('d MMM y', language);
+    if (start == end) return full.format(start);
+    if (start.year == end.year && start.month == end.month) {
+      return '${start.day}–${full.format(end)}';
+    }
+    final dayMonth = start.year == end.year ? DateFormat('d MMM', language) : full;
+    return '${dayMonth.format(start)} – ${full.format(end)}';
   }
 }
 

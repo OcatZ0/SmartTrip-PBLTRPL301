@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../core/theme/app_tokens.dart';
+import '../core/theme/app_colors.dart';
 
-/// Full-width 48px primary action button from the Figma design, with an
+/// Full-width primary action of the trip flow: navy, rounded, with an
 /// optional trailing icon and a loading state.
 class PrimaryButton extends StatelessWidget {
   const PrimaryButton({
@@ -20,50 +20,45 @@ class PrimaryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final isDisabled = onPressed == null && !isLoading;
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppTokens.radius),
-        boxShadow: AppTokens.softShadow,
-      ),
-      child: SizedBox(
-        height: 48,
-        width: double.infinity,
-        child: FilledButton(
-          onPressed: isLoading ? null : onPressed,
-          style: FilledButton.styleFrom(
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppTokens.radius),
-            ),
-            disabledBackgroundColor: theme.colorScheme.primary,
-            disabledForegroundColor: theme.colorScheme.onPrimary,
-          ),
-          child: isLoading
-              ? SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: theme.colorScheme.onPrimary,
-                  ),
-                )
-              : Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      label,
-                      style: theme.textTheme.labelLarge
-                          ?.copyWith(color: theme.colorScheme.onPrimary),
-                    ),
-                    if (trailingIcon != null) ...[
-                      const SizedBox(width: 5),
-                      Icon(trailingIcon, size: 18),
-                    ],
-                  ],
-                ),
+    return SizedBox(
+      height: 52,
+      width: double.infinity,
+      child: FilledButton(
+        onPressed: isLoading ? null : onPressed,
+        style: FilledButton.styleFrom(
+          elevation: 0,
+          backgroundColor: AppColors.navy900,
+          foregroundColor: Colors.white,
+          // While loading the button keeps its colour; only a real "not yet" greys it.
+          disabledBackgroundColor: isDisabled ? AppColors.line : AppColors.navy900,
+          disabledForegroundColor: isDisabled ? AppColors.inkMuted : Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),
+        child: isLoading
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+              )
+            : Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: appText(15, FontWeight.w700, isDisabled ? AppColors.inkMuted : Colors.white),
+                    ),
+                  ),
+                  if (trailingIcon != null) ...[
+                    const SizedBox(width: 6),
+                    Icon(trailingIcon, size: 18),
+                  ],
+                ],
+              ),
       ),
     );
   }

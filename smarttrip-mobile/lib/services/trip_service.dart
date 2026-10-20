@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/api/api_client.dart';
 import '../core/api/providers.dart';
 import '../core/error/api_failure.dart';
+import '../models/saved_trip.dart';
 import '../models/trip.dart';
 import 'visit_sync.dart';
 
@@ -22,6 +23,7 @@ class TripService {
   Dio get _dio => _apiClient.dio;
 
   Future<int> createTrip({
+    String? title,
     required int numDays,
     required int budgetTotal,
     required DateTime startDate,
@@ -31,6 +33,7 @@ class TripService {
     final body = await _call(() => _dio.post<Map<String, dynamic>>(
           '/trips',
           data: {
+            if (title != null) 'title': title,
             'num_days': numDays,
             'budget_total': budgetTotal,
             'start_date': _formatDate(startDate),
@@ -43,6 +46,7 @@ class TripService {
 
   Future<void> updateTrip(
     int tripsId, {
+    String? title,
     required int numDays,
     required int budgetTotal,
     required DateTime startDate,
@@ -52,6 +56,7 @@ class TripService {
     await _call(() => _dio.patch<Map<String, dynamic>>(
           '/trips/$tripsId',
           data: {
+            if (title != null) 'title': title,
             'num_days': numDays,
             'budget_total': budgetTotal,
             'start_date': _formatDate(startDate),
@@ -154,6 +159,16 @@ class TripService {
     return (body['data'] as List? ?? const [])
         .cast<Map<String, dynamic>>()
         .map(TripSummary.fromJson)
+        .toList();
+  }
+
+  /// Trip Tersimpan: the user's own trips with each card's summary (status,
+  /// progress, photos), newest first.
+  Future<List<TripModel>> fetchSavedTrips() async {
+    final body = await _call(() => _dio.get<Map<String, dynamic>>('/trips', queryParameters: {'per_page': 50}));
+    return (body['data'] as List? ?? const [])
+        .cast<Map<String, dynamic>>()
+        .map(TripModel.fromJson)
         .toList();
   }
 

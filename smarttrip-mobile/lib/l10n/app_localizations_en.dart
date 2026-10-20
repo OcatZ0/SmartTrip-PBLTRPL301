@@ -946,4 +946,40 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get detailLoadFailed => 'Couldn\'t load this place.';
+
+  @override
+  String get detailFactHoursToday => 'Open today';
+
+  @override
+  String get detailHoursUnknown => 'Not available yet';
+
+  @override
+  String get detailHoursClosedToday => 'Closed today';
+
+  @override
+  String get detailHoursClosed => 'Closed';
+
+  @override
+  String get detailHoursAllDay => 'Open 24 hours';
+
+  @override
+  String get detailOpenNow => 'Open now';
+
+  @override
+  String get detailClosedNow => 'Closed now';
+
+  @override
+  String get detailOpeningHours => 'Opening Hours';
+
+  @override
+  String get detailEveryDay => 'Every day';
+
+  @override
+  String get detailFactArea => 'Setting';
+
+  @override
+  String get detailAreaOutdoor => 'Outdoor';
+
+  @override
+  String get detailAreaIndoor => 'Indoor';
 }

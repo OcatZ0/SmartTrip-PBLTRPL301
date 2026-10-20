@@ -1717,6 +1717,78 @@ abstract class AppLocalizations {
   /// In id, this message translates to:
   /// **'Detail tempat gagal dimuat.'**
   String get detailLoadFailed;
+
+  /// No description provided for @detailFactHoursToday.
+  ///
+  /// In id, this message translates to:
+  /// **'Jam buka hari ini'**
+  String get detailFactHoursToday;
+
+  /// No description provided for @detailHoursUnknown.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada info'**
+  String get detailHoursUnknown;
+
+  /// No description provided for @detailHoursClosedToday.
+  ///
+  /// In id, this message translates to:
+  /// **'Tutup hari ini'**
+  String get detailHoursClosedToday;
+
+  /// No description provided for @detailHoursClosed.
+  ///
+  /// In id, this message translates to:
+  /// **'Tutup'**
+  String get detailHoursClosed;
+
+  /// No description provided for @detailHoursAllDay.
+  ///
+  /// In id, this message translates to:
+  /// **'Buka 24 jam'**
+  String get detailHoursAllDay;
+
+  /// No description provided for @detailOpenNow.
+  ///
+  /// In id, this message translates to:
+  /// **'Sedang buka'**
+  String get detailOpenNow;
+
+  /// No description provided for @detailClosedNow.
+  ///
+  /// In id, this message translates to:
+  /// **'Sedang tutup'**
+  String get detailClosedNow;
+
+  /// No description provided for @detailOpeningHours.
+  ///
+  /// In id, this message translates to:
+  /// **'Jam Operasional'**
+  String get detailOpeningHours;
+
+  /// No description provided for @detailEveryDay.
+  ///
+  /// In id, this message translates to:
+  /// **'Setiap hari'**
+  String get detailEveryDay;
+
+  /// No description provided for @detailFactArea.
+  ///
+  /// In id, this message translates to:
+  /// **'Area'**
+  String get detailFactArea;
+
+  /// No description provided for @detailAreaOutdoor.
+  ///
+  /// In id, this message translates to:
+  /// **'Luar ruangan'**
+  String get detailAreaOutdoor;
+
+  /// No description provided for @detailAreaIndoor.
+  ///
+  /// In id, this message translates to:
+  /// **'Dalam ruangan'**
+  String get detailAreaIndoor;
 }
 
 class _AppLocalizationsDelegate

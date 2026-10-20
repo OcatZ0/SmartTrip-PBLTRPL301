@@ -25,8 +25,7 @@ class CatalogPlace {
       rating: (json['rating'] as num?)?.toDouble(),
       // Same count the rating blend is built from: source reviews plus
       // reviews written in the app.
-      reviewCount:
-          ((json['review_count_in_app'] as num?) ?? 0).toInt(),
+      reviewCount: ((json['review_count_in_app'] as num?) ?? 0).toInt(),
       estimatedCostIdr: (json['estimated_cost_idr'] as num?)?.toInt(),
       categories: (json['categories'] as List? ?? const [])
           .cast<Map<String, dynamic>>()
@@ -129,6 +128,48 @@ class PlacePhoto {
   final String url;
 }
 
+/// One day of a place's opening hours, from a line like "Senin: 09.00–19.00".
+class PlaceOpeningDay {
+  const PlaceOpeningDay({required this.weekday, required this.hours});
+
+  static const _dayNames = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+  static final _range = RegExp(r'(\d{1,2})\.(\d{2})\s*[–-]\s*(\d{1,2})\.(\d{2})');
+
+  static PlaceOpeningDay? parse(String line) {
+    final separator = line.indexOf(':');
+    if (separator < 0) return null;
+
+    final index = _dayNames.indexOf(line.substring(0, separator).trim());
+    if (index < 0) return null;
+
+    return PlaceOpeningDay(weekday: index + 1, hours: line.substring(separator + 1).trim());
+  }
+
+  /// [DateTime.weekday]: 1 is Monday.
+  final int weekday;
+
+  /// "Tutup", "Buka 24 jam" or ranges like "11.00–14.00, 17.00–22.00".
+  final String hours;
+
+  bool get isClosed => hours == 'Tutup';
+  bool get isAllDay => hours == 'Buka 24 jam';
+
+  bool isOpenAt(DateTime time) {
+    if (isClosed) return false;
+    if (isAllDay) return true;
+
+    final minute = time.hour * 60 + time.minute;
+    for (final match in _range.allMatches(hours)) {
+      final start = int.parse(match[1]!) * 60 + int.parse(match[2]!);
+      final end = int.parse(match[3]!) * 60 + int.parse(match[4]!);
+      // An end past midnight ("18.00–02.00") still covers the evening.
+      final open = end > start ? minute >= start && minute < end : minute >= start;
+      if (open) return true;
+    }
+    return false;
+  }
+}
+
 /// B2 Detail Tempat, from `GET /api/places/{id}` (PlaceDetailResource).
 class PlaceDetail {
   const PlaceDetail({
@@ -140,7 +181,8 @@ class PlaceDetail {
     this.photos = const [],
     this.descriptionId,
     this.descriptionEn,
-    this.openingHours,
+    this.openingHours = const [],
+    this.isOutdoor,
     this.estimatedVisitMinutes,
     this.reviews = const [],
   });
@@ -159,6 +201,7 @@ class PlaceDetail {
       descriptionId: json['description_id'] as String?,
       descriptionEn: json['description_en'] as String?,
       openingHours: _openingHours(json['opening_hours']),
+      isOutdoor: json['is_outdoor'] as bool?,
       estimatedVisitMinutes: (json['estimated_visit_minutes'] as num?)?.toInt(),
       reviews: (json['reviews'] as List? ?? const []).cast<Map<String, dynamic>>().map(PlaceReview.fromJson).toList(),
     );
@@ -174,8 +217,10 @@ class PlaceDetail {
   final String? descriptionId;
   final String? descriptionEn;
 
-  /// Human-readable hours, one line per day, e.g. "Senin: 09.00–19.00".
-  final String? openingHours;
+  /// Known days only, Monday first; a day the place has no hours for is left
+  /// out (unknown, not closed).
+  final List<PlaceOpeningDay> openingHours;
+  final bool? isOutdoor;
   final int? estimatedVisitMinutes;
   final List<PlaceReview> reviews;
 
@@ -191,12 +236,22 @@ class PlaceDetail {
   static String? _nonEmpty(String? value) => value == null || value.trim().isEmpty ? null : value.trim();
 
   // The API sends {'weekday_descriptions': ['Senin: 09.00–19.00', ...]}.
-  static String? _openingHours(Object? value) {
-    if (value is! Map) return null;
+  static List<PlaceOpeningDay> _openingHours(Object? value) {
+    if (value is! Map) return const [];
 
     final weekdays = value['weekday_descriptions'];
-    if (weekdays is List && weekdays.isNotEmpty) return weekdays.join('\n');
+    if (weekdays is! List) return const [];
 
+    return [
+      for (final line in weekdays)
+        if (PlaceOpeningDay.parse(line.toString()) case final day?) day,
+    ]..sort((a, b) => a.weekday.compareTo(b.weekday));
+  }
+
+  PlaceOpeningDay? openingDay(int weekday) {
+    for (final day in openingHours) {
+      if (day.weekday == weekday) return day;
+    }
     return null;
   }
 }

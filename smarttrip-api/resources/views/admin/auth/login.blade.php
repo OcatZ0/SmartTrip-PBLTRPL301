@@ -47,10 +47,6 @@
     <button type="submit" id="loginSubmit" class="flex h-[52px] items-center justify-center gap-2 rounded-[14px] border-0 bg-[#2b6fab] text-[15px] font-bold text-white transition hover:bg-[#245f93] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#2b6fab]/30 disabled:cursor-wait disabled:opacity-80">
         Masuk
     </button>
-
-    <p class="m-0 mt-1.5 text-center text-[13px] text-[#5d6b7c]">
-        Belum punya akses? <a href="mailto:{{ config('app.admin_contact_email') }}" class="font-bold text-[#1f5f99] no-underline hover:text-[#16476d]">Hubungi Admin Utama</a>
-    </p>
 </form>
 @endsection
 

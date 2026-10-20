@@ -27,7 +27,9 @@ class LocalNotificationService {
   }
 
   /// Android 13+ and iOS ask the user once; later calls return the answer.
+  /// The plugin has no web implementation, so the web build never notifies.
   Future<bool> requestPermission() async {
+    if (kIsWeb) return false;
     await _ensureInitialized();
 
     if (defaultTargetPlatform == TargetPlatform.android) {
@@ -48,6 +50,7 @@ class LocalNotificationService {
     required String channelName,
     required String channelDescription,
   }) async {
+    if (kIsWeb) return;
     await _ensureInitialized();
     await _plugin.show(
       id,

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
@@ -14,14 +15,19 @@ class GoogleAuthService {
       : _googleSignIn = googleSignIn ??
             GoogleSignIn(
               scopes: const ['email'],
-              serverClientId: AppConfig.googleServerClientId.isEmpty
+              // Web rejects serverClientId (see isConfigured).
+              serverClientId: kIsWeb || AppConfig.googleServerClientId.isEmpty
                   ? null
                   : AppConfig.googleServerClientId,
             );
 
   final GoogleSignIn _googleSignIn;
 
-  bool get isConfigured => AppConfig.googleServerClientId.isNotEmpty;
+  /// Off on the web build: google_sign_in 6 there signs in through Google
+  /// Identity Services and returns no id_token, which the backend needs.
+  /// Email and password still work.
+  bool get isConfigured =>
+      !kIsWeb && AppConfig.googleServerClientId.isNotEmpty;
 
   /// Returns the Google id_token, or `null` if the user dismissed the picker.
   Future<String?> getIdToken() async {

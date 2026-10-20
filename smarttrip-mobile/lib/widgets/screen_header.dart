@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../core/auth/session_controller.dart';
-import '../core/theme/app_tokens.dart';
+import '../core/theme/app_colors.dart';
 
 /// Frosted 64px top bar shared by the trip screens (Figma "Header"): back
 /// button, logo, app name with the screen name below it, and the user avatar.
@@ -23,8 +23,6 @@ class ScreenHeader extends ConsumerWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final tokens = context.tokens;
     final userName = ref.watch(sessionControllerProvider).valueOrNull?.name;
     final canGoBack = onBack != null || Navigator.of(context).canPop();
 
@@ -33,7 +31,7 @@ class ScreenHeader extends ConsumerWidget implements PreferredSizeWidget {
         filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
         child: Container(
           decoration: BoxDecoration(
-            color: tokens.screenBackground.withValues(alpha: 0.85),
+            color: AppColors.surface.withValues(alpha: 0.88),
             boxShadow: const [
               BoxShadow(color: Color(0x0A000000), blurRadius: 8, offset: Offset(0, 1)),
             ],
@@ -49,7 +47,7 @@ class ScreenHeader extends ConsumerWidget implements PreferredSizeWidget {
                     if (canGoBack)
                       IconButton(
                         tooltip: MaterialLocalizations.of(context).backButtonTooltip,
-                        icon: const Icon(Icons.arrow_back, size: 22),
+                        icon: const Icon(Icons.arrow_back_rounded, size: 22, color: AppColors.ink),
                         onPressed: onBack ?? () => Navigator.of(context).maybePop(),
                       )
                     else
@@ -61,21 +59,12 @@ class ScreenHeader extends ConsumerWidget implements PreferredSizeWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'SmartTrip',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                              fontVariations: const [FontVariation.weight(700)],
-                            ),
-                          ),
+                          Text('SmartTrip', style: appText(17, FontWeight.w800, AppColors.ink, height: 22)),
                           Text(
                             subtitle,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: tokens.textSecondary,
-                            ),
+                            style: appText(11, FontWeight.w600, AppColors.inkMuted, height: 14),
                           ),
                         ],
                       ),
@@ -86,10 +75,10 @@ class ScreenHeader extends ConsumerWidget implements PreferredSizeWidget {
                         padding: const EdgeInsets.only(right: 8),
                         child: CircleAvatar(
                           radius: 16,
-                          backgroundColor: tokens.accentSoft,
+                          backgroundColor: AppColors.navy900,
                           child: Text(
                             userName.characters.first.toUpperCase(),
-                            style: theme.textTheme.labelLarge?.copyWith(color: tokens.link),
+                            style: appText(13, FontWeight.w800, AppColors.sun400),
                           ),
                         ),
                       ),

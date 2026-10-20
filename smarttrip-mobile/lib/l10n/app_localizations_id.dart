@@ -317,6 +317,51 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
+  String get tripNameLabel => 'Nama Trip';
+
+  @override
+  String get tripNameHint => 'Biar mudah dikenali di Trip Tersimpan';
+
+  @override
+  String tripNameDefault(String dates) {
+    return 'Trip Batam $dates';
+  }
+
+  @override
+  String tripHoursPerDay(int hours) {
+    return '$hours jam per hari';
+  }
+
+  @override
+  String get tripScheduleLabel => 'Tanggal & Durasi';
+
+  @override
+  String get tripScheduleHint =>
+      'Ketuk tanggal untuk memilih rentang di kalender';
+
+  @override
+  String get tripDailyHoursLabel => 'Jam Jalan-jalan Harian';
+
+  @override
+  String get tripDailyHoursHint =>
+      'Itinerary tiap hari disusun di dalam jam ini';
+
+  @override
+  String get tripShortDayWarning =>
+      'Kurang dari 4 jam: tiap hari hanya muat sedikit tempat.';
+
+  @override
+  String get tripStartDateShort => 'Mulai';
+
+  @override
+  String get tripEndDateShort => 'Selesai';
+
+  @override
+  String tripBudgetPerDay(String amount) {
+    return '≈ Rp$amount per hari';
+  }
+
+  @override
   String get tripSetupHeader => 'Atur Trip';
 
   @override

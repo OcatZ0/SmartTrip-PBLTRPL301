@@ -147,6 +147,27 @@
       }
     }
   },
+  "tripNameLabel": "Nama Trip",
+  "tripNameHint": "Biar mudah dikenali di Trip Tersimpan",
+  "tripNameDefault": "Trip Batam {dates}",
+  "@tripNameDefault": {
+    "placeholders": {"dates": {"type": "String"}}
+  },
+  "tripHoursPerDay": "{hours} jam per hari",
+  "@tripHoursPerDay": {
+    "placeholders": {"hours": {"type": "int"}}
+  },
+  "tripScheduleLabel": "Tanggal & Durasi",
+  "tripScheduleHint": "Ketuk tanggal untuk memilih rentang di kalender",
+  "tripDailyHoursLabel": "Jam Jalan-jalan Harian",
+  "tripDailyHoursHint": "Itinerary tiap hari disusun di dalam jam ini",
+  "tripShortDayWarning": "Kurang dari 4 jam: tiap hari hanya muat sedikit tempat.",
+  "tripStartDateShort": "Mulai",
+  "tripEndDateShort": "Selesai",
+  "tripBudgetPerDay": "≈ Rp{amount} per hari",
+  "@tripBudgetPerDay": {
+    "placeholders": {"amount": {"type": "String"}}
+  },
   "tripSetupHeader": "Atur Trip",
   "tripSetupTitle": "Rencanakan Trip-mu",
   "tripSetupSubtitle": "Beri tahu preferensimu, kami susunkan itinerary terbaik.",

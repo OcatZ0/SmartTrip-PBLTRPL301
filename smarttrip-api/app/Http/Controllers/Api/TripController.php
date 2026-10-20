@@ -7,6 +7,7 @@ use App\Models\Trip;
 use App\Services\Itinerary\HotelRecommender;
 use App\Services\Itinerary\ItineraryGenerator;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -20,9 +21,15 @@ use RuntimeException;
 class TripController extends Controller
 {
     /**
+     * Places whose photos the Trip Tersimpan card shows, at most.
+     */
+    private const CARD_PHOTO_LIMIT = 4;
+
+    /**
      * F011: daftar trip yang pernah dibuat user login - punya sendiri saja
      * (bukan yang dibagikan ke dia - itu GET /api/trips/shared, F016).
-     * Terurut trip terbaru dulu.
+     * Terurut trip terbaru dulu. Each trip also carries a "summary" for the
+     * Trip Tersimpan card (see tripSummary()).
      */
     public function index(Request $request)
     {
@@ -30,10 +37,69 @@ class TripController extends Controller
 
         $trips = $request->user()->trips()
             ->withCount('days')
+            ->with([
+                'days' => fn ($days) => $days->orderBy('day_number'),
+                'days.items' => fn ($items) => $items->orderBy('visit_order'),
+                'days.items.place:places_id,photo_url,estimated_cost_idr',
+                'wishlistPlaces.place:places_id,photo_url',
+            ])
             ->orderByDesc('created_at')
             ->paginate($perPage);
 
+        // Trip dates are Batam dates.
+        $today = now('Asia/Jakarta')->startOfDay();
+        $trips->getCollection()->transform(function (Trip $trip) use ($today) {
+            $trip->setAttribute('summary', $this->tripSummary($trip, $today));
+
+            // Loaded only for the summary; the list stays as light as before.
+            return $trip->unsetRelation('days')->unsetRelation('wishlistPlaces');
+        });
+
         return response()->json($trips);
+    }
+
+    /**
+     * What the Trip Tersimpan card shows for one trip:
+     * - status: "draft" until an itinerary is generated, then "akan_datang",
+     *   "berlangsung" or "selesai" from start_date and num_days (Batam time)
+     * - current_day: the trip day today is, only while "berlangsung"
+     * - places_count and visited_count: itinerary stops and those marked visited
+     * - wishlist_count: places in the trip wishlist
+     * - spent_estimate_idr: the estimated cost of the visited places (a guess
+     *   from places.estimated_cost_idr; the app does not track real spending)
+     * - photo_urls: up to four place photos, itinerary order first, then the wishlist
+     */
+    private function tripSummary(Trip $trip, Carbon $today): array
+    {
+        $items = $trip->days->flatMap->items;
+        $start = $trip->start_date ? Carbon::parse($trip->start_date->toDateString(), 'Asia/Jakarta') : null;
+        $end = $start?->copy()->addDays(max(1, (int) $trip->num_days) - 1);
+
+        $status = match (true) {
+            $items->isEmpty() || $start === null => 'draft',
+            $today->lt($start) => 'akan_datang',
+            $today->gt($end) => 'selesai',
+            default => 'berlangsung',
+        };
+
+        $photos = $items->map(fn ($item) => $item->place?->photo_url)
+            ->merge($trip->wishlistPlaces->map(fn ($wishlist) => $wishlist->place?->photo_url))
+            ->filter()
+            ->unique()
+            ->take(self::CARD_PHOTO_LIMIT)
+            ->values();
+
+        $visited = $items->whereNotNull('visited_at');
+
+        return [
+            'status' => $status,
+            'current_day' => $status === 'berlangsung' ? (int) $start->diffInDays($today) + 1 : null,
+            'places_count' => $items->count(),
+            'visited_count' => $visited->count(),
+            'wishlist_count' => $trip->wishlistPlaces->count(),
+            'spent_estimate_idr' => (int) $visited->sum(fn ($item) => $item->place?->estimated_cost_idr ?? 0),
+            'photo_urls' => $photos->all(),
+        ];
     }
 
     /**

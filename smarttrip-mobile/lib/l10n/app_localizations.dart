@@ -674,6 +674,78 @@ abstract class AppLocalizations {
   /// **'Langkah {step} dari {total}: {name}'**
   String tripStepLabel(int step, int total, String name);
 
+  /// No description provided for @tripNameLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Nama Trip'**
+  String get tripNameLabel;
+
+  /// No description provided for @tripNameHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Biar mudah dikenali di Trip Tersimpan'**
+  String get tripNameHint;
+
+  /// No description provided for @tripNameDefault.
+  ///
+  /// In id, this message translates to:
+  /// **'Trip Batam {dates}'**
+  String tripNameDefault(String dates);
+
+  /// No description provided for @tripHoursPerDay.
+  ///
+  /// In id, this message translates to:
+  /// **'{hours} jam per hari'**
+  String tripHoursPerDay(int hours);
+
+  /// No description provided for @tripScheduleLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Tanggal & Durasi'**
+  String get tripScheduleLabel;
+
+  /// No description provided for @tripScheduleHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Ketuk tanggal untuk memilih rentang di kalender'**
+  String get tripScheduleHint;
+
+  /// No description provided for @tripDailyHoursLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Jam Jalan-jalan Harian'**
+  String get tripDailyHoursLabel;
+
+  /// No description provided for @tripDailyHoursHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Itinerary tiap hari disusun di dalam jam ini'**
+  String get tripDailyHoursHint;
+
+  /// No description provided for @tripShortDayWarning.
+  ///
+  /// In id, this message translates to:
+  /// **'Kurang dari 4 jam: tiap hari hanya muat sedikit tempat.'**
+  String get tripShortDayWarning;
+
+  /// No description provided for @tripStartDateShort.
+  ///
+  /// In id, this message translates to:
+  /// **'Mulai'**
+  String get tripStartDateShort;
+
+  /// No description provided for @tripEndDateShort.
+  ///
+  /// In id, this message translates to:
+  /// **'Selesai'**
+  String get tripEndDateShort;
+
+  /// No description provided for @tripBudgetPerDay.
+  ///
+  /// In id, this message translates to:
+  /// **'≈ Rp{amount} per hari'**
+  String tripBudgetPerDay(String amount);
+
   /// No description provided for @tripSetupHeader.
   ///
   /// In id, this message translates to:

@@ -1,22 +1,36 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/error/trip_error_message.dart';
 import '../../core/router/app_routes.dart';
 import '../../core/theme/app_colors.dart';
+import '../../l10n/app_localizations.dart';
 import '../../models/saved_trip.dart';
+import '../../services/trip_service.dart';
 import '../../widgets/app_bottom_bar.dart';
+import '../../widgets/load_error_view.dart';
 import 'widgets/trip_card.dart';
 
-class TripTersimpanScreen extends StatefulWidget {
+/// The user's own trips from `GET /api/trips`; fetched again each time the
+/// page opens and on pull to refresh.
+final savedTripsProvider = FutureProvider.autoDispose<List<TripModel>>((ref) {
+  return ref.watch(tripServiceProvider).fetchSavedTrips();
+});
+
+class TripTersimpanScreen extends ConsumerStatefulWidget {
   const TripTersimpanScreen({super.key});
 
   @override
-  State<TripTersimpanScreen> createState() => _TripTersimpanScreenState();
+  ConsumerState<TripTersimpanScreen> createState() => _TripTersimpanScreenState();
 }
 
-class _TripTersimpanScreenState extends State<TripTersimpanScreen> {
+class _TripTersimpanScreenState extends ConsumerState<TripTersimpanScreen> {
   TripStatus _activeTab = TripStatus.berlangsung;
+
+  /// Until the user picks a tab, the page opens on the first one that has trips.
+  bool _tabPicked = false;
 
   static const _tabIcons = {
     TripStatus.berlangsung: Icons.near_me_rounded,
@@ -52,27 +66,48 @@ class _TripTersimpanScreenState extends State<TripTersimpanScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final trips = TripData.byStatus(_activeTab);
+    final l10n = AppLocalizations.of(context);
+    final tripsState = ref.watch(savedTripsProvider);
+    final allTrips = tripsState.valueOrNull ?? const <TripModel>[];
+    final activeTab = _tabPicked ? _activeTab : _firstTabWithTrips(allTrips);
+    final trips = allTrips.where((trip) => trip.status == activeTab).toList();
     final bottomSpace = AppBottomBar.barHeight + AppBottomBar.fabRise + 16 + MediaQuery.paddingOf(context).bottom;
 
     return Scaffold(
       backgroundColor: AppColors.surface,
-      body: CustomScrollView(
-        physics: const BouncingScrollPhysics(),
-        slivers: [
-          SliverToBoxAdapter(child: _Header(tabs: _buildTabBar())),
-          const SliverToBoxAdapter(child: SizedBox(height: 18)),
-          if (trips.isEmpty)
-            SliverFillRemaining(hasScrollBody: false, child: _buildEmptyState())
-          else
-            SliverPadding(
-              padding: EdgeInsets.only(bottom: bottomSpace),
-              sliver: SliverList.builder(
-                itemCount: trips.length,
-                itemBuilder: (_, i) => TripCard(trip: trips[i]),
+      body: RefreshIndicator(
+        color: AppColors.navy900,
+        onRefresh: () => ref.refresh(savedTripsProvider.future),
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+          slivers: [
+            SliverToBoxAdapter(child: _Header(tabs: _buildTabBar(allTrips, activeTab))),
+            const SliverToBoxAdapter(child: SizedBox(height: 18)),
+            if (tripsState.isLoading && !tripsState.hasValue)
+              const SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(child: CircularProgressIndicator(color: AppColors.navy900)),
+              )
+            else if (tripsState.hasError && !tripsState.hasValue)
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: LoadErrorView(
+                  message: tripErrorMessage(tripsState.error!, l10n),
+                  onRetry: () => ref.invalidate(savedTripsProvider),
+                ),
+              )
+            else if (trips.isEmpty)
+              SliverFillRemaining(hasScrollBody: false, child: _buildEmptyState(activeTab))
+            else
+              SliverPadding(
+                padding: EdgeInsets.only(bottom: bottomSpace),
+                sliver: SliverList.builder(
+                  itemCount: trips.length,
+                  itemBuilder: (_, i) => TripCard(trip: trips[i]),
+                ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
 
       // ── Bottom Navigation Bar (shared AppBottomBar) ─────────────────────────
@@ -84,10 +119,17 @@ class _TripTersimpanScreenState extends State<TripTersimpanScreen> {
     );
   }
 
+  TripStatus _firstTabWithTrips(List<TripModel> trips) {
+    for (final status in _tabs) {
+      if (trips.any((trip) => trip.status == status)) return status;
+    }
+    return TripStatus.berlangsung;
+  }
+
   // ── Status tabs: four equal segments on a white bar over the header ─────
   // An icon with the count as a small badge above a short label, so all
   // four fit on a phone without scrolling.
-  Widget _buildTabBar() {
+  Widget _buildTabBar(List<TripModel> trips, TripStatus activeTab) {
     return Container(
       height: 62,
       padding: const EdgeInsets.all(5),
@@ -103,9 +145,12 @@ class _TripTersimpanScreenState extends State<TripTersimpanScreen> {
               child: _StatusTab(
                 icon: _tabIcons[status]!,
                 label: status.label,
-                count: TripData.byStatus(status).length,
-                isActive: status == _activeTab,
-                onTap: () => setState(() => _activeTab = status),
+                count: trips.where((trip) => trip.status == status).length,
+                isActive: status == activeTab,
+                onTap: () => setState(() {
+                  _activeTab = status;
+                  _tabPicked = true;
+                }),
               ),
             ),
         ],
@@ -114,7 +159,7 @@ class _TripTersimpanScreenState extends State<TripTersimpanScreen> {
   }
 
   // ── Empty State ───────────────────────────────────────────────────────────
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(TripStatus activeTab) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(40, 24, 40, 140),
       child: Column(
@@ -127,7 +172,7 @@ class _TripTersimpanScreenState extends State<TripTersimpanScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            'Belum ada trip ${_activeTab.label.toLowerCase()}',
+            'Belum ada trip ${activeTab.label.toLowerCase()}',
             textAlign: TextAlign.center,
             style: appText(16, FontWeight.w800, AppColors.ink),
           ),

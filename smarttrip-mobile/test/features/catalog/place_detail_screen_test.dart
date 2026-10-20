@@ -7,9 +7,9 @@ import 'package:smarttrip_mobile/core/auth/auth_user.dart';
 import 'package:smarttrip_mobile/core/auth/session_controller.dart';
 import 'package:smarttrip_mobile/core/router/app_router.dart';
 import 'package:smarttrip_mobile/core/router/app_routes.dart';
-import 'package:smarttrip_mobile/features/auth/data/auth_repository.dart';
-import 'package:smarttrip_mobile/features/catalog/data/catalog_models.dart';
-import 'package:smarttrip_mobile/features/trip/data/trip_models.dart';
+import 'package:smarttrip_mobile/models/place.dart';
+import 'package:smarttrip_mobile/models/trip.dart';
+import 'package:smarttrip_mobile/services/auth_service.dart';
 
 import '../../helpers/catalog_doubles.dart';
 import '../../helpers/test_doubles.dart';
@@ -27,9 +27,9 @@ final _trips = [
 Future<void> _openDetail(
   WidgetTester tester, {
   AuthUser? user = testUser,
-  FakeCatalogRepository? catalog,
-  FakeUserWishlistRepository? wishlist,
-  FakeTripRepository? trips,
+  FakePlaceService? catalog,
+  FakeWishlistService? wishlist,
+  FakeTripService? trips,
   Size size = const Size(412, 917),
   Locale locale = const Locale('id'),
   bool fromCatalogCard = false,
@@ -45,7 +45,7 @@ Future<void> _openDetail(
       overrides: [
         tokenStorageProvider.overrideWithValue(InMemoryTokenStorage()),
         sessionControllerProvider.overrideWith(() => FakeSessionController(user)),
-        authRepositoryProvider.overrideWithValue(FakeAuthRepository()),
+        authServiceProvider.overrideWithValue(FakeAuthService()),
         ...catalogOverrides(catalog: catalog, wishlist: wishlist, trips: trips),
       ],
       child: const SmartTripApp(),
@@ -76,7 +76,7 @@ void main() {
   setUpAll(loadAppFont);
 
   testWidgets('a catalog card opens the detail with facts, description, location and reviews', (tester) async {
-    final catalog = FakeCatalogRepository();
+    final catalog = FakePlaceService();
     await _openDetail(tester, catalog: catalog, fromCatalogCard: true);
 
     expect(catalog.detailCalls, [2]);
@@ -104,7 +104,7 @@ void main() {
   });
 
   testWidgets('a long description is clamped with a read-more toggle', (tester) async {
-    final catalog = FakeCatalogRepository();
+    final catalog = FakePlaceService();
     catalog.details[2] = placeDetail(2, description: List.filled(40, 'Pemandangan laut yang indah.').join(' '));
     await _openDetail(tester, catalog: catalog);
 
@@ -115,7 +115,7 @@ void main() {
   });
 
   testWidgets('more than three reviews are folded behind "Lihat semua"', (tester) async {
-    final catalog = FakeCatalogRepository();
+    final catalog = FakePlaceService();
     catalog.details[2] = placeDetail(
       2,
       reviews: [for (var i = 1; i <= 5; i++) PlaceReview(placeReviewsId: i, userName: 'Pengulas $i', rating: 5)],
@@ -132,7 +132,7 @@ void main() {
   });
 
   testWidgets('the heart in the bottom bar saves the place', (tester) async {
-    final wishlist = FakeUserWishlistRepository();
+    final wishlist = FakeWishlistService();
     await _openDetail(tester, wishlist: wishlist);
 
     await tester.tap(_inDetail(find.byTooltip('Simpan ke wishlist')));
@@ -143,7 +143,7 @@ void main() {
   });
 
   testWidgets('adding to a trip lists the user trips and adds to the picked one', (tester) async {
-    final trips = FakeTripRepository(trips: _trips);
+    final trips = FakeTripService(trips: _trips);
     await _openDetail(tester, trips: trips);
 
     await tester.tap(find.text('Tambah ke Trip'));
@@ -159,7 +159,7 @@ void main() {
   });
 
   testWidgets('adding to a generated trip asks to generate again, a duplicate says so', (tester) async {
-    final trips = FakeTripRepository(trips: _trips);
+    final trips = FakeTripService(trips: _trips);
     await _openDetail(tester, trips: trips);
 
     await tester.tap(find.text('Tambah ke Trip'));
@@ -180,7 +180,7 @@ void main() {
   });
 
   testWidgets('without trips the sheet offers to create one', (tester) async {
-    await _openDetail(tester, trips: FakeTripRepository());
+    await _openDetail(tester, trips: FakeTripService());
 
     await tester.tap(find.text('Tambah ke Trip'));
     await tester.pumpAndSettle();
@@ -190,7 +190,7 @@ void main() {
   });
 
   testWidgets('a guest who taps the heart or "Tambah ke Trip" is sent to login', (tester) async {
-    final wishlist = FakeUserWishlistRepository();
+    final wishlist = FakeWishlistService();
     await _openDetail(tester, user: null, wishlist: wishlist);
     expect(find.text(_detailTitle), findsOneWidget);
 
@@ -202,7 +202,7 @@ void main() {
   });
 
   testWidgets('several photos are a swipeable carousel without a credit', (tester) async {
-    final catalog = FakeCatalogRepository();
+    final catalog = FakePlaceService();
     final base = placeDetail(2);
     catalog.details[2] = PlaceDetail(
       summary: base.summary,
@@ -223,7 +223,7 @@ void main() {
   });
 
   testWidgets('a hotel has no "Tambah ke Trip", hotels are picked in step C4', (tester) async {
-    final catalog = FakeCatalogRepository();
+    final catalog = FakePlaceService();
     catalog.details[2] = placeDetail(2, type: 'lodging');
     await _openDetail(tester, catalog: catalog);
 
@@ -232,7 +232,7 @@ void main() {
   });
 
   testWidgets('a failed load offers a retry', (tester) async {
-    final catalog = FakeCatalogRepository()..detailFailWith = Exception('down');
+    final catalog = FakePlaceService()..detailFailWith = Exception('down');
     await _openDetail(tester, catalog: catalog);
     expect(find.textContaining('Detail tempat gagal dimuat.'), findsOneWidget);
 

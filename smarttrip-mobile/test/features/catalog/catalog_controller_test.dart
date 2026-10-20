@@ -4,9 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:smarttrip_mobile/core/auth/session_controller.dart';
 import 'package:smarttrip_mobile/core/error/api_failure.dart';
-import 'package:smarttrip_mobile/features/catalog/data/catalog_models.dart';
-import 'package:smarttrip_mobile/features/catalog/presentation/catalog_controller.dart';
-import 'package:smarttrip_mobile/features/wishlist/presentation/user_wishlist_controller.dart';
+import 'package:smarttrip_mobile/models/place.dart';
+import 'package:smarttrip_mobile/screens/catalog/catalog_screen.dart';
+import 'package:smarttrip_mobile/services/wishlist_service.dart';
 
 import '../../helpers/catalog_doubles.dart';
 import '../../helpers/test_doubles.dart';
@@ -39,7 +39,7 @@ void main() {
   });
 
   test('a page that arrives for an older filter is dropped', () async {
-    final catalog = FakeCatalogRepository()..gate = Completer<void>();
+    final catalog = FakePlaceService()..gate = Completer<void>();
     final container = ProviderContainer(overrides: catalogOverrides(catalog: catalog));
     addTearDown(container.dispose);
 
@@ -60,7 +60,7 @@ void main() {
   });
 
   test('loadMore stops at the last page', () async {
-    final catalog = FakeCatalogRepository(total: 25);
+    final catalog = FakePlaceService(total: 25);
     final container = ProviderContainer(overrides: catalogOverrides(catalog: catalog));
     addTearDown(container.dispose);
 
@@ -76,7 +76,7 @@ void main() {
   });
 
   group('user wishlist', () {
-    ProviderContainer containerFor(FakeUserWishlistRepository wishlist, {bool loggedIn = true}) {
+    ProviderContainer containerFor(FakeWishlistService wishlist, {bool loggedIn = true}) {
       final container = ProviderContainer(overrides: [
         ...catalogOverrides(wishlist: wishlist),
         sessionControllerProvider.overrideWith(() => FakeSessionController(loggedIn ? testUser : null)),
@@ -86,7 +86,7 @@ void main() {
     }
 
     test('is empty for a guest without calling the API', () async {
-      final wishlist = FakeUserWishlistRepository(saved: {1});
+      final wishlist = FakeWishlistService(saved: {1});
       final container = containerFor(wishlist, loggedIn: false);
       await container.read(sessionControllerProvider.future);
 
@@ -94,7 +94,7 @@ void main() {
     });
 
     test('toggle adds, removes, and reverts when the request fails', () async {
-      final wishlist = FakeUserWishlistRepository();
+      final wishlist = FakeWishlistService();
       final container = containerFor(wishlist);
       // The wishlist reloads once the session resolves; start after that.
       await container.read(sessionControllerProvider.future);

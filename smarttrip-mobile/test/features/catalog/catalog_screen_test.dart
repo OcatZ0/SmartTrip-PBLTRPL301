@@ -5,7 +5,7 @@ import 'package:smarttrip_mobile/app.dart';
 import 'package:smarttrip_mobile/core/api/providers.dart';
 import 'package:smarttrip_mobile/core/auth/auth_user.dart';
 import 'package:smarttrip_mobile/core/auth/session_controller.dart';
-import 'package:smarttrip_mobile/features/auth/data/auth_repository.dart';
+import 'package:smarttrip_mobile/services/auth_service.dart';
 
 import '../../helpers/catalog_doubles.dart';
 import '../../helpers/test_doubles.dart';
@@ -15,8 +15,8 @@ const _greeting = 'Halo, mau ke mana hari ini?';
 Future<void> _pumpCatalog(
   WidgetTester tester, {
   AuthUser? user = testUser,
-  FakeCatalogRepository? catalog,
-  FakeUserWishlistRepository? wishlist,
+  FakePlaceService? catalog,
+  FakeWishlistService? wishlist,
   Size size = const Size(412, 917),
   Locale locale = const Locale('id'),
 }) async {
@@ -31,7 +31,7 @@ Future<void> _pumpCatalog(
       overrides: [
         tokenStorageProvider.overrideWithValue(InMemoryTokenStorage()),
         sessionControllerProvider.overrideWith(() => FakeSessionController(user)),
-        authRepositoryProvider.overrideWithValue(FakeAuthRepository()),
+        authServiceProvider.overrideWithValue(FakeAuthService()),
         ...catalogOverrides(catalog: catalog, wishlist: wishlist),
       ],
       child: const SmartTripApp(),
@@ -64,7 +64,7 @@ void main() {
   setUpAll(loadAppFont);
 
   testWidgets('shows the greeting, chips from the API and the first page of places', (tester) async {
-    final catalog = FakeCatalogRepository();
+    final catalog = FakePlaceService();
     await _pumpCatalog(tester, catalog: catalog);
 
     expect(find.text(_greeting), findsOneWidget);
@@ -79,7 +79,7 @@ void main() {
   });
 
   testWidgets('the heart saves a place and the badge counts it', (tester) async {
-    final wishlist = FakeUserWishlistRepository();
+    final wishlist = FakeWishlistService();
     await _pumpCatalog(tester, wishlist: wishlist);
     expect(find.textContaining('Favorit'), findsNothing);
 
@@ -92,14 +92,14 @@ void main() {
   });
 
   testWidgets('places saved earlier show a filled heart', (tester) async {
-    await _pumpCatalog(tester, wishlist: FakeUserWishlistRepository(saved: {2}));
+    await _pumpCatalog(tester, wishlist: FakeWishlistService(saved: {2}));
 
     expect(find.text('1 Favorit'), findsOneWidget);
     expect(find.byIcon(Icons.favorite), findsOneWidget);
   });
 
   testWidgets('a failed save puts the heart back and says so', (tester) async {
-    final wishlist = FakeUserWishlistRepository()..failNext = true;
+    final wishlist = FakeWishlistService()..failNext = true;
     await _pumpCatalog(tester, wishlist: wishlist);
 
     await tester.tap(find.byTooltip('Simpan ke wishlist').first);
@@ -110,7 +110,7 @@ void main() {
   });
 
   testWidgets('a guest who taps the heart is sent to login', (tester) async {
-    final wishlist = FakeUserWishlistRepository();
+    final wishlist = FakeWishlistService();
     await _pumpCatalog(tester, user: null, wishlist: wishlist);
     expect(find.text(_greeting), findsOneWidget);
 
@@ -136,7 +136,7 @@ void main() {
   });
 
   testWidgets('scrolling to the end loads the next page', (tester) async {
-    final catalog = FakeCatalogRepository(total: 30);
+    final catalog = FakePlaceService(total: 30);
     await _pumpCatalog(tester, catalog: catalog);
 
     await tester.scrollUntilVisible(find.text('Tempat 30'), 500, scrollable: find.byType(Scrollable).first);
@@ -147,7 +147,7 @@ void main() {
   });
 
   testWidgets('a category chip and the hotel chip filter the grid', (tester) async {
-    final catalog = FakeCatalogRepository();
+    final catalog = FakePlaceService();
     await _pumpCatalog(tester, catalog: catalog);
 
     await _tapChip(tester, 'Pantai');
@@ -158,7 +158,7 @@ void main() {
   });
 
   testWidgets('the kecamatan sheet filters the grid and keeps the category chip', (tester) async {
-    final catalog = FakeCatalogRepository();
+    final catalog = FakePlaceService();
     await _pumpCatalog(tester, catalog: catalog);
 
     await _tapChip(tester, 'Pantai');
@@ -201,7 +201,7 @@ void main() {
   });
 
   testWidgets('a failed kecamatan list offers a retry', (tester) async {
-    final catalog = FakeCatalogRepository()..kecamatanFailWith = Exception('offline');
+    final catalog = FakePlaceService()..kecamatanFailWith = Exception('offline');
     await _pumpCatalog(tester, catalog: catalog);
 
     await tester.tap(find.text('Semua kecamatan'));
@@ -215,7 +215,7 @@ void main() {
   });
 
   testWidgets('search waits for the user to stop typing', (tester) async {
-    final catalog = FakeCatalogRepository();
+    final catalog = FakePlaceService();
     await _pumpCatalog(tester, catalog: catalog);
 
     await tester.enterText(find.byType(TextField), 'oca');
@@ -231,7 +231,7 @@ void main() {
   });
 
   testWidgets('an empty catalog and a search without results explain themselves', (tester) async {
-    final catalog = FakeCatalogRepository(total: 0);
+    final catalog = FakePlaceService(total: 0);
     await _pumpCatalog(tester, catalog: catalog);
     expect(find.text('Belum ada tempat di katalog.'), findsOneWidget);
 
@@ -242,7 +242,7 @@ void main() {
   });
 
   testWidgets('a failed first load offers a retry', (tester) async {
-    final catalog = FakeCatalogRepository()..failWith = Exception('down');
+    final catalog = FakePlaceService()..failWith = Exception('down');
     await _pumpCatalog(tester, catalog: catalog);
     expect(find.text('Tempat 1'), findsNothing);
 
@@ -257,7 +257,7 @@ void main() {
 
     for (final MapEntry(key: name, value: size) in screens.entries) {
       testWidgets('on a $name', (tester) async {
-        await _pumpCatalog(tester, size: size, wishlist: FakeUserWishlistRepository(saved: {1}));
+        await _pumpCatalog(tester, size: size, wishlist: FakeWishlistService(saved: {1}));
 
         expect(tester.takeException(), isNull);
         expect(find.text('Tempat 1'), findsOneWidget);

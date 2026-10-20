@@ -5,8 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:smarttrip_mobile/core/auth/auth_session.dart';
 import 'package:smarttrip_mobile/core/auth/auth_user.dart';
 import 'package:smarttrip_mobile/core/auth/token_storage.dart';
-import 'package:smarttrip_mobile/features/auth/data/auth_repository.dart';
-import 'package:smarttrip_mobile/features/auth/data/google_auth_service.dart';
+import 'package:smarttrip_mobile/services/auth_service.dart';
+import 'package:smarttrip_mobile/services/google_auth_service.dart';
 
 const testUser = AuthUser(
   usersId: 7,
@@ -42,8 +42,8 @@ class InMemoryTokenStorage implements TokenStorage {
   }
 }
 
-class FakeAuthRepository implements AuthRepository {
-  FakeAuthRepository({this.onLogin, this.onGoogleLogin, this.onRegister});
+class FakeAuthService implements AuthService {
+  FakeAuthService({this.onLogin, this.onGoogleLogin, this.onRegister});
 
   Future<AuthSession> Function(String email, String password)? onLogin;
   Future<AuthSession> Function(String idToken)? onGoogleLogin;

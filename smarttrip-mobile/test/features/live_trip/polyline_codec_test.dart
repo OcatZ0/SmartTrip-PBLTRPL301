@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:smarttrip_mobile/features/live_trip/data/polyline_codec.dart';
+import 'package:smarttrip_mobile/services/polyline_codec.dart';
 
 void main() {
   test('decodes the Google encoded polyline reference example', () {

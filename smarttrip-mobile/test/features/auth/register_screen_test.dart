@@ -4,9 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:smarttrip_mobile/app.dart';
 import 'package:smarttrip_mobile/core/api/providers.dart';
 import 'package:smarttrip_mobile/core/error/api_failure.dart';
-import 'package:smarttrip_mobile/features/auth/data/auth_repository.dart';
-import 'package:smarttrip_mobile/features/auth/data/google_auth_service.dart';
-import 'package:smarttrip_mobile/features/auth/presentation/widgets/auth_layout.dart';
+import 'package:smarttrip_mobile/screens/auth/widgets/auth_layout.dart';
+import 'package:smarttrip_mobile/services/auth_service.dart';
+import 'package:smarttrip_mobile/services/google_auth_service.dart';
 
 import '../../helpers/test_doubles.dart';
 
@@ -15,7 +15,7 @@ const _submit = 'Daftar Akun';
 Future<void> _pumpApp(
   WidgetTester tester, {
   required InMemoryTokenStorage tokenStorage,
-  required FakeAuthRepository repository,
+  required FakeAuthService repository,
 }) async {
   tester.view.physicalSize = const Size(1200, 2800);
   tester.view.devicePixelRatio = 2;
@@ -27,7 +27,7 @@ Future<void> _pumpApp(
     ProviderScope(
       overrides: [
         tokenStorageProvider.overrideWithValue(tokenStorage),
-        authRepositoryProvider.overrideWithValue(repository),
+        authServiceProvider.overrideWithValue(repository),
         googleAuthServiceProvider.overrideWithValue(FakeGoogleAuthService()),
       ],
       child: const SmartTripApp(),
@@ -64,11 +64,11 @@ void main() {
   setUpAll(loadAppFont);
 
   late InMemoryTokenStorage tokenStorage;
-  late FakeAuthRepository repository;
+  late FakeAuthService repository;
 
   setUp(() {
     tokenStorage = InMemoryTokenStorage();
-    repository = FakeAuthRepository();
+    repository = FakeAuthService();
   });
 
   testWidgets('renders register screen with all Figma elements', (tester) async {

@@ -126,7 +126,10 @@ PlaceDetail placeDetail(
     address: 'Jl. Hang Lekiu, Batam Centre',
     mapsUrl: 'https://www.google.com/maps/search/?api=1&query=1.1519,104.0547',
     descriptionId: description,
-    openingHours: 'Mo-Su 08:00-21:00',
+    openingHours: [
+      for (var weekday = 1; weekday <= 7; weekday++) PlaceOpeningDay(weekday: weekday, hours: '08.00–21.00'),
+    ],
+    isOutdoor: true,
     estimatedVisitMinutes: 90,
     reviews:
         reviews ??

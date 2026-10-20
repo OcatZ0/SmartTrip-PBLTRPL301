@@ -122,6 +122,10 @@ class _DetailBody extends ConsumerWidget {
                     ),
                   ),
                 ],
+                if (detail.openingHours.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  _OpeningHoursSection(detail: detail),
+                ],
                 const SizedBox(height: 16),
                 _LocationCard(detail: detail),
                 const SizedBox(height: 16),
@@ -291,8 +295,21 @@ class _TitleBlock extends StatelessWidget {
   }
 }
 
+class _Fact {
+  const _Fact(this.icon, this.label, this.value, {this.status, this.statusColor});
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final String? status;
+  final Color? statusColor;
+}
+
 class _Facts extends StatelessWidget {
   const _Facts({required this.detail, required this.position});
+
+  static const _openColor = Color(0xFF4ADE80);
+  static const _closedColor = Color(0xFFF87171);
 
   final PlaceDetail detail;
   final LatLng? position;
@@ -302,61 +319,234 @@ class _Facts extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final languageCode = Localizations.localeOf(context).languageCode;
     final minutes = detail.estimatedVisitMinutes;
+    final isOutdoor = detail.isOutdoor;
     final here = position;
 
-    final facts = <(String, String)>[
-      (l10n.detailFactTicket, placePrice(detail.summary, l10n)),
-      if (minutes != null) (l10n.detailFactVisit, _visitLength(l10n, languageCode, minutes)),
-      (l10n.detailFactHours, detail.openingHours ?? l10n.catalogPriceUnknown),
+    final facts = <_Fact>[
+      _Fact(Icons.confirmation_number_outlined, _priceLabel(l10n), placePrice(detail.summary, l10n)),
+      _hoursFact(l10n, DateTime.now()),
+      if (minutes != null) _Fact(Icons.timer_outlined, l10n.detailFactVisit, _visitLength(l10n, languageCode, minutes)),
+      if (isOutdoor != null)
+        _Fact(
+          isOutdoor ? Icons.wb_sunny_outlined : Icons.roofing_outlined,
+          l10n.detailFactArea,
+          isOutdoor ? l10n.detailAreaOutdoor : l10n.detailAreaIndoor,
+        ),
       if (here != null)
-        (
+        _Fact(
+          Icons.near_me_outlined,
           l10n.detailFactDistance,
           '${NumberFormat('0.0', languageCode).format(const Distance().as(LengthUnit.Meter, here, LatLng(detail.lat, detail.lng)) / 1000)} km',
         ),
     ];
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final itemWidth = (constraints.maxWidth - 10) / 2;
-        return Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          children: [
-            for (final (label, value) in facts)
-              Container(
-                width: itemWidth,
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      label,
-                      style: catalogText(11, FontWeight.w500, Colors.white.withValues(alpha: 0.7), height: 16),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      value,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: catalogText(16, FontWeight.w700, Colors.white, height: 22),
-                    ),
-                  ],
-                ),
-              ),
-          ],
-        );
-      },
+    // Two per row with equal heights; an odd one out takes the whole row.
+    return Column(
+      children: [
+        for (var index = 0; index < facts.length; index += 2) ...[
+          if (index > 0) const SizedBox(height: 10),
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(child: _FactCard(fact: facts[index])),
+                if (index + 1 < facts.length) ...[
+                  const SizedBox(width: 10),
+                  Expanded(child: _FactCard(fact: facts[index + 1])),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  String _priceLabel(AppLocalizations l10n) {
+    return switch (detail.summary.estimatedCostIdr) {
+      null => l10n.catalogPriceUnknownLabel,
+      0 => l10n.catalogPriceFreeLabel,
+      _ => l10n.catalogPriceFromLabel,
+    };
+  }
+
+  _Fact _hoursFact(AppLocalizations l10n, DateTime now) {
+    final today = detail.openingDay(now.weekday);
+    if (today == null) return _Fact(Icons.schedule, l10n.detailFactHoursToday, l10n.detailHoursUnknown);
+    if (today.isClosed) {
+      return _Fact(Icons.schedule, l10n.detailFactHoursToday, l10n.detailHoursClosedToday, statusColor: _closedColor);
+    }
+
+    final open = today.isOpenAt(now);
+    return _Fact(
+      Icons.schedule,
+      l10n.detailFactHoursToday,
+      today.isAllDay ? l10n.detailHoursAllDay : today.hours,
+      status: open ? l10n.detailOpenNow : l10n.detailClosedNow,
+      statusColor: open ? _openColor : _closedColor,
     );
   }
 
   static String _visitLength(AppLocalizations l10n, String languageCode, int minutes) {
     if (minutes < 60) return l10n.detailVisitMinutes(minutes);
     return l10n.detailVisitHours(NumberFormat('0.#', languageCode).format(minutes / 60));
+  }
+}
+
+class _FactCard extends StatelessWidget {
+  const _FactCard({required this.fact});
+
+  final _Fact fact;
+
+  @override
+  Widget build(BuildContext context) {
+    final status = fact.status;
+    final statusColor = fact.statusColor;
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: CatalogColors.sun400.withValues(alpha: 0.16),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(fact.icon, size: 18, color: CatalogColors.sun400),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  fact.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: catalogText(11, FontWeight.w500, Colors.white.withValues(alpha: 0.7), height: 16),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  fact.value,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: catalogText(
+                    15,
+                    FontWeight.w700,
+                    status == null && statusColor != null ? statusColor : Colors.white,
+                    height: 20,
+                  ),
+                ),
+                if (status != null && statusColor != null) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Container(
+                        width: 6,
+                        height: 6,
+                        decoration: BoxDecoration(color: statusColor, shape: BoxShape.circle),
+                      ),
+                      const SizedBox(width: 5),
+                      Flexible(
+                        child: Text(
+                          status,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: catalogText(11, FontWeight.w700, statusColor, height: 16),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The week's hours, today highlighted; seven equal days collapse to one row.
+class _OpeningHoursSection extends StatelessWidget {
+  const _OpeningHoursSection({required this.detail});
+
+  final PlaceDetail detail;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final languageCode = Localizations.localeOf(context).languageCode;
+    final days = detail.openingHours;
+    final today = DateTime.now().weekday;
+    final everyDaySame = days.length == 7 && days.every((day) => day.hours == days.first.hours);
+
+    String hoursText(PlaceOpeningDay day) {
+      if (day.isClosed) return l10n.detailHoursClosed;
+      if (day.isAllDay) return l10n.detailHoursAllDay;
+      return day.hours;
+    }
+
+    // 1 January 2024 was a Monday.
+    String dayName(int weekday) => DateFormat.EEEE(languageCode).format(DateTime(2024, 1, weekday));
+
+    Widget row(String day, PlaceOpeningDay hours, {required bool highlighted}) {
+      final color = hours.isClosed
+          ? const Color(0xFFF87171)
+          : highlighted
+          ? CatalogColors.sun400
+          : Colors.white;
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+        decoration: BoxDecoration(
+          color: highlighted ? Colors.white.withValues(alpha: 0.08) : null,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                day,
+                style: catalogText(
+                  14,
+                  highlighted ? FontWeight.w700 : FontWeight.w500,
+                  highlighted ? Colors.white : Colors.white.withValues(alpha: 0.75),
+                ),
+              ),
+            ),
+            Text(hoursText(hours), style: catalogText(14, highlighted ? FontWeight.w700 : FontWeight.w600, color)),
+          ],
+        ),
+      );
+    }
+
+    return _GlassSection(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.schedule, size: 18, color: CatalogColors.sun400),
+              const SizedBox(width: 8),
+              Text(l10n.detailOpeningHours, style: catalogText(16, FontWeight.w700, Colors.white, height: 22)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          if (everyDaySame)
+            row(l10n.detailEveryDay, days.first, highlighted: true)
+          else
+            for (final day in days) row(dayName(day.weekday), day, highlighted: day.weekday == today),
+        ],
+      ),
+    );
   }
 }
 
@@ -433,7 +623,6 @@ class _LocationCard extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final point = LatLng(detail.lat, detail.lng);
     final address = detail.address ?? detail.summary.kecamatan ?? detail.summary.name;
-    final hours = detail.openingHours;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(20),
@@ -494,18 +683,7 @@ class _LocationCard extends StatelessWidget {
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(address, style: catalogText(13, FontWeight.w700, Colors.white, height: 18)),
-                        if (hours != null) ...[
-                          const SizedBox(height: 2),
-                          Text(
-                            hours,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: catalogText(12, FontWeight.w500, Colors.white.withValues(alpha: 0.7), height: 16),
-                          ),
-                        ],
-                      ],
+                      children: [Text(address, style: catalogText(13, FontWeight.w700, Colors.white, height: 18))],
                     ),
                   ),
                   const SizedBox(width: 10),

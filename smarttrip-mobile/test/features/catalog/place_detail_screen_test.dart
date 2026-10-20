@@ -84,7 +84,13 @@ void main() {
     expect(_inDetail(find.text('Tempat 2')), findsOneWidget);
     expect(find.text('Gratis'), findsOneWidget);
     expect(find.text('±1,5 jam'), findsOneWidget);
-    expect(find.text('Mo-Su 08:00-21:00'), findsWidgets);
+    // Today's hours in the facts, and the week collapsed to one row.
+    expect(find.text('Jam buka hari ini'), findsOneWidget);
+    expect(find.text('Tiket Masuk'), findsOneWidget);
+    expect(find.text('Luar ruangan'), findsOneWidget);
+    expect(find.text('Jam Operasional'), findsOneWidget);
+    expect(find.text('Setiap hari'), findsOneWidget);
+    expect(find.text('08.00–21.00'), findsNWidgets(2));
     expect(find.text('Pantai berpasir putih dengan bianglala di tepi laut.'), findsOneWidget);
     expect(find.text('Jl. Hang Lekiu, Batam Centre'), findsOneWidget);
     expect(find.text('Buka Maps'), findsOneWidget);
@@ -290,7 +296,11 @@ void main() {
     expect(detail.description('id'), 'Deskripsi');
     // A blank English text falls back to Indonesian.
     expect(detail.description('en'), 'Deskripsi');
-    expect(detail.openingHours, 'Senin: 08.00–18.00\nMinggu: Tutup');
+    expect([for (final day in detail.openingHours) (day.weekday, day.hours)], [(1, '08.00–18.00'), (7, 'Tutup')]);
+    expect(detail.openingDay(7)?.isClosed, isTrue);
+    expect(detail.openingDay(3), isNull);
+    expect(detail.openingDay(1)?.isOpenAt(DateTime(2026, 10, 19, 17, 59)), isTrue);
+    expect(detail.openingDay(1)?.isOpenAt(DateTime(2026, 10, 19, 18)), isFalse);
     expect(detail.heroPhotoUrl, endsWith('a.jpg'));
     expect(detail.summary.reviewCount, 1);
     expect(detail.reviews.single.userName, 'Budi');

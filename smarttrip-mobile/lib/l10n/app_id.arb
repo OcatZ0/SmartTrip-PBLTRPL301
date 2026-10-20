@@ -490,5 +490,17 @@
       }
     }
   },
-  "detailLoadFailed": "Detail tempat gagal dimuat."
+  "detailLoadFailed": "Detail tempat gagal dimuat.",
+  "detailFactHoursToday": "Jam buka hari ini",
+  "detailHoursUnknown": "Belum ada info",
+  "detailHoursClosedToday": "Tutup hari ini",
+  "detailHoursClosed": "Tutup",
+  "detailHoursAllDay": "Buka 24 jam",
+  "detailOpenNow": "Sedang buka",
+  "detailClosedNow": "Sedang tutup",
+  "detailOpeningHours": "Jam Operasional",
+  "detailEveryDay": "Setiap hari",
+  "detailFactArea": "Area",
+  "detailAreaOutdoor": "Luar ruangan",
+  "detailAreaIndoor": "Dalam ruangan"
 }

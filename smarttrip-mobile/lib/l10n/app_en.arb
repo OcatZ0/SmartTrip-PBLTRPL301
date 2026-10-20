@@ -269,5 +269,17 @@
   "detailAddedToTrip": "Added to {title}'s wishlist.",
   "detailAddedNeedsRegenerate": "Added to {title}'s wishlist. Generate its itinerary again to include this place.",
   "detailAlreadyInTrip": "Already in {title}'s wishlist.",
-  "detailLoadFailed": "Couldn't load this place."
+  "detailLoadFailed": "Couldn't load this place.",
+  "detailFactHoursToday": "Open today",
+  "detailHoursUnknown": "Not available yet",
+  "detailHoursClosedToday": "Closed today",
+  "detailHoursClosed": "Closed",
+  "detailHoursAllDay": "Open 24 hours",
+  "detailOpenNow": "Open now",
+  "detailClosedNow": "Closed now",
+  "detailOpeningHours": "Opening Hours",
+  "detailEveryDay": "Every day",
+  "detailFactArea": "Setting",
+  "detailAreaOutdoor": "Outdoor",
+  "detailAreaIndoor": "Indoor"
 }

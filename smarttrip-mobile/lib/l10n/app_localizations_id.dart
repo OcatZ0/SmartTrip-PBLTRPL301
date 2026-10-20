@@ -910,4 +910,40 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get detailLoadFailed => 'Detail tempat gagal dimuat.';
+
+  @override
+  String get detailFactHoursToday => 'Jam buka hari ini';
+
+  @override
+  String get detailHoursUnknown => 'Belum ada info';
+
+  @override
+  String get detailHoursClosedToday => 'Tutup hari ini';
+
+  @override
+  String get detailHoursClosed => 'Tutup';
+
+  @override
+  String get detailHoursAllDay => 'Buka 24 jam';
+
+  @override
+  String get detailOpenNow => 'Sedang buka';
+
+  @override
+  String get detailClosedNow => 'Sedang tutup';
+
+  @override
+  String get detailOpeningHours => 'Jam Operasional';
+
+  @override
+  String get detailEveryDay => 'Setiap hari';
+
+  @override
+  String get detailFactArea => 'Area';
+
+  @override
+  String get detailAreaOutdoor => 'Luar ruangan';
+
+  @override
+  String get detailAreaIndoor => 'Dalam ruangan';
 }

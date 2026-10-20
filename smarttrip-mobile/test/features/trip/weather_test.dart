@@ -21,6 +21,17 @@ class _FixedTrip extends TripDetailController {
 
 class _QuietNotifications extends LocalNotificationService {
   final reminders = <int>[];
+  final days = <({DateTime at, String title, String body})>[];
+
+  @override
+  Future<void> scheduleDayReminders({
+    required int tripsId,
+    required List<({DateTime at, String title, String body})> days,
+    required String channelName,
+    required String channelDescription,
+  }) async {
+    this.days.addAll(days);
+  }
 
   @override
   Future<void> scheduleWeatherReminder({
@@ -114,6 +125,10 @@ void main() {
     expect(find.text('Ganti tempat luar ruangan'), findsOneWidget);
     expect(find.text('Hujan, ganti?'), findsOneWidget);
     expect(notifications.reminders, [5]);
+    // Day 1 has stops, day 2 has none; 09:00 start, reminded half an hour before.
+    expect(notifications.days.single.at, DateTime(2026, 10, 20, 8, 30));
+    expect(notifications.days.single.title, 'Trip Batam: hari ke-1');
+    expect(notifications.days.single.body, '2 tempat menunggu hari ini, mulai dari Rumah Saudara pukul 09:00.');
   });
 
   testWidgets('a dry day shows the forecast without a warning', (tester) async {

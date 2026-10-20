@@ -59,14 +59,40 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
       final trip = next.valueOrNull;
       if (trip == null || trip.days.isEmpty || _reminderScheduled) return;
       _reminderScheduled = true;
-      _scheduleWeatherReminder(trip);
+      _scheduleReminders(trip);
     }, fireImmediately: true);
   }
 
-  Future<void> _scheduleWeatherReminder(Trip trip) async {
+  /// Half an hour before each day starts, so there is time to get going.
+  static const _dayReminderLead = Duration(minutes: 30);
+
+  Future<void> _scheduleReminders(Trip trip) async {
     final l10n = AppLocalizations.of(context);
+    final notifications = ref.read(localNotificationServiceProvider);
+    final start = trip.dailyStartTime.split(':');
+    final hour = int.tryParse(start.first) ?? 9;
+    final minute = start.length > 1 ? int.tryParse(start[1]) ?? 0 : 0;
+    final time = '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
     try {
-      await ref.read(localNotificationServiceProvider).scheduleWeatherReminder(
+      await notifications.scheduleDayReminders(
+        tripsId: trip.tripsId,
+        days: [
+          for (final day in trip.days)
+            if (day.items.isNotEmpty)
+              (
+                at: trip.dateOfDay(day.dayNumber).add(Duration(hours: hour, minutes: minute)).subtract(_dayReminderLead),
+                title: l10n.dayReminderTitle(trip.title, day.dayNumber),
+                body: l10n.dayReminderBody(
+                  day.items.length,
+                  day.items.first.place?.name ?? l10n.itineraryUnknownPlace,
+                  time,
+                ),
+              ),
+        ],
+        channelName: l10n.dayReminderChannel,
+        channelDescription: l10n.dayReminderChannelDescription,
+      );
+      await notifications.scheduleWeatherReminder(
             tripsId: trip.tripsId,
             startDate: trip.startDate,
             title: l10n.weatherReminderTitle(trip.title),

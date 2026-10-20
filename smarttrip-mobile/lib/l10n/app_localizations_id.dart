@@ -1110,4 +1110,21 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get weatherReminderChannelDescription =>
       'Pengingat cek prakiraan cuaca menjelang trip';
+
+  @override
+  String dayReminderTitle(String title, int day) {
+    return '$title: hari ke-$day';
+  }
+
+  @override
+  String dayReminderBody(int count, String first, String time) {
+    return '$count tempat menunggu hari ini, mulai dari $first pukul $time.';
+  }
+
+  @override
+  String get dayReminderChannel => 'Pengingat hari trip';
+
+  @override
+  String get dayReminderChannelDescription =>
+      'Pengingat di awal setiap hari trip';
 }

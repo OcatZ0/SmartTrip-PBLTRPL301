@@ -557,5 +557,11 @@
   "@weatherReminderTitle": {"placeholders": {"title": {"type": "String"}}},
   "weatherReminderBody": "Trip kamu tinggal 7 hari lagi. Prakiraan cuaca sudah bisa dilihat di itinerary.",
   "weatherReminderChannel": "Pengingat cuaca",
-  "weatherReminderChannelDescription": "Pengingat cek prakiraan cuaca menjelang trip"
+  "weatherReminderChannelDescription": "Pengingat cek prakiraan cuaca menjelang trip",
+  "dayReminderTitle": "{title}: hari ke-{day}",
+  "@dayReminderTitle": {"placeholders": {"title": {"type": "String"}, "day": {"type": "int"}}},
+  "dayReminderBody": "{count} tempat menunggu hari ini, mulai dari {first} pukul {time}.",
+  "@dayReminderBody": {"placeholders": {"count": {"type": "int"}, "first": {"type": "String"}, "time": {"type": "String"}}},
+  "dayReminderChannel": "Pengingat hari trip",
+  "dayReminderChannelDescription": "Pengingat di awal setiap hari trip"
 }

@@ -1146,4 +1146,21 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get weatherReminderChannelDescription =>
       'Reminder to check the forecast before a trip';
+
+  @override
+  String dayReminderTitle(String title, int day) {
+    return '$title: day $day';
+  }
+
+  @override
+  String dayReminderBody(int count, String first, String time) {
+    return '$count stops today, starting with $first at $time.';
+  }
+
+  @override
+  String get dayReminderChannel => 'Trip day reminder';
+
+  @override
+  String get dayReminderChannelDescription =>
+      'Reminder at the start of each trip day';
 }

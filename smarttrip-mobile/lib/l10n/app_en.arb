@@ -330,5 +330,9 @@
   "weatherReminderTitle": "Check the weather for {title}",
   "weatherReminderBody": "Your trip is 7 days away. The forecast is now on your itinerary.",
   "weatherReminderChannel": "Weather reminder",
-  "weatherReminderChannelDescription": "Reminder to check the forecast before a trip"
+  "weatherReminderChannelDescription": "Reminder to check the forecast before a trip",
+  "dayReminderTitle": "{title}: day {day}",
+  "dayReminderBody": "{count} stops today, starting with {first} at {time}.",
+  "dayReminderChannel": "Trip day reminder",
+  "dayReminderChannelDescription": "Reminder at the start of each trip day"
 }

@@ -2083,6 +2083,30 @@ abstract class AppLocalizations {
   /// In id, this message translates to:
   /// **'Pengingat cek prakiraan cuaca menjelang trip'**
   String get weatherReminderChannelDescription;
+
+  /// No description provided for @dayReminderTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'{title}: hari ke-{day}'**
+  String dayReminderTitle(String title, int day);
+
+  /// No description provided for @dayReminderBody.
+  ///
+  /// In id, this message translates to:
+  /// **'{count} tempat menunggu hari ini, mulai dari {first} pukul {time}.'**
+  String dayReminderBody(int count, String first, String time);
+
+  /// No description provided for @dayReminderChannel.
+  ///
+  /// In id, this message translates to:
+  /// **'Pengingat hari trip'**
+  String get dayReminderChannel;
+
+  /// No description provided for @dayReminderChannelDescription.
+  ///
+  /// In id, this message translates to:
+  /// **'Pengingat di awal setiap hari trip'**
+  String get dayReminderChannelDescription;
 }
 
 class _AppLocalizationsDelegate

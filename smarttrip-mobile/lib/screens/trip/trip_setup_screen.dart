@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -14,7 +15,7 @@ import '../../widgets/bottom_action_bar.dart';
 import '../../widgets/primary_button.dart';
 import '../../widgets/rupiah_input_formatter.dart';
 import '../../widgets/screen_header.dart';
-import '../../widgets/step_progress.dart';
+import '../../widgets/step_pill.dart';
 import 'widgets/setup_card.dart';
 
 /// C1. Atur Trip - Figma Mockup, node 85:2541 (US2).
@@ -41,6 +42,13 @@ class _TripSetupScreenState extends ConsumerState<TripSetupScreen> {
     _BudgetTier.premium: Icons.diamond_outlined,
   };
 
+  /// The three suggested day lengths, start and end.
+  static const _paces = [
+    (TimeOfDay(hour: 10, minute: 0), TimeOfDay(hour: 17, minute: 0)),
+    (TimeOfDay(hour: 9, minute: 0), TimeOfDay(hour: 19, minute: 0)),
+    (TimeOfDay(hour: 7, minute: 0), TimeOfDay(hour: 21, minute: 0)),
+  ];
+
   final _budgetController =
       TextEditingController(text: RupiahInputFormatter.format(1500000));
   final _titleController = TextEditingController();
@@ -50,6 +58,9 @@ class _TripSetupScreenState extends ConsumerState<TripSetupScreen> {
 
   int _numDays = 3;
   DateTime _startDate = DateUtils.dateOnly(DateTime.now()).add(const Duration(days: 7));
+
+  /// After the first tap on the calendar, the next tap picks the last day.
+  bool _awaitingEnd = false;
   TimeOfDay _dailyStart = const TimeOfDay(hour: 9, minute: 0);
   TimeOfDay _dailyEnd = const TimeOfDay(hour: 19, minute: 0);
   String? _budgetError;
@@ -130,25 +141,31 @@ class _TripSetupScreenState extends ConsumerState<TripSetupScreen> {
         );
   }
 
-  void _setNumDays(int days) {
-    setState(() => _numDays = days);
+  /// First tap: a new start (a one-day trip until the second tap). Second
+  /// tap on or after it: the last day. Earlier than the start: a new start.
+  /// Dragging across the calendar: the days between where the finger went
+  /// down and where it is now, in either direction.
+  void _dragDays(DateTime from, DateTime to) {
+    final first = from.isBefore(to) ? from : to;
+    final last = from.isBefore(to) ? to : from;
+    setState(() {
+      _startDate = first;
+      _numDays = last.difference(first).inDays + 1;
+      _awaitingEnd = false;
+    });
     _syncTitle();
   }
 
-  /// The calendar picks both ends; the number of days follows.
-  Future<void> _pickDateRange() async {
-    final today = DateUtils.dateOnly(DateTime.now());
-    final start = _startDate.isBefore(today) ? today : _startDate;
-    final picked = await showDateRangePicker(
-      context: context,
-      initialDateRange: DateTimeRange(start: start, end: start.add(Duration(days: _numDays - 1))),
-      firstDate: today,
-      lastDate: today.add(const Duration(days: 365 * 2)),
-    );
-    if (picked == null) return;
+  void _pickDay(DateTime day) {
     setState(() {
-      _startDate = DateUtils.dateOnly(picked.start);
-      _numDays = DateUtils.dateOnly(picked.end).difference(_startDate).inDays + 1;
+      if (_awaitingEnd && !day.isBefore(_startDate)) {
+        _numDays = day.difference(_startDate).inDays + 1;
+        _awaitingEnd = false;
+      } else {
+        _startDate = day;
+        _numDays = 1;
+        _awaitingEnd = true;
+      }
     });
     _syncTitle();
   }
@@ -205,8 +222,6 @@ class _TripSetupScreenState extends ConsumerState<TripSetupScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final setupState = ref.watch(tripSetupControllerProvider);
-    final languageCode = Localizations.localeOf(context).languageCode;
-    final dateFormat = DateFormat('d MMM y', languageCode);
 
     ref.listen(tripSetupControllerProvider, (previous, next) {
       if (previous?.isLoading != true) return;
@@ -232,6 +247,7 @@ class _TripSetupScreenState extends ConsumerState<TripSetupScreen> {
         appBar: ScreenHeader(
           subtitle: l10n.tripSetupHeader,
           onBack: () => _confirmLeave(l10n),
+          trailing: StepPill(step: 1, total: 4, label: l10n.tripStepLabel(1, 4, l10n.tripSetupHeader)),
         ),
         bottomNavigationBar: BottomActionBar(
           child: Column(
@@ -240,13 +256,24 @@ class _TripSetupScreenState extends ConsumerState<TripSetupScreen> {
             children: [
               _SetupSummary(
                 items: [
-                  (Icons.calendar_today_rounded, l10n.tripDays(_numDays)),
-                  if (_budget case final budget? when budget > 0)
-                    (Icons.payments_outlined, 'Rp${RupiahInputFormatter.format(budget)}'),
-                  (Icons.schedule_rounded, '${_formatTime(_dailyStart)}–${_formatTime(_dailyEnd)}'),
+                  (Icons.calendar_month_outlined, l10n.tripDays(_numDays), l10n.tripSummaryDuration),
+                  (
+                    Icons.schedule_rounded,
+                    '${_formatTime(_dailyStart)}–${_formatTime(_dailyEnd)}',
+                    l10n.tripSummaryHours,
+                  ),
+                  (
+                    Icons.account_balance_wallet_outlined,
+                    switch (_budget) {
+                      final budget? when budget > 0 =>
+                        'Rp${NumberFormat.compact(locale: Localizations.localeOf(context).languageCode).format(budget)}',
+                      _ => '–',
+                    },
+                    l10n.tripSummaryBudget,
+                  ),
                 ],
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
               PrimaryButton(
                 label: l10n.tripSetupNext,
                 trailingIcon: Icons.arrow_forward_rounded,
@@ -257,93 +284,15 @@ class _TripSetupScreenState extends ConsumerState<TripSetupScreen> {
           ),
         ),
         body: ListView(
-          padding: const EdgeInsets.only(bottom: 32),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
           children: [
-            StepProgress(
-              step: 1,
-              totalSteps: 4,
-              label: l10n.tripStepLabel(1, 4, l10n.tripSetupHeader),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 18),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          l10n.tripSetupTitle,
-                          style: appText(24, FontWeight.w800, AppColors.ink, height: 30, letterSpacing: -0.48),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          l10n.tripSetupSubtitle,
-                          style: appText(13, FontWeight.w500, AppColors.inkMuted, height: 19),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: AppColors.navy900,
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: const Icon(Icons.explore_outlined, size: 22, color: AppColors.sun400),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                children: [
-                  _buildTitleCard(l10n),
-                  const SizedBox(height: 14),
-                  _buildScheduleCard(l10n, dateFormat),
-                  const SizedBox(height: 14),
-                  _buildHoursCard(l10n),
-                  const SizedBox(height: 14),
-                  _buildBudgetCard(l10n),
-                  const SizedBox(height: 14),
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFF4DF),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Icon(Icons.tips_and_updates_outlined, size: 20, color: Color(0xFF7A4B00)),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text.rich(
-                            TextSpan(
-                              children: [
-                                TextSpan(
-                                  text: l10n.tripTipTitle,
-                                  style: appText(12, FontWeight.w800, const Color(0xFF7A4B00)),
-                                ),
-                                TextSpan(
-                                  text: l10n.tripTipBody,
-                                  style: appText(12, FontWeight.w500, const Color(0xFF7A4B00)),
-                                ),
-                              ],
-                            ),
-                            style: const TextStyle(height: 1.45),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            _buildTitleCard(l10n),
+            const SizedBox(height: 14),
+            _buildScheduleCard(l10n),
+            const SizedBox(height: 14),
+            _buildHoursCard(l10n),
+            const SizedBox(height: 14),
+            _buildBudgetCard(l10n),
           ],
         ),
       ),
@@ -388,138 +337,124 @@ class _TripSetupScreenState extends ConsumerState<TripSetupScreen> {
     );
   }
 
-  /// Dates and duration together: the range opens the calendar, the stepper
-  /// moves the last day.
-  Widget _buildScheduleCard(AppLocalizations l10n, DateFormat dateFormat) {
+  /// Dates and duration together on an inline calendar: tap the first day,
+  /// then the last.
+  Widget _buildScheduleCard(AppLocalizations l10n) {
+    final languageCode = Localizations.localeOf(context).languageCode;
+    final start = DateFormat('EEE d', languageCode).format(_startDate);
+    final end = DateFormat('EEE d MMM', languageCode).format(_endDate);
+
     return SetupCard(
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          SetupCardHeading(
-            icon: Icons.date_range_outlined,
-            title: l10n.tripScheduleLabel,
-            caption: l10n.tripScheduleHint,
-          ),
-          const SizedBox(height: 12),
-          _FilledTile(
-            onTap: _pickDateRange,
-            child: Row(
-              children: [
-                Expanded(child: _DateEnd(label: l10n.tripStartDateShort, date: dateFormat.format(_startDate))),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 8),
-                  child: Icon(Icons.arrow_forward_rounded, size: 18, color: AppColors.inkMuted),
-                ),
-                Expanded(child: _DateEnd(label: l10n.tripEndDateShort, date: dateFormat.format(_endDate))),
-                const SizedBox(width: 8),
-                const Icon(Icons.edit_calendar_outlined, size: 18, color: AppColors.sea600),
-              ],
-            ),
-          ),
-          const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: AppColors.field,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Row(
-              children: [
-                _StepperButton(
-                  icon: Icons.remove_rounded,
-                  tooltip: l10n.tripDurationDecrease,
-                  onPressed: _numDays > 1 ? () => _setNumDays(_numDays - 1) : null,
-                ),
-                Expanded(
-                  child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SetupCardHeading(icon: Icons.date_range_outlined, title: l10n.tripScheduleLabel, caption: l10n.tripScheduleHint),
+        const SizedBox(height: 12),
+        _RangeCalendar(start: _startDate, end: _endDate, onPick: _pickDay, onDrag: _dragDays),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(color: _Palette.selectedFill, borderRadius: BorderRadius.circular(12)),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text.rich(
+                  TextSpan(
                     children: [
-                      Text(l10n.tripDays(_numDays), style: appText(17, FontWeight.w800, AppColors.ink, height: 22)),
-                      Text(
-                        l10n.tripNights(_numDays - 1),
-                        style: appText(11, FontWeight.w600, AppColors.inkMuted, height: 14),
-                      ),
+                      TextSpan(text: start, style: appText(13, FontWeight.w700, AppColors.ink)),
+                      TextSpan(text: '  →  ', style: appText(13, FontWeight.w500, AppColors.inkMuted)),
+                      TextSpan(text: end, style: appText(13, FontWeight.w700, AppColors.ink)),
                     ],
                   ),
                 ),
-                _StepperButton(
-                  icon: Icons.add_rounded,
-                  tooltip: l10n.tripDurationIncrease,
-                  onPressed: () => _setNumDays(_numDays + 1),
-                ),
-              ],
-            ),
+              ),
+              Text(
+                l10n.tripDays(_numDays),
+                style: appText(13, FontWeight.w700, AppColors.sea600),
+              ),
+            ],
           ),
-          if (_numDays > _softMaxDays) ...[
-            const SizedBox(height: 8),
-            Text(l10n.tripDurationLongWarning, style: appText(12, FontWeight.w600, const Color(0xFF7A4B00))),
-          ],
+        ),
+        if (_numDays > _softMaxDays) ...[
+          const SizedBox(height: 8),
+          Text(l10n.tripDurationLongWarning, style: appText(12, FontWeight.w600, const Color(0xFF7A4B00))),
         ],
+      ],
       ),
     );
   }
 
-  /// Start and end of each day in one card, with how many hours that gives.
+  /// A suggested day length or the user's own start and end.
   Widget _buildHoursCard(AppLocalizations l10n) {
     final minutes = _minutes(_dailyEnd) - _minutes(_dailyStart);
     final isShort = minutes > 0 && minutes < 4 * 60;
+    final paceNames = [l10n.tripPaceRelaxed, l10n.tripPaceStandard, l10n.tripPacePacked];
 
     return SetupCard(
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          SetupCardHeading(
-            icon: Icons.schedule_rounded,
-            title: l10n.tripDailyHoursLabel,
-            caption: l10n.tripDailyHoursHint,
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SetupCardHeading(icon: Icons.schedule_rounded, title: l10n.tripDailyHoursLabel, caption: l10n.tripDailyHoursHint),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            for (final (index, (start, end)) in _paces.indexed) ...[
+              if (index > 0) const SizedBox(width: 8),
               Expanded(
-                child: _TimeTile(
-                  icon: Icons.wb_sunny_outlined,
-                  label: l10n.tripStartTimeLabel,
-                  time: _formatTime(_dailyStart),
-                  onTap: () => _pickTime(isStart: true),
-                ),
-              ),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 8),
-                child: Icon(Icons.arrow_forward_rounded, size: 18, color: AppColors.inkMuted),
-              ),
-              Expanded(
-                child: _TimeTile(
-                  icon: Icons.dark_mode_outlined,
-                  label: l10n.tripEndTimeLabel,
-                  time: _formatTime(_dailyEnd),
-                  onTap: () => _pickTime(isStart: false),
+                child: _OptionTile(
+                  selected: start == _dailyStart && end == _dailyEnd,
+                  onTap: () => setState(() {
+                    _dailyStart = start;
+                    _dailyEnd = end;
+                    _timeError = null;
+                  }),
+                  child: Column(
+                    children: [
+                      Text(paceNames[index], style: appText(13, FontWeight.w700, AppColors.ink)),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${_formatTime(start)}–${_formatTime(end)}',
+                        style: appText(11, FontWeight.w500, AppColors.inkMuted),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
-          ),
-          const SizedBox(height: 10),
-          if (_timeError != null)
-            Text(_timeError!, style: appText(12, FontWeight.w600, const Color(0xFFB42318)))
-          else
-            Row(
-              children: [
-                Icon(
-                  isShort ? Icons.warning_amber_rounded : Icons.timelapse_rounded,
-                  size: 16,
-                  color: isShort ? const Color(0xFF7A4B00) : AppColors.sea600,
-                ),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    isShort
-                        ? l10n.tripShortDayWarning
-                        : '${l10n.tripHoursPerDay(minutes ~/ 60)} · ${l10n.tripTimeZone}',
-                    style: appText(12, FontWeight.w700, isShort ? const Color(0xFF7A4B00) : AppColors.inkMuted),
-                  ),
-                ),
-              ],
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: _TimeField(
+                label: l10n.tripStartDateShort,
+                time: _formatTime(_dailyStart),
+                onTap: () => _pickTime(isStart: true),
+              ),
             ),
-        ],
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Text('–', style: appText(15, FontWeight.w500, AppColors.inkMuted)),
+            ),
+            Expanded(
+              child: _TimeField(
+                label: l10n.tripEndDateShort,
+                time: _formatTime(_dailyEnd),
+                onTap: () => _pickTime(isStart: false),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        if (_timeError != null)
+          Text(_timeError!, style: appText(12, FontWeight.w600, const Color(0xFFB42318)))
+        else
+          Text(
+            isShort ? l10n.tripShortDayWarning : '${l10n.tripHoursPerDay(minutes ~/ 60)} · ${l10n.tripTimeZone}',
+            style: appText(12, FontWeight.w600, isShort ? const Color(0xFF7A4B00) : AppColors.inkMuted),
+          ),
+      ],
       ),
     );
   }
@@ -608,59 +543,330 @@ class _TripSetupScreenState extends ConsumerState<TripSetupScreen> {
   }
 }
 
-/// "3 Hari · Rp1.500.000 · 09:00–19:00" above the button, so the choices
-/// can be checked before moving on.
+/// Durasi, jam harian and anggaran side by side above the button, so the
+/// choices can be checked before moving on.
 class _SetupSummary extends StatelessWidget {
   const _SetupSummary({required this.items});
 
-  final List<(IconData, String)> items;
+  final List<(IconData, String, String)> items;
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      alignment: WrapAlignment.center,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      spacing: 6,
-      runSpacing: 4,
-      children: [
-        for (var i = 0; i < items.length; i++) ...[
-          if (i > 0) Text('·', style: appText(12, FontWeight.w800, AppColors.line)),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(items[i].$1, size: 14, color: AppColors.sea600),
-              const SizedBox(width: 4),
-              Text(items[i].$2, style: appText(12, FontWeight.w700, AppColors.ink)),
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(14)),
+      child: IntrinsicHeight(
+        child: Row(
+          children: [
+            for (final (index, (icon, value, label)) in items.indexed) ...[
+              if (index > 0) const VerticalDivider(width: 1, thickness: 1, color: AppColors.line),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(icon, size: 15, color: AppColors.sea600),
+                        const SizedBox(width: 5),
+                        Flexible(
+                          child: Text(
+                            value,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: appText(13, FontWeight.w800, AppColors.ink, height: 18),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(label, style: appText(10.5, FontWeight.w600, AppColors.inkMuted, height: 14)),
+                  ],
+                ),
+              ),
             ],
-          ),
-        ],
-      ],
+          ],
+        ),
+      ),
     );
   }
 }
 
-class _StepperButton extends StatelessWidget {
-  const _StepperButton({required this.icon, required this.tooltip, required this.onPressed});
+class _Palette {
+  const _Palette._();
 
-  final IconData icon;
-  final String tooltip;
-  final VoidCallback? onPressed;
+  /// The "Biru Laut" tint behind a picked option and the date summary.
+  static const selectedFill = Color(0xFFEEF4FB);
+  static const rangeFill = Color(0xFFDCEAF6);
+  static const pastDay = Color(0xFFB4BFCC);
+}
+
+/// A bordered choice; the picked one gets the blue border and tint.
+class _OptionTile extends StatelessWidget {
+  const _OptionTile({required this.selected, required this.onTap, required this.child});
+
+  final bool selected;
+  final VoidCallback onTap;
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 44,
-      height: 44,
-      child: IconButton(
-        tooltip: tooltip,
-        onPressed: onPressed,
-        style: IconButton.styleFrom(
-          backgroundColor: Colors.white,
-          disabledBackgroundColor: Colors.white.withValues(alpha: 0.5),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(11)),
+    return Semantics(
+      button: true,
+      selected: selected,
+      child: Material(
+        color: selected ? _Palette.selectedFill : Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(color: selected ? AppColors.sea600 : AppColors.line, width: selected ? 1.5 : 1),
         ),
-        icon: Icon(icon, size: 20, color: onPressed == null ? AppColors.line : AppColors.navy900),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: onTap,
+          child: Padding(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10), child: child),
+        ),
       ),
+    );
+  }
+}
+
+class _TimeField extends StatelessWidget {
+  const _TimeField({required this.label, required this.time, required this.onTap});
+
+  final String label;
+  final String time;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: AppColors.line),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: SizedBox(
+          height: 48,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Row(
+              children: [
+                Text(label, style: appText(12, FontWeight.w500, AppColors.inkMuted)),
+                const SizedBox(width: 8),
+                Expanded(child: Text(time, style: appText(15, FontWeight.w700, AppColors.ink))),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A month grid with the trip's days marked: both ends filled blue, the days
+/// between on a light band. Days before today cannot be picked.
+class _RangeCalendar extends StatefulWidget {
+  const _RangeCalendar({required this.start, required this.end, required this.onPick, required this.onDrag});
+
+  final DateTime start;
+  final DateTime end;
+  final ValueChanged<DateTime> onPick;
+
+  /// The day the drag started on and the day under the finger now.
+  final void Function(DateTime from, DateTime to) onDrag;
+
+  @override
+  State<_RangeCalendar> createState() => _RangeCalendarState();
+}
+
+class _RangeCalendarState extends State<_RangeCalendar> {
+  static const _cell = 38.0;
+
+  late DateTime _month = DateTime(widget.start.year, widget.start.month);
+
+  static const _rowGap = 4.0;
+
+  DateTime? _dragFrom;
+
+  void _shiftMonth(int by) => setState(() => _month = DateTime(_month.year, _month.month + by));
+
+  /// The pickable day under [position] in the day grid, or null over a blank
+  /// cell, a past day or outside the grid.
+  DateTime? _dayAt(Offset position, double width, int leading, int daysInMonth) {
+    if (position.dx < 0 || position.dx >= width || position.dy < 0) return null;
+    final row = position.dy ~/ (_cell + _rowGap);
+    final column = (position.dx / (width / 7)).floor();
+    final number = row * 7 + column - leading + 1;
+    if (number < 1 || number > daysInMonth) return null;
+    final date = DateTime(_month.year, _month.month, number);
+    return date.isBefore(DateUtils.dateOnly(DateTime.now())) ? null : date;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final languageCode = Localizations.localeOf(context).languageCode;
+    final material = MaterialLocalizations.of(context);
+    final today = DateUtils.dateOnly(DateTime.now());
+    final firstMonth = DateTime(today.year, today.month);
+    final daysInMonth = DateUtils.getDaysInMonth(_month.year, _month.month);
+    // Monday first, as Indonesian calendars are.
+    final leading = (DateTime(_month.year, _month.month).weekday + 6) % 7;
+    final weekdays = [for (var day = 0; day < 7; day++) DateFormat.E(languageCode).format(DateTime(2024, 1, 1 + day))];
+    final start = DateUtils.dateOnly(widget.start);
+    final end = DateUtils.dateOnly(widget.end);
+
+    Widget arrow(IconData icon, String tooltip, VoidCallback? onTap) {
+      return Tooltip(
+        message: tooltip,
+        child: Material(
+          color: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+            side: const BorderSide(color: AppColors.line),
+          ),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(10),
+            onTap: onTap,
+            child: SizedBox(
+              width: 36,
+              height: 36,
+              child: Icon(icon, size: 20, color: onTap == null ? AppColors.line : AppColors.ink),
+            ),
+          ),
+        ),
+      );
+    }
+
+    Widget day(int number) {
+      final date = DateTime(_month.year, _month.month, number);
+      final isPast = date.isBefore(today);
+      final isEnd = date == start || date == end;
+      final inRange = !date.isBefore(start) && !date.isAfter(end);
+      final single = start == end;
+
+      // The light band runs between the two ends, half a cell into each.
+      final band = !inRange || single
+          ? null
+          : date == start
+              ? const LinearGradient(colors: [Colors.transparent, Colors.transparent, _Palette.rangeFill, _Palette.rangeFill], stops: [0, 0.5, 0.5, 1])
+              : date == end
+                  ? const LinearGradient(colors: [_Palette.rangeFill, _Palette.rangeFill, Colors.transparent, Colors.transparent], stops: [0, 0.5, 0.5, 1])
+                  : const LinearGradient(colors: [_Palette.rangeFill, _Palette.rangeFill]);
+
+      return DecoratedBox(
+        decoration: BoxDecoration(gradient: band),
+        child: Center(
+          child: Material(
+            color: isEnd ? AppColors.sea600 : Colors.transparent,
+            shape: const CircleBorder(),
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: isPast ? null : () => widget.onPick(date),
+              child: SizedBox(
+                width: _cell,
+                height: _cell,
+                child: Center(
+                  child: Text(
+                    '$number',
+                    style: appText(
+                      13,
+                      isEnd ? FontWeight.w800 : (inRange ? FontWeight.w700 : FontWeight.w500),
+                      isEnd
+                          ? Colors.white
+                          : inRange
+                              ? AppColors.navy700
+                              : (isPast ? _Palette.pastDay : AppColors.ink),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    final cells = <Widget>[
+      for (var blank = 0; blank < leading; blank++) const SizedBox.shrink(),
+      for (var number = 1; number <= daysInMonth; number++) day(number),
+    ];
+
+    return Column(
+      children: [
+        Row(
+          children: [
+            arrow(
+              Icons.chevron_left_rounded,
+              material.previousMonthTooltip,
+              _month.isAfter(firstMonth) ? () => _shiftMonth(-1) : null,
+            ),
+            Expanded(
+              child: Text(
+                DateFormat.yMMMM(languageCode).format(_month),
+                textAlign: TextAlign.center,
+                style: appText(15, FontWeight.w700, AppColors.ink),
+              ),
+            ),
+            arrow(Icons.chevron_right_rounded, material.nextMonthTooltip, () => _shiftMonth(1)),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            for (final name in weekdays)
+              Expanded(
+                child: Text(
+                  name,
+                  textAlign: TextAlign.center,
+                  style: appText(11, FontWeight.w700, AppColors.inkMuted),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        // A horizontal drag picks a range; a vertical one still scrolls the
+        // page, and a tap still picks one end at a time.
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final width = constraints.maxWidth;
+            return GestureDetector(
+              // The range starts on the day the finger went down, not where the drag was recognised.
+              dragStartBehavior: DragStartBehavior.down,
+              onHorizontalDragStart: (details) =>
+                  _dragFrom = _dayAt(details.localPosition, width, leading, daysInMonth),
+              onHorizontalDragUpdate: (details) {
+                final from = _dragFrom;
+                final to = _dayAt(details.localPosition, width, leading, daysInMonth);
+                if (from != null && to != null) widget.onDrag(from, to);
+              },
+              onHorizontalDragEnd: (_) => _dragFrom = null,
+              onHorizontalDragCancel: () => _dragFrom = null,
+              child: Column(
+                children: [
+                  for (var row = 0; row * 7 < cells.length; row++)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: _rowGap),
+                      child: SizedBox(
+                        height: _cell,
+                        child: Row(
+                          children: [
+                            for (var column = 0; column < 7; column++)
+                              Expanded(
+                                child: row * 7 + column < cells.length ? cells[row * 7 + column] : const SizedBox.shrink(),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            );
+          },
+        ),
+      ],
     );
   }
 }
@@ -705,85 +911,6 @@ class _BudgetChip extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _FilledTile extends StatelessWidget {
-  const _FilledTile({required this.child, required this.onTap});
-
-  final Widget child;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.field,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-          child: child,
-        ),
-      ),
-    );
-  }
-}
-
-class _TimeTile extends StatelessWidget {
-  const _TimeTile({required this.icon, required this.label, required this.time, required this.onTap});
-
-  final IconData icon;
-  final String label;
-  final String time;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return _FilledTile(
-      onTap: onTap,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, size: 14, color: AppColors.sea600),
-              const SizedBox(width: 5),
-              Expanded(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: appText(11, FontWeight.w700, AppColors.inkMuted),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(time, style: appText(18, FontWeight.w800, AppColors.ink, height: 22)),
-        ],
-      ),
-    );
-  }
-}
-
-class _DateEnd extends StatelessWidget {
-  const _DateEnd({required this.label, required this.date});
-
-  final String label;
-  final String date;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: appText(11, FontWeight.w700, AppColors.inkMuted)),
-        const SizedBox(height: 2),
-        Text(date, maxLines: 1, overflow: TextOverflow.ellipsis, style: appText(14, FontWeight.w800, AppColors.ink)),
-      ],
     );
   }
 }

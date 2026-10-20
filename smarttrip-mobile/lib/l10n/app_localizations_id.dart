@@ -333,18 +333,16 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
-  String get tripScheduleLabel => 'Tanggal & Durasi';
+  String get tripScheduleLabel => 'Tanggal & durasi';
 
   @override
-  String get tripScheduleHint =>
-      'Ketuk tanggal untuk memilih rentang di kalender';
+  String get tripScheduleHint => 'Ketuk tanggal mulai, lalu tanggal selesai.';
 
   @override
-  String get tripDailyHoursLabel => 'Jam Jalan-jalan Harian';
+  String get tripDailyHoursLabel => 'Jam jalan-jalan per hari';
 
   @override
-  String get tripDailyHoursHint =>
-      'Itinerary tiap hari disusun di dalam jam ini';
+  String get tripDailyHoursHint => 'Pilih rekomendasi atau atur sendiri.';
 
   @override
   String get tripShortDayWarning =>
@@ -451,7 +449,7 @@ class AppLocalizationsId extends AppLocalizations {
       ' Waktu terbaik tiba di Batam Centre adalah sebelum jam 10:00 WIB agar itinerary maksimal.';
 
   @override
-  String get tripSetupNext => 'Lanjut ke Wishlist (2/4)';
+  String get tripSetupNext => 'Lanjut ke wishlist';
 
   @override
   String get tripCancelTitle => 'Batalkan pembuatan trip?';
@@ -1172,4 +1170,22 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get dayReminderChannelDescription =>
       'Pengingat di awal setiap hari trip';
+
+  @override
+  String get tripPaceRelaxed => 'Santai';
+
+  @override
+  String get tripPaceStandard => 'Standar';
+
+  @override
+  String get tripPacePacked => 'Padat';
+
+  @override
+  String get tripSummaryBudget => 'Anggaran';
+
+  @override
+  String get tripSummaryDuration => 'Durasi';
+
+  @override
+  String get tripSummaryHours => 'Jam harian';
 }

@@ -339,18 +339,16 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get tripScheduleLabel => 'Dates & Duration';
+  String get tripScheduleLabel => 'Dates & duration';
 
   @override
-  String get tripScheduleHint =>
-      'Tap the dates to pick a range on the calendar';
+  String get tripScheduleHint => 'Tap the first day, then the last.';
 
   @override
-  String get tripDailyHoursLabel => 'Daily Sightseeing Hours';
+  String get tripDailyHoursLabel => 'Hours out each day';
 
   @override
-  String get tripDailyHoursHint =>
-      'Each day of the itinerary fits within these hours';
+  String get tripDailyHoursHint => 'Pick a suggestion or set your own.';
 
   @override
   String get tripShortDayWarning =>
@@ -468,7 +466,7 @@ class AppLocalizationsEn extends AppLocalizations {
       ' Arriving in Batam Centre before 10:00 WIB gets the most out of your itinerary.';
 
   @override
-  String get tripSetupNext => 'Continue to Wishlist (2/4)';
+  String get tripSetupNext => 'Continue to wishlist';
 
   @override
   String get tripCancelTitle => 'Cancel trip setup?';
@@ -1208,4 +1206,22 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get dayReminderChannelDescription =>
       'Reminder at the start of each trip day';
+
+  @override
+  String get tripPaceRelaxed => 'Relaxed';
+
+  @override
+  String get tripPaceStandard => 'Standard';
+
+  @override
+  String get tripPacePacked => 'Packed';
+
+  @override
+  String get tripSummaryBudget => 'Budget';
+
+  @override
+  String get tripSummaryDuration => 'Duration';
+
+  @override
+  String get tripSummaryHours => 'Daily hours';
 }

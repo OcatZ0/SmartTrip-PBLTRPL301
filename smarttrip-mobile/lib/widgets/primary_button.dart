@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../core/theme/app_colors.dart';
 
-/// Full-width primary action of the trip flow: navy, rounded, with an
+/// Full-width primary action of the trip flow: sea blue, rounded, with an
 /// optional trailing icon and a loading state.
 class PrimaryButton extends StatelessWidget {
   const PrimaryButton({
@@ -29,12 +29,12 @@ class PrimaryButton extends StatelessWidget {
         onPressed: isLoading ? null : onPressed,
         style: FilledButton.styleFrom(
           elevation: 0,
-          backgroundColor: AppColors.navy900,
+          backgroundColor: AppColors.sea600,
           foregroundColor: Colors.white,
           // While loading the button keeps its colour; only a real "not yet" greys it.
-          disabledBackgroundColor: isDisabled ? AppColors.line : AppColors.navy900,
+          disabledBackgroundColor: isDisabled ? AppColors.line : AppColors.sea600,
           disabledForegroundColor: isDisabled ? AppColors.inkMuted : Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         ),
         child: isLoading
             ? const SizedBox(

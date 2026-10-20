@@ -14,6 +14,7 @@ class AppColors {
   static const line = Color(0xFFDBE2EC);
   static const ink = Color(0xFF14212F);
   static const inkMuted = Color(0xFF5D6B7C);
+  static const inkSoft = Color(0xFF3A4757);
   static const link = Color(0xFF1F5F99);
 
   static const cardShadow = [BoxShadow(color: Color(0x0F0A2440), offset: Offset(0, 4), blurRadius: 16)];

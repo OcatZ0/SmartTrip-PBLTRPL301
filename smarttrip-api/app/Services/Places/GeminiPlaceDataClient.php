@@ -19,7 +19,9 @@ use RuntimeException;
  */
 class GeminiPlaceDataClient
 {
-    private const TIMEOUT_SECONDS = 60;
+    // Kept below what is left of IIS's 70 second FastCGI activity limit after
+    // the two SerpApi searches.
+    private const TIMEOUT_SECONDS = 40;
 
     /**
      * @param  array{maps: array|null, web: array<int, array>}  $lookup  from GooglePlaceLookupClient::lookUp()

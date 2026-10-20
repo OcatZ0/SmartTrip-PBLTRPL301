@@ -22,11 +22,7 @@ class _ShareTripReadonlyScreenState extends State<ShareTripReadonlyScreen> {
       case AppTab.home:
         context.go(AppRoutes.catalog);
       case AppTab.wishlist:
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(
-            const SnackBar(content: Text('Wishlist — segera hadir!')),
-          );
+        context.go(AppRoutes.wishlist);
       case AppTab.trips:
         context.go(AppRoutes.trips);
       case AppTab.profile:

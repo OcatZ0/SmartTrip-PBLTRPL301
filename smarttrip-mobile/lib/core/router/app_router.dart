@@ -21,6 +21,7 @@ import '../../screens/trip/trip_hotel_screen.dart';
 import '../../screens/trip/trip_preferences_screen.dart';
 import '../../screens/trip/trip_setup_screen.dart';
 import '../../screens/trip/wishlist_step_screen.dart';
+import '../../screens/wishlist/wishlist_screen.dart';
 import '../auth/session_controller.dart';
 import 'app_routes.dart';
 import 'page_transitions.dart';
@@ -84,6 +85,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.trips,
         pageBuilder: (context, state) =>
             PageTransitions.fadeThrough(state, const TripTersimpanScreen()),
+      ),
+      GoRoute(
+        path: AppRoutes.wishlist,
+        pageBuilder: (context, state) =>
+            PageTransitions.fadeThrough(state, const WishlistScreen()),
       ),
       GoRoute(
         path: AppRoutes.review,

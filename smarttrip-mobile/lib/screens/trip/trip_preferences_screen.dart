@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -69,18 +68,7 @@ class _TripPreferencesFormState extends ConsumerState<_TripPreferencesForm> {
     final defaults = widget.data.defaults;
     final availableIds = widget.data.categories.map((c) => c.categoriesId).toSet();
     _selectedCategoryIds = defaults.categoryIds.intersection(availableIds);
-    _ratings = _ratingsFromWeights(defaults.weights);
-  }
-
-  /// Profile weights are normalized (sum 1); scale them back to the 0-10
-  /// sliders with the strongest criterion at 10.
-  static List<double> _ratingsFromWeights(List<double>? weights) {
-    if (weights == null) return [5, 5, 5, 5];
-
-    final strongest = weights.reduce(math.max);
-    if (strongest <= 0) return [5, 5, 5, 5];
-
-    return [for (final weight in weights) (weight / strongest * 10).roundToDouble()];
+    _ratings = defaults.ratings;
   }
 
   void _submit() {

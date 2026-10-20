@@ -37,6 +37,26 @@ class SessionController extends AsyncNotifier<AuthUser?> {
     state = AsyncData(session.user);
   }
 
+  /// After a Google-only account sets its first password.
+  void markPasswordSet() {
+    final user = state.valueOrNull;
+    if (user != null) state = AsyncData(user.withPassword());
+  }
+
+  /// Revokes the token on the server when it can; the local login is
+  /// cleared either way, so an offline phone still logs out.
+  Future<void> signOut() async {
+    try {
+      await ref.read(apiClientProvider).dio.post<Map<String, dynamic>>(
+            '/auth/logout',
+            options: Options(extra: {ApiClient.skipUnauthorizedHandler: true}),
+          );
+    } on DioException {
+      // Nothing to undo: the token is dropped below.
+    }
+    await handleUnauthorized();
+  }
+
   Future<void> handleUnauthorized() async {
     await ref.read(tokenStorageProvider).clear();
     state = const AsyncData(null);

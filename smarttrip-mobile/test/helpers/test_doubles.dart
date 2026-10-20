@@ -71,6 +71,18 @@ class FakeAuthService implements AuthService {
     return onLogin?.call(email, password) ?? Future.value(testSession);
   }
 
+  final passwordCalls = <({String? currentPassword, String password})>[];
+
+  @override
+  Future<String> changePassword({
+    String? currentPassword,
+    required String password,
+    required String passwordConfirmation,
+  }) async {
+    passwordCalls.add((currentPassword: currentPassword, password: password));
+    return 'Kata sandi berhasil diubah.';
+  }
+
   @override
   Future<AuthSession> loginWithGoogle({required String idToken}) {
     return onGoogleLogin?.call(idToken) ?? Future.value(testSession);

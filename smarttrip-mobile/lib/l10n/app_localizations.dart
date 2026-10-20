@@ -1789,6 +1789,162 @@ abstract class AppLocalizations {
   /// In id, this message translates to:
   /// **'Dalam ruangan'**
   String get detailAreaIndoor;
+
+  /// No description provided for @profileInterests.
+  ///
+  /// In id, this message translates to:
+  /// **'Minat kamu'**
+  String get profileInterests;
+
+  /// No description provided for @profileInterestsHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Dipilih otomatis setiap buat trip baru.'**
+  String get profileInterestsHint;
+
+  /// No description provided for @profilePriorities.
+  ///
+  /// In id, this message translates to:
+  /// **'Prioritas rute'**
+  String get profilePriorities;
+
+  /// No description provided for @profileWeightInterest.
+  ///
+  /// In id, this message translates to:
+  /// **'Sesuai minat'**
+  String get profileWeightInterest;
+
+  /// No description provided for @profileWeightInterestHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Utamakan tempat dengan kategori pilihanmu'**
+  String get profileWeightInterestHint;
+
+  /// No description provided for @profileWeightDistance.
+  ///
+  /// In id, this message translates to:
+  /// **'Jarak & waktu tempuh'**
+  String get profileWeightDistance;
+
+  /// No description provided for @profileWeightDistanceHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Utamakan tempat yang berdekatan'**
+  String get profileWeightDistanceHint;
+
+  /// No description provided for @profileWeightBudget.
+  ///
+  /// In id, this message translates to:
+  /// **'Hemat biaya'**
+  String get profileWeightBudget;
+
+  /// No description provided for @profileWeightBudgetHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Utamakan tempat murah atau gratis'**
+  String get profileWeightBudgetHint;
+
+  /// No description provided for @profileWeightRating.
+  ///
+  /// In id, this message translates to:
+  /// **'Rating tempat'**
+  String get profileWeightRating;
+
+  /// No description provided for @profileWeightRatingHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Utamakan tempat dengan ulasan bagus'**
+  String get profileWeightRatingHint;
+
+  /// No description provided for @profileNeedInterest.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih minimal satu minat.'**
+  String get profileNeedInterest;
+
+  /// No description provided for @profileLoadFailed.
+  ///
+  /// In id, this message translates to:
+  /// **'Preferensi gagal dimuat.'**
+  String get profileLoadFailed;
+
+  /// No description provided for @profileChangePassword.
+  ///
+  /// In id, this message translates to:
+  /// **'Ganti kata sandi'**
+  String get profileChangePassword;
+
+  /// No description provided for @profileLanguage.
+  ///
+  /// In id, this message translates to:
+  /// **'Bahasa'**
+  String get profileLanguage;
+
+  /// No description provided for @profileLanguageName.
+  ///
+  /// In id, this message translates to:
+  /// **'Indonesia'**
+  String get profileLanguageName;
+
+  /// No description provided for @profileLogout.
+  ///
+  /// In id, this message translates to:
+  /// **'Keluar'**
+  String get profileLogout;
+
+  /// No description provided for @profileLogoutTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Keluar dari akun?'**
+  String get profileLogoutTitle;
+
+  /// No description provided for @profileLogoutBody.
+  ///
+  /// In id, this message translates to:
+  /// **'Kamu perlu masuk lagi untuk membuka trip-mu.'**
+  String get profileLogoutBody;
+
+  /// No description provided for @profilePasswordCurrent.
+  ///
+  /// In id, this message translates to:
+  /// **'Kata sandi saat ini'**
+  String get profilePasswordCurrent;
+
+  /// No description provided for @profilePasswordNew.
+  ///
+  /// In id, this message translates to:
+  /// **'Kata sandi baru'**
+  String get profilePasswordNew;
+
+  /// No description provided for @profilePasswordConfirm.
+  ///
+  /// In id, this message translates to:
+  /// **'Ulangi kata sandi baru'**
+  String get profilePasswordConfirm;
+
+  /// No description provided for @profilePasswordSubmit.
+  ///
+  /// In id, this message translates to:
+  /// **'Simpan kata sandi'**
+  String get profilePasswordSubmit;
+
+  /// No description provided for @profileEyebrow.
+  ///
+  /// In id, this message translates to:
+  /// **'PROFIL'**
+  String get profileEyebrow;
+
+  /// No description provided for @profileHeadline.
+  ///
+  /// In id, this message translates to:
+  /// **'Atur trip sesuai gayamu'**
+  String get profileHeadline;
+
+  /// No description provided for @profilePasswordGoogleOnly.
+  ///
+  /// In id, this message translates to:
+  /// **'Akunmu dibuat lewat Google, jadi belum punya kata sandi. Buat kata sandi di sini supaya bisa masuk juga dengan email.'**
+  String get profilePasswordGoogleOnly;
 }
 
 class _AppLocalizationsDelegate

@@ -946,4 +946,85 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get detailAreaIndoor => 'Dalam ruangan';
+
+  @override
+  String get profileInterests => 'Minat kamu';
+
+  @override
+  String get profileInterestsHint => 'Dipilih otomatis setiap buat trip baru.';
+
+  @override
+  String get profilePriorities => 'Prioritas rute';
+
+  @override
+  String get profileWeightInterest => 'Sesuai minat';
+
+  @override
+  String get profileWeightInterestHint =>
+      'Utamakan tempat dengan kategori pilihanmu';
+
+  @override
+  String get profileWeightDistance => 'Jarak & waktu tempuh';
+
+  @override
+  String get profileWeightDistanceHint => 'Utamakan tempat yang berdekatan';
+
+  @override
+  String get profileWeightBudget => 'Hemat biaya';
+
+  @override
+  String get profileWeightBudgetHint => 'Utamakan tempat murah atau gratis';
+
+  @override
+  String get profileWeightRating => 'Rating tempat';
+
+  @override
+  String get profileWeightRatingHint => 'Utamakan tempat dengan ulasan bagus';
+
+  @override
+  String get profileNeedInterest => 'Pilih minimal satu minat.';
+
+  @override
+  String get profileLoadFailed => 'Preferensi gagal dimuat.';
+
+  @override
+  String get profileChangePassword => 'Ganti kata sandi';
+
+  @override
+  String get profileLanguage => 'Bahasa';
+
+  @override
+  String get profileLanguageName => 'Indonesia';
+
+  @override
+  String get profileLogout => 'Keluar';
+
+  @override
+  String get profileLogoutTitle => 'Keluar dari akun?';
+
+  @override
+  String get profileLogoutBody =>
+      'Kamu perlu masuk lagi untuk membuka trip-mu.';
+
+  @override
+  String get profilePasswordCurrent => 'Kata sandi saat ini';
+
+  @override
+  String get profilePasswordNew => 'Kata sandi baru';
+
+  @override
+  String get profilePasswordConfirm => 'Ulangi kata sandi baru';
+
+  @override
+  String get profilePasswordSubmit => 'Simpan kata sandi';
+
+  @override
+  String get profileEyebrow => 'PROFIL';
+
+  @override
+  String get profileHeadline => 'Atur trip sesuai gayamu';
+
+  @override
+  String get profilePasswordGoogleOnly =>
+      'Akunmu dibuat lewat Google, jadi belum punya kata sandi. Buat kata sandi di sini supaya bisa masuk juga dengan email.';
 }

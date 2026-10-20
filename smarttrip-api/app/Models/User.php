@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Mail\PasswordResetMail;
 use Database\Factories\UserFactory;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -59,6 +60,19 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
     ];
+
+    /**
+     * has_password lets the app tell a Google-only account, which sets its
+     * first password without a current one.
+     *
+     * @var list<string>
+     */
+    protected $appends = ['has_password'];
+
+    protected function hasPassword(): Attribute
+    {
+        return Attribute::get(fn () => $this->password !== null);
+    }
 
     /**
      * Get the attributes that should be cast.

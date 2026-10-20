@@ -44,6 +44,27 @@ class AuthService {
     }
   }
 
+  /// [currentPassword] is left out for a Google-only account, which has none.
+  Future<String> changePassword({
+    String? currentPassword,
+    required String password,
+    required String passwordConfirmation,
+  }) async {
+    try {
+      final response = await _apiClient.dio.put<Map<String, dynamic>>(
+        '/auth/password',
+        data: {
+          if (currentPassword != null && currentPassword.isNotEmpty) 'current_password': currentPassword,
+          'password': password,
+          'password_confirmation': passwordConfirmation,
+        },
+      );
+      return (response.data?['message'] as String?) ?? '';
+    } on DioException catch (error) {
+      throw ApiFailure.fromDioException(error);
+    }
+  }
+
   Future<AuthSession> _authenticate(
     String path,
     Map<String, dynamic> body,

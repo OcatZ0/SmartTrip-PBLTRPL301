@@ -72,11 +72,7 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
       case AppTab.profile:
         context.push(AppRoutes.profile);
       case AppTab.wishlist:
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(
-            SnackBar(content: Text(AppLocalizations.of(context).comingSoon)),
-          );
+        context.go(AppRoutes.wishlist);
     }
   }
 

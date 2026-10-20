@@ -29,11 +29,7 @@ class _TripTersimpanScreenState extends State<TripTersimpanScreen> {
       case AppTab.home:
         context.go(AppRoutes.catalog);
       case AppTab.wishlist:
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(
-            const SnackBar(content: Text('Wishlist — segera hadir!')),
-          );
+        context.go(AppRoutes.wishlist);
       case AppTab.trips:
         break; // Sudah berada di halaman Trip Saya.
       case AppTab.profile:

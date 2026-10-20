@@ -62,11 +62,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       case AppTab.trips:
         context.push(AppRoutes.trips);
       case AppTab.wishlist:
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(
-            SnackBar(content: Text(AppLocalizations.of(context).comingSoon)),
-          );
+        context.go(AppRoutes.wishlist);
       case AppTab.profile:
         break;
     }

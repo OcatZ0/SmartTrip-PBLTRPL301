@@ -57,11 +57,19 @@ class PlaceDetailScreen extends ConsumerWidget {
             ),
             Positioned(left: 0, right: 0, top: 0, child: GlassTopBar(title: l10n.detailTitle)),
             if (detail.valueOrNull case final place?)
+              // Docked to the bottom edge so the page does not show through
+              // a gap under the bar.
               Positioned(
-                left: 12,
-                right: 12,
-                bottom: 16 + MediaQuery.paddingOf(context).bottom,
-                child: _ActionBar(detail: place),
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: ColoredBox(
+                  color: AppColors.navy900,
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(12, 8, 12, 8 + MediaQuery.paddingOf(context).bottom),
+                    child: _ActionBar(detail: place),
+                  ),
+                ),
               ),
           ],
         ),
@@ -102,7 +110,7 @@ class _DetailBody extends ConsumerWidget {
               16,
               heroHeight * _contentStart,
               16,
-              120 + MediaQuery.paddingOf(context).bottom,
+              100 + MediaQuery.paddingOf(context).bottom,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -780,7 +788,7 @@ class _ActionBar extends ConsumerWidget {
         SnackBar(
           content: Text(message),
           behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.fromLTRB(16, 0, 16, 104),
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 88),
         ),
       );
   }

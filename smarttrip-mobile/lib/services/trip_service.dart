@@ -171,6 +171,40 @@ class TripService {
     }
   }
 
+  /// Ranked replacements for one stop (D2), best first.
+  Future<List<TripPlace>> fetchSwapCandidates(int itineraryItemsId) async {
+    final body = await _call(() => _dio.get<Map<String, dynamic>>(
+          '/itinerary-items/$itineraryItemsId/swap-candidates',
+        ));
+    return (body['data'] as List? ?? const [])
+        .cast<Map<String, dynamic>>()
+        .map(TripPlace.fromJson)
+        .toList();
+  }
+
+  /// Any catalog place except hotels, for the D2 "Cari Manual" tab.
+  Future<List<TripPlace>> searchPlaces(String query) async {
+    final body = await _call(() => _dio.get<Map<String, dynamic>>(
+          '/places',
+          queryParameters: {
+            if (query.trim().isNotEmpty) 'search': query.trim(),
+            'per_page': 20,
+          },
+        ));
+    return (body['data'] as List)
+        .cast<Map<String, dynamic>>()
+        .map(TripPlace.fromJson)
+        .where((place) => place.type != 'lodging')
+        .toList();
+  }
+
+  Future<void> swapItineraryItem(int itineraryItemsId, int placesId) async {
+    await _call(() => _dio.patch<Map<String, dynamic>>(
+          '/itinerary-items/$itineraryItemsId',
+          data: {'places_id': placesId},
+        ));
+  }
+
   Future<Trip> fetchTrip(int tripsId) async {
     final body = await _call(() => _dio.get<Map<String, dynamic>>('/trips/$tripsId'));
     return Trip.fromJson(body);

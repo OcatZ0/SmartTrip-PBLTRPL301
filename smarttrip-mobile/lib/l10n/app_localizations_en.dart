@@ -1063,4 +1063,87 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get profilePasswordGoogleOnly =>
       'Your account was made with Google, so it has no password yet. Set one here to also sign in with your email.';
+
+  @override
+  String get swapTitle => 'Swap Place';
+
+  @override
+  String swapSubtitle(String name) {
+    return 'Pick a replacement for $name.';
+  }
+
+  @override
+  String swapRainSubtitle(String name) {
+    return 'Rain is forecast that day. Indoor places to replace $name are listed first.';
+  }
+
+  @override
+  String get swapTabRecommended => 'Recommended';
+
+  @override
+  String get swapTabSearch => 'Search';
+
+  @override
+  String get swapSearchHint => 'Search a place name';
+
+  @override
+  String get swapEmpty => 'No suitable replacement yet.';
+
+  @override
+  String get swapIndoor => 'Indoor';
+
+  @override
+  String get swapOutdoor => 'Outdoor';
+
+  @override
+  String swapDone(String name) {
+    return 'Replaced with $name.';
+  }
+
+  @override
+  String get weatherClear => 'Clear';
+
+  @override
+  String get weatherCloudy => 'Cloudy';
+
+  @override
+  String get weatherFog => 'Foggy';
+
+  @override
+  String get weatherRain => 'Rain';
+
+  @override
+  String get weatherThunderstorm => 'Thunderstorm';
+
+  @override
+  String weatherSummary(int min, int max, int chance) {
+    return '$min-$max°C · $chance% chance of rain';
+  }
+
+  @override
+  String weatherRainWarning(int count) {
+    return 'Rain is forecast and $count stops today are outdoors. Consider swapping them for indoor places.';
+  }
+
+  @override
+  String get weatherSwapAction => 'Swap an outdoor stop';
+
+  @override
+  String get weatherRainBadge => 'Rain, swap?';
+
+  @override
+  String weatherReminderTitle(String title) {
+    return 'Check the weather for $title';
+  }
+
+  @override
+  String get weatherReminderBody =>
+      'Your trip is 7 days away. The forecast is now on your itinerary.';
+
+  @override
+  String get weatherReminderChannel => 'Weather reminder';
+
+  @override
+  String get weatherReminderChannelDescription =>
+      'Reminder to check the forecast before a trip';
 }

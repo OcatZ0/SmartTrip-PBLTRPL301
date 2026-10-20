@@ -6,16 +6,20 @@ import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../core/error/trip_error_message.dart';
+import '../../core/notifications/local_notification_service.dart';
 import '../../core/router/app_routes.dart';
 import '../../core/theme/app_tokens.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/trip.dart';
+import '../../models/weather.dart';
 import '../../services/polyline_codec.dart';
 import '../../services/trip_service.dart';
+import '../../services/weather_service.dart';
 import '../../widgets/load_error_view.dart';
 import '../../widgets/place_photo.dart';
 import '../../widgets/primary_button.dart';
 import '../../widgets/screen_header.dart';
+import 'widgets/swap_place_sheet.dart';
 
 enum MemberRole { editor, viewer }
 
@@ -45,6 +49,55 @@ class ItineraryScreen extends ConsumerStatefulWidget {
 class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
   int _selectedDayNumber = 1;
   final List<TripMember> _members = [];
+  bool _reminderScheduled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Once per screen: a changed start date is picked up the next time.
+    ref.listenManual(tripDetailProvider(widget.tripsId), (_, next) {
+      final trip = next.valueOrNull;
+      if (trip == null || trip.days.isEmpty || _reminderScheduled) return;
+      _reminderScheduled = true;
+      _scheduleWeatherReminder(trip);
+    }, fireImmediately: true);
+  }
+
+  Future<void> _scheduleWeatherReminder(Trip trip) async {
+    final l10n = AppLocalizations.of(context);
+    try {
+      await ref.read(localNotificationServiceProvider).scheduleWeatherReminder(
+            tripsId: trip.tripsId,
+            startDate: trip.startDate,
+            title: l10n.weatherReminderTitle(trip.title),
+            body: l10n.weatherReminderBody,
+            channelName: l10n.weatherReminderChannel,
+            channelDescription: l10n.weatherReminderChannelDescription,
+          );
+    } catch (_) {
+      // A reminder that cannot be scheduled must not break the itinerary.
+    }
+  }
+
+  Future<void> _swapForRain(ItineraryItem item) async {
+    final place = await SwapPlaceSheet.show(context, item, preferIndoor: true);
+    final placesId = place?.placesId;
+    if (place == null || placesId == null || !mounted) return;
+
+    final l10n = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await ref.read(tripServiceProvider).swapItineraryItem(item.itineraryItemsId, placesId);
+      await ref.read(tripDetailProvider(widget.tripsId).notifier).refresh();
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(l10n.swapDone(place.name))));
+    } catch (error) {
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(tripErrorMessage(error, l10n))));
+    }
+  }
 
   void _leave() {
     if (context.canPop()) {
@@ -208,6 +261,14 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
       orElse: () => trip.days.first,
     );
     final dayFlags = flags?.dayFlags[day.dayNumber];
+    final forecast = ref
+        .watch(tripForecastProvider(widget.tripsId))
+        .valueOrNull?[DateUtils.dateOnly(trip.dateOfDay(day.dayNumber))];
+    final rainy = forecast?.isRainy ?? false;
+    final outdoorStops = [
+      for (final item in day.items)
+        if (item.place?.isOutdoor == true && !item.isVisited) item,
+    ];
     final shortDate = DateFormat('d MMM', languageCode);
     final longDate = DateFormat('d MMM y', languageCode);
     final endDate = trip.dateOfDay(trip.numDays);
@@ -347,6 +408,12 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
                   },
                 ),
               ),
+              if (forecast != null)
+                _WeatherCard(
+                  forecast: forecast,
+                  outdoorStops: rainy ? outdoorStops.length : 0,
+                  onSwap: rainy && outdoorStops.isNotEmpty ? () => _swapForRain(outdoorStops.first) : null,
+                ),
               if (flags != null && flags.droppedWishlistCount > 0)
                 _NoticeBanner(
                   text: l10n.itineraryDroppedWishlist(
@@ -386,7 +453,7 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
                         l10n.itineraryDayEmpty,
                         style: theme.textTheme.bodyMedium,
                       )
-                    : _Timeline(day: day, hotel: trip.hotel),
+                    : _Timeline(day: day, hotel: trip.hotel, onSwapForRain: rainy ? _swapForRain : null),
               ),
             ],
           ),
@@ -469,10 +536,14 @@ class _NoticeBanner extends StatelessWidget {
 }
 
 class _Timeline extends StatelessWidget {
-  const _Timeline({required this.day, required this.hotel});
+  const _Timeline({required this.day, required this.hotel, this.onSwapForRain});
 
   final ItineraryDay day;
   final TripHotel? hotel;
+
+  /// Set on a day with rain in the forecast: outdoor stops get a badge that
+  /// opens Ganti Tempat with indoor places first (F025).
+  final ValueChanged<ItineraryItem>? onSwapForRain;
 
   @override
   Widget build(BuildContext context) {
@@ -529,7 +600,12 @@ class _Timeline extends StatelessWidget {
       children.add(
         Padding(
           padding: const EdgeInsets.only(bottom: 12),
-          child: _StopRow(item: item),
+          child: _StopRow(
+            item: item,
+            onSwapForRain: onSwapForRain != null && place?.isOutdoor == true && !item.isVisited
+                ? () => onSwapForRain!(item)
+                : null,
+          ),
         ),
       );
     }
@@ -542,9 +618,10 @@ class _Timeline extends StatelessWidget {
 }
 
 class _StopRow extends StatelessWidget {
-  const _StopRow({required this.item});
+  const _StopRow({required this.item, this.onSwapForRain});
 
   final ItineraryItem item;
+  final VoidCallback? onSwapForRain;
 
   @override
   Widget build(BuildContext context) {
@@ -656,6 +733,10 @@ class _StopRow extends StatelessWidget {
                             ),
                         ],
                       ),
+                      if (onSwapForRain != null) ...[
+                        const SizedBox(height: 6),
+                        _RainBadge(onTap: onSwapForRain!),
+                      ],
                     ],
                   ),
                 ),
@@ -664,6 +745,137 @@ class _StopRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// The selected day's forecast. On a rainy day with outdoor stops it also
+/// says so and offers to swap the first one.
+class _WeatherCard extends StatelessWidget {
+  const _WeatherCard({required this.forecast, required this.outdoorStops, this.onSwap});
+
+  static const _rainFill = Color(0xFFFFF4E5);
+  static const _rainText = Color(0xFF8A4B00);
+
+  final DayForecast forecast;
+  final int outdoorStops;
+  final VoidCallback? onSwap;
+
+  static IconData icon(int code) {
+    if (code >= 95) return Icons.thunderstorm_outlined;
+    if (DayForecast.isRainCode(code)) return Icons.water_drop_outlined;
+    if (code >= 45 && code <= 48) return Icons.foggy;
+    if (code >= 1 && code <= 3) return Icons.cloud_outlined;
+    return Icons.wb_sunny_outlined;
+  }
+
+  static String label(int code, AppLocalizations l10n) {
+    if (code >= 95) return l10n.weatherThunderstorm;
+    if (DayForecast.isRainCode(code)) return l10n.weatherRain;
+    if (code >= 45 && code <= 48) return l10n.weatherFog;
+    if (code >= 1 && code <= 3) return l10n.weatherCloudy;
+    return l10n.weatherClear;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final tokens = context.tokens;
+    final warn = forecast.isRainy && outdoorStops > 0;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: warn ? _rainFill : tokens.accentSoft,
+          borderRadius: BorderRadius.circular(AppTokens.radius),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon(forecast.weatherCode), size: 26, color: warn ? _rainText : tokens.link),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        label(forecast.weatherCode, l10n),
+                        style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                      ),
+                      Text(
+                        l10n.weatherSummary(
+                          forecast.minTemperature.round(),
+                          forecast.maxTemperature.round(),
+                          forecast.rainChance,
+                        ),
+                        style: theme.textTheme.bodySmall?.copyWith(color: tokens.textSecondary),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (warn) ...[
+              const SizedBox(height: 8),
+              Text(
+                l10n.weatherRainWarning(outdoorStops),
+                style: theme.textTheme.bodySmall?.copyWith(color: _rainText, fontWeight: FontWeight.w600),
+              ),
+              if (onSwap != null)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: onSwap,
+                    style: TextButton.styleFrom(foregroundColor: _rainText, padding: EdgeInsets.zero),
+                    icon: const Icon(Icons.swap_horiz, size: 18),
+                    label: Text(l10n.weatherSwapAction),
+                  ),
+                ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RainBadge extends StatelessWidget {
+  const _RainBadge({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Material(
+      color: _WeatherCard._rainFill,
+      borderRadius: BorderRadius.circular(9999),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(9999),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.water_drop_outlined, size: 13, color: _WeatherCard._rainText),
+              const SizedBox(width: 4),
+              Text(
+                l10n.weatherRainBadge,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: _WeatherCard._rainText,
+                      fontWeight: FontWeight.w700,
+                    ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

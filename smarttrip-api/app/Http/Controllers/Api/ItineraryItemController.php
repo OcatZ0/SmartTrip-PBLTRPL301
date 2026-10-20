@@ -40,6 +40,8 @@ class ItineraryItemController extends Controller
                 'lat' => (float) $candidate['place']->lat,
                 'lng' => (float) $candidate['place']->lng,
                 'rating' => $candidate['place']->ratingBlend(),
+                // The weather swap (F025) puts indoor places first.
+                'is_outdoor' => (bool) $candidate['place']->is_outdoor,
                 'topsis_score' => $candidate['topsis_score'],
             ])->values(),
         ]);

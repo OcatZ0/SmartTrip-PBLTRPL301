@@ -157,10 +157,10 @@
   "@tripHoursPerDay": {
     "placeholders": {"hours": {"type": "int"}}
   },
-  "tripScheduleLabel": "Tanggal & Durasi",
-  "tripScheduleHint": "Ketuk tanggal untuk memilih rentang di kalender",
-  "tripDailyHoursLabel": "Jam Jalan-jalan Harian",
-  "tripDailyHoursHint": "Itinerary tiap hari disusun di dalam jam ini",
+  "tripScheduleLabel": "Tanggal & durasi",
+  "tripScheduleHint": "Ketuk tanggal mulai, lalu tanggal selesai.",
+  "tripDailyHoursLabel": "Jam jalan-jalan per hari",
+  "tripDailyHoursHint": "Pilih rekomendasi atau atur sendiri.",
   "tripShortDayWarning": "Kurang dari 4 jam: tiap hari hanya muat sedikit tempat.",
   "tripStartDateShort": "Mulai",
   "tripEndDateShort": "Selesai",
@@ -209,7 +209,7 @@
   "validationEndTimeAfterStart": "Jam selesai harus setelah jam mulai",
   "tripTipTitle": "Tips SmartTrip:",
   "tripTipBody": " Waktu terbaik tiba di Batam Centre adalah sebelum jam 10:00 WIB agar itinerary maksimal.",
-  "tripSetupNext": "Lanjut ke Wishlist (2/4)",
+  "tripSetupNext": "Lanjut ke wishlist",
   "tripCancelTitle": "Batalkan pembuatan trip?",
   "tripCancelBody": "Pengaturan yang belum disimpan akan hilang.",
   "tripCancelStay": "Lanjut Mengisi",
@@ -584,5 +584,11 @@
   "dayReminderBody": "{count} tempat menunggu hari ini, mulai dari {first} pukul {time}.",
   "@dayReminderBody": {"placeholders": {"count": {"type": "int"}, "first": {"type": "String"}, "time": {"type": "String"}}},
   "dayReminderChannel": "Pengingat hari trip",
-  "dayReminderChannelDescription": "Pengingat di awal setiap hari trip"
+  "dayReminderChannelDescription": "Pengingat di awal setiap hari trip",
+  "tripPaceRelaxed": "Santai",
+  "tripPaceStandard": "Standar",
+  "tripPacePacked": "Padat",
+  "tripSummaryBudget": "Anggaran",
+  "tripSummaryDuration": "Durasi",
+  "tripSummaryHours": "Jam harian"
 }

@@ -701,25 +701,25 @@ abstract class AppLocalizations {
   /// No description provided for @tripScheduleLabel.
   ///
   /// In id, this message translates to:
-  /// **'Tanggal & Durasi'**
+  /// **'Tanggal & durasi'**
   String get tripScheduleLabel;
 
   /// No description provided for @tripScheduleHint.
   ///
   /// In id, this message translates to:
-  /// **'Ketuk tanggal untuk memilih rentang di kalender'**
+  /// **'Ketuk tanggal mulai, lalu tanggal selesai.'**
   String get tripScheduleHint;
 
   /// No description provided for @tripDailyHoursLabel.
   ///
   /// In id, this message translates to:
-  /// **'Jam Jalan-jalan Harian'**
+  /// **'Jam jalan-jalan per hari'**
   String get tripDailyHoursLabel;
 
   /// No description provided for @tripDailyHoursHint.
   ///
   /// In id, this message translates to:
-  /// **'Itinerary tiap hari disusun di dalam jam ini'**
+  /// **'Pilih rekomendasi atau atur sendiri.'**
   String get tripDailyHoursHint;
 
   /// No description provided for @tripShortDayWarning.
@@ -911,7 +911,7 @@ abstract class AppLocalizations {
   /// No description provided for @tripSetupNext.
   ///
   /// In id, this message translates to:
-  /// **'Lanjut ke Wishlist (2/4)'**
+  /// **'Lanjut ke wishlist'**
   String get tripSetupNext;
 
   /// No description provided for @tripCancelTitle.
@@ -2179,6 +2179,42 @@ abstract class AppLocalizations {
   /// In id, this message translates to:
   /// **'Pengingat di awal setiap hari trip'**
   String get dayReminderChannelDescription;
+
+  /// No description provided for @tripPaceRelaxed.
+  ///
+  /// In id, this message translates to:
+  /// **'Santai'**
+  String get tripPaceRelaxed;
+
+  /// No description provided for @tripPaceStandard.
+  ///
+  /// In id, this message translates to:
+  /// **'Standar'**
+  String get tripPaceStandard;
+
+  /// No description provided for @tripPacePacked.
+  ///
+  /// In id, this message translates to:
+  /// **'Padat'**
+  String get tripPacePacked;
+
+  /// No description provided for @tripSummaryBudget.
+  ///
+  /// In id, this message translates to:
+  /// **'Anggaran'**
+  String get tripSummaryBudget;
+
+  /// No description provided for @tripSummaryDuration.
+  ///
+  /// In id, this message translates to:
+  /// **'Durasi'**
+  String get tripSummaryDuration;
+
+  /// No description provided for @tripSummaryHours.
+  ///
+  /// In id, this message translates to:
+  /// **'Jam harian'**
+  String get tripSummaryHours;
 }
 
 class _AppLocalizationsDelegate

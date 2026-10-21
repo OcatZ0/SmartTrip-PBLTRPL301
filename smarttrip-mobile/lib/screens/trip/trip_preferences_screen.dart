@@ -6,7 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/error/trip_error_message.dart';
 import '../../core/router/app_routes.dart';
-import '../../core/theme/app_tokens.dart';
+import '../../core/theme/app_colors.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/trip.dart';
 import '../../services/trip_service.dart';
@@ -15,14 +15,25 @@ import '../../widgets/category_icons.dart';
 import '../../widgets/load_error_view.dart';
 import '../../widgets/primary_button.dart';
 import '../../widgets/screen_header.dart';
-import '../../widgets/step_progress.dart';
+import '../../widgets/step_pill.dart';
+import 'widgets/interest_chip.dart';
 import 'widgets/setup_card.dart';
+import 'widgets/weight_slider.dart';
 
-/// C3. Pilih Minat + Atur Prioritas - Figma Mockup, node 85:2996 (US1, US8).
+/// C3. Pilih Minat + Atur Prioritas (US1, US8) - step 3 of the trip setup,
+/// in the cards of the profile screen: interests two per row, the four route
+/// weights and "save as profile default". Starts from the profile defaults.
 class TripPreferencesScreen extends ConsumerWidget {
   const TripPreferencesScreen({super.key, required this.tripsId});
 
   final int tripsId;
+
+  static PreferredSizeWidget header(AppLocalizations l10n) {
+    return ScreenHeader(
+      subtitle: l10n.tripPreferencesHeader,
+      trailing: StepPill(step: 3, total: 4, label: l10n.tripStepLabel(3, 4, l10n.tripPreferencesStepName)),
+    );
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -32,11 +43,13 @@ class TripPreferencesScreen extends ConsumerWidget {
     return data.when(
       data: (data) => _TripPreferencesForm(tripsId: tripsId, data: data),
       loading: () => Scaffold(
-        appBar: ScreenHeader(subtitle: l10n.tripPreferencesHeader),
-        body: const Center(child: CircularProgressIndicator()),
+        backgroundColor: AppColors.surface,
+        appBar: header(l10n),
+        body: const Center(child: CircularProgressIndicator(color: AppColors.sea600)),
       ),
       error: (error, _) => Scaffold(
-        appBar: ScreenHeader(subtitle: l10n.tripPreferencesHeader),
+        backgroundColor: AppColors.surface,
+        appBar: header(l10n),
         body: LoadErrorView(
           message: tripErrorMessage(error, l10n),
           onRetry: () => ref.invalidate(tripPreferencesDataProvider),
@@ -95,8 +108,6 @@ class _TripPreferencesFormState extends ConsumerState<_TripPreferencesForm> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    final tokens = context.tokens;
     final submitState = ref.watch(tripPreferencesControllerProvider);
     final languageCode = Localizations.localeOf(context).languageCode;
 
@@ -114,72 +125,51 @@ class _TripPreferencesFormState extends ConsumerState<_TripPreferencesForm> {
     });
 
     final criteria = [
-      (Icons.radio_button_checked, l10n.tripPriorityInterest, l10n.tripPriorityInterestMin, l10n.tripPriorityInterestMax),
+      (Icons.interests_outlined, l10n.tripPriorityInterest, l10n.tripPriorityInterestMin, l10n.tripPriorityInterestMax),
       (Icons.near_me_outlined, l10n.tripPriorityDistance, l10n.tripPriorityDistanceMin, l10n.tripPriorityDistanceMax),
       (Icons.account_balance_wallet_outlined, l10n.tripPriorityBudget, l10n.tripPriorityBudgetMin, l10n.tripPriorityBudgetMax),
-      (Icons.stars_outlined, l10n.tripPriorityRating, l10n.tripPriorityRatingMin, l10n.tripPriorityRatingMax),
+      (Icons.star_outline_rounded, l10n.tripPriorityRating, l10n.tripPriorityRatingMin, l10n.tripPriorityRatingMax),
     ];
 
     return Scaffold(
-      backgroundColor: tokens.screenBackground,
-      appBar: ScreenHeader(subtitle: l10n.tripPreferencesHeader),
+      backgroundColor: AppColors.surface,
+      appBar: TripPreferencesScreen.header(l10n),
       bottomNavigationBar: BottomActionBar(
         child: PrimaryButton(
           label: l10n.tripPreferencesNext,
-          trailingIcon: Icons.arrow_forward,
+          trailingIcon: Icons.arrow_forward_rounded,
           isLoading: submitState.isLoading,
           onPressed: _submit,
         ),
       ),
       body: ListView(
-        padding: const EdgeInsets.only(bottom: 32),
+        padding: const EdgeInsets.fromLTRB(16, 18, 16, 28),
         children: [
-          StepProgress(
-            step: 3,
-            totalSteps: 4,
-            label: l10n.tripStepLabel(3, 4, l10n.tripPreferencesStepName),
+          Text(
+            l10n.tripPreferencesTitle,
+            style: appText(22, FontWeight.w800, AppColors.ink, height: 28, letterSpacing: -0.3),
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
+          const SizedBox(height: 4),
+          Text(l10n.tripPreferencesSubtitle, style: appText(13, FontWeight.w500, AppColors.inkMuted, height: 19)),
+          const SizedBox(height: 18),
+          SetupCard(
+            padding: const EdgeInsets.all(18),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(l10n.tripPreferencesTitle, style: theme.textTheme.headlineSmall?.copyWith(fontSize: 22)),
-                const SizedBox(height: 4),
-                Text(
-                  l10n.tripPreferencesSubtitle,
-                  style: theme.textTheme.bodyMedium?.copyWith(color: tokens.textSecondary),
+                SetupCardHeading(
+                  icon: Icons.auto_awesome_outlined,
+                  title: l10n.tripInterestTitle,
+                  caption: l10n.tripInterestHint,
                 ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(l10n.tripInterestTitle, style: theme.textTheme.titleSmall),
-                    const SizedBox(width: 6),
-                    Icon(Icons.auto_awesome, size: 15, color: tokens.link),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  l10n.tripInterestHint,
-                  style: theme.textTheme.bodyMedium?.copyWith(color: tokens.textSecondary),
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
+                const SizedBox(height: 14),
+                InterestChipGrid(
                   children: [
                     for (final category in widget.data.categories)
-                      _InterestChip(
+                      InterestChip(
                         label: category.localizedName(languageCode),
                         icon: categoryIcon(category.iconSymbol),
-                        isSelected: _selectedCategoryIds.contains(category.categoriesId),
+                        selected: _selectedCategoryIds.contains(category.categoriesId),
                         onTap: () => setState(() {
                           if (!_selectedCategoryIds.remove(category.categoriesId)) {
                             _selectedCategoryIds.add(category.categoriesId);
@@ -190,201 +180,76 @@ class _TripPreferencesFormState extends ConsumerState<_TripPreferencesForm> {
                   ],
                 ),
                 if (_showCategoryError) ...[
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 10),
                   Text(
                     l10n.validationInterestRequired,
-                    style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error),
+                    style: appText(12, FontWeight.w600, Theme.of(context).colorScheme.error),
                   ),
                 ],
               ],
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+          const SizedBox(height: 16),
+          SetupCard(
+            padding: const EdgeInsets.all(18),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(l10n.tripPriorityTitle, style: theme.textTheme.titleSmall),
-                Text(
-                  l10n.tripPriorityHint,
-                  style: theme.textTheme.bodyMedium?.copyWith(color: tokens.textSecondary),
+                SetupCardHeading(
+                  icon: Icons.tune_rounded,
+                  title: l10n.tripPriorityTitle,
+                  caption: l10n.tripPriorityHint,
                 ),
-                const SizedBox(height: 8),
-                SetupCard(
-                  padding: const EdgeInsets.all(20),
+                for (var i = 0; i < criteria.length; i++) ...[
+                  const SizedBox(height: 18),
+                  WeightSlider(
+                    icon: criteria[i].$1,
+                    label: criteria[i].$2,
+                    minLabel: criteria[i].$3,
+                    maxLabel: criteria[i].$4,
+                    value: _ratings[i],
+                    valueLabel: l10n.tripPriorityValue(_ratings[i].round(), _levelLabel(_ratings[i], l10n)),
+                    onChanged: (value) => setState(() => _ratings[i] = value),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          SetupCard(
+            padding: const EdgeInsets.fromLTRB(18, 14, 10, 14),
+            child: Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(color: AppColors.field, borderRadius: BorderRadius.circular(12)),
+                  child: const Icon(Icons.bookmark_add_outlined, size: 19, color: AppColors.sea600),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      for (var i = 0; i < criteria.length; i++) ...[
-                        if (i > 0) const SizedBox(height: 20),
-                        _PrioritySlider(
-                          icon: criteria[i].$1,
-                          label: criteria[i].$2,
-                          minLabel: criteria[i].$3,
-                          maxLabel: criteria[i].$4,
-                          value: _ratings[i],
-                          valueLabel: l10n.tripPriorityValue(
-                            _ratings[i].round(),
-                            _levelLabel(_ratings[i], l10n),
-                          ),
-                          onChanged: (value) => setState(() => _ratings[i] = value),
-                        ),
-                      ],
+                      Text(l10n.tripSaveDefaultTitle, style: appText(13, FontWeight.w700, AppColors.ink, height: 18)),
+                      const SizedBox(height: 2),
+                      Text(
+                        l10n.tripSaveDefaultHint,
+                        style: appText(12, FontWeight.w500, AppColors.inkMuted, height: 16),
+                      ),
                     ],
                   ),
                 ),
+                Switch(
+                  value: _saveAsDefault,
+                  activeTrackColor: AppColors.sea600,
+                  onChanged: (value) => setState(() => _saveAsDefault = value),
+                ),
               ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: SetupCard(
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 20,
-                    backgroundColor: tokens.chipFill,
-                    child: Icon(Icons.tune, size: 18, color: tokens.link),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(l10n.tripSaveDefaultTitle, style: theme.textTheme.bodyMedium),
-                        const SizedBox(height: 2),
-                        Text(
-                          l10n.tripSaveDefaultHint,
-                          style: theme.textTheme.bodySmall?.copyWith(color: tokens.textSecondary),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Switch(
-                    value: _saveAsDefault,
-                    activeTrackColor: tokens.link,
-                    onChanged: (value) => setState(() => _saveAsDefault = value),
-                  ),
-                ],
-              ),
             ),
           ),
         ],
       ),
-    );
-  }
-}
-
-class _InterestChip extends StatelessWidget {
-  const _InterestChip({required this.label, required this.isSelected, required this.onTap, this.icon});
-
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  /// The category's own icon, shown while not selected (falls back to +).
-  final IconData? icon;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final tokens = context.tokens;
-    final foreground = isSelected ? Colors.white : theme.colorScheme.onSurface;
-
-    return Material(
-      color: isSelected ? tokens.accent : tokens.chipFill,
-      shape: const StadiumBorder(),
-      child: InkWell(
-        customBorder: const StadiumBorder(),
-        onTap: onTap,
-        child: Container(
-          height: 40,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(isSelected ? Icons.check : (icon ?? Icons.add), size: 16, color: foreground),
-              const SizedBox(width: 8),
-              Text(label, style: theme.textTheme.bodyMedium?.copyWith(color: foreground)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _PrioritySlider extends StatelessWidget {
-  const _PrioritySlider({
-    required this.icon,
-    required this.label,
-    required this.minLabel,
-    required this.maxLabel,
-    required this.value,
-    required this.valueLabel,
-    required this.onChanged,
-  });
-
-  final IconData icon;
-  final String label;
-  final String minLabel;
-  final String maxLabel;
-  final double value;
-  final String valueLabel;
-  final ValueChanged<double> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final tokens = context.tokens;
-    final captionStyle = theme.textTheme.bodySmall?.copyWith(color: tokens.textSecondary);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
-          children: [
-            Icon(icon, size: 17, color: tokens.link),
-            const SizedBox(width: 8),
-            Expanded(child: Text(label, style: theme.textTheme.bodyMedium)),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: tokens.badgeFill,
-                borderRadius: BorderRadius.circular(9999),
-              ),
-              child: Text(
-                valueLabel,
-                style: theme.textTheme.labelMedium?.copyWith(color: const Color(0xFF001D34)),
-              ),
-            ),
-          ],
-        ),
-        SliderTheme(
-          data: SliderTheme.of(context).copyWith(
-            trackHeight: 10,
-            activeTrackColor: tokens.accent,
-            inactiveTrackColor: tokens.accentSoft,
-            thumbColor: tokens.link,
-            overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),
-          ),
-          child: Slider(
-            value: value,
-            max: 10,
-            divisions: 10,
-            label: value.round().toString(),
-            onChanged: onChanged,
-          ),
-        ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Flexible(child: Text(minLabel, style: captionStyle)),
-            const SizedBox(width: 12),
-            Flexible(child: Text(maxLabel, style: captionStyle, textAlign: TextAlign.end)),
-          ],
-        ),
-      ],
     );
   }
 }

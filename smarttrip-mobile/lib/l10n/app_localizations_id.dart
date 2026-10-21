@@ -370,12 +370,6 @@ class AppLocalizationsId extends AppLocalizations {
       'Beri tahu preferensimu, kami susunkan itinerary terbaik.';
 
   @override
-  String get tripDurationLabel => 'Durasi Perjalanan';
-
-  @override
-  String get tripDurationHint => 'Berapa lama liburan di Batam?';
-
-  @override
   String get tripDurationDecrease => 'Kurangi durasi';
 
   @override
@@ -423,12 +417,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get validationBudgetRequired => 'Anggaran harus lebih dari 0';
 
   @override
-  String get tripDateLabel => 'Tanggal Mulai & Selesai';
-
-  @override
-  String get tripDateHint => 'Waktu pelesiran di pulau';
-
-  @override
   String get tripStartTimeLabel => 'Jam Mulai';
 
   @override
@@ -464,11 +452,58 @@ class AppLocalizationsId extends AppLocalizations {
   String get tripCancelConfirm => 'Batalkan';
 
   @override
-  String get tripWishlistHeader => 'Susun Wishlist';
+  String get tripWishlistSearchHint => 'Cari pantai, kuliner, museum...';
 
   @override
-  String get tripWishlistComingSoon =>
-      'Penyusunan wishlist sedang disiapkan. Kamu tetap bisa lanjut, sistem akan memilihkan tempat terbaik untukmu.';
+  String get tripWishlistNoResults => 'Tidak ada tempat yang cocok.';
+
+  @override
+  String get tripWishlistPin => 'Pin di peta';
+
+  @override
+  String tripWishlistRemove(String name) {
+    return 'Hapus $name dari wishlist trip';
+  }
+
+  @override
+  String get tripWishlistVisitLength => 'Lama kunjungan';
+
+  @override
+  String get tripWishlistVisitLengthHint => 'Berapa lama kamu di tempat ini?';
+
+  @override
+  String get tripWishlistSave => 'Simpan';
+
+  @override
+  String get tripWishlistSummaryPlaces => 'Tempat';
+
+  @override
+  String get tripWishlistSummaryVisit => 'Total kunjungan';
+
+  @override
+  String tripWishlistHours(String hours) {
+    return '±$hours jam';
+  }
+
+  @override
+  String get tripWishlistActionFailed =>
+      'Wishlist trip gagal diperbarui, coba lagi.';
+
+  @override
+  String get tripWishlistPicked => 'Terpilih';
+
+  @override
+  String get tripWishlistPageTitle => 'Tambahkan Tempat Favoritmu';
+
+  @override
+  String get tripWishlistPageSubtitle =>
+      'Ketuk tempat yang wajib dikunjungi dalam liburan ini (opsional).';
+
+  @override
+  String get tripWishlistPins => 'Pin sendiri';
+
+  @override
+  String get tripWishlistHeader => 'Susun Wishlist';
 
   @override
   String get tripWishlistNext => 'Lanjut ke Minat & Prioritas (3/4)';

@@ -764,18 +764,6 @@ abstract class AppLocalizations {
   /// **'Beri tahu preferensimu, kami susunkan itinerary terbaik.'**
   String get tripSetupSubtitle;
 
-  /// No description provided for @tripDurationLabel.
-  ///
-  /// In id, this message translates to:
-  /// **'Durasi Perjalanan'**
-  String get tripDurationLabel;
-
-  /// No description provided for @tripDurationHint.
-  ///
-  /// In id, this message translates to:
-  /// **'Berapa lama liburan di Batam?'**
-  String get tripDurationHint;
-
   /// No description provided for @tripDurationDecrease.
   ///
   /// In id, this message translates to:
@@ -860,18 +848,6 @@ abstract class AppLocalizations {
   /// **'Anggaran harus lebih dari 0'**
   String get validationBudgetRequired;
 
-  /// No description provided for @tripDateLabel.
-  ///
-  /// In id, this message translates to:
-  /// **'Tanggal Mulai & Selesai'**
-  String get tripDateLabel;
-
-  /// No description provided for @tripDateHint.
-  ///
-  /// In id, this message translates to:
-  /// **'Waktu pelesiran di pulau'**
-  String get tripDateHint;
-
   /// No description provided for @tripStartTimeLabel.
   ///
   /// In id, this message translates to:
@@ -938,17 +914,101 @@ abstract class AppLocalizations {
   /// **'Batalkan'**
   String get tripCancelConfirm;
 
+  /// No description provided for @tripWishlistSearchHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Cari pantai, kuliner, museum...'**
+  String get tripWishlistSearchHint;
+
+  /// No description provided for @tripWishlistNoResults.
+  ///
+  /// In id, this message translates to:
+  /// **'Tidak ada tempat yang cocok.'**
+  String get tripWishlistNoResults;
+
+  /// No description provided for @tripWishlistPin.
+  ///
+  /// In id, this message translates to:
+  /// **'Pin di peta'**
+  String get tripWishlistPin;
+
+  /// No description provided for @tripWishlistRemove.
+  ///
+  /// In id, this message translates to:
+  /// **'Hapus {name} dari wishlist trip'**
+  String tripWishlistRemove(String name);
+
+  /// No description provided for @tripWishlistVisitLength.
+  ///
+  /// In id, this message translates to:
+  /// **'Lama kunjungan'**
+  String get tripWishlistVisitLength;
+
+  /// No description provided for @tripWishlistVisitLengthHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Berapa lama kamu di tempat ini?'**
+  String get tripWishlistVisitLengthHint;
+
+  /// No description provided for @tripWishlistSave.
+  ///
+  /// In id, this message translates to:
+  /// **'Simpan'**
+  String get tripWishlistSave;
+
+  /// No description provided for @tripWishlistSummaryPlaces.
+  ///
+  /// In id, this message translates to:
+  /// **'Tempat'**
+  String get tripWishlistSummaryPlaces;
+
+  /// No description provided for @tripWishlistSummaryVisit.
+  ///
+  /// In id, this message translates to:
+  /// **'Total kunjungan'**
+  String get tripWishlistSummaryVisit;
+
+  /// No description provided for @tripWishlistHours.
+  ///
+  /// In id, this message translates to:
+  /// **'±{hours} jam'**
+  String tripWishlistHours(String hours);
+
+  /// No description provided for @tripWishlistActionFailed.
+  ///
+  /// In id, this message translates to:
+  /// **'Wishlist trip gagal diperbarui, coba lagi.'**
+  String get tripWishlistActionFailed;
+
+  /// No description provided for @tripWishlistPicked.
+  ///
+  /// In id, this message translates to:
+  /// **'Terpilih'**
+  String get tripWishlistPicked;
+
+  /// No description provided for @tripWishlistPageTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Tambahkan Tempat Favoritmu'**
+  String get tripWishlistPageTitle;
+
+  /// No description provided for @tripWishlistPageSubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Ketuk tempat yang wajib dikunjungi dalam liburan ini (opsional).'**
+  String get tripWishlistPageSubtitle;
+
+  /// No description provided for @tripWishlistPins.
+  ///
+  /// In id, this message translates to:
+  /// **'Pin sendiri'**
+  String get tripWishlistPins;
+
   /// No description provided for @tripWishlistHeader.
   ///
   /// In id, this message translates to:
   /// **'Susun Wishlist'**
   String get tripWishlistHeader;
-
-  /// No description provided for @tripWishlistComingSoon.
-  ///
-  /// In id, this message translates to:
-  /// **'Penyusunan wishlist sedang disiapkan. Kamu tetap bisa lanjut, sistem akan memilihkan tempat terbaik untukmu.'**
-  String get tripWishlistComingSoon;
 
   /// No description provided for @tripWishlistNext.
   ///

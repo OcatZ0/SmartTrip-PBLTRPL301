@@ -376,12 +376,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Tell us your preferences and we will build the best itinerary.';
 
   @override
-  String get tripDurationLabel => 'Trip Duration';
-
-  @override
-  String get tripDurationHint => 'How long is your Batam holiday?';
-
-  @override
   String get tripDurationDecrease => 'Decrease duration';
 
   @override
@@ -441,12 +435,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get validationBudgetRequired => 'Budget must be more than 0';
 
   @override
-  String get tripDateLabel => 'Start & End Date';
-
-  @override
-  String get tripDateHint => 'Your time on the island';
-
-  @override
   String get tripStartTimeLabel => 'Start Time';
 
   @override
@@ -481,11 +469,58 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tripCancelConfirm => 'Cancel Setup';
 
   @override
-  String get tripWishlistHeader => 'Build Wishlist';
+  String get tripWishlistSearchHint => 'Search beaches, food, museums...';
 
   @override
-  String get tripWishlistComingSoon =>
-      'The wishlist is still being prepared. You can continue and the system will pick the best places for you.';
+  String get tripWishlistNoResults => 'No matching places.';
+
+  @override
+  String get tripWishlistPin => 'Pin on map';
+
+  @override
+  String tripWishlistRemove(String name) {
+    return 'Remove $name from the trip wishlist';
+  }
+
+  @override
+  String get tripWishlistVisitLength => 'Visit length';
+
+  @override
+  String get tripWishlistVisitLengthHint => 'How long will you stay here?';
+
+  @override
+  String get tripWishlistSave => 'Save';
+
+  @override
+  String get tripWishlistSummaryPlaces => 'Places';
+
+  @override
+  String get tripWishlistSummaryVisit => 'Total visit';
+
+  @override
+  String tripWishlistHours(String hours) {
+    return '±$hours h';
+  }
+
+  @override
+  String get tripWishlistActionFailed =>
+      'The trip wishlist could not be updated, try again.';
+
+  @override
+  String get tripWishlistPicked => 'Picked';
+
+  @override
+  String get tripWishlistPageTitle => 'Add Your Favourite Places';
+
+  @override
+  String get tripWishlistPageSubtitle =>
+      'Tap the places this trip must include (optional).';
+
+  @override
+  String get tripWishlistPins => 'Own pins';
+
+  @override
+  String get tripWishlistHeader => 'Build Wishlist';
 
   @override
   String get tripWishlistNext => 'Continue to Interests & Priorities (3/4)';

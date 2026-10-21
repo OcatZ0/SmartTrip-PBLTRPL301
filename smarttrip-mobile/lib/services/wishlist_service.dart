@@ -5,6 +5,7 @@ import '../core/api/api_client.dart';
 import '../core/api/providers.dart';
 import '../core/auth/session_controller.dart';
 import '../core/error/api_failure.dart';
+import '../models/place.dart';
 
 /// The user's own wishlist (heart on catalog cards, tab Wishlist), separate
 /// from a trip's wishlist step (C2).
@@ -21,6 +22,15 @@ class WishlistService {
         .cast<Map<String, dynamic>>()
         .map((place) => place['places_id'] as int)
         .toSet();
+  }
+
+  /// The saved places themselves, newest first (step C2 suggests them).
+  Future<List<CatalogPlace>> fetchPlaces() async {
+    final body = await _call(() => _dio.get<Map<String, dynamic>>('/wishlist'));
+    return (body['data'] as List? ?? const [])
+        .cast<Map<String, dynamic>>()
+        .map(CatalogPlace.fromJson)
+        .toList();
   }
 
   Future<void> add(int placesId) async {

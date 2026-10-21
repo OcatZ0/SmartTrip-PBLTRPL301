@@ -1362,4 +1362,17 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get tripSummaryHours => 'Jam harian';
+
+  @override
+  String liveMapDay(int day) {
+    return 'Hari $day';
+  }
+
+  @override
+  String liveMapProgress(int visited, int total) {
+    return '$visited dari $total tempat dikunjungi';
+  }
+
+  @override
+  String get liveMapStop => 'Hentikan';
 }

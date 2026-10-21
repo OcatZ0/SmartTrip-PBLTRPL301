@@ -1395,4 +1395,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tripSummaryHours => 'Daily hours';
+
+  @override
+  String liveMapDay(int day) {
+    return 'Day $day';
+  }
+
+  @override
+  String liveMapProgress(int visited, int total) {
+    return '$visited of $total stops visited';
+  }
+
+  @override
+  String get liveMapStop => 'Stop';
 }

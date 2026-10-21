@@ -19,7 +19,9 @@ List<LatLng> decodePolyline(String encoded) {
       result |= (byte & 0x1f) << shift;
       shift += 5;
     } while (byte >= 0x20 && index < encoded.length);
-    return (result & 1) != 0 ? ~(result >> 1) : result >> 1;
+    // Not ~(result >> 1): on the web, bitwise results are unsigned 32-bit, so
+    // every negative step would turn into a latitude in the thousands.
+    return (result & 1) != 0 ? -(result >> 1) - 1 : result >> 1;
   }
 
   while (index < encoded.length) {

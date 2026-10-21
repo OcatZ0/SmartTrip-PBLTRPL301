@@ -137,6 +137,8 @@ class TripPlace {
     this.estimatedVisitMinutes,
     this.isOutdoor = false,
     this.rating,
+    this.estimatedCostIdr,
+    this.topsisScore,
   });
 
   factory TripPlace.fromJson(Map<String, dynamic> json) {
@@ -152,6 +154,8 @@ class TripPlace {
       estimatedVisitMinutes: json['estimated_visit_minutes'] as int?,
       isOutdoor: json['is_outdoor'] as bool? ?? false,
       rating: _toDouble(json['rating']),
+      estimatedCostIdr: (json['estimated_cost_idr'] as num?)?.toInt(),
+      topsisScore: _toDouble(json['topsis_score']),
     );
   }
 
@@ -166,6 +170,12 @@ class TripPlace {
   final int? estimatedVisitMinutes;
   final bool isOutdoor;
   final double? rating;
+
+  /// Null when unknown, 0 when free.
+  final int? estimatedCostIdr;
+
+  /// 0-1, only on a swap candidate (D2): how well it fits the trip.
+  final double? topsisScore;
 }
 
 /// One of the top-3 hotels from `GET /api/trips/{id}/hotel-options`.

@@ -122,7 +122,8 @@ void main() {
     expect(find.text('Hujan'), findsOneWidget);
     expect(find.text('25-31°C · peluang hujan 85%'), findsOneWidget);
     expect(find.textContaining('ada 1 tempat luar ruangan'), findsOneWidget);
-    expect(find.text('Ganti tempat luar ruangan'), findsOneWidget);
+    // Swapping goes through each outdoor stop's badge, not a button on the card.
+    expect(find.text('Ganti tempat luar ruangan'), findsNothing);
     expect(find.text('Hujan, ganti?'), findsOneWidget);
     expect(notifications.reminders, [5]);
     // Day 1 has stops, day 2 has none; 09:00 start, reminded half an hour before.

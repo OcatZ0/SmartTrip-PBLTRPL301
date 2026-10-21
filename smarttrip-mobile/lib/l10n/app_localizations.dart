@@ -1508,6 +1508,18 @@ abstract class AppLocalizations {
   /// **'Berangkat dari {name}'**
   String itineraryStartFrom(String name);
 
+  /// No description provided for @itineraryDayShort.
+  ///
+  /// In id, this message translates to:
+  /// **'Hari {day}'**
+  String itineraryDayShort(int day);
+
+  /// No description provided for @itineraryStopsCount.
+  ///
+  /// In id, this message translates to:
+  /// **'{count} tempat'**
+  String itineraryStopsCount(int count);
+
   /// No description provided for @itineraryUnknownPlace.
   ///
   /// In id, this message translates to:
@@ -2132,6 +2144,216 @@ abstract class AppLocalizations {
   /// **'Luar ruangan'**
   String get swapOutdoor;
 
+  /// No description provided for @placeSheetTooltip.
+  ///
+  /// In id, this message translates to:
+  /// **'Detail tempat'**
+  String get placeSheetTooltip;
+
+  /// No description provided for @placeSheetCustomPin.
+  ///
+  /// In id, this message translates to:
+  /// **'Pin yang kamu pasang sendiri di peta.'**
+  String get placeSheetCustomPin;
+
+  /// No description provided for @swapCurrentBadge.
+  ///
+  /// In id, this message translates to:
+  /// **'Tempat yang diganti'**
+  String get swapCurrentBadge;
+
+  /// No description provided for @swapDaySubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Jadwal Hari {day}'**
+  String swapDaySubtitle(int day);
+
+  /// No description provided for @swapFilterNear.
+  ///
+  /// In id, this message translates to:
+  /// **'Dekat (< 3 km)'**
+  String get swapFilterNear;
+
+  /// No description provided for @swapFilterRating.
+  ///
+  /// In id, this message translates to:
+  /// **'Rating 4.5+'**
+  String get swapFilterRating;
+
+  /// No description provided for @swapFilterCheap.
+  ///
+  /// In id, this message translates to:
+  /// **'Hemat (≤ Rp50rb)'**
+  String get swapFilterCheap;
+
+  /// No description provided for @swapEngineTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Pengganti Cerdas'**
+  String get swapEngineTitle;
+
+  /// No description provided for @swapEngineBody.
+  ///
+  /// In id, this message translates to:
+  /// **'Diurutkan dari minat, jarak, anggaran dan rating trip-mu. Tempat yang tutup di hari ini tidak ikut.'**
+  String get swapEngineBody;
+
+  /// No description provided for @swapBestTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilihan Alternatif Terbaik'**
+  String get swapBestTitle;
+
+  /// No description provided for @swapSortedBy.
+  ///
+  /// In id, this message translates to:
+  /// **'Diurutkan: Paling Pas'**
+  String get swapSortedBy;
+
+  /// No description provided for @swapSearchResults.
+  ///
+  /// In id, this message translates to:
+  /// **'Hasil Pencarian'**
+  String get swapSearchResults;
+
+  /// No description provided for @swapMatch.
+  ///
+  /// In id, this message translates to:
+  /// **'Cocok {percent}%'**
+  String swapMatch(int percent);
+
+  /// No description provided for @swapTopPick.
+  ///
+  /// In id, this message translates to:
+  /// **'Rekomendasi Utama'**
+  String get swapTopPick;
+
+  /// No description provided for @swapSummaryLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Ganti:'**
+  String get swapSummaryLabel;
+
+  /// No description provided for @swapPickHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih tempat pengganti di atas'**
+  String get swapPickHint;
+
+  /// No description provided for @swapApply.
+  ///
+  /// In id, this message translates to:
+  /// **'Terapkan Penggantian'**
+  String get swapApply;
+
+  /// No description provided for @swapNoFilterResults.
+  ///
+  /// In id, this message translates to:
+  /// **'Tidak ada tempat yang cocok dengan filter ini.'**
+  String get swapNoFilterResults;
+
+  /// No description provided for @stopSheetDetail.
+  ///
+  /// In id, this message translates to:
+  /// **'Detail Tempat Wisata'**
+  String get stopSheetDetail;
+
+  /// No description provided for @stopSheetDetailHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Lihat deskripsi, fasilitas, tiket & ulasan'**
+  String get stopSheetDetailHint;
+
+  /// No description provided for @stopSheetSwap.
+  ///
+  /// In id, this message translates to:
+  /// **'Ganti Lokasi Wisata'**
+  String get stopSheetSwap;
+
+  /// No description provided for @stopSheetSwapHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Cari alternatif tempat wisata lain untuk jadwal ini'**
+  String get stopSheetSwapHint;
+
+  /// No description provided for @stopSheetMaps.
+  ///
+  /// In id, this message translates to:
+  /// **'Buka di Google Maps'**
+  String get stopSheetMaps;
+
+  /// No description provided for @stopSheetMapsHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Petunjuk arah navigasi rute ke lokasi'**
+  String get stopSheetMapsHint;
+
+  /// No description provided for @stopSheetFromYou.
+  ///
+  /// In id, this message translates to:
+  /// **'± {km} km dari lokasimu'**
+  String stopSheetFromYou(String km);
+
+  /// No description provided for @swapSlot.
+  ///
+  /// In id, this message translates to:
+  /// **'Tempat ke-{order} hari ini'**
+  String swapSlot(int order);
+
+  /// No description provided for @swapDriveMinutes.
+  ///
+  /// In id, this message translates to:
+  /// **'±{minutes} mnt berkendara'**
+  String swapDriveMinutes(int minutes);
+
+  /// No description provided for @swapRouteShorter.
+  ///
+  /// In id, this message translates to:
+  /// **'Rute hari ini lebih hemat ±{km} km (±{minutes} mnt).'**
+  String swapRouteShorter(String km, int minutes);
+
+  /// No description provided for @swapRouteLonger.
+  ///
+  /// In id, this message translates to:
+  /// **'Rute hari ini bertambah ±{km} km (±{minutes} mnt).'**
+  String swapRouteLonger(String km, int minutes);
+
+  /// No description provided for @swapRouteSame.
+  ///
+  /// In id, this message translates to:
+  /// **'Searah dengan rute hari ini, jarak tempuh hampir sama.'**
+  String get swapRouteSame;
+
+  /// No description provided for @swapDeltaSave.
+  ///
+  /// In id, this message translates to:
+  /// **'Hemat {km} km'**
+  String swapDeltaSave(String km);
+
+  /// No description provided for @swapDeltaExtra.
+  ///
+  /// In id, this message translates to:
+  /// **'+{km} km'**
+  String swapDeltaExtra(String km);
+
+  /// No description provided for @swapDeltaSame.
+  ///
+  /// In id, this message translates to:
+  /// **'≈ sama'**
+  String get swapDeltaSame;
+
+  /// No description provided for @swapDurationHours.
+  ///
+  /// In id, this message translates to:
+  /// **'{hours} jam'**
+  String swapDurationHours(int hours);
+
+  /// No description provided for @swapDurationHoursMinutes.
+  ///
+  /// In id, this message translates to:
+  /// **'{hours}j {minutes}m'**
+  String swapDurationHoursMinutes(int hours, int minutes);
+
   /// No description provided for @swapDone.
   ///
   /// In id, this message translates to:
@@ -2179,12 +2401,6 @@ abstract class AppLocalizations {
   /// In id, this message translates to:
   /// **'Diprediksi hujan, ada {count} tempat luar ruangan hari ini. Pertimbangkan menggantinya dengan tempat dalam ruangan.'**
   String weatherRainWarning(int count);
-
-  /// No description provided for @weatherSwapAction.
-  ///
-  /// In id, this message translates to:
-  /// **'Ganti tempat luar ruangan'**
-  String get weatherSwapAction;
 
   /// No description provided for @weatherRainBadge.
   ///

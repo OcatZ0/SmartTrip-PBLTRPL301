@@ -818,6 +818,16 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String itineraryDayShort(int day) {
+    return 'Day $day';
+  }
+
+  @override
+  String itineraryStopsCount(int count) {
+    return '$count stops';
+  }
+
+  @override
   String get itineraryUnknownPlace => 'Place unavailable';
 
   @override
@@ -1174,6 +1184,135 @@ class AppLocalizationsEn extends AppLocalizations {
   String get swapOutdoor => 'Outdoor';
 
   @override
+  String get placeSheetTooltip => 'Place details';
+
+  @override
+  String get placeSheetCustomPin => 'A pin you dropped on the map yourself.';
+
+  @override
+  String get swapCurrentBadge => 'Being replaced';
+
+  @override
+  String swapDaySubtitle(int day) {
+    return 'Day $day schedule';
+  }
+
+  @override
+  String get swapFilterNear => 'Nearby (< 3 km)';
+
+  @override
+  String get swapFilterRating => 'Rating 4.5+';
+
+  @override
+  String get swapFilterCheap => 'Budget (≤ Rp50k)';
+
+  @override
+  String get swapEngineTitle => 'Smart alternatives';
+
+  @override
+  String get swapEngineBody =>
+      'Ranked by your trip\'s interests, distance, budget and rating. Places closed that day are left out.';
+
+  @override
+  String get swapBestTitle => 'Best alternatives';
+
+  @override
+  String get swapSortedBy => 'Sorted: best fit';
+
+  @override
+  String get swapSearchResults => 'Search results';
+
+  @override
+  String swapMatch(int percent) {
+    return '$percent% match';
+  }
+
+  @override
+  String get swapTopPick => 'Top pick';
+
+  @override
+  String get swapSummaryLabel => 'Swap:';
+
+  @override
+  String get swapPickHint => 'Pick a replacement above';
+
+  @override
+  String get swapApply => 'Apply swap';
+
+  @override
+  String get swapNoFilterResults => 'No places match these filters.';
+
+  @override
+  String get stopSheetDetail => 'Place details';
+
+  @override
+  String get stopSheetDetailHint =>
+      'See the description, facilities, tickets & reviews';
+
+  @override
+  String get stopSheetSwap => 'Swap this place';
+
+  @override
+  String get stopSheetSwapHint => 'Find another place for this slot';
+
+  @override
+  String get stopSheetMaps => 'Open in Google Maps';
+
+  @override
+  String get stopSheetMapsHint => 'Directions to the place';
+
+  @override
+  String stopSheetFromYou(String km) {
+    return '± $km km from you';
+  }
+
+  @override
+  String swapSlot(int order) {
+    return 'Stop $order of the day';
+  }
+
+  @override
+  String swapDriveMinutes(int minutes) {
+    return '±$minutes min drive';
+  }
+
+  @override
+  String swapRouteShorter(String km, int minutes) {
+    return 'The day\'s route gets ±$km km shorter (±$minutes min).';
+  }
+
+  @override
+  String swapRouteLonger(String km, int minutes) {
+    return 'The day\'s route gets ±$km km longer (±$minutes min).';
+  }
+
+  @override
+  String get swapRouteSame => 'On the day\'s way, about the same distance.';
+
+  @override
+  String swapDeltaSave(String km) {
+    return 'Save $km km';
+  }
+
+  @override
+  String swapDeltaExtra(String km) {
+    return '+$km km';
+  }
+
+  @override
+  String get swapDeltaSame => '≈ same';
+
+  @override
+  String swapDurationHours(int hours) {
+    return '$hours h';
+  }
+
+  @override
+  String swapDurationHoursMinutes(int hours, int minutes) {
+    return '${hours}h ${minutes}m';
+  }
+
+  @override
   String swapDone(String name) {
     return 'Replaced with $name.';
   }
@@ -1202,9 +1341,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String weatherRainWarning(int count) {
     return 'Rain is forecast and $count stops today are outdoors. Consider swapping them for indoor places.';
   }
-
-  @override
-  String get weatherSwapAction => 'Swap an outdoor stop';
 
   @override
   String get weatherRainBadge => 'Rain, swap?';

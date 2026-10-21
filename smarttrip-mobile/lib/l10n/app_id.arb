@@ -384,6 +384,14 @@
       }
     }
   },
+  "itineraryDayShort": "Hari {day}",
+  "@itineraryDayShort": {
+    "placeholders": {"day": {"type": "int"}}
+  },
+  "itineraryStopsCount": "{count} tempat",
+  "@itineraryStopsCount": {
+    "placeholders": {"count": {"type": "int"}}
+  },
   "itineraryUnknownPlace": "Tempat tidak tersedia",
   "liveMapTitle": "Pelacakan Trip",
   "liveMapSubtitle": "SmartTrip • Hari {day}",
@@ -577,6 +585,74 @@
   "swapEmpty": "Belum ada tempat pengganti yang cocok.",
   "swapIndoor": "Dalam ruangan",
   "swapOutdoor": "Luar ruangan",
+  "placeSheetTooltip": "Detail tempat",
+  "placeSheetCustomPin": "Pin yang kamu pasang sendiri di peta.",
+  "swapCurrentBadge": "Tempat yang diganti",
+  "swapDaySubtitle": "Jadwal Hari {day}",
+  "@swapDaySubtitle": {
+    "placeholders": {"day": {"type": "int"}}
+  },
+  "swapFilterNear": "Dekat (< 3 km)",
+  "swapFilterRating": "Rating 4.5+",
+  "swapFilterCheap": "Hemat (≤ Rp50rb)",
+  "swapEngineTitle": "Pengganti Cerdas",
+  "swapEngineBody": "Diurutkan dari minat, jarak, anggaran dan rating trip-mu. Tempat yang tutup di hari ini tidak ikut.",
+  "swapBestTitle": "Pilihan Alternatif Terbaik",
+  "swapSortedBy": "Diurutkan: Paling Pas",
+  "swapSearchResults": "Hasil Pencarian",
+  "swapMatch": "Cocok {percent}%",
+  "@swapMatch": {
+    "placeholders": {"percent": {"type": "int"}}
+  },
+  "swapTopPick": "Rekomendasi Utama",
+  "swapSummaryLabel": "Ganti:",
+  "swapPickHint": "Pilih tempat pengganti di atas",
+  "swapApply": "Terapkan Penggantian",
+  "swapNoFilterResults": "Tidak ada tempat yang cocok dengan filter ini.",
+  "stopSheetDetail": "Detail Tempat Wisata",
+  "stopSheetDetailHint": "Lihat deskripsi, fasilitas, tiket & ulasan",
+  "stopSheetSwap": "Ganti Lokasi Wisata",
+  "stopSheetSwapHint": "Cari alternatif tempat wisata lain untuk jadwal ini",
+  "stopSheetMaps": "Buka di Google Maps",
+  "stopSheetMapsHint": "Petunjuk arah navigasi rute ke lokasi",
+  "stopSheetFromYou": "± {km} km dari lokasimu",
+  "@stopSheetFromYou": {
+    "placeholders": {"km": {"type": "String"}}
+  },
+  "swapSlot": "Tempat ke-{order} hari ini",
+  "@swapSlot": {
+    "placeholders": {"order": {"type": "int"}}
+  },
+  "swapDriveMinutes": "±{minutes} mnt berkendara",
+  "@swapDriveMinutes": {
+    "placeholders": {"minutes": {"type": "int"}}
+  },
+  "swapRouteShorter": "Rute hari ini lebih hemat ±{km} km (±{minutes} mnt).",
+  "@swapRouteShorter": {
+    "placeholders": {"km": {"type": "String"}, "minutes": {"type": "int"}}
+  },
+  "swapRouteLonger": "Rute hari ini bertambah ±{km} km (±{minutes} mnt).",
+  "@swapRouteLonger": {
+    "placeholders": {"km": {"type": "String"}, "minutes": {"type": "int"}}
+  },
+  "swapRouteSame": "Searah dengan rute hari ini, jarak tempuh hampir sama.",
+  "swapDeltaSave": "Hemat {km} km",
+  "@swapDeltaSave": {
+    "placeholders": {"km": {"type": "String"}}
+  },
+  "swapDeltaExtra": "+{km} km",
+  "@swapDeltaExtra": {
+    "placeholders": {"km": {"type": "String"}}
+  },
+  "swapDeltaSame": "≈ sama",
+  "swapDurationHours": "{hours} jam",
+  "@swapDurationHours": {
+    "placeholders": {"hours": {"type": "int"}}
+  },
+  "swapDurationHoursMinutes": "{hours}j {minutes}m",
+  "@swapDurationHoursMinutes": {
+    "placeholders": {"hours": {"type": "int"}, "minutes": {"type": "int"}}
+  },
   "swapDone": "Diganti dengan {name}.",
   "@swapDone": {"placeholders": {"name": {"type": "String"}}},
   "weatherClear": "Cerah",
@@ -588,7 +664,6 @@
   "@weatherSummary": {"placeholders": {"min": {"type": "int"}, "max": {"type": "int"}, "chance": {"type": "int"}}},
   "weatherRainWarning": "Diprediksi hujan, ada {count} tempat luar ruangan hari ini. Pertimbangkan menggantinya dengan tempat dalam ruangan.",
   "@weatherRainWarning": {"placeholders": {"count": {"type": "int"}}},
-  "weatherSwapAction": "Ganti tempat luar ruangan",
   "weatherRainBadge": "Hujan, ganti?",
   "weatherReminderTitle": "Cek cuaca untuk {title}",
   "@weatherReminderTitle": {"placeholders": {"title": {"type": "String"}}},

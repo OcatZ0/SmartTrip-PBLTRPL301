@@ -408,5 +408,8 @@
   "tripPacePacked": "Packed",
   "tripSummaryBudget": "Budget",
   "tripSummaryDuration": "Duration",
-  "tripSummaryHours": "Daily hours"
+  "tripSummaryHours": "Daily hours",
+  "liveMapDay": "Day {day}",
+  "liveMapProgress": "{visited} of {total} stops visited",
+  "liveMapStop": "Stop"
 }

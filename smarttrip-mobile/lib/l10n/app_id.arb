@@ -681,5 +681,10 @@
   "tripPacePacked": "Padat",
   "tripSummaryBudget": "Anggaran",
   "tripSummaryDuration": "Durasi",
-  "tripSummaryHours": "Jam harian"
+  "tripSummaryHours": "Jam harian",
+  "liveMapDay": "Hari {day}",
+  "@liveMapDay": {"placeholders": {"day": {"type": "int"}}},
+  "liveMapProgress": "{visited} dari {total} tempat dikunjungi",
+  "@liveMapProgress": {"placeholders": {"visited": {"type": "int"}, "total": {"type": "int"}}},
+  "liveMapStop": "Hentikan"
 }

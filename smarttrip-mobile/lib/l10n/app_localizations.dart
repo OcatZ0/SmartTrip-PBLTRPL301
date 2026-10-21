@@ -2491,6 +2491,24 @@ abstract class AppLocalizations {
   /// In id, this message translates to:
   /// **'Jam harian'**
   String get tripSummaryHours;
+
+  /// No description provided for @liveMapDay.
+  ///
+  /// In id, this message translates to:
+  /// **'Hari {day}'**
+  String liveMapDay(int day);
+
+  /// No description provided for @liveMapProgress.
+  ///
+  /// In id, this message translates to:
+  /// **'{visited} dari {total} tempat dikunjungi'**
+  String liveMapProgress(int visited, int total);
+
+  /// No description provided for @liveMapStop.
+  ///
+  /// In id, this message translates to:
+  /// **'Hentikan'**
+  String get liveMapStop;
 }
 
 class _AppLocalizationsDelegate

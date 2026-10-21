@@ -19,6 +19,8 @@ import '../../widgets/app_bottom_bar.dart';
 import '../../widgets/category_icons.dart';
 import '../../widgets/load_error_view.dart';
 import '../trip/trip_preferences_screen.dart' show TripPreferencesData, tripPreferencesDataProvider;
+import '../trip/widgets/interest_chip.dart';
+import '../trip/widgets/weight_slider.dart';
 
 /// Profil (F008/F009): panorama header, default interests and route
 /// priorities edited in place, and the account rows.
@@ -404,27 +406,16 @@ class _PreferencesFormState extends ConsumerState<_PreferencesForm> {
               const SizedBox(height: 2),
               Text(l10n.profileInterestsHint, style: appText(12, FontWeight.w400, AppColors.inkMuted, height: 16)),
               const SizedBox(height: 12),
-              // Two per row.
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final width = (constraints.maxWidth - 8) / 2;
-                  return Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      for (final category in widget.data.categories)
-                        SizedBox(
-                          width: width,
-                          child: _InterestChip(
-                            label: category.localizedName(languageCode),
-                            icon: categoryIcon(category.iconSymbol),
-                            selected: _selected.contains(category.categoriesId),
-                            onTap: () => _toggle(category.categoriesId),
-                          ),
-                        ),
-                    ],
-                  );
-                },
+              InterestChipGrid(
+                children: [
+                  for (final category in widget.data.categories)
+                    InterestChip(
+                      label: category.localizedName(languageCode),
+                      icon: categoryIcon(category.iconSymbol),
+                      selected: _selected.contains(category.categoriesId),
+                      onTap: () => _toggle(category.categoriesId),
+                    ),
+                ],
               ),
             ],
           ),
@@ -437,7 +428,7 @@ class _PreferencesFormState extends ConsumerState<_PreferencesForm> {
               Text(l10n.profilePriorities, style: appText(17, FontWeight.w700, AppColors.ink, height: 22)),
               for (final (index, (label, hint)) in weights.indexed) ...[
                 const SizedBox(height: 16),
-                _WeightSlider(
+                WeightSlider(
                   label: label,
                   hint: hint,
                   value: _ratings[index],
@@ -448,105 +439,6 @@ class _PreferencesFormState extends ConsumerState<_PreferencesForm> {
             ],
           ),
         ),
-      ],
-    );
-  }
-}
-
-class _InterestChip extends StatelessWidget {
-  const _InterestChip({required this.label, required this.icon, required this.selected, required this.onTap});
-
-  final String label;
-  final IconData? icon;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      selected: selected,
-      child: Material(
-        color: selected ? AppColors.sea600 : Colors.white,
-        shape: StadiumBorder(side: BorderSide(color: selected ? AppColors.sea600 : AppColors.line)),
-        child: InkWell(
-          customBorder: const StadiumBorder(),
-          onTap: onTap,
-          child: Container(
-            height: 40,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Row(
-              children: [
-                Icon(icon ?? Icons.label_outline, size: 16, color: selected ? Colors.white : AppColors.sea600),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: appText(
-                      13,
-                      selected ? FontWeight.w700 : FontWeight.w600,
-                      selected ? Colors.white : const Color(0xFF3A4757),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _WeightSlider extends StatelessWidget {
-  const _WeightSlider({
-    required this.label,
-    required this.hint,
-    required this.value,
-    required this.onChanged,
-    required this.onChangeEnd,
-  });
-
-  final String label;
-  final String hint;
-
-  /// 0-10; the backend turns the four values into weights.
-  final double value;
-  final ValueChanged<double> onChanged;
-  final ValueChanged<double> onChangeEnd;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: appText(14, FontWeight.w600, AppColors.ink)),
-        SliderTheme(
-          data: SliderTheme.of(context).copyWith(
-            trackHeight: 4,
-            activeTrackColor: AppColors.sea600,
-            inactiveTrackColor: AppColors.field,
-            thumbColor: AppColors.sea600,
-            overlayColor: AppColors.sea600.withValues(alpha: 0.12),
-            overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),
-            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 9),
-            padding: EdgeInsets.zero,
-          ),
-          child: SizedBox(
-            height: 28,
-            child: Slider(
-              value: value,
-              max: 10,
-              divisions: 10,
-              label: value.round().toString(),
-              onChanged: onChanged,
-              onChangeEnd: onChangeEnd,
-            ),
-          ),
-        ),
-        Text(hint, style: appText(11, FontWeight.w400, AppColors.inkMuted, height: 16)),
       ],
     );
   }

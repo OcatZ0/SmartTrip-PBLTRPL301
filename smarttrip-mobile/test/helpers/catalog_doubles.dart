@@ -183,6 +183,12 @@ class FakeWishlistService implements WishlistService {
   @override
   Future<Set<int>> fetchPlaceIds() async => {...saved};
 
+  /// The catalog tests only need the ids; the trip wishlist step reads these.
+  List<CatalogPlace> savedPlaces = const [];
+
+  @override
+  Future<List<CatalogPlace>> fetchPlaces() async => savedPlaces;
+
   @override
   Future<void> add(int placesId) async {
     _maybeFail();

@@ -172,6 +172,38 @@ class TripService {
         .toList();
   }
 
+  /// Step C2: the trip's wishlist, catalog places and custom pins.
+  Future<List<TripWishlistItem>> fetchTripWishlist(int tripsId) async {
+    final body = await _call(() => _dio.get<Map<String, dynamic>>('/trips/$tripsId/wishlist'));
+    return (body['data'] as List? ?? const [])
+        .cast<Map<String, dynamic>>()
+        .map(TripWishlistItem.fromJson)
+        .toList();
+  }
+
+  /// Adds a pin dropped on the map, with how long the user plans to stay.
+  Future<void> addCustomPinToTripWishlist(
+    int tripsId, {
+    required String name,
+    required double lat,
+    required double lng,
+    required int visitMinutes,
+  }) async {
+    await _call(() => _dio.post<Map<String, dynamic>>(
+          '/trips/$tripsId/wishlist',
+          data: {
+            'custom_name': name,
+            'custom_lat': lat,
+            'custom_lng': lng,
+            'custom_visit_minutes': visitMinutes,
+          },
+        ));
+  }
+
+  Future<void> removeFromTripWishlist(int tripsId, int wishlistItemId) async {
+    await _call(() => _dio.delete<Map<String, dynamic>>('/trips/$tripsId/wishlist/$wishlistItemId'));
+  }
+
   /// Adds a catalog place to a trip's wishlist; false when it was already
   /// there (the API answers 200 instead of 201).
   Future<bool> addPlaceToTripWishlist(int tripsId, int placesId) async {

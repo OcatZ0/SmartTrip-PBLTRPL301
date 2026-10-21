@@ -21,6 +21,8 @@ import '../../widgets/app_bottom_bar.dart';
 import '../../widgets/category_icons.dart';
 import '../../widgets/load_error_view.dart';
 import 'widgets/featured_place_card.dart';
+import 'widgets/catalog_filter_chip.dart';
+import 'widgets/catalog_search_field.dart';
 import 'widgets/place_grid_card.dart';
 import 'widgets/place_open_container.dart';
 
@@ -174,7 +176,7 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
                     greeting: l10n.catalogGreeting,
                     loginLabel: isLoggedIn ? null : l10n.catalogLogin,
                     onLogin: _goToLogin,
-                    search: _SearchField(
+                    search: CatalogSearchField(
                       controller: _searchController,
                       onChanged: _onSearchChanged,
                       onClear: _clearSearch,
@@ -547,75 +549,6 @@ class _RenderKeepPageStill extends RenderProxyBox {
   }) {}
 }
 
-class _SearchField extends StatelessWidget {
-  const _SearchField({
-    required this.controller,
-    required this.onChanged,
-    required this.onClear,
-  });
-
-  final TextEditingController controller;
-  final ValueChanged<String> onChanged;
-  final VoidCallback onClear;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-
-    return Container(
-      height: 52,
-      padding: const EdgeInsets.only(left: 14, right: 4),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: AppColors.floatShadow,
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.search, size: 22, color: AppColors.sea600),
-          const SizedBox(width: 10),
-          Expanded(
-            child: TextField(
-              controller: controller,
-              onChanged: onChanged,
-              textInputAction: TextInputAction.search,
-              cursorColor: AppColors.sea600,
-              style: appText(14, FontWeight.w400, AppColors.ink),
-              decoration: InputDecoration(
-                isCollapsed: true,
-                border: InputBorder.none,
-                hintText: l10n.catalogSearchHint,
-                hintMaxLines: 1,
-                hintStyle: appText(
-                  14,
-                  FontWeight.w400,
-                  AppColors.inkMuted,
-                ),
-              ),
-            ),
-          ),
-          // Listens to the field itself, so typing does not rebuild the
-          // whole catalog just to show or hide this button.
-          ValueListenableBuilder<TextEditingValue>(
-            valueListenable: controller,
-            builder: (context, value, _) => value.text.isEmpty
-                ? const SizedBox.shrink()
-                : IconButton(
-                    tooltip: l10n.catalogClearSearch,
-                    onPressed: onClear,
-                    icon: const Icon(
-                      Icons.close,
-                      size: 18,
-                      color: AppColors.inkMuted,
-                    ),
-                  ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _ChipBar extends ConsumerWidget {
   const _ChipBar({required this.filter});
 
@@ -632,7 +565,7 @@ class _ChipBar extends ConsumerWidget {
 
     final kecamatan = filter.kecamatan;
     final chips = <Widget>[
-      _FilterChip(
+      CatalogFilterChip(
         label: kecamatan ?? l10n.catalogKecamatanAll,
         selected: kecamatan != null,
         leading: Icons.place_outlined,
@@ -640,19 +573,19 @@ class _ChipBar extends ConsumerWidget {
         onTap: () => _pickKecamatan(context),
       ),
       Center(child: Container(width: 1, height: 24, color: AppColors.line)),
-      _FilterChip(
+      CatalogFilterChip(
         label: l10n.catalogFilterAll,
         selected: filter.categorySlug == null && filter.type == null,
         onTap: () => controller.selectCategory(null),
       ),
       for (final category in categories)
-        _FilterChip(
+        CatalogFilterChip(
           label: category.localizedName(languageCode),
           selected: filter.categorySlug == category.slug,
           leading: categoryIcon(category.iconSymbol),
           onTap: () => controller.selectCategory(category.slug),
         ),
-      _FilterChip(
+      CatalogFilterChip(
         label: l10n.catalogFilterLodging,
         selected: filter.type == 'lodging',
         onTap: () => controller.selectType('lodging'),
@@ -764,81 +697,6 @@ class _KecamatanSheet extends ConsumerWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _FilterChip extends StatelessWidget {
-  const _FilterChip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-    this.leading,
-    this.trailing,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-  final IconData? leading;
-  final IconData? trailing;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      selected: selected,
-      child: Material(
-        color: selected ? AppColors.navy900 : Colors.white,
-        shape: StadiumBorder(
-          side: selected
-              ? BorderSide.none
-              : const BorderSide(color: AppColors.line),
-        ),
-        child: InkWell(
-          customBorder: const StadiumBorder(),
-          onTap: onTap,
-          child: Container(
-            height: 36,
-            padding: EdgeInsets.only(
-              left: leading == null ? 16 : 12,
-              right: trailing == null ? 16 : 10,
-            ),
-            alignment: Alignment.center,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (leading != null) ...[
-                  Icon(
-                    leading,
-                    size: 16,
-                    color: selected
-                        ? AppColors.sun400
-                        : AppColors.sea600,
-                  ),
-                  const SizedBox(width: 6),
-                ],
-                Text(
-                  label,
-                  style: appText(
-                    13,
-                    selected ? FontWeight.w700 : FontWeight.w600,
-                    selected ? Colors.white : AppColors.ink,
-                  ),
-                ),
-                if (trailing != null) ...[
-                  const SizedBox(width: 4),
-                  Icon(
-                    trailing,
-                    size: 18,
-                    color: selected ? Colors.white : AppColors.inkMuted,
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }

@@ -387,3 +387,49 @@ class GenerateResult {
   /// Wishlist places closed on every day of the trip, left out.
   final int closedWishlistCount;
 }
+
+/// One place in a trip's wishlist (step C2), from `GET /api/trips/{id}/wishlist`:
+/// a catalog place, or a custom pin with its own name, spot and visit length.
+class TripWishlistItem {
+  const TripWishlistItem({
+    required this.id,
+    required this.name,
+    required this.visitMinutes,
+    this.placesId,
+    this.type,
+    this.photoUrl,
+  });
+
+  factory TripWishlistItem.fromJson(Map<String, dynamic> json) {
+    final place = (json['place'] as Map?)?.cast<String, dynamic>();
+    if (place != null) {
+      return TripWishlistItem(
+        id: json['trip_wishlist_places_id'] as int,
+        placesId: place['places_id'] as int?,
+        name: place['name'] as String? ?? '',
+        type: place['type'] as String?,
+        photoUrl: AppConfig.resolveMediaUrl(place['photo_url'] as String?),
+        // The itinerary falls back to 60 minutes for a place without one.
+        visitMinutes: (place['estimated_visit_minutes'] as num?)?.toInt() ?? 60,
+      );
+    }
+
+    return TripWishlistItem(
+      id: json['trip_wishlist_places_id'] as int,
+      name: json['custom_name'] as String? ?? '',
+      visitMinutes: (json['custom_visit_minutes'] as num?)?.toInt() ?? 60,
+    );
+  }
+
+  /// `trip_wishlist_places_id`, used to remove it.
+  final int id;
+
+  /// Null for a custom pin.
+  final int? placesId;
+  final String name;
+  final String? type;
+  final String? photoUrl;
+  final int visitMinutes;
+
+  bool get isCustomPin => placesId == null;
+}

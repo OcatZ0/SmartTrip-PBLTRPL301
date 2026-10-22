@@ -108,7 +108,7 @@ class PlaceController extends Controller
             ->values()
             ->all();
 
-        $reference = $points !== [] ? KMeans::centroid($points) : $day->trip->hotelCoordinates();
+        $reference = $points !== [] ? KMeans::centroid($points) : $day->startPoint();
 
         $places = $query->limit(self::NEAR_DAY_SCAN_LIMIT)->get();
 

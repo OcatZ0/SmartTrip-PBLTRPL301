@@ -48,11 +48,18 @@ class ItineraryGenerator
             throw new RuntimeException('Trip belum punya minat/bobot kriteria - panggil /weights dulu.');
         }
 
-        if (! $trip->hasResolvedHotel()) {
+        $trip->syncDays();
+        $dayRows = $trip->days()->with(['startPlace', 'endPlace'])->orderBy('day_number')->get()->values();
+        $starts = $dayRows->map(fn (ItineraryDay $day) => $day->startPoint())->all();
+        $ends = $dayRows->map(fn (ItineraryDay $day) => $day->endPoint())->all();
+
+        if (in_array(null, $starts, true)) {
             throw new RuntimeException('Trip belum punya hotel/titik awal - panggil /hotel dulu.');
         }
 
-        $start = $trip->hotelCoordinates();
+        // Candidates are scored against where the trip starts; each day then
+        // fills its slots near its own start and end.
+        $start = $starts[0];
         $windowMinutes = $this->windowMinutes($trip);
         $tripCategoryIds = $trip->interestCategories()->pluck('categories.categories_id')->all();
 
@@ -60,7 +67,7 @@ class ItineraryGenerator
 
         $candidatePool = $this->scoredCandidatePool($trip, $wishlistStops, $tripCategoryIds, $start);
 
-        $dayBuckets = $this->clusterIntoDays($trip->num_days, $wishlistStops);
+        $dayBuckets = $this->assignBucketsToDays($this->clusterIntoDays($trip->num_days, $wishlistStops), $starts, $ends);
 
         // ISO weekday of every trip day (day 1 is start_date).
         $weekdays = [];
@@ -84,9 +91,11 @@ class ItineraryGenerator
         for ($dayNumber = 0; $dayNumber < $dayCount; $dayNumber++) {
             $bucket = $dayBuckets[$dayNumber];
             $stops = $bucket['stops'];
-            $centroid = $bucket['centroid'] ?? $start;
+            $dayStart = $starts[$dayNumber];
+            $dayEnd = $ends[$dayNumber];
+            $centroid = $bucket['centroid'] ?? $this->midpoint($dayStart, $dayEnd);
 
-            [$stops, $overflow] = $this->fitWithinBudget($stops, $start, $windowMinutes, $centroid);
+            [$stops, $overflow] = $this->fitWithinBudget($stops, $dayStart, $dayEnd, $windowMinutes, $centroid);
 
             // Overflow cascades to the next day; the last day has nowhere
             // to push to, so those items are dropped and the day is
@@ -112,7 +121,7 @@ class ItineraryGenerator
             }
 
             $openCandidates = $candidatePool->reject(fn ($candidate) => in_array($weekdays[$dayNumber], $candidate['closed_weekdays'], true));
-            $stops = $this->fillEmptySlots($stops, $centroid, $start, $windowMinutes, $openCandidates, $usedPlaceIds);
+            $stops = $this->fillEmptySlots($stops, $centroid, $dayStart, $dayEnd, $windowMinutes, $openCandidates, $usedPlaceIds);
 
             foreach ($stops as $stop) {
                 if ($stop['places_id'] !== null) {
@@ -134,13 +143,12 @@ class ItineraryGenerator
             ];
         }
 
-        return DB::transaction(function () use ($trip, $days, $start, $droppedLabels, $closedLabels) {
-            $trip->days()->delete();
-
+        // The day rows stay: they hold where each day starts and ends.
+        return DB::transaction(function () use ($trip, $days, $dayRows, $starts, $ends, $droppedLabels, $closedLabels) {
             $result = [];
 
             foreach ($days as $dayNumber => $day) {
-                $result[] = $this->persistDay($trip, $dayNumber + 1, $day, $start);
+                $result[] = $this->persistDay($trip, $dayRows[$dayNumber], $day, $starts[$dayNumber], $ends[$dayNumber]);
             }
 
             return ['days' => $result, 'dropped_wishlist_places' => $droppedLabels, 'closed_wishlist_places' => $closedLabels];
@@ -258,6 +266,92 @@ class ItineraryGenerator
      *
      * @return array<int, array{stops: array<int, array<string, mixed>>, centroid: array{lat: float, lng: float}|null}>
      */
+    /**
+     * Gives each wishlist cluster to the day whose start and end lie closest
+     * to it, so a day spent at another hotel gets the places near that hotel.
+     * When every day starts and ends at the same place this keeps the order.
+     *
+     * @param  array<int, array{lat: float, lng: float}>  $starts
+     * @param  array<int, array{lat: float, lng: float}>  $ends
+     */
+    private function assignBucketsToDays(array $buckets, array $starts, array $ends): array
+    {
+        $anchors = [];
+        foreach ($starts as $dayIndex => $start) {
+            $anchors[$dayIndex] = $this->midpoint($start, $ends[$dayIndex]);
+        }
+
+        $distinct = collect($anchors)->map(fn ($anchor) => round($anchor['lat'], 5).','.round($anchor['lng'], 5))->unique();
+        if ($distinct->count() <= 1) {
+            return $buckets;
+        }
+
+        $pairs = [];
+        foreach ($buckets as $bucketIndex => $bucket) {
+            if ($bucket['centroid'] === null) {
+                continue;
+            }
+            foreach ($anchors as $dayIndex => $anchor) {
+                $pairs[] = [Haversine::km($anchor['lat'], $anchor['lng'], $bucket['centroid']['lat'], $bucket['centroid']['lng']), $bucketIndex, $dayIndex];
+            }
+        }
+        usort($pairs, fn ($left, $right) => $left[0] <=> $right[0]);
+
+        $assigned = [];
+        $takenBuckets = [];
+        foreach ($pairs as [, $bucketIndex, $dayIndex]) {
+            if (isset($assigned[$dayIndex]) || isset($takenBuckets[$bucketIndex])) {
+                continue;
+            }
+            $assigned[$dayIndex] = $buckets[$bucketIndex];
+            $takenBuckets[$bucketIndex] = true;
+        }
+
+        $empty = ['stops' => [], 'centroid' => null];
+        $result = [];
+        foreach (array_keys($anchors) as $dayIndex) {
+            $result[$dayIndex] = $assigned[$dayIndex] ?? $empty;
+        }
+
+        return $result;
+    }
+
+    /**
+     * @return array{lat: float, lng: float}
+     */
+    private function midpoint(array $start, array $end): array
+    {
+        return ['lat' => ($start['lat'] + $end['lat']) / 2, 'lng' => ($start['lng'] + $end['lng']) / 2];
+    }
+
+    /**
+     * Nearest neighbour from the start; when the day ends somewhere else, the
+     * stop closest to that end goes last so the day heads that way.
+     *
+     * @param  array<int|string, array{lat: float, lng: float}>  $stops
+     * @return array<int, int|string>
+     */
+    private function routeOrder(array $start, array $end, array $stops): array
+    {
+        if ($stops === []) {
+            return [];
+        }
+
+        $endsElsewhere = Haversine::km($start['lat'], $start['lng'], $end['lat'], $end['lng']) > 0.05;
+        if (! $endsElsewhere || count($stops) < 2) {
+            return NearestNeighborRoute::order($start, $stops);
+        }
+
+        $lastKey = collect($stops)
+            ->sortBy(fn ($stop) => Haversine::km($end['lat'], $end['lng'], $stop['lat'], $stop['lng']))
+            ->keys()
+            ->first();
+        $rest = $stops;
+        unset($rest[$lastKey]);
+
+        return [...NearestNeighborRoute::order($start, $rest), $lastKey];
+    }
+
     private function clusterIntoDays(int $numDays, Collection $wishlistStops): array
     {
         $buckets = [];
@@ -355,11 +449,11 @@ class ItineraryGenerator
      *
      * @return array{0: array<int, array<string, mixed>>, 1: array<int, array<string, mixed>>} [stops tersisa, stops yang di-overflow]
      */
-    private function fitWithinBudget(array $stops, array $start, int $windowMinutes, ?array $centroid): array
+    private function fitWithinBudget(array $stops, array $start, array $end, int $windowMinutes, ?array $centroid): array
     {
         $overflow = [];
 
-        while ($stops !== [] && $this->projectedMinutes($stops, $start) > $windowMinutes) {
+        while ($stops !== [] && $this->projectedMinutes($stops, $start, $end) > $windowMinutes) {
             $reference = $centroid ?? $start;
             usort($stops, fn ($left, $right) => Haversine::km($reference['lat'], $reference['lng'], $left['lat'], $left['lng'])
                 <=> Haversine::km($reference['lat'], $reference['lng'], $right['lat'], $right['lng']));
@@ -369,7 +463,7 @@ class ItineraryGenerator
         return [$stops, $overflow];
     }
 
-    private function fillEmptySlots(array $stops, ?array $centroid, array $start, int $windowMinutes, Collection $candidatePool, Collection $usedPlaceIds): array
+    private function fillEmptySlots(array $stops, ?array $centroid, array $start, array $end, int $windowMinutes, Collection $candidatePool, Collection $usedPlaceIds): array
     {
         $reference = $centroid ?? $start;
 
@@ -380,7 +474,7 @@ class ItineraryGenerator
 
         foreach ($available as $candidate) {
             $projected = array_merge($stops, [$candidate]);
-            if ($this->projectedMinutes($projected, $start) > $windowMinutes) {
+            if ($this->projectedMinutes($projected, $start, $end) > $windowMinutes) {
                 break;
             }
 
@@ -394,9 +488,9 @@ class ItineraryGenerator
     /**
      * Estimasi kasar: visit duration semua stop + waktu tempuh Haversine
      * (detour x kecepatan kota) berurutan lewat rute NN sementara,
-     * termasuk leg hotel->stop pertama dan stop terakhir->hotel.
+     * termasuk leg titik awal->stop pertama dan stop terakhir->titik akhir.
      */
-    private function projectedMinutes(array $stops, array $start): float
+    private function projectedMinutes(array $stops, array $start, array $end): float
     {
         if ($stops === []) {
             return 0.0;
@@ -406,7 +500,7 @@ class ItineraryGenerator
         foreach ($stops as $stopIndex => $stop) {
             $keyed[$stopIndex] = ['lat' => $stop['lat'], 'lng' => $stop['lng']];
         }
-        $order = NearestNeighborRoute::order($start, $keyed);
+        $order = $this->routeOrder($start, $end, $keyed);
 
         $visitMinutes = array_sum(array_column($stops, 'visit_minutes'));
 
@@ -416,7 +510,7 @@ class ItineraryGenerator
             $travelMinutes += $this->legMinutes($current, $keyed[$key]);
             $current = $keyed[$key];
         }
-        $travelMinutes += $this->legMinutes($current, $start);
+        $travelMinutes += $this->legMinutes($current, $end);
 
         return $visitMinutes + $travelMinutes;
     }
@@ -438,17 +532,20 @@ class ItineraryGenerator
      */
     public function resequenceDay(Trip $trip, ItineraryDay $day): array
     {
-        $start = $trip->hotelCoordinates();
+        $day->loadMissing(['startPlace', 'endPlace']);
+        $start = $day->startPoint();
+        $end = $day->endPoint();
         $items = $day->items()->with('place')->get();
 
         $keyed = $items->mapWithKeys(fn (ItineraryItem $item) => [
             $item->itinerary_items_id => $item->coordinates(),
         ])->all();
 
-        $order = $keyed === [] ? [] : NearestNeighborRoute::order($start, $keyed);
+        $order = $keyed === [] || $start === null ? [] : $this->routeOrder($start, $end, $keyed);
 
-        $waypoints = array_merge([$start], array_map(fn ($key) => $keyed[$key], $order), [$start]);
+        $waypoints = $order === [] ? [] : array_merge([$start], array_map(fn ($key) => $keyed[$key], $order), [$end]);
         $legs = $order === [] ? [] : $this->routesClient->computeRoute($waypoints);
+        $day->update(['polyline_to_end' => $legs[count($order)]['polyline'] ?? null]);
 
         $visitMinutesByItem = $items->keyBy('itinerary_items_id');
 
@@ -469,25 +566,24 @@ class ItineraryGenerator
         return ['padat' => $padat];
     }
 
-    private function persistDay(Trip $trip, int $dayNumber, array $day, array $start): array
+    private function persistDay(Trip $trip, ItineraryDay $itineraryDay, array $day, array $start, array $end): array
     {
         $stops = $day['stops'];
 
-        $order = $stops === [] ? [] : NearestNeighborRoute::order(
+        $order = $this->routeOrder(
             $start,
+            $end,
             collect($stops)->mapWithKeys(fn ($stop, $stopIndex) => [$stopIndex => ['lat' => $stop['lat'], 'lng' => $stop['lng']]])->all()
         );
 
         $orderedStops = array_map(fn ($key) => $stops[$key], $order);
 
-        $itineraryDay = ItineraryDay::create([
-            'trips_id' => $trip->trips_id,
-            'day_number' => $dayNumber,
-        ]);
+        $itineraryDay->items()->delete();
 
-        $waypoints = array_merge([$start], array_map(fn ($stop) => ['lat' => $stop['lat'], 'lng' => $stop['lng']], $orderedStops), [$start]);
+        $waypoints = array_merge([$start], array_map(fn ($stop) => ['lat' => $stop['lat'], 'lng' => $stop['lng']], $orderedStops), [$end]);
 
         $legs = $orderedStops === [] ? [] : $this->routesClient->computeRoute($waypoints);
+        $itineraryDay->update(['polyline_to_end' => $legs[count($orderedStops)]['polyline'] ?? null]);
 
         $items = [];
         foreach ($orderedStops as $position => $stop) {

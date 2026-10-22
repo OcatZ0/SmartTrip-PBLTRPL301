@@ -194,10 +194,12 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
   }
 
   List<LatLng> _dayPoints(ItineraryDay day, TripHotel? hotel) {
+    final end = day.end;
     return [
       if (hotel != null) LatLng(hotel.lat, hotel.lng),
       for (final item in day.items)
         if (item.place != null) LatLng(item.place!.lat, item.place!.lng),
+      if (day.hasOwnEnd && end != null) LatLng(end.lat, end.lng),
     ];
   }
 
@@ -247,6 +249,16 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
               ),
             ),
           ),
+      if (day.hasOwnEnd && day.end != null)
+        Marker(
+          point: LatLng(day.end!.lat, day.end!.lng),
+          width: 34,
+          height: 34,
+          child: Tooltip(
+            message: day.end!.name,
+            child: const _PinBadge(icon: Icons.flag_rounded, background: AppColors.sun400, foreground: AppColors.navy900),
+          ),
+        ),
       if (position != null)
         Marker(
           point: position,
@@ -288,6 +300,21 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
       }
       previous = destination;
     }
+
+    // The way to where the day ends: the stored road route, or a dashed
+    // estimate when the day ends somewhere other than its start.
+    final end = day.end;
+    final toEnd = day.polylineToEnd;
+    if (end != null && previous != null && day.items.isNotEmpty && (toEnd != null || day.hasOwnEnd)) {
+      final hasRoute = toEnd != null && toEnd.isNotEmpty;
+      final allVisited = day.items.every((item) => item.isVisited);
+      polylines.add(Polyline(
+        points: hasRoute ? decodePolyline(toEnd) : [previous, LatLng(end.lat, end.lng)],
+        strokeWidth: 5,
+        color: allVisited ? _visitedLine : AppColors.sea600.withValues(alpha: 0.55),
+        pattern: hasRoute ? const StrokePattern.solid() : StrokePattern.dashed(segments: const [16, 10]),
+      ));
+    }
     return polylines;
   }
 
@@ -318,7 +345,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
   }
 
   Widget _buildDay(Trip trip, ItineraryDay day, AppLocalizations l10n) {
-    final hotel = trip.hotel;
+    final hotel = day.start;
     final isTracking = _tracking.isTracking(day.itineraryDaysId);
     final nextItem = day.items.where((item) => !item.isVisited).firstOrNull;
     final selected = day.items.where((item) => item.itineraryItemsId == _selectedItemId).firstOrNull ??

@@ -23,6 +23,7 @@ import '../../widgets/primary_button.dart';
 import '../../widgets/screen_header.dart';
 import 'swap_place_screen.dart';
 import 'widgets/setup_card.dart';
+import 'widgets/day_point_sheet.dart';
 import 'widgets/source_badge.dart';
 import 'widgets/stop_detail_sheet.dart';
 
@@ -63,7 +64,7 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
     // Once per screen: a changed start date is picked up the next time.
     ref.listenManual(tripDetailProvider(widget.tripsId), (_, next) {
       final trip = next.valueOrNull;
-      if (trip == null || trip.days.isEmpty || _reminderScheduled) return;
+      if (trip == null || !trip.hasStops || _reminderScheduled) return;
       _reminderScheduled = true;
       _scheduleReminders(trip);
     }, fireImmediately: true);
@@ -135,18 +136,17 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
         if (day.dayNumber == dayNumber) ...day.items,
     ];
     final index = items.indexOf(item);
-    final hotel = trip?.hotel;
-    final hotelStop = hotel == null
-        ? null
-        : TripPlace(placesId: null, name: hotel.name, type: 'lodging', lat: hotel.lat, lng: hotel.lng);
+    final day = trip?.days.where((day) => day.dayNumber == dayNumber).firstOrNull;
+    TripPlace? stopAt(TripHotel? point) =>
+        point == null ? null : TripPlace(placesId: null, name: point.name, type: 'lodging', lat: point.lat, lng: point.lng);
 
     final place = await SwapPlaceScreen.show(
       context,
       item,
       preferIndoor: preferIndoor,
       dayNumber: dayNumber,
-      previous: index > 0 ? items[index - 1].place : hotelStop,
-      next: index >= 0 && index < items.length - 1 ? items[index + 1].place : hotelStop,
+      previous: index > 0 ? items[index - 1].place : stopAt(day?.start),
+      next: index >= 0 && index < items.length - 1 ? items[index + 1].place : stopAt(day?.end),
     );
     final placesId = place?.placesId;
     if (place == null || placesId == null || !mounted) return;
@@ -159,6 +159,47 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
       messenger
         ..hideCurrentSnackBar()
         ..showSnackBar(SnackBar(content: Text(l10n.swapDone(place.name))));
+    } catch (error) {
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(tripErrorMessage(error, l10n))));
+    }
+  }
+
+  /// Where [day] starts ([isStart]) or ends. The server recomputes the
+  /// day's route; its places stay.
+  Future<void> _changeDayPoint(ItineraryDay day, {required bool isStart}) async {
+    final l10n = AppLocalizations.of(context);
+    final trip = ref.read(tripDetailProvider(widget.tripsId)).valueOrNull;
+    final mainHotel = trip?.hotel;
+    final pick = await DayPointSheet.show(
+      context,
+      title: isStart ? l10n.dayPointStartTitle(day.dayNumber) : l10n.dayPointEndTitle(day.dayNumber),
+      defaultLabel: isStart ? l10n.dayPointMainHotel : l10n.dayPointSameAsStart,
+      defaultCaption: isStart ? l10n.dayPointMainHotelCaption(mainHotel?.name ?? '-') : l10n.dayPointSameAsStartCaption,
+      isDefault: isStart ? day.start?.placesId == mainHotel?.placesId && day.start?.name == mainHotel?.name : !day.hasOwnEnd,
+    );
+    if (pick == null || !mounted) return;
+
+    final Map<String, dynamic>? point = switch (pick) {
+      DefaultDayPoint() => isStart ? mainHotel?.toPointJson() : null,
+      ChosenDayPoint(:final choice) => choice.asPoint.toPointJson(),
+    };
+    if (isStart && point == null) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await ref.read(tripServiceProvider).setDayPoints(
+            widget.tripsId,
+            day.dayNumber,
+            start: isStart ? point : null,
+            end: isStart ? null : point,
+            resetEnd: !isStart && point == null,
+          );
+      await ref.read(tripDetailProvider(widget.tripsId).notifier).refresh();
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(l10n.dayPointSaved(day.dayNumber))));
     } catch (error) {
       messenger
         ..hideCurrentSnackBar()
@@ -299,7 +340,8 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
     final languageCode = Localizations.localeOf(context).languageCode;
     final flags = ref.watch(generatedFlagsProvider(widget.tripsId));
 
-    if (trip.days.isEmpty) {
+    // The day rows exist from the start; no stops yet means no itinerary.
+    if (!trip.hasStops) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -425,7 +467,8 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
                   )
                 : _Timeline(
                     day: day,
-                    hotel: trip.hotel,
+                    onChangeStart: () => _changeDayPoint(day, isStart: true),
+                    onChangeEnd: () => _changeDayPoint(day, isStart: false),
                     onOpenStop: (item) => _openStop(day, item, rainy: rainy),
                     onSwapForRain: rainy
                         ? (item) => _swapPlace(item, dayNumber: day.dayNumber, preferIndoor: true)
@@ -685,10 +728,17 @@ class _NoticeBanner extends StatelessWidget {
 /// The day's stops on a vertical line: the hotel first (when there is one),
 /// then each stop with the distance from the one before.
 class _Timeline extends StatelessWidget {
-  const _Timeline({required this.day, required this.hotel, required this.onOpenStop, this.onSwapForRain});
+  const _Timeline({
+    required this.day,
+    required this.onChangeStart,
+    required this.onChangeEnd,
+    required this.onOpenStop,
+    this.onSwapForRain,
+  });
 
   final ItineraryDay day;
-  final TripHotel? hotel;
+  final VoidCallback onChangeStart;
+  final VoidCallback onChangeEnd;
 
   /// The button on a stop card: opens its detail sheet.
   final ValueChanged<ItineraryItem> onOpenStop;
@@ -732,29 +782,49 @@ class _Timeline extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final children = <Widget>[];
-    final hotel = this.hotel;
+    final start = day.start;
+    final end = day.end;
 
-    if (hotel != null) {
-      children.add(
-        _entry(
-          lineAbove: false,
-          marker: Container(
-            width: 30,
-            height: 30,
-            decoration: const BoxDecoration(color: AppColors.sun400, shape: BoxShape.circle),
-            child: const Icon(Icons.hotel_rounded, size: 16, color: AppColors.navy900),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.only(top: 14, bottom: 14),
-            child: Text(
-              l10n.itineraryStartFrom(hotel.name),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: appText(13, FontWeight.w700, AppColors.ink, height: 30),
-            ),
+    // The day's start and end on the rail, in sun, each with a Ganti button.
+    Widget point({required IconData icon, required String text, required VoidCallback onChange, bool lineAbove = true, bool lineBelow = true}) {
+      return _entry(
+        lineAbove: lineAbove,
+        lineBelow: lineBelow,
+        marker: Container(
+          width: 30,
+          height: 30,
+          decoration: const BoxDecoration(color: AppColors.sun400, shape: BoxShape.circle),
+          child: Icon(icon, size: 16, color: AppColors.navy900),
+        ),
+        child: Padding(
+          padding: EdgeInsets.only(top: 8, bottom: lineBelow ? 8 : 0),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  text,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: appText(13, FontWeight.w700, AppColors.ink, height: 18),
+                ),
+              ),
+              TextButton(
+                onPressed: onChange,
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.sea600,
+                  visualDensity: VisualDensity.compact,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                ),
+                child: Text(l10n.dayPointChange, style: appText(12.5, FontWeight.w700, AppColors.sea600)),
+              ),
+            ],
           ),
         ),
       );
+    }
+
+    if (start != null) {
+      children.add(point(icon: Icons.hotel_rounded, text: l10n.itineraryStartFrom(start.name), onChange: onChangeStart, lineAbove: false));
     }
 
     for (var i = 0; i < day.items.length; i++) {
@@ -773,7 +843,7 @@ class _Timeline extends StatelessWidget {
       children.add(
         _entry(
           lineAbove: !isFirst,
-          lineBelow: !isLast,
+          lineBelow: !isLast || end != null,
           marker: Container(
             width: 30,
             height: 30,
@@ -788,7 +858,7 @@ class _Timeline extends StatelessWidget {
                 : Text('${item.visitOrder}', style: appText(12, FontWeight.w800, Colors.white)),
           ),
           child: Padding(
-            padding: EdgeInsets.only(bottom: isLast ? 0 : 12),
+            padding: EdgeInsets.only(bottom: isLast && end == null ? 0 : 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -822,6 +892,15 @@ class _Timeline extends StatelessWidget {
           ),
         ),
       );
+    }
+
+    if (end != null) {
+      children.add(point(
+        icon: day.hasOwnEnd ? Icons.flag_rounded : Icons.hotel_rounded,
+        text: l10n.dayPointEndAt(end.name),
+        onChange: onChangeEnd,
+        lineBelow: false,
+      ));
     }
 
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children);

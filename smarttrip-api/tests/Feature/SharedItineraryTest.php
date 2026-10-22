@@ -169,11 +169,11 @@ class SharedItineraryTest extends TestCase
     public function test_a_custom_pin_hotel_location_is_hidden_behind_a_generic_label(): void
     {
         $owner = User::factory()->create();
-        $trip = $this->makeTrip($owner, [
-            'share_token' => 'publictoken',
-            'hotel_custom_name' => 'Rumah Kerabat Jl. Rahasia No 5',
-            'hotel_lat' => 1.234567,
-            'hotel_lng' => 104.987654,
+        $trip = $this->makeTrip($owner, ['share_token' => 'publictoken']);
+        $this->setTripStart($trip, [
+            'start_custom_name' => 'Rumah Kerabat Jl. Rahasia No 5',
+            'start_lat' => 1.234567,
+            'start_lng' => 104.987654,
         ]);
 
         $response = $this->getJson('/api/shared-itinerary/publictoken');
@@ -181,6 +181,8 @@ class SharedItineraryTest extends TestCase
         $response->assertOk();
         $response->assertJsonPath('hotel.type', 'custom');
         $response->assertJsonPath('hotel.label', 'Hotel');
+        $response->assertJsonPath('days.0.start.type', 'custom');
+        $response->assertJsonPath('days.0.end.label', 'Hotel');
         $raw = $response->getContent();
         $this->assertStringNotContainsString('Rumah Kerabat', $raw);
         $this->assertStringNotContainsString('1.234567', $raw);
@@ -194,7 +196,8 @@ class SharedItineraryTest extends TestCase
             'name' => 'Hotel Harmoni', 'type' => 'lodging', 'lat' => 1.13, 'lng' => 104.03,
             'address' => 'Batam Kota', 'source' => 'google', 'external_place_id' => uniqid('gp-'),
         ]);
-        $trip = $this->makeTrip($owner, ['share_token' => 'publictoken', 'hotel_places_id' => $hotel->places_id]);
+        $trip = $this->makeTrip($owner, ['share_token' => 'publictoken']);
+        $this->setTripStart($trip, ['start_places_id' => $hotel->places_id]);
 
         $response = $this->getJson('/api/shared-itinerary/publictoken');
 
@@ -202,6 +205,7 @@ class SharedItineraryTest extends TestCase
         $response->assertJsonPath('hotel.type', 'catalog');
         $response->assertJsonPath('hotel.name', 'Hotel Harmoni');
         $response->assertJsonPath('hotel.lat', 1.13);
+        $response->assertJsonPath('days.0.start.name', 'Hotel Harmoni');
     }
 
     public function test_a_trip_with_no_hotel_set_yet_returns_a_null_hotel(): void

@@ -2509,6 +2509,138 @@ abstract class AppLocalizations {
   /// In id, this message translates to:
   /// **'Hentikan'**
   String get liveMapStop;
+
+  /// No description provided for @dayPointPinOnMap.
+  ///
+  /// In id, this message translates to:
+  /// **'Pin di peta'**
+  String get dayPointPinOnMap;
+
+  /// No description provided for @dayPointPinOnMapHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Untuk penginapan yang tidak ada di katalog'**
+  String get dayPointPinOnMapHint;
+
+  /// No description provided for @dayPointSearchTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Atau cari hotel'**
+  String get dayPointSearchTitle;
+
+  /// No description provided for @dayPointMainHotel.
+  ///
+  /// In id, this message translates to:
+  /// **'Hotel utama'**
+  String get dayPointMainHotel;
+
+  /// No description provided for @dayPointMainHotelCaption.
+  ///
+  /// In id, this message translates to:
+  /// **'Sama seperti hari lainnya: {name}'**
+  String dayPointMainHotelCaption(String name);
+
+  /// No description provided for @dayPointSameAsStart.
+  ///
+  /// In id, this message translates to:
+  /// **'Sama dengan titik awal'**
+  String get dayPointSameAsStart;
+
+  /// No description provided for @dayPointSameAsStartCaption.
+  ///
+  /// In id, this message translates to:
+  /// **'Hari ini pulang ke tempat berangkat'**
+  String get dayPointSameAsStartCaption;
+
+  /// No description provided for @dayPointStartTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Titik awal Hari {day}'**
+  String dayPointStartTitle(int day);
+
+  /// No description provided for @dayPointEndTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Titik akhir Hari {day}'**
+  String dayPointEndTitle(int day);
+
+  /// No description provided for @dayPointStart.
+  ///
+  /// In id, this message translates to:
+  /// **'Mulai'**
+  String get dayPointStart;
+
+  /// No description provided for @dayPointEnd.
+  ///
+  /// In id, this message translates to:
+  /// **'Selesai'**
+  String get dayPointEnd;
+
+  /// No description provided for @dayPointChange.
+  ///
+  /// In id, this message translates to:
+  /// **'Ganti'**
+  String get dayPointChange;
+
+  /// No description provided for @dayPointEndAt.
+  ///
+  /// In id, this message translates to:
+  /// **'Selesai di {name}'**
+  String dayPointEndAt(String name);
+
+  /// No description provided for @dayPointSaved.
+  ///
+  /// In id, this message translates to:
+  /// **'Titik Hari {day} disimpan, rutenya dihitung ulang.'**
+  String dayPointSaved(int day);
+
+  /// No description provided for @tripHotelModeSimple.
+  ///
+  /// In id, this message translates to:
+  /// **'Simpel'**
+  String get tripHotelModeSimple;
+
+  /// No description provided for @tripHotelModeDetail.
+  ///
+  /// In id, this message translates to:
+  /// **'Detail'**
+  String get tripHotelModeDetail;
+
+  /// No description provided for @tripHotelModeSimpleHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Satu hotel untuk semua hari: berangkat dan pulang ke hotel yang sama.'**
+  String get tripHotelModeSimpleHint;
+
+  /// No description provided for @tripHotelModeDetailHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Pindah hotel di tengah trip? Atur titik mulai dan selesai tiap hari di bawah.'**
+  String get tripHotelModeDetailHint;
+
+  /// No description provided for @tripHotelMainLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Hotel utama'**
+  String get tripHotelMainLabel;
+
+  /// No description provided for @tripHotelPerDayTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Titik mulai & selesai per hari'**
+  String get tripHotelPerDayTitle;
+
+  /// No description provided for @tripHotelPerDayHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Defaultnya hotel utama. Ganti hari yang berbeda saja.'**
+  String get tripHotelPerDayHint;
+
+  /// No description provided for @tripHotelPickMainFirst.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih hotel utama dulu'**
+  String get tripHotelPickMainFirst;
 }
 
 class _AppLocalizationsDelegate

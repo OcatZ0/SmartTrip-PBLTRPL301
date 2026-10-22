@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:smarttrip_mobile/models/trip.dart';
 
-Map<String, dynamic> tripJson({Map<String, dynamic>? hotelPlace}) => {
+Map<String, dynamic> tripJson() => {
       'trips_id': 5,
       'title': 'Trip Batam',
       'num_days': 2,
@@ -9,19 +9,23 @@ Map<String, dynamic> tripJson({Map<String, dynamic>? hotelPlace}) => {
       'start_date': '2026-10-20T00:00:00.000000Z',
       'daily_start_time': '09:00:00',
       'daily_end_time': '19:00:00',
-      'hotel_custom_name': 'Rumah Saudara',
-      'hotel_lat': '1.1300000',
-      'hotel_lng': '104.0300000',
-      'hotel_place': hotelPlace,
       'days': [
         {
           'itinerary_days_id': 11,
           'day_number': 2,
+          // Moves hotel: starts at a catalog hotel, ends at another place.
+          'start': {'lat': 1.16, 'lng': 104.0, 'name': 'Harbour Bay Hotel', 'places_id': 9},
+          'end': {'lat': 1.18, 'lng': 104.1, 'name': 'Hotel Dua', 'places_id': null},
+          'has_own_end': true,
+          'polyline_to_end': 'xyz',
           'items': [],
         },
         {
           'itinerary_days_id': 10,
           'day_number': 1,
+          'start': {'lat': 1.13, 'lng': 104.03, 'name': 'Rumah Saudara', 'places_id': null},
+          'end': {'lat': 1.13, 'lng': 104.03, 'name': 'Rumah Saudara', 'places_id': null},
+          'has_own_end': false,
           'items': [
             {
               'itinerary_items_id': 101,
@@ -77,17 +81,21 @@ void main() {
     expect(trip.dateOfDay(2), DateTime(2026, 10, 21));
   });
 
-  test('a catalog hotel takes precedence over the custom pin fields', () {
-    final trip = Trip.fromJson(tripJson(hotelPlace: {
-      'places_id': 9,
-      'name': 'Harbour Bay Hotel',
-      'type': 'lodging',
-      'lat': '1.1600000',
-      'lng': '104.0000000',
-    }));
+  test('every day has its own start and end, the end falling back to the start', () {
+    final trip = Trip.fromJson(tripJson());
+    final first = trip.days[0];
+    final second = trip.days[1];
 
-    expect(trip.hotel?.name, 'Harbour Bay Hotel');
-    expect(trip.hotel?.lat, 1.16);
+    expect(first.hasOwnEnd, isFalse);
+    expect(first.end?.name, 'Rumah Saudara');
+    expect(second.start?.placesId, 9);
+    expect(second.start?.toPointJson(), {'places_id': 9});
+    expect(second.hasOwnEnd, isTrue);
+    expect(second.end?.toPointJson(), {'custom_name': 'Hotel Dua', 'custom_lat': 1.18, 'custom_lng': 104.1});
+    expect(second.polylineToEnd, 'xyz');
+    // Day 2 has no stops, day 1 does.
+    expect(trip.hasStops, isTrue);
+    expect(trip.withDay(second.withItems(const [])).days[1].hasOwnEnd, isTrue);
   });
 
   test('profile defaults without weights leave the sliders to their own default', () {

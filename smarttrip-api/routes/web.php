@@ -13,9 +13,10 @@ use Illuminate\Support\Facades\Route;
 Route::redirect('/', '/admin/login');
 
 // Public registration/account-link verification link opened from the email
-// client (see AuthController::register / verifyRegistration).
+// client (see AuthController::register / verifyRegistration). Not a signed
+// route: the controller checks the token and the 60 minutes itself, so an
+// expired or broken link gets its own message instead of a bare 403.
 Route::get('/auth/verify-registration', [AuthController::class, 'verifyRegistration'])
-    ->middleware('signed')
     ->name('auth.verify-registration');
 
 // F004 - lupa password: form web sederhana yang dibuka dari link email

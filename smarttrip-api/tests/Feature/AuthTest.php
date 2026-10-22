@@ -86,6 +86,29 @@ class AuthTest extends TestCase
         ])->assertOk();
     }
 
+    public function test_a_verification_link_older_than_60_minutes_says_it_expired_and_drops_the_registration(): void
+    {
+        $url = $this->captureVerificationUrl('wisatawan@example.com', 'password123');
+
+        $this->travel(61)->minutes();
+        $response = $this->get($url);
+
+        $response->assertOk()->assertSee('Tautan verifikasi sudah kedaluwarsa. Silakan daftar ulang.');
+        $this->assertDatabaseMissing('users', ['email' => 'wisatawan@example.com']);
+        $this->assertDatabaseMissing('pending_registrations', ['email' => 'wisatawan@example.com']);
+    }
+
+    public function test_a_verification_link_with_a_wrong_token_says_it_is_invalid(): void
+    {
+        $url = $this->captureVerificationUrl('wisatawan@example.com', 'password123');
+
+        $response = $this->get(preg_replace('/token=[^&]+/', 'token=wrong', $url));
+
+        $response->assertOk()->assertSee('Tautan verifikasi tidak valid.');
+        $this->assertDatabaseMissing('users', ['email' => 'wisatawan@example.com']);
+        $this->assertDatabaseHas('pending_registrations', ['email' => 'wisatawan@example.com']);
+    }
+
     public function test_registering_with_an_email_already_taken_by_a_password_account_is_rejected(): void
     {
         User::factory()->create(['email' => 'wisatawan@example.com']);

@@ -2354,6 +2354,18 @@ abstract class AppLocalizations {
   /// **'{hours}j {minutes}m'**
   String swapDurationHoursMinutes(int hours, int minutes);
 
+  /// No description provided for @swapBusyTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Mengganti tempat'**
+  String get swapBusyTitle;
+
+  /// No description provided for @swapBusyMessage.
+  ///
+  /// In id, this message translates to:
+  /// **'{name} masuk ke jadwal Hari {day} dan rutenya disusun ulang. Tunggu sebentar ya.'**
+  String swapBusyMessage(String name, int day);
+
   /// No description provided for @swapDone.
   ///
   /// In id, this message translates to:
@@ -2587,6 +2599,42 @@ abstract class AppLocalizations {
   /// In id, this message translates to:
   /// **'Selesai di {name}'**
   String dayPointEndAt(String name);
+
+  /// No description provided for @dayPointBusyTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Menghitung ulang rute'**
+  String get dayPointBusyTitle;
+
+  /// No description provided for @dayPointBusyStart.
+  ///
+  /// In id, this message translates to:
+  /// **'Menyimpan titik awal Hari {day} dan menyusun ulang rutenya. Tunggu sebentar ya.'**
+  String dayPointBusyStart(int day);
+
+  /// No description provided for @dayPointBusyEnd.
+  ///
+  /// In id, this message translates to:
+  /// **'Menyimpan titik akhir Hari {day} dan menyusun ulang rutenya. Tunggu sebentar ya.'**
+  String dayPointBusyEnd(int day);
+
+  /// No description provided for @tripHotelBusyTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Menyimpan titik perjalanan'**
+  String get tripHotelBusyTitle;
+
+  /// No description provided for @tripHotelBusySimple.
+  ///
+  /// In id, this message translates to:
+  /// **'Hotel disimpan sebagai titik awal dan akhir setiap hari. Tunggu sebentar ya.'**
+  String get tripHotelBusySimple;
+
+  /// No description provided for @tripHotelBusyDetail.
+  ///
+  /// In id, this message translates to:
+  /// **'Hotel dan titik awal/akhir tiap hari disimpan, rute tiap hari ikut disiapkan. Tunggu sebentar ya.'**
+  String get tripHotelBusyDetail;
 
   /// No description provided for @dayPointSaved.
   ///

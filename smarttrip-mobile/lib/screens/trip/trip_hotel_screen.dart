@@ -12,6 +12,7 @@ import '../../l10n/app_localizations.dart';
 import '../../models/trip.dart';
 import '../../services/trip_service.dart';
 import '../../widgets/bottom_action_bar.dart';
+import '../../widgets/busy_overlay.dart';
 import '../../widgets/load_error_view.dart';
 import '../../widgets/place_photo.dart';
 import '../../widgets/primary_button.dart';
@@ -153,7 +154,7 @@ class _TripHotelScreenState extends ConsumerState<TripHotelScreen> {
       if (next.valueOrNull == true) context.push(AppRoutes.tripGenerate(widget.tripsId));
     });
 
-    return Scaffold(
+    final scaffold = Scaffold(
       backgroundColor: AppColors.surface,
       appBar: ScreenHeader(
         subtitle: l10n.tripHotelHeader,
@@ -344,6 +345,22 @@ class _TripHotelScreenState extends ConsumerState<TripHotelScreen> {
           ),
         ],
       ),
+    );
+
+    // Saving the hotel and each day's points recomputes routes on the server:
+    // the whole screen waits with a message rather than just the button.
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        scaffold,
+        if (submitState.isLoading)
+          BusyOverlay(
+            title: l10n.tripHotelBusyTitle,
+            message: _detailMode && (_starts.isNotEmpty || _ends.isNotEmpty)
+                ? l10n.tripHotelBusyDetail
+                : l10n.tripHotelBusySimple,
+          ),
+      ],
     );
   }
 

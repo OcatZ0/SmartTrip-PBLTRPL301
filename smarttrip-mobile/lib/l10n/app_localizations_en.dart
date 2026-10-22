@@ -1313,6 +1313,14 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get swapBusyTitle => 'Swapping the place';
+
+  @override
+  String swapBusyMessage(String name, int day) {
+    return '$name joins day $day and its route is rebuilt. Just a moment.';
+  }
+
+  @override
   String swapDone(String name) {
     return 'Replaced with $name.';
   }
@@ -1456,6 +1464,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String dayPointEndAt(String name) {
     return 'Ends at $name';
   }
+
+  @override
+  String get dayPointBusyTitle => 'Recalculating the route';
+
+  @override
+  String dayPointBusyStart(int day) {
+    return 'Saving the start of day $day and rebuilding its route. Just a moment.';
+  }
+
+  @override
+  String dayPointBusyEnd(int day) {
+    return 'Saving the end of day $day and rebuilding its route. Just a moment.';
+  }
+
+  @override
+  String get tripHotelBusyTitle => 'Saving your trip points';
+
+  @override
+  String get tripHotelBusySimple =>
+      'The hotel becomes every day\'s start and end. Just a moment.';
+
+  @override
+  String get tripHotelBusyDetail =>
+      'Saving the hotel and each day\'s start and end, and preparing each day\'s route. Just a moment.';
 
   @override
   String dayPointSaved(int day) {

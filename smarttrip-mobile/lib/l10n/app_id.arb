@@ -653,6 +653,11 @@
   "@swapDurationHoursMinutes": {
     "placeholders": {"hours": {"type": "int"}, "minutes": {"type": "int"}}
   },
+  "swapBusyTitle": "Mengganti tempat",
+  "swapBusyMessage": "{name} masuk ke jadwal Hari {day} dan rutenya disusun ulang. Tunggu sebentar ya.",
+  "@swapBusyMessage": {
+    "placeholders": {"name": {"type": "String"}, "day": {"type": "int"}}
+  },
   "swapDone": "Diganti dengan {name}.",
   "@swapDone": {"placeholders": {"name": {"type": "String"}}},
   "weatherClear": "Cerah",
@@ -704,6 +709,18 @@
   "dayPointChange": "Ganti",
   "dayPointEndAt": "Selesai di {name}",
   "@dayPointEndAt": {"placeholders": {"name": {"type": "String"}}},
+  "dayPointBusyTitle": "Menghitung ulang rute",
+  "dayPointBusyStart": "Menyimpan titik awal Hari {day} dan menyusun ulang rutenya. Tunggu sebentar ya.",
+  "@dayPointBusyStart": {
+    "placeholders": {"day": {"type": "int"}}
+  },
+  "dayPointBusyEnd": "Menyimpan titik akhir Hari {day} dan menyusun ulang rutenya. Tunggu sebentar ya.",
+  "@dayPointBusyEnd": {
+    "placeholders": {"day": {"type": "int"}}
+  },
+  "tripHotelBusyTitle": "Menyimpan titik perjalanan",
+  "tripHotelBusySimple": "Hotel disimpan sebagai titik awal dan akhir setiap hari. Tunggu sebentar ya.",
+  "tripHotelBusyDetail": "Hotel dan titik awal/akhir tiap hari disimpan, rute tiap hari ikut disiapkan. Tunggu sebentar ya.",
   "dayPointSaved": "Titik Hari {day} disimpan, rutenya dihitung ulang.",
   "@dayPointSaved": {"placeholders": {"day": {"type": "int"}}},
   "tripHotelModeSimple": "Simpel",

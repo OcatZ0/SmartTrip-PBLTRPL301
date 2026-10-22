@@ -17,6 +17,7 @@ import '../../services/polyline_codec.dart';
 import '../../services/trip_service.dart';
 import '../../services/weather_service.dart';
 import '../../widgets/bottom_action_bar.dart';
+import '../../widgets/busy_overlay.dart';
 import '../../widgets/load_error_view.dart';
 import '../../widgets/place_photo.dart';
 import '../../widgets/primary_button.dart';
@@ -154,8 +155,15 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
     final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
     try {
-      await ref.read(tripServiceProvider).swapItineraryItem(item.itineraryItemsId, placesId);
-      await ref.read(tripDetailProvider(widget.tripsId).notifier).refresh();
+      await BusyOverlay.run(
+        context,
+        title: l10n.swapBusyTitle,
+        message: l10n.swapBusyMessage(place.name, dayNumber),
+        task: () async {
+          await ref.read(tripServiceProvider).swapItineraryItem(item.itineraryItemsId, placesId);
+          await ref.read(tripDetailProvider(widget.tripsId).notifier).refresh();
+        },
+      );
       messenger
         ..hideCurrentSnackBar()
         ..showSnackBar(SnackBar(content: Text(l10n.swapDone(place.name))));
@@ -189,14 +197,23 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
 
     final messenger = ScaffoldMessenger.of(context);
     try {
-      await ref.read(tripServiceProvider).setDayPoints(
-            widget.tripsId,
-            day.dayNumber,
-            start: isStart ? point : null,
-            end: isStart ? null : point,
-            resetEnd: !isStart && point == null,
-          );
-      await ref.read(tripDetailProvider(widget.tripsId).notifier).refresh();
+      // The server recomputes the day's route; that takes a moment, so the
+      // whole screen waits with a clear message instead of looking idle.
+      await BusyOverlay.run(
+        context,
+        title: l10n.dayPointBusyTitle,
+        message: isStart ? l10n.dayPointBusyStart(day.dayNumber) : l10n.dayPointBusyEnd(day.dayNumber),
+        task: () async {
+          await ref.read(tripServiceProvider).setDayPoints(
+                widget.tripsId,
+                day.dayNumber,
+                start: isStart ? point : null,
+                end: isStart ? null : point,
+                resetEnd: !isStart && point == null,
+              );
+          await ref.read(tripDetailProvider(widget.tripsId).notifier).refresh();
+        },
+      );
       messenger
         ..hideCurrentSnackBar()
         ..showSnackBar(SnackBar(content: Text(l10n.dayPointSaved(day.dayNumber))));

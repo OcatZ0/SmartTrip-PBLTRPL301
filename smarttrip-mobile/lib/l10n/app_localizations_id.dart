@@ -1280,6 +1280,14 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
+  String get swapBusyTitle => 'Mengganti tempat';
+
+  @override
+  String swapBusyMessage(String name, int day) {
+    return '$name masuk ke jadwal Hari $day dan rutenya disusun ulang. Tunggu sebentar ya.';
+  }
+
+  @override
   String swapDone(String name) {
     return 'Diganti dengan $name.';
   }
@@ -1424,6 +1432,30 @@ class AppLocalizationsId extends AppLocalizations {
   String dayPointEndAt(String name) {
     return 'Selesai di $name';
   }
+
+  @override
+  String get dayPointBusyTitle => 'Menghitung ulang rute';
+
+  @override
+  String dayPointBusyStart(int day) {
+    return 'Menyimpan titik awal Hari $day dan menyusun ulang rutenya. Tunggu sebentar ya.';
+  }
+
+  @override
+  String dayPointBusyEnd(int day) {
+    return 'Menyimpan titik akhir Hari $day dan menyusun ulang rutenya. Tunggu sebentar ya.';
+  }
+
+  @override
+  String get tripHotelBusyTitle => 'Menyimpan titik perjalanan';
+
+  @override
+  String get tripHotelBusySimple =>
+      'Hotel disimpan sebagai titik awal dan akhir setiap hari. Tunggu sebentar ya.';
+
+  @override
+  String get tripHotelBusyDetail =>
+      'Hotel dan titik awal/akhir tiap hari disimpan, rute tiap hari ikut disiapkan. Tunggu sebentar ya.';
 
   @override
   String dayPointSaved(int day) {

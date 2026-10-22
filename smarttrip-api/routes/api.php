@@ -38,6 +38,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/trips/{trip}', [TripController::class, 'update']);
     Route::post('/trips/{trip}/weights', [TripController::class, 'weights']);
     Route::post('/trips/{trip}/hotel', [TripController::class, 'hotel']);
+    Route::put('/trips/{trip}/days/{dayNumber}/points', [TripController::class, 'dayPoints'])->whereNumber('dayNumber');
     Route::get('/trips/{trip}/hotel-options', [TripController::class, 'hotelOptions']);
     Route::post('/trips/{trip}/generate', [TripController::class, 'generate']);
 

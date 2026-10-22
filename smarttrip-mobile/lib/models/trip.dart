@@ -251,6 +251,10 @@ class ItineraryDay {
     required this.itineraryDaysId,
     required this.dayNumber,
     required this.items,
+    this.start,
+    this.end,
+    this.hasOwnEnd = false,
+    this.polylineToEnd,
   });
 
   factory ItineraryDay.fromJson(Map<String, dynamic> json) {
@@ -264,6 +268,10 @@ class ItineraryDay {
       itineraryDaysId: json['itinerary_days_id'] as int,
       dayNumber: json['day_number'] as int,
       items: items,
+      start: TripHotel.fromPoint(json['start']),
+      end: TripHotel.fromPoint(json['end']),
+      hasOwnEnd: json['has_own_end'] as bool? ?? false,
+      polylineToEnd: json['polyline_to_end'] as String?,
     );
   }
 
@@ -271,18 +279,57 @@ class ItineraryDay {
   final int dayNumber;
   final List<ItineraryItem> items;
 
+  /// Where the day starts; null until a hotel is picked in step 4.
+  final TripHotel? start;
+
+  /// Where the day ends: its own point, or [start] when [hasOwnEnd] is false.
+  final TripHotel? end;
+  final bool hasOwnEnd;
+
+  /// Route from the last stop to [end].
+  final String? polylineToEnd;
+
   ItineraryDay withItems(List<ItineraryItem> items) {
-    return ItineraryDay(itineraryDaysId: itineraryDaysId, dayNumber: dayNumber, items: items);
+    return ItineraryDay(
+      itineraryDaysId: itineraryDaysId,
+      dayNumber: dayNumber,
+      items: items,
+      start: start,
+      end: end,
+      hasOwnEnd: hasOwnEnd,
+      polylineToEnd: polylineToEnd,
+    );
   }
 }
 
-/// Start/end point of every day: a catalog hotel or a custom map pin.
+/// Where a day starts or ends: a catalog hotel ([placesId]) or a custom pin.
 class TripHotel {
-  const TripHotel({required this.name, required this.lat, required this.lng});
+  const TripHotel({required this.name, required this.lat, required this.lng, this.placesId});
+
+  /// A day's `start` / `end` from `GET /api/trips/{id}`.
+  static TripHotel? fromPoint(Object? json) {
+    if (json is! Map<String, dynamic>) return null;
+    final lat = _toDouble(json['lat']);
+    final lng = _toDouble(json['lng']);
+    if (lat == null || lng == null) return null;
+    return TripHotel(
+      name: json['name'] as String? ?? '',
+      lat: lat,
+      lng: lng,
+      placesId: (json['places_id'] as num?)?.toInt(),
+    );
+  }
 
   final String name;
   final double lat;
   final double lng;
+  final int? placesId;
+
+  /// The body `PUT /trips/{id}/days/{day}/points` takes for this point.
+  Map<String, dynamic> toPointJson() {
+    final id = placesId;
+    return id != null ? {'places_id': id} : {'custom_name': name, 'custom_lat': lat, 'custom_lng': lng};
+  }
 }
 
 /// `GET /api/trips/{id}` with its itinerary.
@@ -296,26 +343,9 @@ class Trip {
     required this.dailyStartTime,
     required this.dailyEndTime,
     required this.days,
-    this.hotel,
   });
 
   factory Trip.fromJson(Map<String, dynamic> json) {
-    final hotelPlace = json['hotel_place'];
-    final customLat = _toDouble(json['hotel_lat']);
-    final customLng = _toDouble(json['hotel_lng']);
-
-    TripHotel? hotel;
-    if (hotelPlace is Map<String, dynamic>) {
-      final place = TripPlace.fromJson(hotelPlace);
-      hotel = TripHotel(name: place.name, lat: place.lat, lng: place.lng);
-    } else if (customLat != null && customLng != null) {
-      hotel = TripHotel(
-        name: json['hotel_custom_name'] as String? ?? '',
-        lat: customLat,
-        lng: customLng,
-      );
-    }
-
     final days = (json['days'] as List? ?? const [])
         .cast<Map<String, dynamic>>()
         .map(ItineraryDay.fromJson)
@@ -331,7 +361,6 @@ class Trip {
       dailyStartTime: json['daily_start_time'] as String? ?? '09:00',
       dailyEndTime: json['daily_end_time'] as String? ?? '19:00',
       days: days,
-      hotel: hotel,
     );
   }
 
@@ -342,8 +371,14 @@ class Trip {
   final DateTime startDate;
   final String dailyStartTime;
   final String dailyEndTime;
+  /// One row per trip day from the start, so an empty itinerary is days
+  /// without stops, not no days.
   final List<ItineraryDay> days;
-  final TripHotel? hotel;
+
+  /// Where day 1 starts: the hotel picked first.
+  TripHotel? get hotel => days.isEmpty ? null : days.first.start;
+
+  bool get hasStops => days.any((day) => day.items.isNotEmpty);
 
   DateTime dateOfDay(int dayNumber) => startDate.add(Duration(days: dayNumber - 1));
 
@@ -356,7 +391,6 @@ class Trip {
       startDate: startDate,
       dailyStartTime: dailyStartTime,
       dailyEndTime: dailyEndTime,
-      hotel: hotel,
       days: [
         for (final existing in days)
           existing.itineraryDaysId == day.itineraryDaysId ? day : existing,

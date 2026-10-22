@@ -1375,4 +1375,85 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get liveMapStop => 'Hentikan';
+
+  @override
+  String get dayPointPinOnMap => 'Pin di peta';
+
+  @override
+  String get dayPointPinOnMapHint =>
+      'Untuk penginapan yang tidak ada di katalog';
+
+  @override
+  String get dayPointSearchTitle => 'Atau cari hotel';
+
+  @override
+  String get dayPointMainHotel => 'Hotel utama';
+
+  @override
+  String dayPointMainHotelCaption(String name) {
+    return 'Sama seperti hari lainnya: $name';
+  }
+
+  @override
+  String get dayPointSameAsStart => 'Sama dengan titik awal';
+
+  @override
+  String get dayPointSameAsStartCaption =>
+      'Hari ini pulang ke tempat berangkat';
+
+  @override
+  String dayPointStartTitle(int day) {
+    return 'Titik awal Hari $day';
+  }
+
+  @override
+  String dayPointEndTitle(int day) {
+    return 'Titik akhir Hari $day';
+  }
+
+  @override
+  String get dayPointStart => 'Mulai';
+
+  @override
+  String get dayPointEnd => 'Selesai';
+
+  @override
+  String get dayPointChange => 'Ganti';
+
+  @override
+  String dayPointEndAt(String name) {
+    return 'Selesai di $name';
+  }
+
+  @override
+  String dayPointSaved(int day) {
+    return 'Titik Hari $day disimpan, rutenya dihitung ulang.';
+  }
+
+  @override
+  String get tripHotelModeSimple => 'Simpel';
+
+  @override
+  String get tripHotelModeDetail => 'Detail';
+
+  @override
+  String get tripHotelModeSimpleHint =>
+      'Satu hotel untuk semua hari: berangkat dan pulang ke hotel yang sama.';
+
+  @override
+  String get tripHotelModeDetailHint =>
+      'Pindah hotel di tengah trip? Atur titik mulai dan selesai tiap hari di bawah.';
+
+  @override
+  String get tripHotelMainLabel => 'Hotel utama';
+
+  @override
+  String get tripHotelPerDayTitle => 'Titik mulai & selesai per hari';
+
+  @override
+  String get tripHotelPerDayHint =>
+      'Defaultnya hotel utama. Ganti hari yang berbeda saja.';
+
+  @override
+  String get tripHotelPickMainFirst => 'Pilih hotel utama dulu';
 }

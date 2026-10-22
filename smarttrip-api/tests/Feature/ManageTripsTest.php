@@ -36,13 +36,13 @@ class ManageTripsTest extends TestCase
             'name' => 'Hotel Harbour Bay', 'type' => 'lodging', 'lat' => 1.16, 'lng' => 104.0,
             'address' => 'Batu Ampar', 'source' => 'google', 'external_place_id' => 'gp-hotel',
         ]);
-        $trip = $this->makeTrip($user, ['hotel_places_id' => $hotel->places_id]);
+        $trip = $this->makeTrip($user);
         $place = Place::create([
             'name' => 'Pantai Melur', 'type' => 'attraction', 'lat' => 1.15, 'lng' => 104.05,
             'address' => 'Barelang', 'source' => 'google', 'external_place_id' => 'gp-1',
             'estimated_visit_minutes' => 90, 'is_outdoor' => true,
         ]);
-        $day = ItineraryDay::create(['trips_id' => $trip->trips_id, 'day_number' => 1]);
+        $day = ItineraryDay::create(['trips_id' => $trip->trips_id, 'day_number' => 1, 'start_places_id' => $hotel->places_id]);
         ItineraryItem::create([
             'itinerary_days_id' => $day->itinerary_days_id, 'places_id' => $place->places_id,
             'visit_order' => 1, 'source' => 'recommended',
@@ -54,7 +54,10 @@ class ManageTripsTest extends TestCase
         $this->assertSame('Pantai Melur', $response->json('days.0.items.0.place.name'));
         $this->assertSame(90, $response->json('days.0.items.0.place.estimated_visit_minutes'));
         $this->assertTrue($response->json('days.0.items.0.place.is_outdoor'));
-        $this->assertSame('Hotel Harbour Bay', $response->json('hotel_place.name'));
+        $this->assertSame('Hotel Harbour Bay', $response->json('days.0.start.name'));
+        // No end of its own: the day ends where it starts.
+        $this->assertSame('Hotel Harbour Bay', $response->json('days.0.end.name'));
+        $this->assertFalse($response->json('days.0.has_own_end'));
     }
 
     // --- F011: GET /api/trips ---
@@ -244,8 +247,9 @@ class ManageTripsTest extends TestCase
         $response->assertOk();
         $response->assertJsonPath('itinerary_cleared', true);
         $response->assertJsonPath('num_days', 3);
-        $this->assertDatabaseMissing('itinerary_days', ['trips_id' => $trip->trips_id]);
+        // The stops go; the day rows stay (with their start points) and grow to three.
         $this->assertDatabaseMissing('itinerary_items', ['itinerary_items_id' => $item->itinerary_items_id]);
+        $this->assertSame([1, 2, 3], $trip->days()->orderBy('day_number')->pluck('day_number')->all());
     }
 
     public function test_changing_only_the_title_or_start_date_keeps_the_itinerary(): void

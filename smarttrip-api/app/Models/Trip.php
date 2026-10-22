@@ -23,10 +23,6 @@ class Trip extends Model
         'num_days',
         'budget_total',
         'has_own_hotel',
-        'hotel_places_id',
-        'hotel_custom_name',
-        'hotel_lat',
-        'hotel_lng',
         'start_date',
         'daily_start_time',
         'daily_end_time',
@@ -42,8 +38,6 @@ class Trip extends Model
     {
         return [
             'has_own_hotel' => 'boolean',
-            'hotel_lat' => 'decimal:7',
-            'hotel_lng' => 'decimal:7',
             'start_date' => 'date',
             'weight_kategori' => 'decimal:3',
             'weight_jarak' => 'decimal:3',
@@ -55,11 +49,6 @@ class Trip extends Model
     public function owner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'users_id');
-    }
-
-    public function hotelPlace(): BelongsTo
-    {
-        return $this->belongsTo(Place::class, 'hotel_places_id')->withTrashed();
     }
 
     public function interestCategories(): BelongsToMany
@@ -98,26 +87,37 @@ class Trip extends Model
         return $this->isOwnedBy($user) || $this->viewers()->where('users.users_id', $user->users_id)->exists();
     }
 
-    public function hasResolvedHotel(): bool
+    /**
+     * Keeps one day row per trip day, 1..num_days: a new day starts where the
+     * last one did, and days past num_days go with their stops.
+     */
+    public function syncDays(): void
     {
-        return $this->hotel_places_id !== null || ($this->hotel_lat !== null && $this->hotel_lng !== null);
+        $days = $this->days()->orderBy('day_number')->get();
+        $this->days()->where('day_number', '>', $this->num_days)->delete();
+
+        $last = $days->where('day_number', '<=', $this->num_days)->last();
+        for ($dayNumber = 1; $dayNumber <= $this->num_days; $dayNumber++) {
+            if ($days->contains('day_number', $dayNumber)) {
+                continue;
+            }
+
+            $this->days()->create([
+                'day_number' => $dayNumber,
+                ...($last ? $last->only(ItineraryDay::START_COLUMNS) : []),
+            ]);
+        }
+
+        $this->unsetRelation('days');
     }
 
     /**
-     * @return array{lat: float, lng: float}|null
+     * Every day knows where it starts, which generating the itinerary needs.
      */
-    public function hotelCoordinates(): ?array
+    public function hasDayStarts(): bool
     {
-        if ($this->hotel_places_id !== null) {
-            $place = $this->hotelPlace()->first();
+        $days = $this->days()->get();
 
-            return $place ? ['lat' => (float) $place->lat, 'lng' => (float) $place->lng] : null;
-        }
-
-        if ($this->hotel_lat !== null && $this->hotel_lng !== null) {
-            return ['lat' => (float) $this->hotel_lat, 'lng' => (float) $this->hotel_lng];
-        }
-
-        return null;
+        return $days->count() >= $this->num_days && $days->every(fn (ItineraryDay $day) => $day->hasStart());
     }
 }

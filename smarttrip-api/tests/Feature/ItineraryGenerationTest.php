@@ -118,7 +118,9 @@ class ItineraryGenerationTest extends TestCase
             ->postJson("/api/trips/{$trip->trips_id}/hotel", ['places_id' => $hotel->places_id]);
 
         $response->assertOk();
-        $this->assertSame($hotel->places_id, $trip->fresh()->hotel_places_id);
+        // Simple mode: every day starts at the hotel.
+        $this->assertSame([$hotel->places_id], $trip->days()->pluck('start_places_id')->unique()->values()->all());
+        $this->assertSame($trip->num_days, $trip->days()->count());
     }
 
     public function test_hotel_can_be_set_as_a_custom_pin(): void
@@ -132,9 +134,10 @@ class ItineraryGenerationTest extends TestCase
             ]);
 
         $response->assertOk();
-        $trip->refresh();
-        $this->assertNull($trip->hotel_places_id);
-        $this->assertSame('Rumah Saudara', $trip->hotel_custom_name);
+        $day = $trip->days()->orderBy('day_number')->first();
+        $this->assertNull($day->start_places_id);
+        $this->assertSame('Rumah Saudara', $day->start_custom_name);
+        $this->assertSame('Rumah Saudara', $response->json('days.0.start.name'));
     }
 
     public function test_hotel_options_ranks_lodgings_by_topsis(): void
@@ -201,7 +204,7 @@ class ItineraryGenerationTest extends TestCase
         $user = User::factory()->create();
         $trip = $this->makeTrip($user);
         $hotel = $this->makePlace(['type' => 'lodging']);
-        $trip->update(['hotel_places_id' => $hotel->places_id]);
+        $this->setTripStart($trip, ['start_places_id' => $hotel->places_id]);
 
         $response = $this->withHeaders($this->authHeader($user))
             ->postJson("/api/trips/{$trip->trips_id}/generate");
@@ -247,9 +250,9 @@ class ItineraryGenerationTest extends TestCase
         ]);
         $trip->interestCategories()->attach($category->categories_id);
         $trip->update([
-            'hotel_places_id' => $hotel->places_id,
             'weight_kategori' => 0.25, 'weight_jarak' => 0.25, 'weight_anggaran' => 0.25, 'weight_rating' => 0.25,
         ]);
+        $this->setTripStart($trip, ['start_places_id' => $hotel->places_id]);
 
         return $trip->fresh();
     }
@@ -503,5 +506,149 @@ class ItineraryGenerationTest extends TestCase
             ->assertJsonPath('dropped_wishlist_places', []);
         $allPlaceIds = collect($response->json('days'))->flatMap(fn ($day) => collect($day['items'])->pluck('places_id'));
         $this->assertNotContains($office->places_id, $allPlaceIds);
+    }
+
+    // --- start and end per day ---
+
+    public function test_a_new_trip_gets_one_day_row_per_day(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->withHeaders($this->authHeader($user))->postJson('/api/trips', [
+            'num_days' => 3, 'budget_total' => 1000000, 'start_date' => now()->addWeek()->toDateString(),
+        ]);
+
+        $response->assertCreated();
+        $trip = Trip::find($response->json('trips_id'));
+        $this->assertSame([1, 2, 3], $trip->days()->orderBy('day_number')->pluck('day_number')->all());
+    }
+
+    public function test_a_day_starting_at_another_hotel_gets_the_wishlist_near_that_hotel(): void
+    {
+        $user = User::factory()->create();
+        $trip = $this->readyTrip($user, 2);
+        $farHotel = $this->makePlace(['type' => 'lodging', 'name' => 'Hotel Jauh', 'lat' => 1.5000, 'lng' => 104.5000]);
+        $trip->days()->where('day_number', 2)->update(['start_places_id' => $farHotel->places_id]);
+
+        $near = $this->makePlace(['name' => 'Dekat Hotel 1', 'lat' => 1.1310, 'lng' => 104.0310]);
+        $far = $this->makePlace(['name' => 'Dekat Hotel 2', 'lat' => 1.5010, 'lng' => 104.5010]);
+        foreach ([$far, $near] as $place) {
+            $trip->wishlistPlaces()->create(['places_id' => $place->places_id]);
+        }
+        $this->fakeRoutes();
+
+        $response = $this->withHeaders($this->authHeader($user))->postJson("/api/trips/{$trip->trips_id}/generate");
+
+        $response->assertOk();
+        $dayOf = fn (Place $place) => collect($response->json('days'))
+            ->first(fn ($day) => collect($day['items'])->contains('places_id', $place->places_id))['day_number'] ?? null;
+        $this->assertSame(1, $dayOf($near));
+        $this->assertSame(2, $dayOf($far));
+    }
+
+    public function test_a_day_ending_elsewhere_visits_the_stop_nearest_that_end_last(): void
+    {
+        $user = User::factory()->create();
+        $trip = $this->readyTrip($user, 1);
+        // The hotel is at 1.13, 104.03; the day ends a little east of it.
+        $trip->days()->update(['end_custom_name' => 'Hotel Kedua', 'end_lat' => 1.1300, 'end_lng' => 104.0500]);
+
+        $nearEnd = $this->makePlace(['name' => 'Dekat Akhir', 'lat' => 1.1300, 'lng' => 104.0500]);
+        $north = $this->makePlace(['name' => 'Utara', 'lat' => 1.2000, 'lng' => 104.0300]);
+        foreach ([$nearEnd, $north] as $place) {
+            $trip->wishlistPlaces()->create(['places_id' => $place->places_id]);
+        }
+        $this->fakeRoutes();
+
+        $response = $this->withHeaders($this->authHeader($user))->postJson("/api/trips/{$trip->trips_id}/generate");
+
+        $response->assertOk();
+        // Nearest-first alone would go to "Dekat Akhir" first.
+        $wishlistOrder = collect($response->json('days.0.items'))
+            ->whereIn('places_id', [$nearEnd->places_id, $north->places_id])
+            ->sortBy('visit_order')
+            ->pluck('places_id')
+            ->values()
+            ->all();
+        $this->assertSame([$north->places_id, $nearEnd->places_id], $wishlistOrder);
+        $this->assertNotNull($trip->days()->first()->polyline_to_end);
+    }
+
+    public function test_changing_a_days_points_after_generating_recomputes_only_that_days_route(): void
+    {
+        $user = User::factory()->create();
+        $trip = $this->readyTrip($user, 2);
+        $wishlist = $this->makePlace(['name' => 'Wishlist', 'lat' => 1.1310, 'lng' => 104.0310]);
+        $trip->wishlistPlaces()->create(['places_id' => $wishlist->places_id]);
+        $this->fakeRoutes();
+        $headers = $this->authHeader($user);
+        $this->withHeaders($headers)->postJson("/api/trips/{$trip->trips_id}/generate")->assertOk();
+        $placesBefore = $trip->days()->with('items')->get()->mapWithKeys(fn ($day) => [$day->day_number => $day->items->pluck('places_id')->sort()->values()->all()]);
+        $callsBefore = count(Http::recorded());
+
+        $response = $this->withHeaders($headers)->putJson("/api/trips/{$trip->trips_id}/days/1/points", [
+            'end' => ['custom_name' => 'Rumah Teman', 'custom_lat' => 1.1400, 'custom_lng' => 104.0400],
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('days.0.end.name', 'Rumah Teman')
+            ->assertJsonPath('days.0.has_own_end', true)
+            ->assertJsonPath('days.1.has_own_end', false);
+        $this->assertSame(1, count(Http::recorded()) - $callsBefore);
+        $placesAfter = $trip->days()->with('items')->get()->mapWithKeys(fn ($day) => [$day->day_number => $day->items->pluck('places_id')->sort()->values()->all()]);
+        $this->assertSame($placesBefore->all(), $placesAfter->all());
+
+        $reset = $this->withHeaders($headers)->putJson("/api/trips/{$trip->trips_id}/days/1/points", ['end' => null]);
+        $reset->assertOk()->assertJsonPath('days.0.has_own_end', false)->assertJsonPath('days.0.end.name', 'Hotel Batam');
+    }
+
+    public function test_day_points_are_validated(): void
+    {
+        $owner = User::factory()->create();
+        $trip = $this->readyTrip($owner, 2);
+        $hotel = $this->makePlace(['type' => 'lodging', 'name' => 'Hotel Lain']);
+
+        $this->withHeaders($this->authHeader($owner))
+            ->putJson("/api/trips/{$trip->trips_id}/days/3/points", ['start' => ['places_id' => $hotel->places_id]])
+            ->assertNotFound();
+        $this->withHeaders($this->authHeader($owner))
+            ->putJson("/api/trips/{$trip->trips_id}/days/1/points", [
+                'start' => ['places_id' => $hotel->places_id, 'custom_name' => 'X', 'custom_lat' => 1.1, 'custom_lng' => 104.0],
+            ])
+            ->assertUnprocessable();
+
+        $this->withHeaders($this->authHeader($owner))
+            ->putJson("/api/trips/{$trip->trips_id}/days/2/points", ['start' => ['places_id' => $hotel->places_id]])
+            ->assertOk()
+            ->assertJsonPath('days.1.start.name', 'Hotel Lain')
+            ->assertJsonPath('days.0.start.name', 'Hotel Batam');
+    }
+
+    public function test_only_the_owner_can_change_day_points(): void
+    {
+        $owner = User::factory()->create();
+        $stranger = User::factory()->create();
+        $trip = $this->readyTrip($owner, 2);
+        $hotel = $this->makePlace(['type' => 'lodging', 'name' => 'Hotel Lain']);
+
+        $this->withHeaders($this->authHeader($stranger))
+            ->putJson("/api/trips/{$trip->trips_id}/days/1/points", ['start' => ['places_id' => $hotel->places_id]])
+            ->assertForbidden();
+    }
+
+    public function test_changing_the_number_of_days_keeps_the_remaining_days_points(): void
+    {
+        $user = User::factory()->create();
+        $trip = $this->readyTrip($user, 3);
+        $hotel = $this->makePlace(['type' => 'lodging', 'name' => 'Hotel Hari Dua']);
+        $trip->days()->where('day_number', 2)->update(['start_places_id' => $hotel->places_id]);
+
+        $this->withHeaders($this->authHeader($user))->patchJson("/api/trips/{$trip->trips_id}", ['num_days' => 2])->assertOk();
+        $this->assertSame([1, 2], $trip->days()->orderBy('day_number')->pluck('day_number')->all());
+        $this->assertSame($hotel->places_id, $trip->days()->where('day_number', 2)->value('start_places_id'));
+
+        $this->withHeaders($this->authHeader($user))->patchJson("/api/trips/{$trip->trips_id}", ['num_days' => 4])->assertOk();
+        // New days start where the last day did.
+        $this->assertSame($hotel->places_id, $trip->days()->where('day_number', 4)->value('start_places_id'));
     }
 }

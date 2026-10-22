@@ -1408,4 +1408,84 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get liveMapStop => 'Stop';
+
+  @override
+  String get dayPointPinOnMap => 'Pin on the map';
+
+  @override
+  String get dayPointPinOnMapHint =>
+      'For a place to stay that is not in the catalog';
+
+  @override
+  String get dayPointSearchTitle => 'Or search a hotel';
+
+  @override
+  String get dayPointMainHotel => 'Main hotel';
+
+  @override
+  String dayPointMainHotelCaption(String name) {
+    return 'Same as the other days: $name';
+  }
+
+  @override
+  String get dayPointSameAsStart => 'Same as the start';
+
+  @override
+  String get dayPointSameAsStartCaption => 'The day ends where it started';
+
+  @override
+  String dayPointStartTitle(int day) {
+    return 'Day $day start';
+  }
+
+  @override
+  String dayPointEndTitle(int day) {
+    return 'Day $day end';
+  }
+
+  @override
+  String get dayPointStart => 'Start';
+
+  @override
+  String get dayPointEnd => 'End';
+
+  @override
+  String get dayPointChange => 'Change';
+
+  @override
+  String dayPointEndAt(String name) {
+    return 'Ends at $name';
+  }
+
+  @override
+  String dayPointSaved(int day) {
+    return 'Day $day updated and its route recomputed.';
+  }
+
+  @override
+  String get tripHotelModeSimple => 'Simple';
+
+  @override
+  String get tripHotelModeDetail => 'Detailed';
+
+  @override
+  String get tripHotelModeSimpleHint =>
+      'One hotel for every day: start and end at the same hotel.';
+
+  @override
+  String get tripHotelModeDetailHint =>
+      'Moving hotels mid-trip? Set where each day starts and ends below.';
+
+  @override
+  String get tripHotelMainLabel => 'Main hotel';
+
+  @override
+  String get tripHotelPerDayTitle => 'Start and end per day';
+
+  @override
+  String get tripHotelPerDayHint =>
+      'The main hotel by default. Change only the days that differ.';
+
+  @override
+  String get tripHotelPickMainFirst => 'Pick the main hotel first';
 }

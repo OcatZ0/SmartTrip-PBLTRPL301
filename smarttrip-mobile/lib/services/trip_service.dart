@@ -133,6 +133,26 @@ class TripService {
         ));
   }
 
+  /// One day's start and/or end (detail mode). [start] / [end] are a
+  /// `{places_id}` or `{custom_name, custom_lat, custom_lng}` point; with
+  /// [resetEnd] the day ends where it starts again. A day with stops gets its
+  /// route recomputed by the server.
+  Future<void> setDayPoints(
+    int tripsId,
+    int dayNumber, {
+    Map<String, dynamic>? start,
+    Map<String, dynamic>? end,
+    bool resetEnd = false,
+  }) async {
+    await _call(() => _dio.put<Map<String, dynamic>>(
+          '/trips/$tripsId/days/$dayNumber/points',
+          data: {
+            if (start != null) 'start': start,
+            if (end != null) 'end': end else if (resetEnd) 'end': null,
+          },
+        ));
+  }
+
   Future<void> setCustomHotel(
     int tripsId, {
     required String name,

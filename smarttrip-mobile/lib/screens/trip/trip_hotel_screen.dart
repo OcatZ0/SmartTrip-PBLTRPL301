@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 import '../../core/error/trip_error_message.dart';
 import '../../core/router/app_routes.dart';
@@ -19,6 +20,7 @@ import '../../widgets/step_pill.dart';
 import '../catalog/widgets/catalog_filter_chip.dart';
 import '../catalog/widgets/catalog_search_field.dart';
 import 'map_pin_picker_screen.dart';
+import 'widgets/day_point_sheet.dart';
 import 'widgets/setup_card.dart';
 
 /// C4. Pilih Hotel (Section 13 step 5) - step 4 of the trip setup, in the
@@ -42,6 +44,12 @@ class _TripHotelScreenState extends ConsumerState<TripHotelScreen> {
   bool _isSearchTab = false;
   String _query = '';
   HotelChoice? _choice;
+
+  /// Detail mode: days that start or end somewhere other than the main
+  /// hotel. Simple mode ignores them.
+  bool _detailMode = false;
+  final Map<int, HotelChoice> _starts = {};
+  final Map<int, HotelChoice> _ends = {};
 
   @override
   void dispose() {
@@ -78,6 +86,46 @@ class _TripHotelScreenState extends ConsumerState<TripHotelScreen> {
 
     setState(() {
       _choice = CustomHotelChoice(name: picked.name, lat: picked.lat, lng: picked.lng);
+    });
+  }
+
+  Future<void> _changeStart(int day) async {
+    final l10n = AppLocalizations.of(context);
+    final pick = await DayPointSheet.show(
+      context,
+      title: l10n.dayPointStartTitle(day),
+      defaultLabel: l10n.dayPointMainHotel,
+      defaultCaption: l10n.dayPointMainHotelCaption(_choice?.name ?? '-'),
+      isDefault: !_starts.containsKey(day),
+    );
+    if (pick == null || !mounted) return;
+    setState(() {
+      switch (pick) {
+        case DefaultDayPoint():
+          _starts.remove(day);
+        case ChosenDayPoint(:final choice):
+          _starts[day] = choice;
+      }
+    });
+  }
+
+  Future<void> _changeEnd(int day) async {
+    final l10n = AppLocalizations.of(context);
+    final pick = await DayPointSheet.show(
+      context,
+      title: l10n.dayPointEndTitle(day),
+      defaultLabel: l10n.dayPointSameAsStart,
+      defaultCaption: l10n.dayPointSameAsStartCaption,
+      isDefault: !_ends.containsKey(day),
+    );
+    if (pick == null || !mounted) return;
+    setState(() {
+      switch (pick) {
+        case DefaultDayPoint():
+          _ends.remove(day);
+        case ChosenDayPoint(:final choice):
+          _ends[day] = choice;
+      }
     });
   }
 
@@ -148,7 +196,12 @@ class _TripHotelScreenState extends ConsumerState<TripHotelScreen> {
               isLoading: submitState.isLoading,
               onPressed: choice == null
                   ? null
-                  : () => ref.read(tripHotelControllerProvider.notifier).submit(widget.tripsId, choice),
+                  : () => ref.read(tripHotelControllerProvider.notifier).submit(
+                        widget.tripsId,
+                        choice,
+                        starts: _detailMode ? _starts : const {},
+                        ends: _detailMode ? _ends : const {},
+                      ),
             ),
             const SizedBox(height: 8),
             Text(
@@ -179,6 +232,33 @@ class _TripHotelScreenState extends ConsumerState<TripHotelScreen> {
                 const SizedBox(height: 4),
                 Text(l10n.tripHotelSubtitle, style: appText(13, FontWeight.w500, AppColors.inkMuted, height: 19)),
                 const SizedBox(height: 14),
+                Row(
+                  children: [
+                    CatalogFilterChip(
+                      label: l10n.tripHotelModeSimple,
+                      leading: Icons.hotel_rounded,
+                      selected: !_detailMode,
+                      onTap: () => setState(() => _detailMode = false),
+                    ),
+                    const SizedBox(width: 8),
+                    CatalogFilterChip(
+                      label: l10n.tripHotelModeDetail,
+                      leading: Icons.view_day_outlined,
+                      selected: _detailMode,
+                      onTap: () => setState(() => _detailMode = true),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _detailMode ? l10n.tripHotelModeDetailHint : l10n.tripHotelModeSimpleHint,
+                  style: appText(12, FontWeight.w500, AppColors.inkMuted, height: 17),
+                ),
+                const SizedBox(height: 14),
+                if (_detailMode) ...[
+                  Text(l10n.tripHotelMainLabel, style: appText(14, FontWeight.w800, AppColors.ink)),
+                  const SizedBox(height: 8),
+                ],
                 CatalogSearchField(
                   controller: _searchController,
                   hintText: l10n.tripHotelSearchHint,
@@ -240,6 +320,18 @@ class _TripHotelScreenState extends ConsumerState<TripHotelScreen> {
               ),
             ),
           ),
+          if (_detailMode)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+              child: _DayPointsCard(
+                trip: ref.watch(tripDetailProvider(widget.tripsId)).valueOrNull,
+                mainHotel: choice?.name,
+                starts: _starts,
+                ends: _ends,
+                onChangeStart: _changeStart,
+                onChangeEnd: _changeEnd,
+              ),
+            ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
             child: SetupCard(
@@ -538,6 +630,90 @@ class _HotelCard extends StatelessWidget {
   }
 }
 
+/// Detail mode: every day with where it starts and ends, the main hotel and
+/// "same as the start" by default, each with a Ganti button.
+class _DayPointsCard extends StatelessWidget {
+  const _DayPointsCard({
+    required this.trip,
+    required this.mainHotel,
+    required this.starts,
+    required this.ends,
+    required this.onChangeStart,
+    required this.onChangeEnd,
+  });
+
+  final Trip? trip;
+  final String? mainHotel;
+  final Map<int, HotelChoice> starts;
+  final Map<int, HotelChoice> ends;
+  final ValueChanged<int> onChangeStart;
+  final ValueChanged<int> onChangeEnd;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final trip = this.trip;
+    if (trip == null) return const _Loading();
+    final dayFormat = DateFormat('EEE d MMM', Localizations.localeOf(context).languageCode);
+
+    Widget row({required String label, required String value, required bool custom, required VoidCallback onChange}) {
+      return Row(
+        children: [
+          SizedBox(width: 54, child: Text(label, style: appText(12, FontWeight.w600, AppColors.inkMuted))),
+          Expanded(
+            child: Text(
+              value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: appText(13, custom ? FontWeight.w800 : FontWeight.w600, custom ? AppColors.ink : AppColors.inkMuted),
+            ),
+          ),
+          TextButton(
+            onPressed: onChange,
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.sea600,
+              visualDensity: VisualDensity.compact,
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+            ),
+            child: Text(l10n.dayPointChange, style: appText(12.5, FontWeight.w700, AppColors.sea600)),
+          ),
+        ],
+      );
+    }
+
+    return SetupCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SetupCardHeading(icon: Icons.view_day_outlined, title: l10n.tripHotelPerDayTitle, caption: l10n.tripHotelPerDayHint),
+          for (var day = 1; day <= trip.numDays; day++) ...[
+            const SizedBox(height: 12),
+            if (day > 1) const Divider(height: 1, color: AppColors.field),
+            if (day > 1) const SizedBox(height: 12),
+            Text(
+              '${l10n.liveMapDay(day)} · ${dayFormat.format(trip.dateOfDay(day))}',
+              style: appText(13, FontWeight.w800, AppColors.ink),
+            ),
+            const SizedBox(height: 4),
+            row(
+              label: l10n.dayPointStart,
+              value: starts[day]?.name ?? mainHotel ?? l10n.tripHotelPickMainFirst,
+              custom: starts.containsKey(day),
+              onChange: () => onChangeStart(day),
+            ),
+            row(
+              label: l10n.dayPointEnd,
+              value: ends[day]?.name ?? l10n.dayPointSameAsStart,
+              custom: ends.containsKey(day),
+              onChange: () => onChangeEnd(day),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 /// The hotel pinned on the map, with a button to move the pin.
 class _CustomHotelSummary extends StatelessWidget {
   const _CustomHotelSummary({required this.choice, required this.onChange});
@@ -636,6 +812,11 @@ sealed class HotelChoice {
   const HotelChoice();
 
   String get name;
+
+  TripHotel get asPoint => switch (this) {
+        CatalogHotelChoice(:final place) => TripHotel(name: place.name, lat: place.lat, lng: place.lng, placesId: place.placesId),
+        CustomHotelChoice(:final name, :final lat, :final lng) => TripHotel(name: name, lat: lat, lng: lng),
+      };
 }
 
 class CatalogHotelChoice extends HotelChoice {
@@ -656,12 +837,18 @@ class CustomHotelChoice extends HotelChoice {
   final double lng;
 }
 
-/// Step 4 (C4) submission: saves the hotel as every day's start/end point.
+/// Step 4 (C4) submission: the hotel becomes every day's start and end, then
+/// the days set in detail mode get their own.
 class TripHotelController extends AutoDisposeAsyncNotifier<bool> {
   @override
   FutureOr<bool> build() => false;
 
-  Future<void> submit(int tripsId, HotelChoice choice) async {
+  Future<void> submit(
+    int tripsId,
+    HotelChoice choice, {
+    Map<int, HotelChoice> starts = const {},
+    Map<int, HotelChoice> ends = const {},
+  }) async {
     final repository = ref.read(tripServiceProvider);
 
     state = const AsyncLoading();
@@ -672,6 +859,15 @@ class TripHotelController extends AutoDisposeAsyncNotifier<bool> {
         case CustomHotelChoice(:final name, :final lat, :final lng):
           await repository.setCustomHotel(tripsId, name: name, lat: lat, lng: lng);
       }
+      for (final day in {...starts.keys, ...ends.keys}) {
+        await repository.setDayPoints(
+          tripsId,
+          day,
+          start: starts[day]?.asPoint.toPointJson(),
+          end: ends[day]?.asPoint.toPointJson(),
+        );
+      }
+      ref.invalidate(tripDetailProvider(tripsId));
       return true;
     });
   }

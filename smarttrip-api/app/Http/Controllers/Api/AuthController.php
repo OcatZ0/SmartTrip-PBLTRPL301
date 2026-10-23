@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Mail\RegistrationVerificationMail;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -35,6 +36,8 @@ use Illuminate\Validation\ValidationException;
  */
 class AuthController extends Controller
 {
+    private const VERIFICATION_MINUTES = 60;
+
     public function register(Request $request)
     {
         $data = $request->validate([
@@ -63,11 +66,7 @@ class AuthController extends Controller
             ]
         );
 
-        $verificationUrl = URL::temporarySignedRoute(
-            'auth.verify-registration',
-            now()->addMinutes(60),
-            ['email' => $data['email'], 'token' => $token]
-        );
+        $verificationUrl = URL::route('auth.verify-registration', ['email' => $data['email'], 'token' => $token]);
 
         Mail::to($data['email'])->send(new RegistrationVerificationMail($verificationUrl));
 
@@ -92,7 +91,7 @@ class AuthController extends Controller
             return $failure('Tautan verifikasi tidak valid.');
         }
 
-        if (now()->diffInMinutes($pending->created_at) > 60) {
+        if (Carbon::parse($pending->created_at)->lt(now()->subMinutes(self::VERIFICATION_MINUTES))) {
             DB::table('pending_registrations')->where('email', $email)->delete();
 
             return $failure('Tautan verifikasi sudah kedaluwarsa. Silakan daftar ulang.');

@@ -323,6 +323,49 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get tripNameLabel => 'Trip Name';
+
+  @override
+  String get tripNameHint => 'So you can find it in Saved Trips';
+
+  @override
+  String tripNameDefault(String dates) {
+    return 'Batam trip $dates';
+  }
+
+  @override
+  String tripHoursPerDay(int hours) {
+    return '$hours hours a day';
+  }
+
+  @override
+  String get tripScheduleLabel => 'Dates & duration';
+
+  @override
+  String get tripScheduleHint => 'Tap the first day, then the last.';
+
+  @override
+  String get tripDailyHoursLabel => 'Hours out each day';
+
+  @override
+  String get tripDailyHoursHint => 'Pick a suggestion or set your own.';
+
+  @override
+  String get tripShortDayWarning =>
+      'Under 4 hours: each day only fits a few places.';
+
+  @override
+  String get tripStartDateShort => 'Start';
+
+  @override
+  String get tripEndDateShort => 'End';
+
+  @override
+  String tripBudgetPerDay(String amount) {
+    return '≈ Rp$amount a day';
+  }
+
+  @override
   String get tripSetupHeader => 'Trip Setup';
 
   @override
@@ -331,12 +374,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get tripSetupSubtitle =>
       'Tell us your preferences and we will build the best itinerary.';
-
-  @override
-  String get tripDurationLabel => 'Trip Duration';
-
-  @override
-  String get tripDurationHint => 'How long is your Batam holiday?';
 
   @override
   String get tripDurationDecrease => 'Decrease duration';
@@ -398,12 +435,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get validationBudgetRequired => 'Budget must be more than 0';
 
   @override
-  String get tripDateLabel => 'Start & End Date';
-
-  @override
-  String get tripDateHint => 'Your time on the island';
-
-  @override
   String get tripStartTimeLabel => 'Start Time';
 
   @override
@@ -423,7 +454,7 @@ class AppLocalizationsEn extends AppLocalizations {
       ' Arriving in Batam Centre before 10:00 WIB gets the most out of your itinerary.';
 
   @override
-  String get tripSetupNext => 'Continue to Wishlist (2/4)';
+  String get tripSetupNext => 'Continue to wishlist';
 
   @override
   String get tripCancelTitle => 'Cancel trip setup?';
@@ -438,11 +469,58 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tripCancelConfirm => 'Cancel Setup';
 
   @override
-  String get tripWishlistHeader => 'Build Wishlist';
+  String get tripWishlistSearchHint => 'Search beaches, food, museums...';
 
   @override
-  String get tripWishlistComingSoon =>
-      'The wishlist is still being prepared. You can continue and the system will pick the best places for you.';
+  String get tripWishlistNoResults => 'No matching places.';
+
+  @override
+  String get tripWishlistPin => 'Pin on map';
+
+  @override
+  String tripWishlistRemove(String name) {
+    return 'Remove $name from the trip wishlist';
+  }
+
+  @override
+  String get tripWishlistVisitLength => 'Visit length';
+
+  @override
+  String get tripWishlistVisitLengthHint => 'How long will you stay here?';
+
+  @override
+  String get tripWishlistSave => 'Save';
+
+  @override
+  String get tripWishlistSummaryPlaces => 'Places';
+
+  @override
+  String get tripWishlistSummaryVisit => 'Total visit';
+
+  @override
+  String tripWishlistHours(String hours) {
+    return '±$hours h';
+  }
+
+  @override
+  String get tripWishlistActionFailed =>
+      'The trip wishlist could not be updated, try again.';
+
+  @override
+  String get tripWishlistPicked => 'Picked';
+
+  @override
+  String get tripWishlistPageTitle => 'Add Your Favourite Places';
+
+  @override
+  String get tripWishlistPageSubtitle =>
+      'Tap the places this trip must include (optional).';
+
+  @override
+  String get tripWishlistPins => 'Own pins';
+
+  @override
+  String get tripWishlistHeader => 'Build Wishlist';
 
   @override
   String get tripWishlistNext => 'Continue to Interests & Priorities (3/4)';
@@ -740,6 +818,16 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String itineraryDayShort(int day) {
+    return 'Day $day';
+  }
+
+  @override
+  String itineraryStopsCount(int count) {
+    return '$count stops';
+  }
+
+  @override
   String get itineraryUnknownPlace => 'Place unavailable';
 
   @override
@@ -982,4 +1070,557 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get detailAreaIndoor => 'Indoor';
+
+  @override
+  String get profileInterests => 'Your interests';
+
+  @override
+  String get profileInterestsHint => 'Picked automatically for every new trip.';
+
+  @override
+  String get profilePriorities => 'Route priorities';
+
+  @override
+  String get profileWeightInterest => 'Matches your interests';
+
+  @override
+  String get profileWeightInterestHint =>
+      'Favor places in your chosen categories';
+
+  @override
+  String get profileWeightDistance => 'Distance & travel time';
+
+  @override
+  String get profileWeightDistanceHint => 'Favor places close to each other';
+
+  @override
+  String get profileWeightBudget => 'Save money';
+
+  @override
+  String get profileWeightBudgetHint => 'Favor cheap or free places';
+
+  @override
+  String get profileWeightRating => 'Place rating';
+
+  @override
+  String get profileWeightRatingHint => 'Favor well-reviewed places';
+
+  @override
+  String get profileNeedInterest => 'Pick at least one interest.';
+
+  @override
+  String get profileLoadFailed => 'Couldn\'t load your preferences.';
+
+  @override
+  String get profileChangePassword => 'Change password';
+
+  @override
+  String get profileLanguage => 'Language';
+
+  @override
+  String get profileLanguageName => 'English';
+
+  @override
+  String get profileLogout => 'Log out';
+
+  @override
+  String get profileLogoutTitle => 'Log out?';
+
+  @override
+  String get profileLogoutBody =>
+      'You\'ll need to sign in again to open your trips.';
+
+  @override
+  String get profilePasswordCurrent => 'Current password';
+
+  @override
+  String get profilePasswordNew => 'New password';
+
+  @override
+  String get profilePasswordConfirm => 'Repeat the new password';
+
+  @override
+  String get profilePasswordSubmit => 'Save password';
+
+  @override
+  String get profileEyebrow => 'PROFILE';
+
+  @override
+  String get profileHeadline => 'Plan trips your way';
+
+  @override
+  String get profilePasswordGoogleOnly =>
+      'Your account was made with Google, so it has no password yet. Set one here to also sign in with your email.';
+
+  @override
+  String get swapTitle => 'Swap Place';
+
+  @override
+  String swapSubtitle(String name) {
+    return 'Pick a replacement for $name.';
+  }
+
+  @override
+  String swapRainSubtitle(String name) {
+    return 'Rain is forecast that day. Indoor places to replace $name are listed first.';
+  }
+
+  @override
+  String get swapTabRecommended => 'Recommended';
+
+  @override
+  String get swapTabSearch => 'Search';
+
+  @override
+  String get swapSearchHint => 'Search a place name';
+
+  @override
+  String get swapEmpty => 'No suitable replacement yet.';
+
+  @override
+  String get swapIndoor => 'Indoor';
+
+  @override
+  String get swapOutdoor => 'Outdoor';
+
+  @override
+  String get placeSheetTooltip => 'Place details';
+
+  @override
+  String get placeSheetCustomPin => 'A pin you dropped on the map yourself.';
+
+  @override
+  String get swapCurrentBadge => 'Being replaced';
+
+  @override
+  String swapDaySubtitle(int day) {
+    return 'Day $day schedule';
+  }
+
+  @override
+  String get swapFilterNear => 'Nearby (< 3 km)';
+
+  @override
+  String get swapFilterRating => 'Rating 4.5+';
+
+  @override
+  String get swapFilterCheap => 'Budget (≤ Rp50k)';
+
+  @override
+  String get swapEngineTitle => 'Smart alternatives';
+
+  @override
+  String get swapEngineBody =>
+      'Ranked by your trip\'s interests, distance, budget and rating. Places closed that day are left out.';
+
+  @override
+  String get swapBestTitle => 'Best alternatives';
+
+  @override
+  String get swapSortedBy => 'Sorted: best fit';
+
+  @override
+  String get swapSearchResults => 'Search results';
+
+  @override
+  String swapMatch(int percent) {
+    return '$percent% match';
+  }
+
+  @override
+  String get swapTopPick => 'Top pick';
+
+  @override
+  String get swapSummaryLabel => 'Swap:';
+
+  @override
+  String get swapPickHint => 'Pick a replacement above';
+
+  @override
+  String get swapApply => 'Apply swap';
+
+  @override
+  String get swapNoFilterResults => 'No places match these filters.';
+
+  @override
+  String get stopSheetDetail => 'Place details';
+
+  @override
+  String get stopSheetDetailHint =>
+      'See the description, facilities, tickets & reviews';
+
+  @override
+  String get stopSheetSwap => 'Swap this place';
+
+  @override
+  String get stopSheetSwapHint => 'Find another place for this slot';
+
+  @override
+  String get stopSheetMaps => 'Open in Google Maps';
+
+  @override
+  String get stopSheetMapsHint => 'Directions to the place';
+
+  @override
+  String stopSheetFromYou(String km) {
+    return '± $km km from you';
+  }
+
+  @override
+  String swapSlot(int order) {
+    return 'Stop $order of the day';
+  }
+
+  @override
+  String swapDriveMinutes(int minutes) {
+    return '±$minutes min drive';
+  }
+
+  @override
+  String swapRouteShorter(String km, int minutes) {
+    return 'The day\'s route gets ±$km km shorter (±$minutes min).';
+  }
+
+  @override
+  String swapRouteLonger(String km, int minutes) {
+    return 'The day\'s route gets ±$km km longer (±$minutes min).';
+  }
+
+  @override
+  String get swapRouteSame => 'On the day\'s way, about the same distance.';
+
+  @override
+  String swapDeltaSave(String km) {
+    return 'Save $km km';
+  }
+
+  @override
+  String swapDeltaExtra(String km) {
+    return '+$km km';
+  }
+
+  @override
+  String get swapDeltaSame => '≈ same';
+
+  @override
+  String swapDurationHours(int hours) {
+    return '$hours h';
+  }
+
+  @override
+  String swapDurationHoursMinutes(int hours, int minutes) {
+    return '${hours}h ${minutes}m';
+  }
+
+  @override
+  String get swapBusyTitle => 'Swapping the place';
+
+  @override
+  String swapBusyMessage(String name, int day) {
+    return '$name joins day $day and its route is rebuilt. Just a moment.';
+  }
+
+  @override
+  String swapDone(String name) {
+    return 'Replaced with $name.';
+  }
+
+  @override
+  String get weatherClear => 'Clear';
+
+  @override
+  String get weatherCloudy => 'Cloudy';
+
+  @override
+  String get weatherFog => 'Foggy';
+
+  @override
+  String get weatherRain => 'Rain';
+
+  @override
+  String get weatherThunderstorm => 'Thunderstorm';
+
+  @override
+  String weatherSummary(int min, int max, int chance) {
+    return '$min-$max°C · $chance% chance of rain';
+  }
+
+  @override
+  String weatherRainWarning(int count) {
+    return 'Rain is forecast and $count stops today are outdoors. Consider swapping them for indoor places.';
+  }
+
+  @override
+  String get weatherRainBadge => 'Rain, swap?';
+
+  @override
+  String weatherReminderTitle(String title) {
+    return 'Check the weather for $title';
+  }
+
+  @override
+  String get weatherReminderBody =>
+      'Your trip is 7 days away. The forecast is now on your itinerary.';
+
+  @override
+  String get weatherReminderChannel => 'Weather reminder';
+
+  @override
+  String get weatherReminderChannelDescription =>
+      'Reminder to check the forecast before a trip';
+
+  @override
+  String dayReminderTitle(String title, int day) {
+    return '$title: day $day';
+  }
+
+  @override
+  String dayReminderBody(int count, String first, String time) {
+    return '$count stops today, starting with $first at $time.';
+  }
+
+  @override
+  String get dayReminderChannel => 'Trip day reminder';
+
+  @override
+  String get dayReminderChannelDescription =>
+      'Reminder at the start of each trip day';
+
+  @override
+  String get tripPaceRelaxed => 'Relaxed';
+
+  @override
+  String get tripPaceStandard => 'Standard';
+
+  @override
+  String get tripPacePacked => 'Packed';
+
+  @override
+  String get tripSummaryBudget => 'Budget';
+
+  @override
+  String get tripSummaryDuration => 'Duration';
+
+  @override
+  String get tripSummaryHours => 'Daily hours';
+
+  @override
+  String liveMapDay(int day) {
+    return 'Day $day';
+  }
+
+  @override
+  String liveMapProgress(int visited, int total) {
+    return '$visited of $total stops visited';
+  }
+
+  @override
+  String get liveMapStop => 'Stop';
+
+  @override
+  String get dayPointPinOnMap => 'Pin on the map';
+
+  @override
+  String get dayPointPinOnMapHint =>
+      'For a place to stay that is not in the catalog';
+
+  @override
+  String get dayPointSearchTitle => 'Or search a hotel';
+
+  @override
+  String get dayPointMainHotel => 'Main hotel';
+
+  @override
+  String dayPointMainHotelCaption(String name) {
+    return 'Same as the other days: $name';
+  }
+
+  @override
+  String get dayPointSameAsStart => 'Same as the start';
+
+  @override
+  String get dayPointSameAsStartCaption => 'The day ends where it started';
+
+  @override
+  String dayPointStartTitle(int day) {
+    return 'Day $day start';
+  }
+
+  @override
+  String dayPointEndTitle(int day) {
+    return 'Day $day end';
+  }
+
+  @override
+  String get dayPointStart => 'Start';
+
+  @override
+  String get dayPointEnd => 'End';
+
+  @override
+  String get dayPointChange => 'Change';
+
+  @override
+  String dayPointEndAt(String name) {
+    return 'Ends at $name';
+  }
+
+  @override
+  String get dayPointBusyTitle => 'Recalculating the route';
+
+  @override
+  String dayPointBusyStart(int day) {
+    return 'Saving the start of day $day and rebuilding its route. Just a moment.';
+  }
+
+  @override
+  String dayPointBusyEnd(int day) {
+    return 'Saving the end of day $day and rebuilding its route. Just a moment.';
+  }
+
+  @override
+  String get tripHotelBusyTitle => 'Saving your trip points';
+
+  @override
+  String get tripHotelBusySimple =>
+      'The hotel becomes every day\'s start and end. Just a moment.';
+
+  @override
+  String get tripHotelBusyDetail =>
+      'Saving the hotel and each day\'s start and end, and preparing each day\'s route. Just a moment.';
+
+  @override
+  String dayPointSaved(int day) {
+    return 'Day $day updated and its route recomputed.';
+  }
+
+  @override
+  String get tripHotelModeSimple => 'Simple';
+
+  @override
+  String get tripHotelModeDetail => 'Detailed';
+
+  @override
+  String get tripHotelModeSimpleHint =>
+      'One hotel for every day: start and end at the same hotel.';
+
+  @override
+  String get tripHotelModeDetailHint =>
+      'Moving hotels mid-trip? Set where each day starts and ends below.';
+
+  @override
+  String get tripHotelMainLabel => 'Main hotel';
+
+  @override
+  String get tripHotelPerDayTitle => 'Start and end per day';
+
+  @override
+  String get tripHotelPerDayHint =>
+      'The main hotel by default. Change only the days that differ.';
+
+  @override
+  String get tripHotelPickMainFirst => 'Pick the main hotel first';
+
+  @override
+  String get wishlistEyebrow => 'YOUR COLLECTION';
+
+  @override
+  String get wishlistTitle => 'My Wishlist';
+
+  @override
+  String get wishlistSearchHint => 'Search your wishlist';
+
+  @override
+  String wishlistSavedCount(int count) {
+    return '$count saved places';
+  }
+
+  @override
+  String get wishlistSortTitle => 'Sort by';
+
+  @override
+  String get wishlistSortNewest => 'Recently saved';
+
+  @override
+  String get wishlistSortRating => 'Highest rated';
+
+  @override
+  String get wishlistSortName => 'Name (A-Z)';
+
+  @override
+  String get wishlistSortCost => 'Lowest cost';
+
+  @override
+  String get wishlistSelect => 'Select';
+
+  @override
+  String get wishlistSelectDone => 'Done';
+
+  @override
+  String wishlistSelectedCount(int count) {
+    return '$count selected';
+  }
+
+  @override
+  String get wishlistSelectHint => 'Pick places to remove or add to a trip';
+
+  @override
+  String get wishlistRemove => 'Remove';
+
+  @override
+  String wishlistRemoved(String name) {
+    return '$name removed from your wishlist.';
+  }
+
+  @override
+  String get wishlistUndo => 'Undo';
+
+  @override
+  String wishlistRemovedMany(int count) {
+    return '$count places removed from your wishlist.';
+  }
+
+  @override
+  String wishlistRemoveFailed(int count) {
+    return '$count places couldn\'t be removed. Try again.';
+  }
+
+  @override
+  String wishlistAddedMany(int count, String title) {
+    return '$count places added to the $title wishlist.';
+  }
+
+  @override
+  String wishlistAddedManyNeedsRegenerate(int count, String title) {
+    return '$count places added to the $title wishlist. Generate its itinerary again so they are counted.';
+  }
+
+  @override
+  String wishlistAddFailed(int count) {
+    return '$count places couldn\'t be added.';
+  }
+
+  @override
+  String get wishlistGuestTitle => 'Log in to see your wishlist';
+
+  @override
+  String get wishlistGuestBody =>
+      'The places you save with the heart are collected here.';
+
+  @override
+  String get wishlistEmptyTitle => 'Your wishlist is empty';
+
+  @override
+  String get wishlistEmptyBody =>
+      'Tap the heart on a place in the catalog to save it here.';
+
+  @override
+  String get wishlistExplore => 'Explore the catalog';
+
+  @override
+  String get wishlistClearFilters => 'Clear filters';
+
+  @override
+  String get wishlistLoadFailed =>
+      'Your wishlist couldn\'t be loaded. Try again.';
 }

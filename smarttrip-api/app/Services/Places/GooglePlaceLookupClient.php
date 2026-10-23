@@ -30,7 +30,9 @@ class GooglePlaceLookupClient
 
     private const ACCOUNT_CACHE_KEY = 'serpapi:account';
 
-    private const TIMEOUT_SECONDS = 30;
+    // A search normally answers in a few seconds; two of them plus Gemini must
+    // fit in one admin request (see Admin\PlaceController::estimateData).
+    private const TIMEOUT_SECONDS = 12;
 
     private const CACHE_SECONDS = 30 * 86400;
 

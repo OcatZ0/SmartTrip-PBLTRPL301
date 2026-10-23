@@ -1,60 +1,37 @@
-// Profil wisatawan (F008: Wisatawan dapat mengelola preferensi wisatawan).
+import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/auth/session_controller.dart';
+import '../../core/config/locale_controller.dart';
+import '../../core/error/api_failure.dart';
+import '../../core/error/trip_error_message.dart';
 import '../../core/router/app_routes.dart';
 import '../../core/theme/app_colors.dart';
 import '../../l10n/app_localizations.dart';
+import '../../services/auth_service.dart';
+import '../../services/trip_service.dart';
 import '../../widgets/app_bottom_bar.dart';
+import '../../widgets/category_icons.dart';
+import '../../widgets/load_error_view.dart';
+import '../trip/trip_preferences_screen.dart' show TripPreferencesData, tripPreferencesDataProvider;
+import '../trip/widgets/interest_chip.dart';
+import '../trip/widgets/weight_slider.dart';
 
-
-class ProfileScreen extends StatefulWidget {
+/// Profil (F008/F009): panorama header, default interests and route
+/// priorities edited in place, and the account rows.
+class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
 
   @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
-  final List<String> _allInterests = [
-    'Wisata Bahari',
-    'Kuliner Seafood',
-    'Belanja',
-    'Sejarah & Budaya',
-    'Alam & Outdoor',
-    'Hiburan Malam',
-    'Keluarga',
-  ];
-
-  final Set<String> _selectedInterests = {
-    'Wisata Bahari',
-    'Kuliner Seafood',
-    'Alam & Outdoor',
-  };
-
-  double _interestWeight = 9;
-  double _distanceWeight = 8;
-  double _budgetWeight = 7;
-
-  String _language = 'ID';
-
-  void _toggleInterest(String interest, bool selected) {
-    setState(() {
-      if (selected) {
-        _selectedInterests.add(interest);
-      } else {
-        _selectedInterests.remove(interest);
-      }
-    });
-  }
-
-  void _saveSettings() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Pengaturan berhasil disimpan')),
-    );
-  }
-
+class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   void _selectTab(AppTab tab) {
     switch (tab) {
       case AppTab.home:
@@ -68,677 +45,666 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  Future<void> _showExitDialog() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Keluar Akun'),
-        content: const Text('Apakah kamu yakin ingin keluar dari akun?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Batal'),
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final user = ref.watch(sessionControllerProvider).valueOrNull;
+    final data = ref.watch(tripPreferencesDataProvider);
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: AppColors.surface,
+        extendBody: true,
+        body: CustomScrollView(
+          slivers: [
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: _ProfileHeaderDelegate(
+                name: user?.name ?? '',
+                email: user?.email ?? '',
+                eyebrow: l10n.profileEyebrow,
+                headline: l10n.profileHeadline,
+                topInset: MediaQuery.paddingOf(context).top,
+              ),
+            ),
+            SliverPadding(
+              padding: EdgeInsets.fromLTRB(
+                16,
+                24,
+                16,
+                AppBottomBar.barHeight + AppBottomBar.fabRise + 24 + MediaQuery.paddingOf(context).bottom,
+              ),
+              sliver: SliverToBoxAdapter(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    data.when(
+                      data: (value) => _PreferencesForm(data: value),
+                      loading: () => const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 48),
+                        child: Center(child: CircularProgressIndicator(color: AppColors.sea600)),
+                      ),
+                      error: (error, _) => _Card(
+                        child: LoadErrorView(
+                          message: '${l10n.profileLoadFailed} ${tripErrorMessage(error, l10n)}',
+                          onRetry: () => ref.invalidate(tripPreferencesDataProvider),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 22),
+                    const _AccountSection(),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        bottomNavigationBar: AppBottomBar(
+          current: AppTab.profile,
+          onSelect: _selectTab,
+          onCreateTrip: () => context.push(AppRoutes.newTrip),
+          labels: {
+            AppTab.home: l10n.navHome,
+            AppTab.wishlist: l10n.navWishlist,
+            AppTab.trips: l10n.navTrips,
+            AppTab.profile: l10n.navProfile,
+          },
+          createLabel: l10n.catalogCreateTrip,
+        ),
+      ),
+    );
+  }
+}
+
+/// Panorama, avatar and name. Scrolling down shrinks it into a navy bar
+/// pinned at the top, the avatar small on the left with the name beside it.
+class _ProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
+  _ProfileHeaderDelegate({
+    required this.name,
+    required this.email,
+    required this.eyebrow,
+    required this.headline,
+    required this.topInset,
+  });
+
+  static const _panoramaHeight = 196.0;
+  static const _barHeight = 64.0;
+  static const _avatarSize = 88.0;
+  static const _smallAvatar = 38.0;
+  static const _nameGap = 10.0;
+  static const _nameHeight = 28.0;
+  static const _emailHeight = 22.0;
+
+  final String name;
+  final String email;
+  final String eyebrow;
+  final String headline;
+  final double topInset;
+
+  double get _panorama => topInset + _panoramaHeight;
+
+  @override
+  double get maxExtent => _panorama + _avatarSize / 2 + _nameGap + _nameHeight + _emailHeight;
+
+  @override
+  double get minExtent => topInset + _barHeight;
+
+  static String initials(String name) {
+    final words = name.trim().split(RegExp(r'\s+')).where((word) => word.isNotEmpty).toList();
+    if (words.isEmpty) return '?';
+    return words.take(2).map((word) => word.characters.first.toUpperCase()).join();
+  }
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    final t = (shrinkOffset / (maxExtent - minExtent)).clamp(0.0, 1.0);
+    final width = MediaQuery.sizeOf(context).width;
+    final extent = maxExtent - shrinkOffset;
+    double lerp(double a, double b) => a + (b - a) * t;
+
+    final barCenter = topInset + _barHeight / 2;
+    final avatar = lerp(_avatarSize, _smallAvatar);
+    final avatarLeft = lerp((width - _avatarSize) / 2, 16);
+    final avatarTop = lerp(_panorama - _avatarSize / 2, barCenter - _smallAvatar / 2);
+    final nameTop = lerp(_panorama + _avatarSize / 2 + _nameGap, barCenter - 11);
+    final nameLeft = lerp(16, 16 + _smallAvatar + 12);
+    // The intro text is gone well before the bar closes.
+    final introOpacity = (1 - t * 2.5).clamp(0.0, 1.0);
+
+    return ClipRect(
+      child: Stack(
+        children: [
+          const Positioned.fill(child: ColoredBox(color: AppColors.surface)),
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: lerp(_panorama, extent).clamp(minExtent, _panorama),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                const ColoredBox(color: AppColors.navy900),
+                Opacity(
+                  opacity: 1 - t * 0.85,
+                  child: SvgPicture.asset(
+                    'assets/images/login_panorama.svg',
+                    fit: BoxFit.cover,
+                    alignment: Alignment.bottomCenter,
+                  ),
+                ),
+                const DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Color(0x8C0A2440), Color(0x000A2440), Color(0x000A2440), Color(0x730A2440)],
+                      stops: [0, 0.35, 0.7, 1],
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text(
-              'Keluar',
-              style: TextStyle(color: AppColors.danger, fontWeight: FontWeight.bold),
+          if (introOpacity > 0)
+            Positioned(
+              top: topInset + 18 - shrinkOffset * 0.4,
+              left: 16,
+              right: 16,
+              child: Opacity(
+                opacity: introOpacity,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      eyebrow,
+                      style: appText(11, FontWeight.w700, AppColors.sun400, height: 16, letterSpacing: 0.88),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(headline, style: appText(24, FontWeight.w800, Colors.white, height: 30, letterSpacing: -0.48)),
+                  ],
+                ),
+              ),
+            ),
+          Positioned(
+            left: avatarLeft,
+            top: avatarTop,
+            child: Container(
+              width: avatar,
+              height: avatar,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: AppColors.sea600,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Color.lerp(AppColors.surface, Colors.white.withValues(alpha: 0.6), t)!,
+                  width: lerp(4, 2),
+                ),
+              ),
+              child: Text(initials(name), style: appText(lerp(28, 14), FontWeight.w800, Colors.white)),
+            ),
+          ),
+          Positioned(
+            left: nameLeft,
+            right: 16,
+            top: nameTop,
+            child: Align(
+              alignment: Alignment(lerp(0, -1), 0),
+              child: Column(
+                crossAxisAlignment: t < 0.5 ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: appText(
+                      lerp(22, 16),
+                      FontWeight.w700,
+                      Color.lerp(AppColors.ink, Colors.white, t)!,
+                      height: 22,
+                    ),
+                  ),
+                  if (t < 0.4)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Opacity(
+                        opacity: 1 - t / 0.4,
+                        child: Text(
+                          email,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: appText(13, FontWeight.w400, AppColors.inkMuted),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
         ],
       ),
     );
+  }
 
-    if (confirm == true && mounted) {
-      context.go(AppRoutes.login);
+  @override
+  bool shouldRebuild(_ProfileHeaderDelegate old) {
+    return old.name != name ||
+        old.email != email ||
+        old.eyebrow != eyebrow ||
+        old.headline != headline ||
+        old.topInset != topInset;
+  }
+}
+
+class _Card extends StatelessWidget {
+  const _Card({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: AppColors.cardShadow,
+      ),
+      child: child,
+    );
+  }
+}
+
+/// Interests and the four route weights, saved together as the profile
+/// defaults every new trip starts from.
+class _PreferencesForm extends ConsumerStatefulWidget {
+  const _PreferencesForm({required this.data});
+
+  final TripPreferencesData data;
+
+  @override
+  ConsumerState<_PreferencesForm> createState() => _PreferencesFormState();
+}
+
+class _PreferencesFormState extends ConsumerState<_PreferencesForm> {
+  late final Set<int> _selected = {...widget.data.defaults.categoryIds};
+  late final List<double> _ratings = widget.data.defaults.ratings;
+  late final TripService _service;
+  Timer? _pendingSave;
+
+  @override
+  void initState() {
+    super.initState();
+    _service = ref.read(tripServiceProvider);
+  }
+
+  @override
+  void dispose() {
+    // Leaving the screen right after a change still saves it.
+    if (_pendingSave?.isActive ?? false) {
+      _pendingSave!.cancel();
+      _service.saveProfileDefaults(categoryIds: {..._selected}, ratings: [..._ratings]).ignore();
+    }
+    super.dispose();
+  }
+
+  /// Every change saves on its own after a short pause, so quick taps and a
+  /// slider drag end up as one request.
+  void _scheduleSave() {
+    _pendingSave?.cancel();
+    _pendingSave = Timer(const Duration(milliseconds: 600), _save);
+  }
+
+  void _toggle(int categoriesId) {
+    if (_selected.contains(categoriesId) && _selected.length == 1) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(AppLocalizations.of(context).profileNeedInterest)));
+      return;
+    }
+
+    setState(() {
+      if (!_selected.remove(categoriesId)) _selected.add(categoriesId);
+    });
+    _scheduleSave();
+  }
+
+  Future<void> _save() async {
+    final l10n = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await _service.saveProfileDefaults(categoryIds: {..._selected}, ratings: [..._ratings]);
+    } catch (error) {
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(tripErrorMessage(error, l10n))));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      extendBody: true,
-      appBar: _buildAppBar(),
-      body: ListView(
-        padding: EdgeInsets.only(
-          bottom:
-              AppBottomBar.barHeight +
-              AppBottomBar.fabRise +
-              16 +
-              MediaQuery.paddingOf(context).bottom,
-        ),
-        children: [
-          const _ProfileHeader(
-            name: 'Ahmad Rizki',
-            email: 'ahmad.rizki@email.com',
-          ),
-          Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const _SectionTitle('Ganti Kata Sandi'),
-                const SizedBox(height: 12),
-                _buildChangePasswordTile(),
-                const SizedBox(height: 24),
+    final languageCode = Localizations.localeOf(context).languageCode;
+    final weights = [
+      (l10n.profileWeightInterest, l10n.profileWeightInterestHint),
+      (l10n.profileWeightDistance, l10n.profileWeightDistanceHint),
+      (l10n.profileWeightBudget, l10n.profileWeightBudgetHint),
+      (l10n.profileWeightRating, l10n.profileWeightRatingHint),
+    ];
 
-                const _SectionTitle('Minat Default'),
-                const SizedBox(height: 12),
-                _buildInterestChips(),
-                const SizedBox(height: 24),
-                _buildPriorityCard(),
-                const SizedBox(height: 16),
-                _buildLanguageCard(),
-                const SizedBox(height: 16),
-                FilledButton(
-                  onPressed: _saveSettings,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    minimumSize: const Size.fromHeight(52),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: const Text(
-                    'Simpan Pengaturan',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                OutlinedButton(
-                  onPressed: () => _showExitDialog(),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.danger,
-                    backgroundColor: const Color(0xFFFFEBEE),
-                    side: const BorderSide(color: AppColors.danger),
-                    minimumSize: const Size.fromHeight(52),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: const Text(
-                    'Keluar Akun',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-      bottomNavigationBar: AppBottomBar(
-        current: AppTab.profile,
-        onSelect: _selectTab,
-        onCreateTrip: () => context.push(AppRoutes.newTrip),
-        labels: {
-          AppTab.home: l10n.navHome,
-          AppTab.wishlist: l10n.navWishlist,
-          AppTab.trips: l10n.navTrips,
-          AppTab.profile: l10n.navProfile,
-        },
-        createLabel: l10n.catalogCreateTrip,
-      ),
-    );
-  }
-
-  PreferredSizeWidget _buildAppBar() {
-    return AppBar(
-      backgroundColor: Colors.white,
-      surfaceTintColor: Colors.white,
-      elevation: 0,
-      automaticallyImplyLeading: false,
-      title: const Row(
-        children: [
-          CircleAvatar(
-            radius: 14,
-            backgroundColor: Color(0xFFE3F0FA),
-            child: Icon(Icons.explore, size: 16, color: AppColors.primary),
-          ),
-          SizedBox(width: 8),
-          Text(
-            'Profil Pengguna',
-            style: TextStyle(
-              color: AppColors.textDark,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-      actions: [
-        Stack(
-          alignment: Alignment.center,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.notifications_none, color: AppColors.textDark),
-              onPressed: () {},
-            ),
-            Positioned(
-              top: 12,
-              right: 12,
-              child: Container(
-                width: 8,
-                height: 8,
-                decoration: const BoxDecoration(
-                  color: Colors.red,
-                  shape: BoxShape.circle,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const Padding(
-          padding: EdgeInsets.only(right: 16, left: 4),
-          child: CircleAvatar(
-            radius: 16,
-            backgroundColor: AppColors.border,
-            child: Icon(Icons.person, size: 18, color: AppColors.textGrey),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildInterestChips() {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: _allInterests.map((interest) {
-        final isSelected = _selectedInterests.contains(interest);
-        return FilterChip(
-          label: Text(interest),
-          selected: isSelected,
-          onSelected: (value) => _toggleInterest(interest, value),
-          showCheckmark: true,
-          checkmarkColor: AppColors.primary,
-          backgroundColor: Colors.white,
-          selectedColor: const Color(0xFFEAF3FB),
-          labelStyle: TextStyle(
-            color: AppColors.textDark,
-            fontSize: 13,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-          ),
-          side: BorderSide(color: isSelected ? AppColors.primary : AppColors.border),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _buildPriorityCard() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: _cardDecoration(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Prioritas Default Rute',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textDark,
-            ),
-          ),
-          const SizedBox(height: 16),
-          _PrioritySlider(
-            title: 'Kesesuaian Minat Wisata',
-            value: _interestWeight,
-            leftLabel: 'Eksplorasi Acak',
-            rightLabel: 'Sesuai Minat',
-            onChanged: (v) => setState(() => _interestWeight = v),
-          ),
-          _PrioritySlider(
-            title: 'Jarak / Waktu Perjalanan',
-            value: _distanceWeight,
-            leftLabel: 'Bebas Keliling',
-            rightLabel: 'Paling Cepat',
-            onChanged: (v) => setState(() => _distanceWeight = v),
-          ),
-          _PrioritySlider(
-            title: 'Kepatuhan Anggaran',
-            value: _budgetWeight,
-            leftLabel: 'Fleksibel',
-            rightLabel: 'Hemat Cerdas',
-            onChanged: (v) => setState(() => _budgetWeight = v),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLanguageCard() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      decoration: _cardDecoration(),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          const Padding(
-            padding: EdgeInsets.only(left: 4),
-            child: Text(
-              'Bahasa Aplikasi',
-              style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textDark),
-            ),
-          ),
-          SegmentedButton<String>(
-            showSelectedIcon: false,
-            segments: const [
-              ButtonSegment(value: 'ID', label: Text('ID')),
-              ButtonSegment(value: 'EN', label: Text('EN')),
-            ],
-            selected: {_language},
-            onSelectionChanged: (set) => setState(() => _language = set.first),
-            style: SegmentedButton.styleFrom(
-              selectedBackgroundColor: AppColors.primary,
-              selectedForegroundColor: Colors.white,
-              foregroundColor: AppColors.textGrey,
-              side: BorderSide.none,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildChangePasswordTile() {
-    return Material(
-      color: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: AppColors.border),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: _showChangePasswordSheet,
-        child: const Padding(
-          padding: EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Icon(Icons.lock_outline, color: AppColors.primary, size: 22),
-              SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'Ganti Password',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textDark,
-                  ),
-                ),
-              ),
-              Icon(Icons.chevron_right, color: AppColors.textGrey),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showChangePasswordSheet() {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true, 
-      showDragHandle: true,
-      backgroundColor: Colors.white,
-      builder: (_) => const _ChangePasswordSheet(),
-    );
-  }
-}
-
-BoxDecoration _cardDecoration() => BoxDecoration(
-  color: Colors.white,
-  borderRadius: BorderRadius.circular(12),
-  border: Border.all(color: AppColors.border),
-);
-
-class _SectionTitle extends StatelessWidget {
-  final String text;
-  const _SectionTitle(this.text);
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: const TextStyle(
-        fontSize: 18,
-        fontWeight: FontWeight.bold,
-        color: AppColors.textDark,
-      ),
-    );
-  }
-}
-
-class _ProfileHeader extends StatelessWidget {
-  final String name;
-  final String email;
-  const _ProfileHeader({required this.name, required this.email});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      child: Row(
-        children: [
-          const CircleAvatar(
-            radius: 36,
-            backgroundColor: AppColors.border,
-            child: Icon(Icons.person, size: 40, color: AppColors.textGrey),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textDark,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(email, style: const TextStyle(color: AppColors.textGrey)),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ChangePasswordSheet extends StatefulWidget {
-  const _ChangePasswordSheet();
-
-  @override
-  State<_ChangePasswordSheet> createState() => _ChangePasswordSheetState();
-}
-
-class _ChangePasswordSheetState extends State<_ChangePasswordSheet> {
-  final _formKey = GlobalKey<FormState>();
-  final _oldController = TextEditingController();
-  final _newController = TextEditingController();
-  final _confirmController = TextEditingController();
-
-  bool _hideOld = true;
-  bool _hideNew = true;
-  bool _hideConfirm = true;
-  bool _submitting = false;
-  String? _errorMessage;
-
-  @override
-  void dispose() {
-    _oldController.dispose();
-    _newController.dispose();
-    _confirmController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    setState(() {
-      _submitting = true;
-      _errorMessage = null;
-    });
-
-    try {
-      await Future.delayed(const Duration(seconds: 1)); 
-
-      if (!mounted) return;
-      final messenger = ScaffoldMessenger.of(context);
-      Navigator.of(context).pop();
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Password berhasil diganti')),
-      );
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _submitting = false;
-        _errorMessage = 'Gagal mengganti password. Periksa password lama.';
-      });
-    }
-  }
-
-  InputDecoration _decoration(String label, bool hidden, VoidCallback onToggle) {
-    OutlineInputBorder border(Color color) => OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: color),
-        );
-
-    return InputDecoration(
-      labelText: label,
-      labelStyle: const TextStyle(color: AppColors.textGrey, fontSize: 14),
-      suffixIcon: IconButton(
-        icon: Icon(
-          hidden ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-          color: AppColors.textGrey,
-          size: 20,
-        ),
-        onPressed: onToggle,
-      ),
-      enabledBorder: border(AppColors.border),
-      focusedBorder: border(AppColors.primary),
-      errorBorder: border(AppColors.danger),
-      focusedErrorBorder: border(AppColors.danger),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        24,
-        0,
-        24,
-        24 + MediaQuery.viewInsetsOf(context).bottom,
-      ),
-      child: SingleChildScrollView(
-        child: Form(
-          key: _formKey,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _Card(
           child: Column(
-            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Ganti Password',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textDark,
-                ),
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                'Masukkan password lama untuk verifikasi, lalu buat password baru.',
-                style: TextStyle(fontSize: 13, color: AppColors.textGrey),
-              ),
-              const SizedBox(height: 20),
-              TextFormField(
-                controller: _oldController,
-                obscureText: _hideOld,
-                decoration: _decoration(
-                  'Password Lama',
-                  _hideOld,
-                  () => setState(() => _hideOld = !_hideOld),
-                ),
-                validator: (v) => (v == null || v.isEmpty)
-                    ? 'Password lama wajib diisi'
-                    : null,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _newController,
-                obscureText: _hideNew,
-                decoration: _decoration(
-                  'Password Baru',
-                  _hideNew,
-                  () => setState(() => _hideNew = !_hideNew),
-                ),
-                validator: (v) {
-                  if (v == null || v.isEmpty) return 'Password baru wajib diisi';
-                  if (v.length < 8) return 'Minimal 8 karakter';
-                  if (v == _oldController.text) {
-                    return 'Password baru harus berbeda dari password lama';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _confirmController,
-                obscureText: _hideConfirm,
-                decoration: _decoration(
-                  'Konfirmasi Password Baru',
-                  _hideConfirm,
-                  () => setState(() => _hideConfirm = !_hideConfirm),
-                ),
-                validator: (v) =>
-                    v != _newController.text ? 'Konfirmasi tidak cocok' : null,
-              ),
-              if (_errorMessage != null) ...[
-                const SizedBox(height: 12),
-                Text(
-                  _errorMessage!,
-                  style: const TextStyle(color: AppColors.danger, fontSize: 13),
-                ),
-              ],
-              const SizedBox(height: 20),
-              Row(
+              Text(l10n.profileInterests, style: appText(17, FontWeight.w700, AppColors.ink, height: 22)),
+              const SizedBox(height: 2),
+              Text(l10n.profileInterestsHint, style: appText(12, FontWeight.w400, AppColors.inkMuted, height: 16)),
+              const SizedBox(height: 12),
+              InterestChipGrid(
                 children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed:
-                          _submitting ? null : () => Navigator.of(context).pop(),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.textDark,
-                        side: const BorderSide(color: AppColors.border),
-                        minimumSize: const Size.fromHeight(48),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      child: const Text('Batal'),
+                  for (final category in widget.data.categories)
+                    InterestChip(
+                      label: category.localizedName(languageCode),
+                      icon: categoryIcon(category.iconSymbol),
+                      selected: _selected.contains(category.categoriesId),
+                      onTap: () => _toggle(category.categoriesId),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: FilledButton(
-                      onPressed: _submitting ? null : _submit,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        minimumSize: const Size.fromHeight(48),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      child: _submitting
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Text(
-                              'Simpan',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                    ),
-                  ),
                 ],
               ),
             ],
           ),
         ),
+        const SizedBox(height: 22),
+        _Card(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(l10n.profilePriorities, style: appText(17, FontWeight.w700, AppColors.ink, height: 22)),
+              for (final (index, (label, hint)) in weights.indexed) ...[
+                const SizedBox(height: 16),
+                WeightSlider(
+                  label: label,
+                  hint: hint,
+                  value: _ratings[index],
+                  onChanged: (value) => setState(() => _ratings[index] = value),
+                  onChangeEnd: (_) => _scheduleSave(),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _AccountSection extends ConsumerWidget {
+  const _AccountSection();
+
+  static const _danger = Color(0xFFB42318);
+
+  Future<void> _pickLanguage(BuildContext context, WidgetRef ref) async {
+    final current = Localizations.localeOf(context).languageCode;
+    final picked = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Colors.white,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final (code, name) in const [('id', 'Indonesia'), ('en', 'English')])
+              ListTile(
+                title: Text(
+                  name,
+                  style: appText(15, code == current ? FontWeight.w700 : FontWeight.w500, AppColors.ink),
+                ),
+                trailing: code == current ? const Icon(Icons.check, color: AppColors.sea600) : null,
+                onTap: () => Navigator.of(sheetContext).pop(code),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (picked != null) await ref.read(localeControllerProvider.notifier).select(picked);
+  }
+
+  Future<void> _logout(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.profileLogoutTitle),
+        content: Text(l10n.profileLogoutBody),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text(l10n.actionCancel)),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(l10n.profileLogout, style: appText(14, FontWeight.w700, _danger)),
+          ),
+        ],
+      ),
+    );
+    // The router leaves the profile for the login screen once the session is gone.
+    if (confirmed == true) await ref.read(sessionControllerProvider.notifier).signOut();
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+
+    Widget row(
+      String label, {
+      String? value,
+      Color color = AppColors.ink,
+      bool last = false,
+      required VoidCallback onTap,
+    }) {
+      return InkWell(
+        onTap: onTap,
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 54),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            border: last ? null : const Border(bottom: BorderSide(color: AppColors.field)),
+          ),
+          child: Row(
+            children: [
+              Expanded(child: Text(label, style: appText(14, FontWeight.w600, color))),
+              if (value != null) Text(value, style: appText(13, FontWeight.w500, AppColors.inkMuted)),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(20),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        children: [
+          row(
+            l10n.profileChangePassword,
+            value: '›',
+            onTap: () => showModalBottomSheet<void>(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.white,
+              showDragHandle: true,
+              builder: (_) => const _ChangePasswordSheet(),
+            ),
+          ),
+          row(l10n.profileLanguage, value: '${l10n.profileLanguageName} ›', onTap: () => _pickLanguage(context, ref)),
+          row(l10n.profileLogout, color: _danger, last: true, onTap: () => _logout(context, ref)),
+        ],
       ),
     );
   }
 }
 
-class _PrioritySlider extends StatelessWidget {
-  final String title;
-  final double value;
-  final String leftLabel;
-  final String rightLabel;
-  final ValueChanged<double> onChanged;
+class _ChangePasswordSheet extends ConsumerStatefulWidget {
+  const _ChangePasswordSheet();
 
-  const _PrioritySlider({
-    required this.title,
-    required this.value,
-    required this.leftLabel,
-    required this.rightLabel,
-    required this.onChanged,
-  });
+  @override
+  ConsumerState<_ChangePasswordSheet> createState() => _ChangePasswordSheetState();
+}
+
+class _ChangePasswordSheetState extends ConsumerState<_ChangePasswordSheet> {
+  final _formKey = GlobalKey<FormState>();
+  final _current = TextEditingController();
+  final _password = TextEditingController();
+  final _confirmation = TextEditingController();
+  bool _submitting = false;
+  String? _currentError;
+  String? _passwordError;
+  String? _formError;
+
+  bool get hasPassword => ref.read(sessionControllerProvider).valueOrNull?.hasPassword ?? true;
+
+  @override
+  void dispose() {
+    _current.dispose();
+    _password.dispose();
+    _confirmation.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    setState(() => _currentError = _passwordError = _formError = null);
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _submitting = true);
+    final l10n = AppLocalizations.of(context);
+    try {
+      final message = await ref
+          .read(authServiceProvider)
+          .changePassword(
+            currentPassword: hasPassword ? _current.text : null,
+            password: _password.text,
+            passwordConfirmation: _confirmation.text,
+          );
+      if (!mounted) return;
+      if (!hasPassword) ref.read(sessionControllerProvider.notifier).markPasswordSet();
+      final messenger = ScaffoldMessenger.of(context);
+      Navigator.of(context).pop();
+      messenger.showSnackBar(SnackBar(content: Text(message)));
+    } on ValidationFailure catch (failure) {
+      setState(() {
+        _currentError = failure.firstError('current_password');
+        _passwordError = failure.firstError('password');
+        if (_currentError == null && _passwordError == null) _formError = tripErrorMessage(failure, l10n);
+      });
+    } catch (error) {
+      setState(() => _formError = tripErrorMessage(error, l10n));
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
+    InputDecoration decoration(String label, {String? helper, String? error}) {
+      return InputDecoration(
+        labelText: label,
+        helperText: helper,
+        helperMaxLines: 2,
+        errorText: error,
+        filled: true,
+        fillColor: AppColors.field,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+      );
+    }
+
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                  color: AppColors.textDark,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE3F0FA),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  '${value.round()}/10',
-                  style: const TextStyle(
-                    color: AppColors.primary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          Slider(
-            value: value,
-            min: 0,
-            max: 10,
-            divisions: 10,
-            activeColor: AppColors.primary,
-            inactiveColor: const Color(0xFFDCE6EF),
-            onChanged: onChanged,
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      padding: EdgeInsets.fromLTRB(16, 0, 16, 16 + MediaQuery.viewInsetsOf(context).bottom),
+      child: SafeArea(
+        child: SingleChildScrollView(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(
-                  leftLabel,
-                  style: const TextStyle(fontSize: 11, color: AppColors.textGrey),
+                Text(l10n.profileChangePassword, style: appText(18, FontWeight.w700, AppColors.ink, height: 24)),
+                const SizedBox(height: 16),
+                if (hasPassword) ...[
+                  TextFormField(
+                    controller: _current,
+                    obscureText: true,
+                    decoration: decoration(l10n.profilePasswordCurrent, error: _currentError),
+                    validator: (value) => value == null || value.isEmpty ? l10n.validationPasswordRequired : null,
+                  ),
+                  const SizedBox(height: 12),
+                ] else ...[
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(color: const Color(0xFFDCEAF6), borderRadius: BorderRadius.circular(12)),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(Icons.info_outline, size: 18, color: AppColors.navy700),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            l10n.profilePasswordGoogleOnly,
+                            style: appText(13, FontWeight.w500, AppColors.navy700, height: 18),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                TextFormField(
+                  controller: _password,
+                  obscureText: true,
+                  decoration: decoration(l10n.profilePasswordNew, error: _passwordError),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) return l10n.validationPasswordRequired;
+                    if (value.length < 8) return l10n.validationPasswordMinLength;
+                    return null;
+                  },
                 ),
-                Text(
-                  rightLabel,
-                  style: const TextStyle(fontSize: 11, color: AppColors.textGrey),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _confirmation,
+                  obscureText: true,
+                  decoration: decoration(l10n.profilePasswordConfirm),
+                  validator: (value) => value == _password.text ? null : l10n.validationConfirmPasswordMismatch,
+                ),
+                if (_formError case final error?) ...[
+                  const SizedBox(height: 12),
+                  Text(error, style: appText(13, FontWeight.w500, const Color(0xFFB42318))),
+                ],
+                const SizedBox(height: 16),
+                SizedBox(
+                  height: 50,
+                  child: FilledButton(
+                    onPressed: _submitting ? null : _submit,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.sea600,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                    child: _submitting
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2.4, color: Colors.white),
+                          )
+                        : Text(l10n.profilePasswordSubmit, style: appText(15, FontWeight.w700, Colors.white)),
+                  ),
                 ),
               ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }

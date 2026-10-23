@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\ItineraryDay;
 use App\Models\Trip;
 
 /**
@@ -14,7 +15,7 @@ use App\Models\Trip;
  * field, bukan lewat response()->json($trip) langsung.
  *
  * WAJIB DIKECUALIKAN: visited_at, identitas pemilik (users.*), budget_total,
- * koordinat presisi hotel custom pin.
+ * koordinat presisi titik awal/akhir custom pin.
  */
 class SharedItineraryController extends Controller
 {
@@ -26,15 +27,17 @@ class SharedItineraryController extends Controller
             abort(404);
         }
 
-        $trip->load(['days' => fn ($dayQuery) => $dayQuery->orderBy('day_number'), 'days.items' => fn ($itemQuery) => $itemQuery->orderBy('visit_order'), 'days.items.place']);
+        $trip->load(['days' => fn ($dayQuery) => $dayQuery->orderBy('day_number'), 'days.items' => fn ($itemQuery) => $itemQuery->orderBy('visit_order'), 'days.items.place', 'days.startPlace', 'days.endPlace']);
 
         return response()->json([
             'title' => $trip->title,
             'num_days' => $trip->num_days,
             'start_date' => $trip->start_date,
-            'hotel' => $this->hotelPayload($trip),
-            'days' => $trip->days->map(fn ($day) => [
+            'hotel' => $this->pointPayload($trip->days->first()?->startPoint()),
+            'days' => $trip->days->map(fn (ItineraryDay $day) => [
                 'day_number' => $day->day_number,
+                'start' => $this->pointPayload($day->startPoint()),
+                'end' => $this->pointPayload($day->endPoint()),
                 'items' => $day->items->map(fn ($item) => [
                     'visit_order' => $item->visit_order,
                     'name' => $item->place?->name,
@@ -50,28 +53,22 @@ class SharedItineraryController extends Controller
     }
 
     /**
-     * Hotel dari katalog places (lokasi publik) aman ditampilkan apa
-     * adanya. Custom pin (lokasi pribadi pemilik) - sembunyikan koordinat
-     * presisi dan nama custom-nya, tampilkan label generik saja.
+     * A catalog place (a public location) is shown as it is. A custom pin
+     * (the owner's private location) shows a generic label only, without its
+     * exact coordinates or its custom name.
+     *
+     * @param  array{lat: float, lng: float, name: ?string, places_id: ?int}|null  $point
      */
-    private function hotelPayload(Trip $trip): ?array
+    private function pointPayload(?array $point): ?array
     {
-        if ($trip->hotel_places_id !== null) {
-            $place = $trip->hotelPlace()->first();
-
-            return $place ? [
-                'type' => 'catalog',
-                'name' => $place->name,
-                'address' => $place->address,
-                'lat' => (float) $place->lat,
-                'lng' => (float) $place->lng,
-            ] : null;
+        if ($point === null) {
+            return null;
         }
 
-        if ($trip->hotel_lat !== null && $trip->hotel_lng !== null) {
-            return ['type' => 'custom', 'label' => 'Hotel'];
+        if ($point['places_id'] !== null) {
+            return ['type' => 'catalog', 'name' => $point['name'], 'lat' => $point['lat'], 'lng' => $point['lng']];
         }
 
-        return null;
+        return ['type' => 'custom', 'label' => 'Hotel'];
     }
 }

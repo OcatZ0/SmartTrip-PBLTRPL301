@@ -1,15 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/router/app_routes.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../models/saved_trip.dart';
+import '../../../widgets/place_photo.dart';
 
+/// One saved trip: a mosaic of up to four of its places' photos with the
+/// status on top, then the title, the facts and the trip's next action.
 class TripCard extends StatelessWidget {
   const TripCard({super.key, required this.trip});
 
   final TripModel trip;
 
-  void _handleCardTap(BuildContext context) {
+  static const _radius = 20.0;
+
+  void _open(BuildContext context) {
     switch (trip.status) {
       case TripStatus.berlangsung:
         context.push(AppRoutes.liveMap(trip.id, trip.currentDay));
@@ -23,452 +30,439 @@ class TripCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0C000000),
-            blurRadius: 10,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(16),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: () => _handleCardTap(context),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _buildBanner(),
-                _buildBody(context),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ─── BANNER (area abu/hijau/biru atas kartu) ───────────────────────────────
-  Widget _buildBanner() {
-    final config = _bannerConfig();
-
-    return Container(
-      height: 92,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      color: config.bgColor,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          config.leftBadge,
-          config.rightBadge,
-        ],
-      ),
-    );
-  }
-
-  _BannerConfig _bannerConfig() {
-    switch (trip.status) {
-      // ── BERLANGSUNG ──────────────────────────────────────────────────────
-      case TripStatus.berlangsung:
-        return _BannerConfig(
-          bgColor: const Color(0xFFD6E6F5),
-          leftBadge: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFECEC),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.circle, size: 8, color: Color(0xFFE53935)),
-                SizedBox(width: 4),
-                Text(
-                  'LIVE',
-                  style: TextStyle(
-                    fontFamily: 'PlusJakartaSans',
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFFE53935),
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          rightBadge: _darkPill('Hari ${trip.currentDay}/${trip.numDays}'),
-        );
-
-      // ── AKAN DATANG ──────────────────────────────────────────────────────
-      case TripStatus.akanDatang:
-        return _BannerConfig(
-          bgColor: const Color(0xFFD6E6F5),
-          leftBadge: const Text(
-            'AKAN DATANG',
-            style: TextStyle(
-              fontFamily: 'PlusJakartaSans',
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF1D6FA5),
-              letterSpacing: 0.6,
-            ),
-          ),
-          rightBadge: _darkPill('${trip.numDays} Hari'),
-        );
-
-      // ── SELESAI ──────────────────────────────────────────────────────────
-      case TripStatus.selesai:
-        return _BannerConfig(
-          bgColor: const Color(0xFFD7EED9),
-          leftBadge: const Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.check, size: 13, color: Color(0xFF16A34A)),
-              SizedBox(width: 3),
-              Text(
-                'SELESAI',
-                style: TextStyle(
-                  fontFamily: 'PlusJakartaSans',
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF16A34A),
-                  letterSpacing: 0.6,
-                ),
-              ),
-            ],
-          ),
-          rightBadge: _darkPill('${trip.numDays} Hari'),
-        );
-
-      // ── DRAFT ─────────────────────────────────────────────────────────────
-      case TripStatus.draft:
-        return _BannerConfig(
-          bgColor: const Color(0xFFE8ECF0),
-          leftBadge: const Text(
-            'DRAFT',
-            style: TextStyle(
-              fontFamily: 'PlusJakartaSans',
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF64748B),
-              letterSpacing: 0.6,
-            ),
-          ),
-          rightBadge: _darkPill('Belum diatur'),
-        );
-    }
-  }
-
-  static Widget _darkPill(String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: const Color(0xFF475569),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        text,
-        style: const TextStyle(
-          fontFamily: 'PlusJakartaSans',
-          color: Colors.white,
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
-
-  // ─── BODY (konten bawah kartu) ─────────────────────────────────────────────
-  Widget _buildBody(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Judul trip
-          Text(
-            trip.title,
-            style: const TextStyle(
-              fontFamily: 'PlusJakartaSans',
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF0B1C30),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(_radius),
+          boxShadow: AppColors.cardShadow,
+        ),
+        child: Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(_radius),
+            onTap: () => _open(context),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(_radius),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _PhotoHeader(trip: trip),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+                    child: _Body(trip: trip),
+                  ),
+                ],
+              ),
             ),
           ),
-          const SizedBox(height: 4),
-
-          // Subtitle: tanggal • orang • destinasi
-          Text(
-            _subtitle(),
-            style: const TextStyle(
-              fontFamily: 'PlusJakartaSans',
-              fontSize: 12,
-              color: Color(0xFF64748B),
-            ),
-          ),
-
-          // Progress bar (Berlangsung saja)
-          if (trip.status == TripStatus.berlangsung) ...[
-            const SizedBox(height: 10),
-            _buildProgressRow(),
-          ],
-
-          const SizedBox(height: 10),
-
-          // Divider tipis
-          const Divider(color: Color(0xFFF0F4F8), height: 1),
-          const SizedBox(height: 10),
-
-          // Footer: budget + aksi
-          _buildFooter(context),
-        ],
-      ),
-    );
-  }
-
-  String _subtitle() {
-    switch (trip.status) {
-      case TripStatus.draft:
-        return '${trip.dateRange} • ${trip.wishlistCount} tempat di wishlist';
-      default:
-        return '${trip.dateRange} • ${trip.numPersons} orang • ${trip.numDestinations} destinasi';
-    }
-  }
-
-  Widget _buildProgressRow() {
-    final fraction = trip.numDestinations > 0
-        ? (trip.visitedCount / trip.numDestinations).clamp(0.0, 1.0)
-        : 0.0;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'Progres kunjungan',
-              style: TextStyle(
-                fontFamily: 'PlusJakartaSans',
-                fontSize: 12,
-                color: Color(0xFF475569),
-              ),
-            ),
-            Text(
-              '${trip.visitedCount}/${trip.numDestinations} selesai',
-              style: const TextStyle(
-                fontFamily: 'PlusJakartaSans',
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF0B1C30),
-              ),
-            ),
-          ],
         ),
-        const SizedBox(height: 6),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(4),
-          child: LinearProgressIndicator(
-            value: fraction,
-            minHeight: 5,
-            backgroundColor: const Color(0xFFE2E8F0),
-            valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFE58A1F)),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildFooter(BuildContext context) {
-    switch (trip.status) {
-      // ── BERLANGSUNG: budget terpakai / total + Lihat Live Map ─────────────
-      case TripStatus.berlangsung:
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Flexible(
-              child: RichText(
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                text: TextSpan(
-                  style: const TextStyle(fontFamily: 'PlusJakartaSans'),
-                  children: [
-                    TextSpan(
-                      text: trip.budgetSpentLabel,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF0B1C30),
-                      ),
-                    ),
-                    TextSpan(
-                      text: ' / ${trip.budgetTotalLabel}',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF94A3B8),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            _linkButton(
-              'Lihat Live Map',
-              onTap: () => context.push(
-                AppRoutes.liveMap(trip.id, trip.currentDay),
-              ),
-            ),
-          ],
-        );
-
-      // ── AKAN DATANG: anggaran + Lihat Detail ─────────────────────────────
-      case TripStatus.akanDatang:
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Flexible(
-              child: RichText(
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                text: TextSpan(
-                  style: const TextStyle(fontFamily: 'PlusJakartaSans'),
-                  children: [
-                    const TextSpan(
-                      text: 'Anggaran ',
-                      style: TextStyle(fontSize: 12, color: Color(0xFF475569)),
-                    ),
-                    TextSpan(
-                      text: trip.budgetTotalLabel,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF0B1C30),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            _linkButton(
-              'Lihat Detail',
-              onTap: () => context.push(AppRoutes.trip(trip.id)),
-            ),
-          ],
-        );
-
-      // ── SELESAI: biaya terpakai + Beri Ulasan ────────────────────────────
-      case TripStatus.selesai:
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Flexible(
-              child: RichText(
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                text: TextSpan(
-                  style: const TextStyle(fontFamily: 'PlusJakartaSans'),
-                  children: [
-                    const TextSpan(
-                      text: 'Terpakai ',
-                      style: TextStyle(fontSize: 12, color: Color(0xFF475569)),
-                    ),
-                    TextSpan(
-                      text: trip.budgetSpentLabel,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF0B1C30),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            _linkButton(
-              'Beri Ulasan',
-              onTap: () => context.push(AppRoutes.review),
-            ),
-          ],
-        );
-
-      // ── DRAFT: lanjutkan pengaturan + Lanjutkan ───────────────────────────
-      case TripStatus.draft:
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Flexible(
-              child: Text(
-                'Lanjutkan pengaturan trip',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontFamily: 'PlusJakartaSans',
-                  fontSize: 12,
-                  color: Color(0xFF64748B),
-                ),
-              ),
-            ),
-            _linkButton(
-              'Lanjutkan',
-              onTap: () => context.push(AppRoutes.tripPreferences(trip.id)),
-            ),
-          ],
-        );
-    }
-  }
-
-  static Widget _linkButton(String label, {VoidCallback? onTap}) {
-    final content = Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontFamily: 'PlusJakartaSans',
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF1D6FA5),
-          ),
-        ),
-        const SizedBox(width: 3),
-        const Icon(
-          Icons.arrow_forward_rounded,
-          size: 14,
-          color: Color(0xFF1D6FA5),
-        ),
-      ],
-    );
-
-    if (onTap == null) return content;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(6),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
-        child: content,
       ),
     );
   }
 }
 
-class _BannerConfig {
-  const _BannerConfig({
-    required this.bgColor,
-    required this.leftBadge,
-    required this.rightBadge,
-  });
-  final Color bgColor;
-  final Widget leftBadge;
-  final Widget rightBadge;
+/// The photo mosaic with the status badge and the day pill on top.
+class _PhotoHeader extends StatelessWidget {
+  const _PhotoHeader({required this.trip});
+
+  final TripModel trip;
+
+  static const _height = 148.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final photos = trip.photoUrls.take(4).toList();
+    final hiddenPlaces = trip.numDestinations - photos.length;
+
+    return SizedBox(
+      height: _height,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          photos.isEmpty ? const _NoPhoto() : _Mosaic(photos: photos, morePlaces: hiddenPlaces),
+          // Darkens the top so the badges read on any photo.
+          const IgnorePointer(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0x800A2440), Color(0x000A2440)],
+                  stops: [0, 0.6],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 12,
+            left: 12,
+            right: 12,
+            child: Row(
+              children: [
+                _StatusBadge(status: trip.status),
+                const Spacer(),
+                _GlassPill(text: _dayLabel()),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _dayLabel() => switch (trip.status) {
+        TripStatus.berlangsung => 'Hari ${trip.currentDay}/${trip.numDays}',
+        TripStatus.draft => 'Belum dijadwalkan',
+        _ => '${trip.numDays} hari',
+      };
+}
+
+/// 1 photo: full width. 2: side by side. 3: one large, two stacked.
+/// 4: a 2x2 grid. The last tile says how many places are not shown.
+class _Mosaic extends StatelessWidget {
+  const _Mosaic({required this.photos, required this.morePlaces});
+
+  final List<String> photos;
+  final int morePlaces;
+
+  static const _gap = 2.0;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget tile(int index) {
+      final isLast = index == photos.length - 1;
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          PlacePhoto(url: photos[index]),
+          if (isLast && morePlaces > 0)
+            ColoredBox(
+              color: const Color(0x8C0A2440),
+              child: Center(
+                child: Text('+$morePlaces', style: appText(18, FontWeight.w800, Colors.white)),
+              ),
+            ),
+        ],
+      );
+    }
+
+    Widget column(List<Widget> children) => Column(
+          children: [
+            for (var i = 0; i < children.length; i++) ...[
+              if (i > 0) const SizedBox(height: _gap),
+              Expanded(child: children[i]),
+            ],
+          ],
+        );
+
+    Widget row(List<Widget> children, {List<int>? flex}) => Row(
+          children: [
+            for (var i = 0; i < children.length; i++) ...[
+              if (i > 0) const SizedBox(width: _gap),
+              Expanded(flex: flex?[i] ?? 1, child: children[i]),
+            ],
+          ],
+        );
+
+    return switch (photos.length) {
+      1 => tile(0),
+      2 => row([tile(0), tile(1)]),
+      3 => row([tile(0), column([tile(1), tile(2)])], flex: [3, 2]),
+      _ => column([
+          row([tile(0), tile(1)]),
+          row([tile(2), tile(3)]),
+        ]),
+    };
+  }
+}
+
+/// No place photo yet (a new draft): the brand navy with a suitcase.
+class _NoPhoto extends StatelessWidget {
+  const _NoPhoto();
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [AppColors.navy700, AppColors.navy900],
+        ),
+      ),
+      child: Center(
+        child: Icon(Icons.luggage_outlined, size: 40, color: Colors.white.withValues(alpha: 0.5)),
+      ),
+    );
+  }
+}
+
+class _StatusBadge extends StatelessWidget {
+  const _StatusBadge({required this.status});
+
+  final TripStatus status;
+
+  @override
+  Widget build(BuildContext context) {
+    final (Widget icon, Color color) = switch (status) {
+      TripStatus.berlangsung => (const _LiveDot(), const Color(0xFFD92D20)),
+      TripStatus.akanDatang => (const Icon(Icons.event_rounded, size: 13, color: AppColors.sea600), AppColors.sea600),
+      TripStatus.selesai => (const Icon(Icons.check_circle_rounded, size: 13, color: Color(0xFF1D7A55)), const Color(0xFF1D7A55)),
+      TripStatus.draft => (const Icon(Icons.edit_note_rounded, size: 15, color: AppColors.inkMuted), AppColors.inkMuted),
+    };
+
+    return Container(
+      height: 26,
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(999)),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          icon,
+          const SizedBox(width: 5),
+          Text(
+            status == TripStatus.berlangsung ? 'Sedang berjalan' : status.label,
+            style: appText(11, FontWeight.w700, color),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A red dot that softly pulses: the trip is live.
+class _LiveDot extends StatefulWidget {
+  const _LiveDot();
+
+  @override
+  State<_LiveDot> createState() => _LiveDotState();
+}
+
+class _LiveDotState extends State<_LiveDot> with SingleTickerProviderStateMixin {
+  late final AnimationController _pulse = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1100),
+  )..repeat(reverse: true);
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: Tween(begin: 0.35, end: 1.0).animate(_pulse),
+      child: const DecoratedBox(
+        decoration: BoxDecoration(color: Color(0xFFD92D20), shape: BoxShape.circle),
+        child: SizedBox(width: 7, height: 7),
+      ),
+    );
+  }
+}
+
+class _GlassPill extends StatelessWidget {
+  const _GlassPill({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 26,
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: const Color(0x8C0A2440),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+      ),
+      child: Text(text, style: appText(11, FontWeight.w700, Colors.white)),
+    );
+  }
+}
+
+class _Body extends StatelessWidget {
+  const _Body({required this.trip});
+
+  final TripModel trip;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          trip.title,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: appText(16, FontWeight.w800, AppColors.ink, height: 22, letterSpacing: -0.2),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 12,
+          runSpacing: 4,
+          children: [
+            _Fact(icon: Icons.calendar_today_rounded, text: _dateRange(context)),
+            if (trip.status == TripStatus.draft)
+              _Fact(icon: Icons.favorite_border_rounded, text: '${trip.wishlistCount} di wishlist')
+            else
+              _Fact(icon: Icons.place_outlined, text: '${trip.numDestinations} tempat'),
+          ],
+        ),
+        if (trip.status == TripStatus.berlangsung) ...[
+          const SizedBox(height: 14),
+          _Progress(trip: trip),
+        ],
+        const SizedBox(height: 14),
+        const Divider(height: 1, color: AppColors.field),
+        const SizedBox(height: 12),
+        _Footer(trip: trip),
+      ],
+    );
+  }
+}
+
+/// "12–14 Sep 2026", "30 Sep – 2 Okt 2026" or "12 Sep 2026".
+extension on _Body {
+  String _dateRange(BuildContext context) {
+    final start = trip.startDate;
+    final end = trip.endDate;
+    if (start == null || end == null) return 'Tanggal belum diatur';
+
+    final language = Localizations.localeOf(context).languageCode;
+    final full = DateFormat('d MMM y', language);
+    if (start == end) return full.format(start);
+    if (start.year == end.year && start.month == end.month) {
+      return '${start.day}–${full.format(end)}';
+    }
+    final dayMonth = start.year == end.year ? DateFormat('d MMM', language) : full;
+    return '${dayMonth.format(start)} – ${full.format(end)}';
+  }
+}
+
+class _Fact extends StatelessWidget {
+  const _Fact({required this.icon, required this.text});
+
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 14, color: AppColors.inkMuted),
+        const SizedBox(width: 4),
+        Text(text, style: appText(12, FontWeight.w500, AppColors.inkMuted)),
+      ],
+    );
+  }
+}
+
+class _Progress extends StatelessWidget {
+  const _Progress({required this.trip});
+
+  final TripModel trip;
+
+  @override
+  Widget build(BuildContext context) {
+    final fraction = trip.numDestinations > 0 ? (trip.visitedCount / trip.numDestinations).clamp(0.0, 1.0) : 0.0;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Text('Progres kunjungan', style: appText(12, FontWeight.w600, AppColors.inkMuted)),
+            const Spacer(),
+            Text(
+              '${trip.visitedCount}/${trip.numDestinations} tempat',
+              style: appText(12, FontWeight.w700, AppColors.ink),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(999),
+          child: LinearProgressIndicator(
+            value: fraction,
+            minHeight: 6,
+            backgroundColor: AppColors.field,
+            valueColor: const AlwaysStoppedAnimation(AppColors.sun400),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _Footer extends StatelessWidget {
+  const _Footer({required this.trip});
+
+  final TripModel trip;
+
+  @override
+  Widget build(BuildContext context) {
+    final (String label, String value, String? total, String action, String route) = switch (trip.status) {
+      TripStatus.berlangsung => (
+          'Terpakai',
+          trip.budgetSpentLabel,
+          trip.budgetTotalLabel,
+          'Lihat Live Map',
+          AppRoutes.liveMap(trip.id, trip.currentDay),
+        ),
+      TripStatus.akanDatang => ('Anggaran', trip.budgetTotalLabel, null, 'Lihat detail', AppRoutes.trip(trip.id)),
+      TripStatus.selesai => ('Terpakai', trip.budgetSpentLabel, null, 'Beri ulasan', AppRoutes.review),
+      TripStatus.draft => ('Langkah berikutnya', 'Atur preferensi', null, 'Lanjutkan', AppRoutes.tripPreferences(trip.id)),
+    };
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: appText(11, FontWeight.w600, AppColors.inkMuted)),
+              const SizedBox(height: 2),
+              Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(text: value, style: appText(14, FontWeight.w800, AppColors.ink)),
+                    if (total != null) TextSpan(text: ' / $total', style: appText(12, FontWeight.w500, AppColors.inkMuted)),
+                  ],
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 12),
+        Material(
+          color: AppColors.field,
+          shape: const StadiumBorder(),
+          child: InkWell(
+            customBorder: const StadiumBorder(),
+            onTap: () => context.push(route),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(action, style: appText(12, FontWeight.w700, AppColors.link)),
+                  const SizedBox(width: 4),
+                  const Icon(Icons.arrow_forward_rounded, size: 14, color: AppColors.link),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 }

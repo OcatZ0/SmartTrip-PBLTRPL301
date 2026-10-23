@@ -73,13 +73,12 @@ class SwapTest extends TestCase
         $trip->interestCategories()->attach($category->categories_id);
 
         $hotel = $this->makePlace(['type' => 'lodging', 'name' => 'Hotel', 'lat' => 1.1300, 'lng' => 104.0300, 'external_place_id' => 'gp-hotel']);
-        $trip->update(['hotel_places_id' => $hotel->places_id]);
 
         $original = $this->makePlace(['name' => 'Tempat Asli', 'lat' => 1.1310, 'lng' => 104.0310, 'external_place_id' => 'gp-original']);
         $original->categories()->attach($category->categories_id);
 
         $day = ItineraryDay::create([
-            'trips_id' => $trip->trips_id, 'day_number' => 1,
+            'trips_id' => $trip->trips_id, 'day_number' => 1, 'start_places_id' => $hotel->places_id,
         ]);
         $item = ItineraryItem::create([
             'itinerary_days_id' => $day->itinerary_days_id, 'places_id' => $original->places_id,
@@ -108,6 +107,8 @@ class SwapTest extends TestCase
         $names = collect($response->json('data'))->pluck('name');
         $this->assertContains('Alternatif Bagus', $names);
         $this->assertNotContains('Hotel Lain', $names);
+        $alternative = collect($response->json('data'))->firstWhere('name', 'Alternatif Bagus');
+        $this->assertSame((bool) $alt1->is_outdoor, $alternative['is_outdoor']);
     }
 
     public function test_swap_candidates_excludes_places_already_used_elsewhere_in_the_trip(): void

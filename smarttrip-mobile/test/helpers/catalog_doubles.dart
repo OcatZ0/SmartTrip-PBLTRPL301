@@ -183,6 +183,13 @@ class FakeWishlistService implements WishlistService {
   @override
   Future<Set<int>> fetchPlaceIds() async => {...saved};
 
+  /// The catalog tests only need the ids; the trip wishlist step and the
+  /// wishlist page read these.
+  List<CatalogPlace> savedPlaces = const [];
+
+  @override
+  Future<List<CatalogPlace>> fetchPlaces() async => savedPlaces;
+
   @override
   Future<List<CatalogPlace>> fetchWishlistPlaces() async =>
       saved.map((id) => catalogPlace(id > 0 ? id - 1 : 0)).toList();
@@ -199,6 +206,7 @@ class FakeWishlistService implements WishlistService {
     _maybeFail();
     removed.add(placesId);
     saved.remove(placesId);
+    savedPlaces = [for (final place in savedPlaces) if (place.placesId != placesId) place];
   }
 
   void _maybeFail() {

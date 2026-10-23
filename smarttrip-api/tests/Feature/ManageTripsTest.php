@@ -36,13 +36,13 @@ class ManageTripsTest extends TestCase
             'name' => 'Hotel Harbour Bay', 'type' => 'lodging', 'lat' => 1.16, 'lng' => 104.0,
             'address' => 'Batu Ampar', 'source' => 'google', 'external_place_id' => 'gp-hotel',
         ]);
-        $trip = $this->makeTrip($user, ['hotel_places_id' => $hotel->places_id]);
+        $trip = $this->makeTrip($user);
         $place = Place::create([
             'name' => 'Pantai Melur', 'type' => 'attraction', 'lat' => 1.15, 'lng' => 104.05,
             'address' => 'Barelang', 'source' => 'google', 'external_place_id' => 'gp-1',
             'estimated_visit_minutes' => 90, 'is_outdoor' => true,
         ]);
-        $day = ItineraryDay::create(['trips_id' => $trip->trips_id, 'day_number' => 1]);
+        $day = ItineraryDay::create(['trips_id' => $trip->trips_id, 'day_number' => 1, 'start_places_id' => $hotel->places_id]);
         ItineraryItem::create([
             'itinerary_days_id' => $day->itinerary_days_id, 'places_id' => $place->places_id,
             'visit_order' => 1, 'source' => 'recommended',
@@ -54,7 +54,10 @@ class ManageTripsTest extends TestCase
         $this->assertSame('Pantai Melur', $response->json('days.0.items.0.place.name'));
         $this->assertSame(90, $response->json('days.0.items.0.place.estimated_visit_minutes'));
         $this->assertTrue($response->json('days.0.items.0.place.is_outdoor'));
-        $this->assertSame('Hotel Harbour Bay', $response->json('hotel_place.name'));
+        $this->assertSame('Hotel Harbour Bay', $response->json('days.0.start.name'));
+        // No end of its own: the day ends where it starts.
+        $this->assertSame('Hotel Harbour Bay', $response->json('days.0.end.name'));
+        $this->assertFalse($response->json('days.0.has_own_end'));
     }
 
     // --- F011: GET /api/trips ---
@@ -244,8 +247,9 @@ class ManageTripsTest extends TestCase
         $response->assertOk();
         $response->assertJsonPath('itinerary_cleared', true);
         $response->assertJsonPath('num_days', 3);
-        $this->assertDatabaseMissing('itinerary_days', ['trips_id' => $trip->trips_id]);
+        // The stops go; the day rows stay (with their start points) and grow to three.
         $this->assertDatabaseMissing('itinerary_items', ['itinerary_items_id' => $item->itinerary_items_id]);
+        $this->assertSame([1, 2, 3], $trip->days()->orderBy('day_number')->pluck('day_number')->all());
     }
 
     public function test_changing_only_the_title_or_start_date_keeps_the_itinerary(): void
@@ -272,5 +276,111 @@ class ManageTripsTest extends TestCase
 
         $response->assertUnprocessable();
         $response->assertJsonValidationErrors('daily_end_time');
+    }
+
+    // --- GET /api/trips: summary for the Trip Tersimpan card ---
+
+    private function summaryPlace(string $name, ?string $photo, ?int $cost = null): Place
+    {
+        return Place::create([
+            'name' => $name, 'type' => 'attraction', 'lat' => 1.1, 'lng' => 104.0, 'address' => 'Batam',
+            'source' => 'manual', 'photo_url' => $photo, 'estimated_cost_idr' => $cost,
+        ]);
+    }
+
+    /**
+     * A trip with an itinerary: one stop per place, the first $visited marked visited.
+     */
+    private function tripWithStops(User $owner, string $startDate, array $places, int $visited = 0, int $numDays = 3): Trip
+    {
+        $trip = $this->makeTrip($owner, ['start_date' => $startDate, 'num_days' => $numDays]);
+        $day = ItineraryDay::create(['trips_id' => $trip->trips_id, 'day_number' => 1]);
+        foreach ($places as $index => $place) {
+            ItineraryItem::create([
+                'itinerary_days_id' => $day->itinerary_days_id, 'places_id' => $place->places_id,
+                'visit_order' => $index + 1, 'source' => 'recommended',
+                'visited_at' => $index < $visited ? now() : null,
+            ]);
+        }
+
+        return $trip;
+    }
+
+    private function summaryOf(User $user, Trip $trip): array
+    {
+        $data = collect($this->withHeaders($this->authHeader($user))->getJson('/api/trips')->assertOk()->json('data'));
+
+        return $data->firstWhere('trips_id', $trip->trips_id)['summary'];
+    }
+
+    public function test_a_trip_without_an_itinerary_is_a_draft_with_its_wishlist_photos(): void
+    {
+        $user = User::factory()->create();
+        $trip = $this->makeTrip($user);
+        $place = $this->summaryPlace('Pantai', 'https://example.com/pantai.jpg');
+        $trip->wishlistPlaces()->create(['places_id' => $place->places_id]);
+
+        $summary = $this->summaryOf($user, $trip);
+
+        $this->assertSame('draft', $summary['status']);
+        $this->assertNull($summary['current_day']);
+        $this->assertSame(0, $summary['places_count']);
+        $this->assertSame(1, $summary['wishlist_count']);
+        $this->assertSame(['https://example.com/pantai.jpg'], $summary['photo_urls']);
+    }
+
+    public function test_the_status_follows_the_trip_dates_in_batam_time(): void
+    {
+        $this->travelTo(\Illuminate\Support\Carbon::parse('2026-09-13 10:00', 'Asia/Jakarta'));
+        $user = User::factory()->create();
+        $place = $this->summaryPlace('Pantai', null);
+
+        $upcoming = $this->tripWithStops($user, '2026-09-20', [$place]);
+        $live = $this->tripWithStops($user, '2026-09-12', [$place]);
+        $done = $this->tripWithStops($user, '2026-09-01', [$place]);
+
+        $this->assertSame('akan_datang', $this->summaryOf($user, $upcoming)['status']);
+        $this->assertSame('selesai', $this->summaryOf($user, $done)['status']);
+        $liveSummary = $this->summaryOf($user, $live);
+        $this->assertSame('berlangsung', $liveSummary['status']);
+        // 12 Sep is day 1, so 13 Sep is day 2.
+        $this->assertSame(2, $liveSummary['current_day']);
+    }
+
+    public function test_progress_spent_estimate_and_at_most_four_unique_photos(): void
+    {
+        $user = User::factory()->create();
+        $places = [
+            $this->summaryPlace('A', 'https://example.com/a.jpg', 10000),
+            $this->summaryPlace('B', 'https://example.com/b.jpg', 25000),
+            $this->summaryPlace('C', null, 50000),
+            $this->summaryPlace('D', 'https://example.com/a.jpg'),
+            $this->summaryPlace('E', 'https://example.com/e.jpg'),
+            $this->summaryPlace('F', 'https://example.com/f.jpg'),
+            $this->summaryPlace('G', 'https://example.com/g.jpg'),
+        ];
+        $trip = $this->tripWithStops($user, now()->addWeek()->toDateString(), $places, visited: 3);
+
+        $summary = $this->summaryOf($user, $trip);
+
+        $this->assertSame(7, $summary['places_count']);
+        $this->assertSame(3, $summary['visited_count']);
+        $this->assertSame(85000, $summary['spent_estimate_idr']);
+        // Itinerary order, no empty or repeated photo, four at most.
+        $this->assertSame([
+            'https://example.com/a.jpg', 'https://example.com/b.jpg', 'https://example.com/e.jpg', 'https://example.com/f.jpg',
+        ], $summary['photo_urls']);
+    }
+
+    public function test_the_list_does_not_carry_the_itinerary_itself(): void
+    {
+        $user = User::factory()->create();
+        $this->tripWithStops($user, now()->addWeek()->toDateString(), [$this->summaryPlace('A', null)]);
+
+        $trip = $this->withHeaders($this->authHeader($user))->getJson('/api/trips')->json('data.0');
+
+        $this->assertArrayNotHasKey('days', $trip);
+        $this->assertArrayNotHasKey('wishlist_places', $trip);
+        $this->assertSame(1, $trip['days_count']);
     }
 }

@@ -325,6 +325,10 @@ class PlaceController extends Controller
      */
     public function estimateData(Place $place, GooglePlaceLookupClient $google, GeminiPlaceDataClient $gemini)
     {
+        // Two SerpApi searches and a Gemini call in a row outlast PHP's
+        // default 30 seconds; the client timeouts keep the total near 64.
+        set_time_limit(80);
+
         try {
             return response()->json($gemini->estimate($place, $google->lookUp($place)));
         } catch (RuntimeException $exception) {

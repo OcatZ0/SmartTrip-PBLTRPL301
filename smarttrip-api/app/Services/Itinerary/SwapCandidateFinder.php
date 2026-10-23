@@ -25,7 +25,7 @@ class SwapCandidateFinder
     {
         $day = $item->day;
         $trip = $day->trip;
-        $start = $trip->hotelCoordinates();
+        $start = $day->startPoint();
 
         $otherStops = $day->items()
             ->where('itinerary_items_id', '!=', $item->itinerary_items_id)

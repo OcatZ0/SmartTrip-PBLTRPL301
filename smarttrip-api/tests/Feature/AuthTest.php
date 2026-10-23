@@ -86,6 +86,29 @@ class AuthTest extends TestCase
         ])->assertOk();
     }
 
+    public function test_a_verification_link_older_than_60_minutes_says_it_expired_and_drops_the_registration(): void
+    {
+        $url = $this->captureVerificationUrl('wisatawan@example.com', 'password123');
+
+        $this->travel(61)->minutes();
+        $response = $this->get($url);
+
+        $response->assertOk()->assertSee('Tautan verifikasi sudah kedaluwarsa. Silakan daftar ulang.');
+        $this->assertDatabaseMissing('users', ['email' => 'wisatawan@example.com']);
+        $this->assertDatabaseMissing('pending_registrations', ['email' => 'wisatawan@example.com']);
+    }
+
+    public function test_a_verification_link_with_a_wrong_token_says_it_is_invalid(): void
+    {
+        $url = $this->captureVerificationUrl('wisatawan@example.com', 'password123');
+
+        $response = $this->get(preg_replace('/token=[^&]+/', 'token=wrong', $url));
+
+        $response->assertOk()->assertSee('Tautan verifikasi tidak valid.');
+        $this->assertDatabaseMissing('users', ['email' => 'wisatawan@example.com']);
+        $this->assertDatabaseHas('pending_registrations', ['email' => 'wisatawan@example.com']);
+    }
+
     public function test_registering_with_an_email_already_taken_by_a_password_account_is_rejected(): void
     {
         User::factory()->create(['email' => 'wisatawan@example.com']);
@@ -211,6 +234,27 @@ class AuthTest extends TestCase
         $this->assertSame('google-sub-1', $user->google_id);
         $this->assertNull($user->password);
         $this->assertNotNull($user->email_verified_at);
+    }
+
+    public function test_the_user_json_says_whether_the_account_has_a_password(): void
+    {
+        $googleOnly = User::factory()->create(['password' => null, 'google_id' => 'google-sub-9']);
+        $withPassword = User::factory()->create();
+
+        $this->actingAs($googleOnly)->getJson('/api/user')->assertOk()->assertJsonPath('has_password', false);
+        $this->actingAs($withPassword)->getJson('/api/user')->assertOk()->assertJsonPath('has_password', true);
+    }
+
+    public function test_a_google_only_account_sets_its_first_password_without_a_current_one(): void
+    {
+        $user = User::factory()->create(['password' => null, 'google_id' => 'google-sub-10']);
+
+        $this->actingAs($user)->putJson('/api/auth/password', [
+            'password' => 'passwordbaru1',
+            'password_confirmation' => 'passwordbaru1',
+        ])->assertOk();
+
+        $this->assertTrue($user->fresh()->has_password);
     }
 
     public function test_password_login_fails_for_a_google_only_account(): void

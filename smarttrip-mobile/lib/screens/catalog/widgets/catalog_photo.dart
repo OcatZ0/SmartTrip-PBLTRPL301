@@ -58,6 +58,9 @@ class CatalogPhoto extends StatelessWidget {
           height: double.infinity,
           cacheWidth: cacheWidth,
           gaplessPlayback: true,
+          // Web: the photo server sends no CORS headers, so fall back to a
+          // plain <img> element instead of failing. No effect on Android/iOS.
+          webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
           errorBuilder: (_, __, ___) => placeholder,
           frameBuilder: (_, child, frame, wasSynchronouslyLoaded) =>
               wasSynchronouslyLoaded || frame != null ? child : placeholder,

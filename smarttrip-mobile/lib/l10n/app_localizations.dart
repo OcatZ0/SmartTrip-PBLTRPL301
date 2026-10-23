@@ -674,6 +674,78 @@ abstract class AppLocalizations {
   /// **'Langkah {step} dari {total}: {name}'**
   String tripStepLabel(int step, int total, String name);
 
+  /// No description provided for @tripNameLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Nama Trip'**
+  String get tripNameLabel;
+
+  /// No description provided for @tripNameHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Biar mudah dikenali di Trip Tersimpan'**
+  String get tripNameHint;
+
+  /// No description provided for @tripNameDefault.
+  ///
+  /// In id, this message translates to:
+  /// **'Trip Batam {dates}'**
+  String tripNameDefault(String dates);
+
+  /// No description provided for @tripHoursPerDay.
+  ///
+  /// In id, this message translates to:
+  /// **'{hours} jam per hari'**
+  String tripHoursPerDay(int hours);
+
+  /// No description provided for @tripScheduleLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Tanggal & durasi'**
+  String get tripScheduleLabel;
+
+  /// No description provided for @tripScheduleHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Ketuk tanggal mulai, lalu tanggal selesai.'**
+  String get tripScheduleHint;
+
+  /// No description provided for @tripDailyHoursLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Jam jalan-jalan per hari'**
+  String get tripDailyHoursLabel;
+
+  /// No description provided for @tripDailyHoursHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih rekomendasi atau atur sendiri.'**
+  String get tripDailyHoursHint;
+
+  /// No description provided for @tripShortDayWarning.
+  ///
+  /// In id, this message translates to:
+  /// **'Kurang dari 4 jam: tiap hari hanya muat sedikit tempat.'**
+  String get tripShortDayWarning;
+
+  /// No description provided for @tripStartDateShort.
+  ///
+  /// In id, this message translates to:
+  /// **'Mulai'**
+  String get tripStartDateShort;
+
+  /// No description provided for @tripEndDateShort.
+  ///
+  /// In id, this message translates to:
+  /// **'Selesai'**
+  String get tripEndDateShort;
+
+  /// No description provided for @tripBudgetPerDay.
+  ///
+  /// In id, this message translates to:
+  /// **'≈ Rp{amount} per hari'**
+  String tripBudgetPerDay(String amount);
+
   /// No description provided for @tripSetupHeader.
   ///
   /// In id, this message translates to:
@@ -691,18 +763,6 @@ abstract class AppLocalizations {
   /// In id, this message translates to:
   /// **'Beri tahu preferensimu, kami susunkan itinerary terbaik.'**
   String get tripSetupSubtitle;
-
-  /// No description provided for @tripDurationLabel.
-  ///
-  /// In id, this message translates to:
-  /// **'Durasi Perjalanan'**
-  String get tripDurationLabel;
-
-  /// No description provided for @tripDurationHint.
-  ///
-  /// In id, this message translates to:
-  /// **'Berapa lama liburan di Batam?'**
-  String get tripDurationHint;
 
   /// No description provided for @tripDurationDecrease.
   ///
@@ -788,18 +848,6 @@ abstract class AppLocalizations {
   /// **'Anggaran harus lebih dari 0'**
   String get validationBudgetRequired;
 
-  /// No description provided for @tripDateLabel.
-  ///
-  /// In id, this message translates to:
-  /// **'Tanggal Mulai & Selesai'**
-  String get tripDateLabel;
-
-  /// No description provided for @tripDateHint.
-  ///
-  /// In id, this message translates to:
-  /// **'Waktu pelesiran di pulau'**
-  String get tripDateHint;
-
   /// No description provided for @tripStartTimeLabel.
   ///
   /// In id, this message translates to:
@@ -839,7 +887,7 @@ abstract class AppLocalizations {
   /// No description provided for @tripSetupNext.
   ///
   /// In id, this message translates to:
-  /// **'Lanjut ke Wishlist (2/4)'**
+  /// **'Lanjut ke wishlist'**
   String get tripSetupNext;
 
   /// No description provided for @tripCancelTitle.
@@ -866,17 +914,101 @@ abstract class AppLocalizations {
   /// **'Batalkan'**
   String get tripCancelConfirm;
 
+  /// No description provided for @tripWishlistSearchHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Cari pantai, kuliner, museum...'**
+  String get tripWishlistSearchHint;
+
+  /// No description provided for @tripWishlistNoResults.
+  ///
+  /// In id, this message translates to:
+  /// **'Tidak ada tempat yang cocok.'**
+  String get tripWishlistNoResults;
+
+  /// No description provided for @tripWishlistPin.
+  ///
+  /// In id, this message translates to:
+  /// **'Pin di peta'**
+  String get tripWishlistPin;
+
+  /// No description provided for @tripWishlistRemove.
+  ///
+  /// In id, this message translates to:
+  /// **'Hapus {name} dari wishlist trip'**
+  String tripWishlistRemove(String name);
+
+  /// No description provided for @tripWishlistVisitLength.
+  ///
+  /// In id, this message translates to:
+  /// **'Lama kunjungan'**
+  String get tripWishlistVisitLength;
+
+  /// No description provided for @tripWishlistVisitLengthHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Berapa lama kamu di tempat ini?'**
+  String get tripWishlistVisitLengthHint;
+
+  /// No description provided for @tripWishlistSave.
+  ///
+  /// In id, this message translates to:
+  /// **'Simpan'**
+  String get tripWishlistSave;
+
+  /// No description provided for @tripWishlistSummaryPlaces.
+  ///
+  /// In id, this message translates to:
+  /// **'Tempat'**
+  String get tripWishlistSummaryPlaces;
+
+  /// No description provided for @tripWishlistSummaryVisit.
+  ///
+  /// In id, this message translates to:
+  /// **'Total kunjungan'**
+  String get tripWishlistSummaryVisit;
+
+  /// No description provided for @tripWishlistHours.
+  ///
+  /// In id, this message translates to:
+  /// **'±{hours} jam'**
+  String tripWishlistHours(String hours);
+
+  /// No description provided for @tripWishlistActionFailed.
+  ///
+  /// In id, this message translates to:
+  /// **'Wishlist trip gagal diperbarui, coba lagi.'**
+  String get tripWishlistActionFailed;
+
+  /// No description provided for @tripWishlistPicked.
+  ///
+  /// In id, this message translates to:
+  /// **'Terpilih'**
+  String get tripWishlistPicked;
+
+  /// No description provided for @tripWishlistPageTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Tambahkan Tempat Favoritmu'**
+  String get tripWishlistPageTitle;
+
+  /// No description provided for @tripWishlistPageSubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Ketuk tempat yang wajib dikunjungi dalam liburan ini (opsional).'**
+  String get tripWishlistPageSubtitle;
+
+  /// No description provided for @tripWishlistPins.
+  ///
+  /// In id, this message translates to:
+  /// **'Pin sendiri'**
+  String get tripWishlistPins;
+
   /// No description provided for @tripWishlistHeader.
   ///
   /// In id, this message translates to:
   /// **'Susun Wishlist'**
   String get tripWishlistHeader;
-
-  /// No description provided for @tripWishlistComingSoon.
-  ///
-  /// In id, this message translates to:
-  /// **'Penyusunan wishlist sedang disiapkan. Kamu tetap bisa lanjut, sistem akan memilihkan tempat terbaik untukmu.'**
-  String get tripWishlistComingSoon;
 
   /// No description provided for @tripWishlistNext.
   ///
@@ -1376,6 +1508,18 @@ abstract class AppLocalizations {
   /// **'Berangkat dari {name}'**
   String itineraryStartFrom(String name);
 
+  /// No description provided for @itineraryDayShort.
+  ///
+  /// In id, this message translates to:
+  /// **'Hari {day}'**
+  String itineraryDayShort(int day);
+
+  /// No description provided for @itineraryStopsCount.
+  ///
+  /// In id, this message translates to:
+  /// **'{count} tempat'**
+  String itineraryStopsCount(int count);
+
   /// No description provided for @itineraryUnknownPlace.
   ///
   /// In id, this message translates to:
@@ -1789,6 +1933,930 @@ abstract class AppLocalizations {
   /// In id, this message translates to:
   /// **'Dalam ruangan'**
   String get detailAreaIndoor;
+
+  /// No description provided for @profileInterests.
+  ///
+  /// In id, this message translates to:
+  /// **'Minat kamu'**
+  String get profileInterests;
+
+  /// No description provided for @profileInterestsHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Dipilih otomatis setiap buat trip baru.'**
+  String get profileInterestsHint;
+
+  /// No description provided for @profilePriorities.
+  ///
+  /// In id, this message translates to:
+  /// **'Prioritas rute'**
+  String get profilePriorities;
+
+  /// No description provided for @profileWeightInterest.
+  ///
+  /// In id, this message translates to:
+  /// **'Sesuai minat'**
+  String get profileWeightInterest;
+
+  /// No description provided for @profileWeightInterestHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Utamakan tempat dengan kategori pilihanmu'**
+  String get profileWeightInterestHint;
+
+  /// No description provided for @profileWeightDistance.
+  ///
+  /// In id, this message translates to:
+  /// **'Jarak & waktu tempuh'**
+  String get profileWeightDistance;
+
+  /// No description provided for @profileWeightDistanceHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Utamakan tempat yang berdekatan'**
+  String get profileWeightDistanceHint;
+
+  /// No description provided for @profileWeightBudget.
+  ///
+  /// In id, this message translates to:
+  /// **'Hemat biaya'**
+  String get profileWeightBudget;
+
+  /// No description provided for @profileWeightBudgetHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Utamakan tempat murah atau gratis'**
+  String get profileWeightBudgetHint;
+
+  /// No description provided for @profileWeightRating.
+  ///
+  /// In id, this message translates to:
+  /// **'Rating tempat'**
+  String get profileWeightRating;
+
+  /// No description provided for @profileWeightRatingHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Utamakan tempat dengan ulasan bagus'**
+  String get profileWeightRatingHint;
+
+  /// No description provided for @profileNeedInterest.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih minimal satu minat.'**
+  String get profileNeedInterest;
+
+  /// No description provided for @profileLoadFailed.
+  ///
+  /// In id, this message translates to:
+  /// **'Preferensi gagal dimuat.'**
+  String get profileLoadFailed;
+
+  /// No description provided for @profileChangePassword.
+  ///
+  /// In id, this message translates to:
+  /// **'Ganti kata sandi'**
+  String get profileChangePassword;
+
+  /// No description provided for @profileLanguage.
+  ///
+  /// In id, this message translates to:
+  /// **'Bahasa'**
+  String get profileLanguage;
+
+  /// No description provided for @profileLanguageName.
+  ///
+  /// In id, this message translates to:
+  /// **'Indonesia'**
+  String get profileLanguageName;
+
+  /// No description provided for @profileLogout.
+  ///
+  /// In id, this message translates to:
+  /// **'Keluar'**
+  String get profileLogout;
+
+  /// No description provided for @profileLogoutTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Keluar dari akun?'**
+  String get profileLogoutTitle;
+
+  /// No description provided for @profileLogoutBody.
+  ///
+  /// In id, this message translates to:
+  /// **'Kamu perlu masuk lagi untuk membuka trip-mu.'**
+  String get profileLogoutBody;
+
+  /// No description provided for @profilePasswordCurrent.
+  ///
+  /// In id, this message translates to:
+  /// **'Kata sandi saat ini'**
+  String get profilePasswordCurrent;
+
+  /// No description provided for @profilePasswordNew.
+  ///
+  /// In id, this message translates to:
+  /// **'Kata sandi baru'**
+  String get profilePasswordNew;
+
+  /// No description provided for @profilePasswordConfirm.
+  ///
+  /// In id, this message translates to:
+  /// **'Ulangi kata sandi baru'**
+  String get profilePasswordConfirm;
+
+  /// No description provided for @profilePasswordSubmit.
+  ///
+  /// In id, this message translates to:
+  /// **'Simpan kata sandi'**
+  String get profilePasswordSubmit;
+
+  /// No description provided for @profileEyebrow.
+  ///
+  /// In id, this message translates to:
+  /// **'PROFIL'**
+  String get profileEyebrow;
+
+  /// No description provided for @profileHeadline.
+  ///
+  /// In id, this message translates to:
+  /// **'Atur trip sesuai gayamu'**
+  String get profileHeadline;
+
+  /// No description provided for @profilePasswordGoogleOnly.
+  ///
+  /// In id, this message translates to:
+  /// **'Akunmu dibuat lewat Google, jadi belum punya kata sandi. Buat kata sandi di sini supaya bisa masuk juga dengan email.'**
+  String get profilePasswordGoogleOnly;
+
+  /// No description provided for @swapTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Ganti Tempat'**
+  String get swapTitle;
+
+  /// No description provided for @swapSubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih pengganti untuk {name}.'**
+  String swapSubtitle(String name);
+
+  /// No description provided for @swapRainSubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Hari ini diprediksi hujan. Tempat dalam ruangan untuk mengganti {name} ada di atas.'**
+  String swapRainSubtitle(String name);
+
+  /// No description provided for @swapTabRecommended.
+  ///
+  /// In id, this message translates to:
+  /// **'Rekomendasi'**
+  String get swapTabRecommended;
+
+  /// No description provided for @swapTabSearch.
+  ///
+  /// In id, this message translates to:
+  /// **'Cari Manual'**
+  String get swapTabSearch;
+
+  /// No description provided for @swapSearchHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Cari nama tempat'**
+  String get swapSearchHint;
+
+  /// No description provided for @swapEmpty.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada tempat pengganti yang cocok.'**
+  String get swapEmpty;
+
+  /// No description provided for @swapIndoor.
+  ///
+  /// In id, this message translates to:
+  /// **'Dalam ruangan'**
+  String get swapIndoor;
+
+  /// No description provided for @swapOutdoor.
+  ///
+  /// In id, this message translates to:
+  /// **'Luar ruangan'**
+  String get swapOutdoor;
+
+  /// No description provided for @placeSheetTooltip.
+  ///
+  /// In id, this message translates to:
+  /// **'Detail tempat'**
+  String get placeSheetTooltip;
+
+  /// No description provided for @placeSheetCustomPin.
+  ///
+  /// In id, this message translates to:
+  /// **'Pin yang kamu pasang sendiri di peta.'**
+  String get placeSheetCustomPin;
+
+  /// No description provided for @swapCurrentBadge.
+  ///
+  /// In id, this message translates to:
+  /// **'Tempat yang diganti'**
+  String get swapCurrentBadge;
+
+  /// No description provided for @swapDaySubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Jadwal Hari {day}'**
+  String swapDaySubtitle(int day);
+
+  /// No description provided for @swapFilterNear.
+  ///
+  /// In id, this message translates to:
+  /// **'Dekat (< 3 km)'**
+  String get swapFilterNear;
+
+  /// No description provided for @swapFilterRating.
+  ///
+  /// In id, this message translates to:
+  /// **'Rating 4.5+'**
+  String get swapFilterRating;
+
+  /// No description provided for @swapFilterCheap.
+  ///
+  /// In id, this message translates to:
+  /// **'Hemat (≤ Rp50rb)'**
+  String get swapFilterCheap;
+
+  /// No description provided for @swapEngineTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Pengganti Cerdas'**
+  String get swapEngineTitle;
+
+  /// No description provided for @swapEngineBody.
+  ///
+  /// In id, this message translates to:
+  /// **'Diurutkan dari minat, jarak, anggaran dan rating trip-mu. Tempat yang tutup di hari ini tidak ikut.'**
+  String get swapEngineBody;
+
+  /// No description provided for @swapBestTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilihan Alternatif Terbaik'**
+  String get swapBestTitle;
+
+  /// No description provided for @swapSortedBy.
+  ///
+  /// In id, this message translates to:
+  /// **'Diurutkan: Paling Pas'**
+  String get swapSortedBy;
+
+  /// No description provided for @swapSearchResults.
+  ///
+  /// In id, this message translates to:
+  /// **'Hasil Pencarian'**
+  String get swapSearchResults;
+
+  /// No description provided for @swapMatch.
+  ///
+  /// In id, this message translates to:
+  /// **'Cocok {percent}%'**
+  String swapMatch(int percent);
+
+  /// No description provided for @swapTopPick.
+  ///
+  /// In id, this message translates to:
+  /// **'Rekomendasi Utama'**
+  String get swapTopPick;
+
+  /// No description provided for @swapSummaryLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Ganti:'**
+  String get swapSummaryLabel;
+
+  /// No description provided for @swapPickHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih tempat pengganti di atas'**
+  String get swapPickHint;
+
+  /// No description provided for @swapApply.
+  ///
+  /// In id, this message translates to:
+  /// **'Terapkan Penggantian'**
+  String get swapApply;
+
+  /// No description provided for @swapNoFilterResults.
+  ///
+  /// In id, this message translates to:
+  /// **'Tidak ada tempat yang cocok dengan filter ini.'**
+  String get swapNoFilterResults;
+
+  /// No description provided for @stopSheetDetail.
+  ///
+  /// In id, this message translates to:
+  /// **'Detail Tempat Wisata'**
+  String get stopSheetDetail;
+
+  /// No description provided for @stopSheetDetailHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Lihat deskripsi, fasilitas, tiket & ulasan'**
+  String get stopSheetDetailHint;
+
+  /// No description provided for @stopSheetSwap.
+  ///
+  /// In id, this message translates to:
+  /// **'Ganti Lokasi Wisata'**
+  String get stopSheetSwap;
+
+  /// No description provided for @stopSheetSwapHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Cari alternatif tempat wisata lain untuk jadwal ini'**
+  String get stopSheetSwapHint;
+
+  /// No description provided for @stopSheetMaps.
+  ///
+  /// In id, this message translates to:
+  /// **'Buka di Google Maps'**
+  String get stopSheetMaps;
+
+  /// No description provided for @stopSheetMapsHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Petunjuk arah navigasi rute ke lokasi'**
+  String get stopSheetMapsHint;
+
+  /// No description provided for @stopSheetFromYou.
+  ///
+  /// In id, this message translates to:
+  /// **'± {km} km dari lokasimu'**
+  String stopSheetFromYou(String km);
+
+  /// No description provided for @swapSlot.
+  ///
+  /// In id, this message translates to:
+  /// **'Tempat ke-{order} hari ini'**
+  String swapSlot(int order);
+
+  /// No description provided for @swapDriveMinutes.
+  ///
+  /// In id, this message translates to:
+  /// **'±{minutes} mnt berkendara'**
+  String swapDriveMinutes(int minutes);
+
+  /// No description provided for @swapRouteShorter.
+  ///
+  /// In id, this message translates to:
+  /// **'Rute hari ini lebih hemat ±{km} km (±{minutes} mnt).'**
+  String swapRouteShorter(String km, int minutes);
+
+  /// No description provided for @swapRouteLonger.
+  ///
+  /// In id, this message translates to:
+  /// **'Rute hari ini bertambah ±{km} km (±{minutes} mnt).'**
+  String swapRouteLonger(String km, int minutes);
+
+  /// No description provided for @swapRouteSame.
+  ///
+  /// In id, this message translates to:
+  /// **'Searah dengan rute hari ini, jarak tempuh hampir sama.'**
+  String get swapRouteSame;
+
+  /// No description provided for @swapDeltaSave.
+  ///
+  /// In id, this message translates to:
+  /// **'Hemat {km} km'**
+  String swapDeltaSave(String km);
+
+  /// No description provided for @swapDeltaExtra.
+  ///
+  /// In id, this message translates to:
+  /// **'+{km} km'**
+  String swapDeltaExtra(String km);
+
+  /// No description provided for @swapDeltaSame.
+  ///
+  /// In id, this message translates to:
+  /// **'≈ sama'**
+  String get swapDeltaSame;
+
+  /// No description provided for @swapDurationHours.
+  ///
+  /// In id, this message translates to:
+  /// **'{hours} jam'**
+  String swapDurationHours(int hours);
+
+  /// No description provided for @swapDurationHoursMinutes.
+  ///
+  /// In id, this message translates to:
+  /// **'{hours}j {minutes}m'**
+  String swapDurationHoursMinutes(int hours, int minutes);
+
+  /// No description provided for @swapBusyTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Mengganti tempat'**
+  String get swapBusyTitle;
+
+  /// No description provided for @swapBusyMessage.
+  ///
+  /// In id, this message translates to:
+  /// **'{name} masuk ke jadwal Hari {day} dan rutenya disusun ulang. Tunggu sebentar ya.'**
+  String swapBusyMessage(String name, int day);
+
+  /// No description provided for @swapDone.
+  ///
+  /// In id, this message translates to:
+  /// **'Diganti dengan {name}.'**
+  String swapDone(String name);
+
+  /// No description provided for @weatherClear.
+  ///
+  /// In id, this message translates to:
+  /// **'Cerah'**
+  String get weatherClear;
+
+  /// No description provided for @weatherCloudy.
+  ///
+  /// In id, this message translates to:
+  /// **'Berawan'**
+  String get weatherCloudy;
+
+  /// No description provided for @weatherFog.
+  ///
+  /// In id, this message translates to:
+  /// **'Berkabut'**
+  String get weatherFog;
+
+  /// No description provided for @weatherRain.
+  ///
+  /// In id, this message translates to:
+  /// **'Hujan'**
+  String get weatherRain;
+
+  /// No description provided for @weatherThunderstorm.
+  ///
+  /// In id, this message translates to:
+  /// **'Hujan petir'**
+  String get weatherThunderstorm;
+
+  /// No description provided for @weatherSummary.
+  ///
+  /// In id, this message translates to:
+  /// **'{min}-{max}°C · peluang hujan {chance}%'**
+  String weatherSummary(int min, int max, int chance);
+
+  /// No description provided for @weatherRainWarning.
+  ///
+  /// In id, this message translates to:
+  /// **'Diprediksi hujan, ada {count} tempat luar ruangan hari ini. Pertimbangkan menggantinya dengan tempat dalam ruangan.'**
+  String weatherRainWarning(int count);
+
+  /// No description provided for @weatherRainBadge.
+  ///
+  /// In id, this message translates to:
+  /// **'Hujan, ganti?'**
+  String get weatherRainBadge;
+
+  /// No description provided for @weatherReminderTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Cek cuaca untuk {title}'**
+  String weatherReminderTitle(String title);
+
+  /// No description provided for @weatherReminderBody.
+  ///
+  /// In id, this message translates to:
+  /// **'Trip kamu tinggal 7 hari lagi. Prakiraan cuaca sudah bisa dilihat di itinerary.'**
+  String get weatherReminderBody;
+
+  /// No description provided for @weatherReminderChannel.
+  ///
+  /// In id, this message translates to:
+  /// **'Pengingat cuaca'**
+  String get weatherReminderChannel;
+
+  /// No description provided for @weatherReminderChannelDescription.
+  ///
+  /// In id, this message translates to:
+  /// **'Pengingat cek prakiraan cuaca menjelang trip'**
+  String get weatherReminderChannelDescription;
+
+  /// No description provided for @dayReminderTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'{title}: hari ke-{day}'**
+  String dayReminderTitle(String title, int day);
+
+  /// No description provided for @dayReminderBody.
+  ///
+  /// In id, this message translates to:
+  /// **'{count} tempat menunggu hari ini, mulai dari {first} pukul {time}.'**
+  String dayReminderBody(int count, String first, String time);
+
+  /// No description provided for @dayReminderChannel.
+  ///
+  /// In id, this message translates to:
+  /// **'Pengingat hari trip'**
+  String get dayReminderChannel;
+
+  /// No description provided for @dayReminderChannelDescription.
+  ///
+  /// In id, this message translates to:
+  /// **'Pengingat di awal setiap hari trip'**
+  String get dayReminderChannelDescription;
+
+  /// No description provided for @tripPaceRelaxed.
+  ///
+  /// In id, this message translates to:
+  /// **'Santai'**
+  String get tripPaceRelaxed;
+
+  /// No description provided for @tripPaceStandard.
+  ///
+  /// In id, this message translates to:
+  /// **'Standar'**
+  String get tripPaceStandard;
+
+  /// No description provided for @tripPacePacked.
+  ///
+  /// In id, this message translates to:
+  /// **'Padat'**
+  String get tripPacePacked;
+
+  /// No description provided for @tripSummaryBudget.
+  ///
+  /// In id, this message translates to:
+  /// **'Anggaran'**
+  String get tripSummaryBudget;
+
+  /// No description provided for @tripSummaryDuration.
+  ///
+  /// In id, this message translates to:
+  /// **'Durasi'**
+  String get tripSummaryDuration;
+
+  /// No description provided for @tripSummaryHours.
+  ///
+  /// In id, this message translates to:
+  /// **'Jam harian'**
+  String get tripSummaryHours;
+
+  /// No description provided for @liveMapDay.
+  ///
+  /// In id, this message translates to:
+  /// **'Hari {day}'**
+  String liveMapDay(int day);
+
+  /// No description provided for @liveMapProgress.
+  ///
+  /// In id, this message translates to:
+  /// **'{visited} dari {total} tempat dikunjungi'**
+  String liveMapProgress(int visited, int total);
+
+  /// No description provided for @liveMapStop.
+  ///
+  /// In id, this message translates to:
+  /// **'Hentikan'**
+  String get liveMapStop;
+
+  /// No description provided for @dayPointPinOnMap.
+  ///
+  /// In id, this message translates to:
+  /// **'Pin di peta'**
+  String get dayPointPinOnMap;
+
+  /// No description provided for @dayPointPinOnMapHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Untuk penginapan yang tidak ada di katalog'**
+  String get dayPointPinOnMapHint;
+
+  /// No description provided for @dayPointSearchTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Atau cari hotel'**
+  String get dayPointSearchTitle;
+
+  /// No description provided for @dayPointMainHotel.
+  ///
+  /// In id, this message translates to:
+  /// **'Hotel utama'**
+  String get dayPointMainHotel;
+
+  /// No description provided for @dayPointMainHotelCaption.
+  ///
+  /// In id, this message translates to:
+  /// **'Sama seperti hari lainnya: {name}'**
+  String dayPointMainHotelCaption(String name);
+
+  /// No description provided for @dayPointSameAsStart.
+  ///
+  /// In id, this message translates to:
+  /// **'Sama dengan titik awal'**
+  String get dayPointSameAsStart;
+
+  /// No description provided for @dayPointSameAsStartCaption.
+  ///
+  /// In id, this message translates to:
+  /// **'Hari ini pulang ke tempat berangkat'**
+  String get dayPointSameAsStartCaption;
+
+  /// No description provided for @dayPointStartTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Titik awal Hari {day}'**
+  String dayPointStartTitle(int day);
+
+  /// No description provided for @dayPointEndTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Titik akhir Hari {day}'**
+  String dayPointEndTitle(int day);
+
+  /// No description provided for @dayPointStart.
+  ///
+  /// In id, this message translates to:
+  /// **'Mulai'**
+  String get dayPointStart;
+
+  /// No description provided for @dayPointEnd.
+  ///
+  /// In id, this message translates to:
+  /// **'Selesai'**
+  String get dayPointEnd;
+
+  /// No description provided for @dayPointChange.
+  ///
+  /// In id, this message translates to:
+  /// **'Ganti'**
+  String get dayPointChange;
+
+  /// No description provided for @dayPointEndAt.
+  ///
+  /// In id, this message translates to:
+  /// **'Selesai di {name}'**
+  String dayPointEndAt(String name);
+
+  /// No description provided for @dayPointBusyTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Menghitung ulang rute'**
+  String get dayPointBusyTitle;
+
+  /// No description provided for @dayPointBusyStart.
+  ///
+  /// In id, this message translates to:
+  /// **'Menyimpan titik awal Hari {day} dan menyusun ulang rutenya. Tunggu sebentar ya.'**
+  String dayPointBusyStart(int day);
+
+  /// No description provided for @dayPointBusyEnd.
+  ///
+  /// In id, this message translates to:
+  /// **'Menyimpan titik akhir Hari {day} dan menyusun ulang rutenya. Tunggu sebentar ya.'**
+  String dayPointBusyEnd(int day);
+
+  /// No description provided for @tripHotelBusyTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Menyimpan titik perjalanan'**
+  String get tripHotelBusyTitle;
+
+  /// No description provided for @tripHotelBusySimple.
+  ///
+  /// In id, this message translates to:
+  /// **'Hotel disimpan sebagai titik awal dan akhir setiap hari. Tunggu sebentar ya.'**
+  String get tripHotelBusySimple;
+
+  /// No description provided for @tripHotelBusyDetail.
+  ///
+  /// In id, this message translates to:
+  /// **'Hotel dan titik awal/akhir tiap hari disimpan, rute tiap hari ikut disiapkan. Tunggu sebentar ya.'**
+  String get tripHotelBusyDetail;
+
+  /// No description provided for @dayPointSaved.
+  ///
+  /// In id, this message translates to:
+  /// **'Titik Hari {day} disimpan, rutenya dihitung ulang.'**
+  String dayPointSaved(int day);
+
+  /// No description provided for @tripHotelModeSimple.
+  ///
+  /// In id, this message translates to:
+  /// **'Simpel'**
+  String get tripHotelModeSimple;
+
+  /// No description provided for @tripHotelModeDetail.
+  ///
+  /// In id, this message translates to:
+  /// **'Detail'**
+  String get tripHotelModeDetail;
+
+  /// No description provided for @tripHotelModeSimpleHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Satu hotel untuk semua hari: berangkat dan pulang ke hotel yang sama.'**
+  String get tripHotelModeSimpleHint;
+
+  /// No description provided for @tripHotelModeDetailHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Pindah hotel di tengah trip? Atur titik mulai dan selesai tiap hari di bawah.'**
+  String get tripHotelModeDetailHint;
+
+  /// No description provided for @tripHotelMainLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Hotel utama'**
+  String get tripHotelMainLabel;
+
+  /// No description provided for @tripHotelPerDayTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Titik mulai & selesai per hari'**
+  String get tripHotelPerDayTitle;
+
+  /// No description provided for @tripHotelPerDayHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Defaultnya hotel utama. Ganti hari yang berbeda saja.'**
+  String get tripHotelPerDayHint;
+
+  /// No description provided for @tripHotelPickMainFirst.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih hotel utama dulu'**
+  String get tripHotelPickMainFirst;
+
+  /// No description provided for @wishlistEyebrow.
+  ///
+  /// In id, this message translates to:
+  /// **'KOLEKSIMU'**
+  String get wishlistEyebrow;
+
+  /// No description provided for @wishlistTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Wishlist Saya'**
+  String get wishlistTitle;
+
+  /// No description provided for @wishlistSearchHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Cari di wishlist'**
+  String get wishlistSearchHint;
+
+  /// No description provided for @wishlistSavedCount.
+  ///
+  /// In id, this message translates to:
+  /// **'{count} tempat tersimpan'**
+  String wishlistSavedCount(int count);
+
+  /// No description provided for @wishlistSortTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Urutkan'**
+  String get wishlistSortTitle;
+
+  /// No description provided for @wishlistSortNewest.
+  ///
+  /// In id, this message translates to:
+  /// **'Baru disimpan'**
+  String get wishlistSortNewest;
+
+  /// No description provided for @wishlistSortRating.
+  ///
+  /// In id, this message translates to:
+  /// **'Rating tertinggi'**
+  String get wishlistSortRating;
+
+  /// No description provided for @wishlistSortName.
+  ///
+  /// In id, this message translates to:
+  /// **'Nama (A-Z)'**
+  String get wishlistSortName;
+
+  /// No description provided for @wishlistSortCost.
+  ///
+  /// In id, this message translates to:
+  /// **'Biaya terendah'**
+  String get wishlistSortCost;
+
+  /// No description provided for @wishlistSelect.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih banyak'**
+  String get wishlistSelect;
+
+  /// No description provided for @wishlistSelectDone.
+  ///
+  /// In id, this message translates to:
+  /// **'Selesai'**
+  String get wishlistSelectDone;
+
+  /// No description provided for @wishlistSelectedCount.
+  ///
+  /// In id, this message translates to:
+  /// **'{count} dipilih'**
+  String wishlistSelectedCount(int count);
+
+  /// No description provided for @wishlistSelectHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih tempat untuk dihapus atau dimasukkan ke trip'**
+  String get wishlistSelectHint;
+
+  /// No description provided for @wishlistRemove.
+  ///
+  /// In id, this message translates to:
+  /// **'Hapus'**
+  String get wishlistRemove;
+
+  /// No description provided for @wishlistRemoved.
+  ///
+  /// In id, this message translates to:
+  /// **'{name} dihapus dari wishlist.'**
+  String wishlistRemoved(String name);
+
+  /// No description provided for @wishlistUndo.
+  ///
+  /// In id, this message translates to:
+  /// **'Batalkan'**
+  String get wishlistUndo;
+
+  /// No description provided for @wishlistRemovedMany.
+  ///
+  /// In id, this message translates to:
+  /// **'{count} tempat dihapus dari wishlist.'**
+  String wishlistRemovedMany(int count);
+
+  /// No description provided for @wishlistRemoveFailed.
+  ///
+  /// In id, this message translates to:
+  /// **'{count} tempat gagal dihapus. Coba lagi.'**
+  String wishlistRemoveFailed(int count);
+
+  /// No description provided for @wishlistAddedMany.
+  ///
+  /// In id, this message translates to:
+  /// **'{count} tempat ditambahkan ke wishlist {title}.'**
+  String wishlistAddedMany(int count, String title);
+
+  /// No description provided for @wishlistAddedManyNeedsRegenerate.
+  ///
+  /// In id, this message translates to:
+  /// **'{count} tempat ditambahkan ke wishlist {title}. Buat ulang itinerary-nya supaya tempat ini ikut dihitung.'**
+  String wishlistAddedManyNeedsRegenerate(int count, String title);
+
+  /// No description provided for @wishlistAddFailed.
+  ///
+  /// In id, this message translates to:
+  /// **'{count} tempat gagal ditambahkan.'**
+  String wishlistAddFailed(int count);
+
+  /// No description provided for @wishlistGuestTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Masuk untuk melihat wishlist'**
+  String get wishlistGuestTitle;
+
+  /// No description provided for @wishlistGuestBody.
+  ///
+  /// In id, this message translates to:
+  /// **'Tempat yang kamu simpan dengan ikon hati akan terkumpul di sini.'**
+  String get wishlistGuestBody;
+
+  /// No description provided for @wishlistEmptyTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Wishlist masih kosong'**
+  String get wishlistEmptyTitle;
+
+  /// No description provided for @wishlistEmptyBody.
+  ///
+  /// In id, this message translates to:
+  /// **'Tekan ikon hati pada tempat di katalog untuk menyimpannya ke sini.'**
+  String get wishlistEmptyBody;
+
+  /// No description provided for @wishlistExplore.
+  ///
+  /// In id, this message translates to:
+  /// **'Jelajahi katalog'**
+  String get wishlistExplore;
+
+  /// No description provided for @wishlistClearFilters.
+  ///
+  /// In id, this message translates to:
+  /// **'Hapus filter'**
+  String get wishlistClearFilters;
+
+  /// No description provided for @wishlistLoadFailed.
+  ///
+  /// In id, this message translates to:
+  /// **'Wishlist gagal dimuat. Coba lagi.'**
+  String get wishlistLoadFailed;
 }
 
 class _AppLocalizationsDelegate

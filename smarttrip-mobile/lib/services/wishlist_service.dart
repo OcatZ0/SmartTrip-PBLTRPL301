@@ -24,14 +24,17 @@ class WishlistService {
         .toSet();
   }
 
-  /// Fetches the user's saved wishlist places from GET /wishlist
-  Future<List<CatalogPlace>> fetchWishlistPlaces() async {
+  /// The saved places themselves, newest first (step C2 suggests them).
+  Future<List<CatalogPlace>> fetchPlaces() async {
     final body = await _call(() => _dio.get<Map<String, dynamic>>('/wishlist'));
     return (body['data'] as List? ?? const [])
         .cast<Map<String, dynamic>>()
         .map(CatalogPlace.fromJson)
         .toList();
   }
+
+  /// Alias for fetchPlaces for backward compatibility.
+  Future<List<CatalogPlace>> fetchWishlistPlaces() => fetchPlaces();
 
   Future<void> add(int placesId) async {
     await _call(() => _dio.post<Map<String, dynamic>>('/wishlist', data: {'places_id': placesId}));
@@ -115,12 +118,12 @@ class UserWishlistPlacesController extends AsyncNotifier<List<CatalogPlace>> {
     final usersId = ref.watch(sessionControllerProvider.select((session) => session.valueOrNull?.usersId));
     if (usersId == null) return const [];
 
-    return ref.read(wishlistServiceProvider).fetchWishlistPlaces();
+    return ref.read(wishlistServiceProvider).fetchPlaces();
   }
 
   Future<void> refresh() async {
     state = const AsyncLoading();
-    state = await AsyncValue.guard(() => ref.read(wishlistServiceProvider).fetchWishlistPlaces());
+    state = await AsyncValue.guard(() => ref.read(wishlistServiceProvider).fetchPlaces());
   }
 
   void removeLocally(int placesId) {

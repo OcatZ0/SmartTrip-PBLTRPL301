@@ -7,7 +7,14 @@ import 'catalog_photo.dart';
 import 'place_bits.dart';
 
 class PlaceGridCard extends StatelessWidget {
-  const PlaceGridCard({super.key, required this.place, required this.isSaved, required this.onToggleSaved, this.onTap});
+  const PlaceGridCard({
+    super.key,
+    required this.place,
+    required this.isSaved,
+    required this.onToggleSaved,
+    this.onTap,
+    this.pickedLabel,
+  });
 
   static const height = 232.0;
   static const _photoHeight = 118.0;
@@ -18,6 +25,10 @@ class PlaceGridCard extends StatelessWidget {
 
   /// Opens the place detail (B2).
   final VoidCallback? onTap;
+
+  /// Trip step 2: set when the place is in the trip wishlist ("Terpilih"),
+  /// which adds a badge on the photo and a blue border. Null in the catalog.
+  final String? pickedLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -30,9 +41,14 @@ class PlaceGridCard extends StatelessWidget {
       _ => l10n.catalogPriceFromLabel,
     };
 
+    final isPicked = pickedLabel != null;
+
     return Material(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: isPicked ? const BorderSide(color: AppColors.sea600, width: 2) : BorderSide.none,
+      ),
       clipBehavior: Clip.antiAlias,
       child: Stack(
         children: [
@@ -45,6 +61,26 @@ class PlaceGridCard extends StatelessWidget {
                   fit: StackFit.expand,
                   children: [
                     CatalogPhoto(place: place, iconSize: 32),
+                    if (isPicked)
+                      Positioned(
+                        left: 8,
+                        top: 8,
+                        child: Container(
+                          padding: const EdgeInsets.fromLTRB(6, 3, 9, 3),
+                          decoration: BoxDecoration(
+                            color: AppColors.sun400,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.check_rounded, size: 14, color: AppColors.navy900),
+                              const SizedBox(width: 3),
+                              Text(pickedLabel!, style: appText(11, FontWeight.w800, AppColors.navy900, height: 16)),
+                            ],
+                          ),
+                        ),
+                      ),
                     Positioned(
                       left: 8,
                       bottom: 8,

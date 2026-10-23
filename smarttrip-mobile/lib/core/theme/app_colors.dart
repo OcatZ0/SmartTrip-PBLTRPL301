@@ -14,15 +14,8 @@ class AppColors {
   static const line = Color(0xFFDBE2EC);
   static const ink = Color(0xFF14212F);
   static const inkMuted = Color(0xFF5D6B7C);
+  static const inkSoft = Color(0xFF3A4757);
   static const link = Color(0xFF1F5F99);
-
-  // Profile screen palette.
-  static const primary = Color(0xFF1B6CB0);
-  static const background = Color(0xFFF4F6FC);
-  static const textDark = Color(0xFF14284B);
-  static const textGrey = Color(0xFF6B7A90);
-  static const border = Color(0xFFD6DEEA);
-  static const danger = Color(0xFFD32F2F);
 
   static const cardShadow = [BoxShadow(color: Color(0x0F0A2440), offset: Offset(0, 4), blurRadius: 16)];
   static const floatShadow = [BoxShadow(color: Color(0x590A2440), offset: Offset(0, 18), blurRadius: 40, spreadRadius: -12)];

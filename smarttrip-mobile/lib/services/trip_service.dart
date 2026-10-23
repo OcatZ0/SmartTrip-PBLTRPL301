@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/api/api_client.dart';
 import '../core/api/providers.dart';
 import '../core/error/api_failure.dart';
+import '../models/saved_trip.dart';
 import '../models/trip.dart';
 import 'visit_sync.dart';
 
@@ -22,6 +23,7 @@ class TripService {
   Dio get _dio => _apiClient.dio;
 
   Future<int> createTrip({
+    String? title,
     required int numDays,
     required int budgetTotal,
     required DateTime startDate,
@@ -31,6 +33,7 @@ class TripService {
     final body = await _call(() => _dio.post<Map<String, dynamic>>(
           '/trips',
           data: {
+            if (title != null) 'title': title,
             'num_days': numDays,
             'budget_total': budgetTotal,
             'start_date': _formatDate(startDate),
@@ -43,6 +46,7 @@ class TripService {
 
   Future<void> updateTrip(
     int tripsId, {
+    String? title,
     required int numDays,
     required int budgetTotal,
     required DateTime startDate,
@@ -52,6 +56,7 @@ class TripService {
     await _call(() => _dio.patch<Map<String, dynamic>>(
           '/trips/$tripsId',
           data: {
+            if (title != null) 'title': title,
             'num_days': numDays,
             'budget_total': budgetTotal,
             'start_date': _formatDate(startDate),
@@ -128,6 +133,26 @@ class TripService {
         ));
   }
 
+  /// One day's start and/or end (detail mode). [start] / [end] are a
+  /// `{places_id}` or `{custom_name, custom_lat, custom_lng}` point; with
+  /// [resetEnd] the day ends where it starts again. A day with stops gets its
+  /// route recomputed by the server.
+  Future<void> setDayPoints(
+    int tripsId,
+    int dayNumber, {
+    Map<String, dynamic>? start,
+    Map<String, dynamic>? end,
+    bool resetEnd = false,
+  }) async {
+    await _call(() => _dio.put<Map<String, dynamic>>(
+          '/trips/$tripsId/days/$dayNumber/points',
+          data: {
+            if (start != null) 'start': start,
+            if (end != null) 'end': end else if (resetEnd) 'end': null,
+          },
+        ));
+  }
+
   Future<void> setCustomHotel(
     int tripsId, {
     required String name,
@@ -157,6 +182,48 @@ class TripService {
         .toList();
   }
 
+  /// Trip Tersimpan: the user's own trips with each card's summary (status,
+  /// progress, photos), newest first.
+  Future<List<TripModel>> fetchSavedTrips() async {
+    final body = await _call(() => _dio.get<Map<String, dynamic>>('/trips', queryParameters: {'per_page': 50}));
+    return (body['data'] as List? ?? const [])
+        .cast<Map<String, dynamic>>()
+        .map(TripModel.fromJson)
+        .toList();
+  }
+
+  /// Step C2: the trip's wishlist, catalog places and custom pins.
+  Future<List<TripWishlistItem>> fetchTripWishlist(int tripsId) async {
+    final body = await _call(() => _dio.get<Map<String, dynamic>>('/trips/$tripsId/wishlist'));
+    return (body['data'] as List? ?? const [])
+        .cast<Map<String, dynamic>>()
+        .map(TripWishlistItem.fromJson)
+        .toList();
+  }
+
+  /// Adds a pin dropped on the map, with how long the user plans to stay.
+  Future<void> addCustomPinToTripWishlist(
+    int tripsId, {
+    required String name,
+    required double lat,
+    required double lng,
+    required int visitMinutes,
+  }) async {
+    await _call(() => _dio.post<Map<String, dynamic>>(
+          '/trips/$tripsId/wishlist',
+          data: {
+            'custom_name': name,
+            'custom_lat': lat,
+            'custom_lng': lng,
+            'custom_visit_minutes': visitMinutes,
+          },
+        ));
+  }
+
+  Future<void> removeFromTripWishlist(int tripsId, int wishlistItemId) async {
+    await _call(() => _dio.delete<Map<String, dynamic>>('/trips/$tripsId/wishlist/$wishlistItemId'));
+  }
+
   /// Adds a catalog place to a trip's wishlist; false when it was already
   /// there (the API answers 200 instead of 201).
   Future<bool> addPlaceToTripWishlist(int tripsId, int placesId) async {
@@ -169,6 +236,40 @@ class TripService {
     } on DioException catch (error) {
       throw ApiFailure.fromDioException(error);
     }
+  }
+
+  /// Ranked replacements for one stop (D2), best first.
+  Future<List<TripPlace>> fetchSwapCandidates(int itineraryItemsId) async {
+    final body = await _call(() => _dio.get<Map<String, dynamic>>(
+          '/itinerary-items/$itineraryItemsId/swap-candidates',
+        ));
+    return (body['data'] as List? ?? const [])
+        .cast<Map<String, dynamic>>()
+        .map(TripPlace.fromJson)
+        .toList();
+  }
+
+  /// Any catalog place except hotels, for the D2 "Cari Manual" tab.
+  Future<List<TripPlace>> searchPlaces(String query) async {
+    final body = await _call(() => _dio.get<Map<String, dynamic>>(
+          '/places',
+          queryParameters: {
+            if (query.trim().isNotEmpty) 'search': query.trim(),
+            'per_page': 20,
+          },
+        ));
+    return (body['data'] as List)
+        .cast<Map<String, dynamic>>()
+        .map(TripPlace.fromJson)
+        .where((place) => place.type != 'lodging')
+        .toList();
+  }
+
+  Future<void> swapItineraryItem(int itineraryItemsId, int placesId) async {
+    await _call(() => _dio.patch<Map<String, dynamic>>(
+          '/itinerary-items/$itineraryItemsId',
+          data: {'places_id': placesId},
+        ));
   }
 
   Future<Trip> fetchTrip(int tripsId) async {

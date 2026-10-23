@@ -1,5 +1,8 @@
-// Domain model statis untuk fitur Trip Tersimpan
+import 'dart:math' as math;
 
+import '../core/config/app_config.dart';
+
+/// Where a saved trip stands, from `summary.status` of `GET /api/trips`.
 enum TripStatus {
   berlangsung,
   akanDatang,
@@ -18,36 +21,77 @@ enum TripStatus {
         return 'Draft';
     }
   }
+
+  static TripStatus fromApi(String? value) => switch (value) {
+        'berlangsung' => TripStatus.berlangsung,
+        'akan_datang' => TripStatus.akanDatang,
+        'selesai' => TripStatus.selesai,
+        _ => TripStatus.draft,
+      };
 }
 
+/// One card on Trip Tersimpan: a trip of `GET /api/trips` with its summary.
 class TripModel {
   const TripModel({
     required this.id,
     required this.title,
     required this.status,
-    required this.dateRange,
-    required this.numPersons,
-    required this.numDestinations,
-    this.numDays = 1,
+    required this.numDays,
+    this.startDate,
     this.currentDay = 1,
+    this.numDestinations = 0,
     this.visitedCount = 0,
     this.budgetSpent = 0,
     this.budgetTotal = 0,
     this.wishlistCount = 0,
+    this.photoUrls = const [],
   });
+
+  factory TripModel.fromJson(Map<String, dynamic> json) {
+    final summary = (json['summary'] as Map?)?.cast<String, dynamic>() ?? const {};
+    int toInt(Object? value) => (value as num?)?.toInt() ?? 0;
+
+    return TripModel(
+      id: json['trips_id'] as int,
+      title: (json['title'] as String?)?.trim().isNotEmpty == true ? json['title'] as String : 'Trip tanpa judul',
+      status: TripStatus.fromApi(summary['status'] as String?),
+      numDays: toInt(json['num_days']),
+      startDate: DateTime.tryParse('${json['start_date'] ?? ''}'),
+      currentDay: math.max(1, toInt(summary['current_day'])),
+      numDestinations: toInt(summary['places_count']),
+      visitedCount: toInt(summary['visited_count']),
+      budgetSpent: toInt(summary['spent_estimate_idr']),
+      budgetTotal: toInt(json['budget_total']),
+      wishlistCount: toInt(summary['wishlist_count']),
+      photoUrls: (summary['photo_urls'] as List? ?? const [])
+          .map((url) => AppConfig.resolveMediaUrl(url?.toString()))
+          .whereType<String>()
+          .toList(),
+    );
+  }
 
   final int id;
   final String title;
   final TripStatus status;
-  final String dateRange;
-  final int numPersons;
-  final int numDestinations;
   final int numDays;
+  final DateTime? startDate;
+
+  /// The trip day today is, while the trip is on.
   final int currentDay;
+
+  /// Stops in the generated itinerary.
+  final int numDestinations;
   final int visitedCount;
+
+  /// Estimated cost of the visited places (the app does not track real spending).
   final int budgetSpent;
   final int budgetTotal;
   final int wishlistCount;
+
+  /// Photos of up to four places in the trip, shown as the card's mosaic.
+  final List<String> photoUrls;
+
+  DateTime? get endDate => startDate?.add(Duration(days: (numDays < 1 ? 1 : numDays) - 1));
 
   /// Format Rp1.850.000
   static String rupiahFormat(int amount) {
@@ -64,67 +108,4 @@ class TripModel {
 
   String get budgetSpentLabel => rupiahFormat(budgetSpent);
   String get budgetTotalLabel => rupiahFormat(budgetTotal);
-}
-
-/// Data statis
-class TripData {
-  static const List<TripModel> mockTrips = [
-    // ─── TAB: BERLANGSUNG ─────────────────────────────
-    TripModel(
-      id: 1,
-      title: 'Wisata Batam – Long Weekend',
-      status: TripStatus.berlangsung,
-      dateRange: '12–14 Sep 2026',
-      numPersons: 4,
-      numDestinations: 6,
-      numDays: 3,
-      currentDay: 2,
-      visitedCount: 3,
-      budgetSpent: 1850000,
-      budgetTotal: 2500000,
-    ),
-
-    // ─── TAB: AKAN DATANG ─────────────────────────────
-    TripModel(
-      id: 2,
-      title: 'Trip Kuliner & Pantai',
-      status: TripStatus.akanDatang,
-      dateRange: '28–29 Sep 2026',
-      numPersons: 2,
-      numDestinations: 5,
-      numDays: 2,
-      currentDay: 1,
-      budgetTotal: 1200000,
-    ),
-
-    // ─── TAB: SELESAI ─────────────────────────────────
-    TripModel(
-      id: 3,
-      title: 'Explore Batam Bersama Keluarga',
-      status: TripStatus.selesai,
-      dateRange: '2–4 Agu 2026',
-      numPersons: 5,
-      numDestinations: 7,
-      numDays: 3,
-      currentDay: 3,
-      visitedCount: 7,
-      budgetSpent: 3100000,
-      budgetTotal: 3500000,
-    ),
-
-    // ─── TAB: DRAFT ───────────────────────────────────
-    TripModel(
-      id: 4,
-      title: 'Trip ke Nagoya & Sekitarnya',
-      status: TripStatus.draft,
-      dateRange: 'Tanggal belum ditentukan',
-      numPersons: 2,
-      numDestinations: 3,
-      numDays: 1,
-      wishlistCount: 3,
-    ),
-  ];
-
-  static List<TripModel> byStatus(TripStatus status) =>
-      mockTrips.where((t) => t.status == status).toList();
 }

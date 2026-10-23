@@ -3,10 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\ItineraryDay;
+use App\Models\ItineraryItem;
 use App\Models\Trip;
 use App\Services\Itinerary\HotelRecommender;
 use App\Services\Itinerary\ItineraryGenerator;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -20,20 +23,85 @@ use RuntimeException;
 class TripController extends Controller
 {
     /**
+     * Places whose photos the Trip Tersimpan card shows, at most.
+     */
+    private const CARD_PHOTO_LIMIT = 4;
+
+    /**
      * F011: daftar trip yang pernah dibuat user login - punya sendiri saja
      * (bukan yang dibagikan ke dia - itu GET /api/trips/shared, F016).
-     * Terurut trip terbaru dulu.
+     * Terurut trip terbaru dulu. Each trip also carries a "summary" for the
+     * Trip Tersimpan card (see tripSummary()).
      */
     public function index(Request $request)
     {
         $perPage = min(max((int) $request->integer('per_page', 20), 1), 50);
 
         $trips = $request->user()->trips()
-            ->withCount('days')
+            ->withCount(['days as days_count' => fn ($days) => $days->whereHas('items')])
+            ->with([
+                'days' => fn ($days) => $days->orderBy('day_number'),
+                'days.items' => fn ($items) => $items->orderBy('visit_order'),
+                'days.items.place:places_id,photo_url,estimated_cost_idr',
+                'wishlistPlaces.place:places_id,photo_url',
+            ])
             ->orderByDesc('created_at')
             ->paginate($perPage);
 
+        // Trip dates are Batam dates.
+        $today = now('Asia/Jakarta')->startOfDay();
+        $trips->getCollection()->transform(function (Trip $trip) use ($today) {
+            $trip->setAttribute('summary', $this->tripSummary($trip, $today));
+
+            // Loaded only for the summary; the list stays as light as before.
+            return $trip->unsetRelation('days')->unsetRelation('wishlistPlaces');
+        });
+
         return response()->json($trips);
+    }
+
+    /**
+     * What the Trip Tersimpan card shows for one trip:
+     * - status: "draft" until an itinerary is generated, then "akan_datang",
+     *   "berlangsung" or "selesai" from start_date and num_days (Batam time)
+     * - current_day: the trip day today is, only while "berlangsung"
+     * - places_count and visited_count: itinerary stops and those marked visited
+     * - wishlist_count: places in the trip wishlist
+     * - spent_estimate_idr: the estimated cost of the visited places (a guess
+     *   from places.estimated_cost_idr; the app does not track real spending)
+     * - photo_urls: up to four place photos, itinerary order first, then the wishlist
+     */
+    private function tripSummary(Trip $trip, Carbon $today): array
+    {
+        $items = $trip->days->flatMap->items;
+        $start = $trip->start_date ? Carbon::parse($trip->start_date->toDateString(), 'Asia/Jakarta') : null;
+        $end = $start?->copy()->addDays(max(1, (int) $trip->num_days) - 1);
+
+        $status = match (true) {
+            $items->isEmpty() || $start === null => 'draft',
+            $today->lt($start) => 'akan_datang',
+            $today->gt($end) => 'selesai',
+            default => 'berlangsung',
+        };
+
+        $photos = $items->map(fn ($item) => $item->place?->photo_url)
+            ->merge($trip->wishlistPlaces->map(fn ($wishlist) => $wishlist->place?->photo_url))
+            ->filter()
+            ->unique()
+            ->take(self::CARD_PHOTO_LIMIT)
+            ->values();
+
+        $visited = $items->whereNotNull('visited_at');
+
+        return [
+            'status' => $status,
+            'current_day' => $status === 'berlangsung' ? (int) $start->diffInDays($today) + 1 : null,
+            'places_count' => $items->count(),
+            'visited_count' => $visited->count(),
+            'wishlist_count' => $trip->wishlistPlaces->count(),
+            'spent_estimate_idr' => (int) $visited->sum(fn ($item) => $item->place?->estimated_cost_idr ?? 0),
+            'photo_urls' => $photos->all(),
+        ];
     }
 
     /**
@@ -46,7 +114,7 @@ class TripController extends Controller
         $perPage = min(max((int) $request->integer('per_page', 20), 1), 50);
 
         $trips = $request->user()->sharedTrips()
-            ->withCount('days')
+            ->withCount(['days as days_count' => fn ($days) => $days->whereHas('items')])
             ->orderByDesc('trip_viewers.added_at')
             ->paginate($perPage);
 
@@ -76,6 +144,7 @@ class TripController extends Controller
                 'daily_end_time' => $data['daily_end_time'] ?? null,
             ]),
         ]);
+        $trip->syncDays();
 
         return response()->json($trip, 201);
     }
@@ -87,17 +156,34 @@ class TripController extends Controller
         }
 
         // Hasil itinerary (D1) dan peta live (E1) butuh nama/koordinat/foto
-        // tiap stop dan hotel sekaligus, tanpa satu request per tempat.
+        // tiap stop dan titik awal/akhir tiap hari sekaligus.
+        return response()->json($this->withDays($trip));
+    }
+
+    /**
+     * The trip with its days, stops and where each day starts and ends
+     * (start / end: the day's own point, its end falling back to its start).
+     */
+    private function withDays(Trip $trip): Trip
+    {
         $placeColumns = 'places_id,name,type,lat,lng,address,kecamatan,photo_url,estimated_visit_minutes,is_outdoor';
 
         $trip->load([
             'days' => fn ($dayQuery) => $dayQuery->orderBy('day_number'),
             'days.items' => fn ($itemQuery) => $itemQuery->orderBy('visit_order'),
             "days.items.place:{$placeColumns}",
-            "hotelPlace:{$placeColumns}",
+            'days.startPlace:places_id,name,lat,lng',
+            'days.endPlace:places_id,name,lat,lng',
         ]);
 
-        return response()->json($trip);
+        $trip->days->each(function (ItineraryDay $day) {
+            $day->setAttribute('start', $day->startPoint());
+            $day->setAttribute('end', $day->endPoint());
+            $day->setAttribute('has_own_end', $day->hasOwnEnd());
+            $day->makeHidden(['startPlace', 'endPlace']);
+        });
+
+        return $trip;
     }
 
     /**
@@ -147,36 +233,125 @@ class TripController extends Controller
     /**
      * F008 langkah 4: set hotel - dari katalog (places_id) atau custom pin.
      */
-    public function hotel(Request $request, Trip $trip)
+    public function hotel(Request $request, Trip $trip, ItineraryGenerator $generator)
     {
         if (! $trip->isOwnedBy($request->user())) {
             abort(403);
         }
 
-        $hasPlacesId = $request->filled('places_id');
+        $point = $this->pointColumns('start', $this->validatedPoint($request, ''));
 
-        $data = $request->validate([
-            'places_id' => ['nullable', 'integer', Rule::exists('places', 'places_id')->whereNull('deleted_at')],
-            'custom_name' => ['required_without:places_id', new ProhibitedIf($hasPlacesId), 'string', 'max:255'],
-            'custom_lat' => ['required_without:places_id', new ProhibitedIf($hasPlacesId), 'numeric', 'between:-90,90'],
-            'custom_lng' => ['required_without:places_id', new ProhibitedIf($hasPlacesId), 'numeric', 'between:-180,180'],
-        ]);
+        // Simple mode: every day starts and ends at this one hotel.
+        DB::transaction(function () use ($trip, $point) {
+            $trip->syncDays();
+            $trip->days()->update([
+                ...$point,
+                ...array_fill_keys(ItineraryDay::END_COLUMNS, null),
+            ]);
+        });
 
-        if (! empty($data['places_id'])) {
-            $trip->update([
-                'hotel_places_id' => $data['places_id'],
-                'hotel_custom_name' => null, 'hotel_lat' => null, 'hotel_lng' => null,
-            ]);
-        } else {
-            $trip->update([
-                'hotel_places_id' => null,
-                'hotel_custom_name' => $data['custom_name'],
-                'hotel_lat' => $data['custom_lat'],
-                'hotel_lng' => $data['custom_lng'],
-            ]);
+        $this->resequenceDaysWithStops($trip, $generator);
+
+        return response()->json($this->withDays($trip->fresh()));
+    }
+
+    /**
+     * Detail mode: where one day starts and ends. "end": null makes the day
+     * end where it starts. A day that already has stops gets its route
+     * recomputed; its places stay.
+     */
+    public function dayPoints(Request $request, Trip $trip, int $dayNumber, ItineraryGenerator $generator)
+    {
+        if (! $trip->isOwnedBy($request->user())) {
+            abort(403);
         }
 
-        return response()->json($trip->fresh());
+        if ($dayNumber < 1 || $dayNumber > $trip->num_days) {
+            abort(404, 'Hari tidak ditemukan.');
+        }
+
+        $request->validate([
+            'start' => ['sometimes', 'array'],
+            'end' => ['sometimes', 'nullable', 'array'],
+        ]);
+
+        $changes = [];
+        if ($request->has('start')) {
+            $changes += $this->pointColumns('start', $this->validatedPoint($request, 'start.'));
+        }
+        if ($request->has('end')) {
+            $changes += $request->input('end') === null
+                ? array_fill_keys(ItineraryDay::END_COLUMNS, null)
+                : $this->pointColumns('end', $this->validatedPoint($request, 'end.'));
+        }
+
+        $trip->syncDays();
+        $day = $trip->days()->where('day_number', $dayNumber)->firstOrFail();
+        $day->update($changes);
+
+        if ($day->items()->exists()) {
+            $this->resequence($generator, $trip, $day);
+        }
+
+        return response()->json($this->withDays($trip->fresh()));
+    }
+
+    /**
+     * A catalog place or a custom pin, under $prefix ("" for the top level,
+     * "start." / "end." for a day point).
+     *
+     * @return array{places_id?: int, custom_name?: string, custom_lat?: float, custom_lng?: float}
+     */
+    private function validatedPoint(Request $request, string $prefix): array
+    {
+        $hasPlacesId = $request->filled($prefix.'places_id');
+
+        $data = $request->validate([
+            $prefix.'places_id' => ['nullable', 'integer', Rule::exists('places', 'places_id')->whereNull('deleted_at')],
+            $prefix.'custom_name' => ['required_without:'.$prefix.'places_id', new ProhibitedIf($hasPlacesId), 'string', 'max:255'],
+            $prefix.'custom_lat' => ['required_without:'.$prefix.'places_id', new ProhibitedIf($hasPlacesId), 'numeric', 'between:-90,90'],
+            $prefix.'custom_lng' => ['required_without:'.$prefix.'places_id', new ProhibitedIf($hasPlacesId), 'numeric', 'between:-180,180'],
+        ]);
+
+        return $prefix === '' ? $data : ($data[rtrim($prefix, '.')] ?? []);
+    }
+
+    /**
+     * @return array<string, mixed> the start_* or end_* columns for $point
+     */
+    private function pointColumns(string $side, array $point): array
+    {
+        if (! empty($point['places_id'])) {
+            return [
+                "{$side}_places_id" => $point['places_id'],
+                "{$side}_custom_name" => null, "{$side}_lat" => null, "{$side}_lng" => null,
+            ];
+        }
+
+        return [
+            "{$side}_places_id" => null,
+            "{$side}_custom_name" => $point['custom_name'],
+            "{$side}_lat" => $point['custom_lat'],
+            "{$side}_lng" => $point['custom_lng'],
+        ];
+    }
+
+    private function resequenceDaysWithStops(Trip $trip, ItineraryGenerator $generator): void
+    {
+        $trip->days()->whereHas('items')->get()->each(fn (ItineraryDay $day) => $this->resequence($generator, $trip, $day));
+    }
+
+    /**
+     * A failed route call leaves the day's order as it was; the new start and
+     * end are already saved and the next generate uses them.
+     */
+    private function resequence(ItineraryGenerator $generator, Trip $trip, ItineraryDay $day): void
+    {
+        try {
+            $generator->resequenceDay($trip, $day);
+        } catch (RuntimeException) {
+            // OpenRouteService unreachable or over quota.
+        }
     }
 
     /**
@@ -291,9 +466,16 @@ class TripController extends Controller
             $structuralChanged = collect($structural)->contains(fn ($field) => $trip->isDirty($field));
             $trip->save();
 
-            if ($structuralChanged && $trip->days()->exists()) {
-                $trip->days()->delete();
+            // The day rows stay with their start and end points; only the
+            // stops go, and the app generates again.
+            if ($structuralChanged && $trip->days()->whereHas('items')->exists()) {
+                ItineraryItem::whereIn('itinerary_days_id', $trip->days()->select('itinerary_days_id'))->delete();
+                $trip->days()->update(['polyline_to_end' => null]);
                 $itineraryCleared = true;
+            }
+
+            if ($trip->wasChanged('num_days')) {
+                $trip->syncDays();
             }
         });
 

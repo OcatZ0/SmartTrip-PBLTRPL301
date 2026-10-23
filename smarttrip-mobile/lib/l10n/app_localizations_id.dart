@@ -317,6 +317,49 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
+  String get tripNameLabel => 'Nama Trip';
+
+  @override
+  String get tripNameHint => 'Biar mudah dikenali di Trip Tersimpan';
+
+  @override
+  String tripNameDefault(String dates) {
+    return 'Trip Batam $dates';
+  }
+
+  @override
+  String tripHoursPerDay(int hours) {
+    return '$hours jam per hari';
+  }
+
+  @override
+  String get tripScheduleLabel => 'Tanggal & durasi';
+
+  @override
+  String get tripScheduleHint => 'Ketuk tanggal mulai, lalu tanggal selesai.';
+
+  @override
+  String get tripDailyHoursLabel => 'Jam jalan-jalan per hari';
+
+  @override
+  String get tripDailyHoursHint => 'Pilih rekomendasi atau atur sendiri.';
+
+  @override
+  String get tripShortDayWarning =>
+      'Kurang dari 4 jam: tiap hari hanya muat sedikit tempat.';
+
+  @override
+  String get tripStartDateShort => 'Mulai';
+
+  @override
+  String get tripEndDateShort => 'Selesai';
+
+  @override
+  String tripBudgetPerDay(String amount) {
+    return '≈ Rp$amount per hari';
+  }
+
+  @override
   String get tripSetupHeader => 'Atur Trip';
 
   @override
@@ -325,12 +368,6 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get tripSetupSubtitle =>
       'Beri tahu preferensimu, kami susunkan itinerary terbaik.';
-
-  @override
-  String get tripDurationLabel => 'Durasi Perjalanan';
-
-  @override
-  String get tripDurationHint => 'Berapa lama liburan di Batam?';
 
   @override
   String get tripDurationDecrease => 'Kurangi durasi';
@@ -380,12 +417,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get validationBudgetRequired => 'Anggaran harus lebih dari 0';
 
   @override
-  String get tripDateLabel => 'Tanggal Mulai & Selesai';
-
-  @override
-  String get tripDateHint => 'Waktu pelesiran di pulau';
-
-  @override
   String get tripStartTimeLabel => 'Jam Mulai';
 
   @override
@@ -406,7 +437,7 @@ class AppLocalizationsId extends AppLocalizations {
       ' Waktu terbaik tiba di Batam Centre adalah sebelum jam 10:00 WIB agar itinerary maksimal.';
 
   @override
-  String get tripSetupNext => 'Lanjut ke Wishlist (2/4)';
+  String get tripSetupNext => 'Lanjut ke wishlist';
 
   @override
   String get tripCancelTitle => 'Batalkan pembuatan trip?';
@@ -421,11 +452,58 @@ class AppLocalizationsId extends AppLocalizations {
   String get tripCancelConfirm => 'Batalkan';
 
   @override
-  String get tripWishlistHeader => 'Susun Wishlist';
+  String get tripWishlistSearchHint => 'Cari pantai, kuliner, museum...';
 
   @override
-  String get tripWishlistComingSoon =>
-      'Penyusunan wishlist sedang disiapkan. Kamu tetap bisa lanjut, sistem akan memilihkan tempat terbaik untukmu.';
+  String get tripWishlistNoResults => 'Tidak ada tempat yang cocok.';
+
+  @override
+  String get tripWishlistPin => 'Pin di peta';
+
+  @override
+  String tripWishlistRemove(String name) {
+    return 'Hapus $name dari wishlist trip';
+  }
+
+  @override
+  String get tripWishlistVisitLength => 'Lama kunjungan';
+
+  @override
+  String get tripWishlistVisitLengthHint => 'Berapa lama kamu di tempat ini?';
+
+  @override
+  String get tripWishlistSave => 'Simpan';
+
+  @override
+  String get tripWishlistSummaryPlaces => 'Tempat';
+
+  @override
+  String get tripWishlistSummaryVisit => 'Total kunjungan';
+
+  @override
+  String tripWishlistHours(String hours) {
+    return '±$hours jam';
+  }
+
+  @override
+  String get tripWishlistActionFailed =>
+      'Wishlist trip gagal diperbarui, coba lagi.';
+
+  @override
+  String get tripWishlistPicked => 'Terpilih';
+
+  @override
+  String get tripWishlistPageTitle => 'Tambahkan Tempat Favoritmu';
+
+  @override
+  String get tripWishlistPageSubtitle =>
+      'Ketuk tempat yang wajib dikunjungi dalam liburan ini (opsional).';
+
+  @override
+  String get tripWishlistPins => 'Pin sendiri';
+
+  @override
+  String get tripWishlistHeader => 'Susun Wishlist';
 
   @override
   String get tripWishlistNext => 'Lanjut ke Minat & Prioritas (3/4)';
@@ -710,6 +788,16 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
+  String itineraryDayShort(int day) {
+    return 'Hari $day';
+  }
+
+  @override
+  String itineraryStopsCount(int count) {
+    return '$count tempat';
+  }
+
+  @override
   String get itineraryUnknownPlace => 'Tempat tidak tersedia';
 
   @override
@@ -946,4 +1034,561 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get detailAreaIndoor => 'Dalam ruangan';
+
+  @override
+  String get profileInterests => 'Minat kamu';
+
+  @override
+  String get profileInterestsHint => 'Dipilih otomatis setiap buat trip baru.';
+
+  @override
+  String get profilePriorities => 'Prioritas rute';
+
+  @override
+  String get profileWeightInterest => 'Sesuai minat';
+
+  @override
+  String get profileWeightInterestHint =>
+      'Utamakan tempat dengan kategori pilihanmu';
+
+  @override
+  String get profileWeightDistance => 'Jarak & waktu tempuh';
+
+  @override
+  String get profileWeightDistanceHint => 'Utamakan tempat yang berdekatan';
+
+  @override
+  String get profileWeightBudget => 'Hemat biaya';
+
+  @override
+  String get profileWeightBudgetHint => 'Utamakan tempat murah atau gratis';
+
+  @override
+  String get profileWeightRating => 'Rating tempat';
+
+  @override
+  String get profileWeightRatingHint => 'Utamakan tempat dengan ulasan bagus';
+
+  @override
+  String get profileNeedInterest => 'Pilih minimal satu minat.';
+
+  @override
+  String get profileLoadFailed => 'Preferensi gagal dimuat.';
+
+  @override
+  String get profileChangePassword => 'Ganti kata sandi';
+
+  @override
+  String get profileLanguage => 'Bahasa';
+
+  @override
+  String get profileLanguageName => 'Indonesia';
+
+  @override
+  String get profileLogout => 'Keluar';
+
+  @override
+  String get profileLogoutTitle => 'Keluar dari akun?';
+
+  @override
+  String get profileLogoutBody =>
+      'Kamu perlu masuk lagi untuk membuka trip-mu.';
+
+  @override
+  String get profilePasswordCurrent => 'Kata sandi saat ini';
+
+  @override
+  String get profilePasswordNew => 'Kata sandi baru';
+
+  @override
+  String get profilePasswordConfirm => 'Ulangi kata sandi baru';
+
+  @override
+  String get profilePasswordSubmit => 'Simpan kata sandi';
+
+  @override
+  String get profileEyebrow => 'PROFIL';
+
+  @override
+  String get profileHeadline => 'Atur trip sesuai gayamu';
+
+  @override
+  String get profilePasswordGoogleOnly =>
+      'Akunmu dibuat lewat Google, jadi belum punya kata sandi. Buat kata sandi di sini supaya bisa masuk juga dengan email.';
+
+  @override
+  String get swapTitle => 'Ganti Tempat';
+
+  @override
+  String swapSubtitle(String name) {
+    return 'Pilih pengganti untuk $name.';
+  }
+
+  @override
+  String swapRainSubtitle(String name) {
+    return 'Hari ini diprediksi hujan. Tempat dalam ruangan untuk mengganti $name ada di atas.';
+  }
+
+  @override
+  String get swapTabRecommended => 'Rekomendasi';
+
+  @override
+  String get swapTabSearch => 'Cari Manual';
+
+  @override
+  String get swapSearchHint => 'Cari nama tempat';
+
+  @override
+  String get swapEmpty => 'Belum ada tempat pengganti yang cocok.';
+
+  @override
+  String get swapIndoor => 'Dalam ruangan';
+
+  @override
+  String get swapOutdoor => 'Luar ruangan';
+
+  @override
+  String get placeSheetTooltip => 'Detail tempat';
+
+  @override
+  String get placeSheetCustomPin => 'Pin yang kamu pasang sendiri di peta.';
+
+  @override
+  String get swapCurrentBadge => 'Tempat yang diganti';
+
+  @override
+  String swapDaySubtitle(int day) {
+    return 'Jadwal Hari $day';
+  }
+
+  @override
+  String get swapFilterNear => 'Dekat (< 3 km)';
+
+  @override
+  String get swapFilterRating => 'Rating 4.5+';
+
+  @override
+  String get swapFilterCheap => 'Hemat (≤ Rp50rb)';
+
+  @override
+  String get swapEngineTitle => 'Pengganti Cerdas';
+
+  @override
+  String get swapEngineBody =>
+      'Diurutkan dari minat, jarak, anggaran dan rating trip-mu. Tempat yang tutup di hari ini tidak ikut.';
+
+  @override
+  String get swapBestTitle => 'Pilihan Alternatif Terbaik';
+
+  @override
+  String get swapSortedBy => 'Diurutkan: Paling Pas';
+
+  @override
+  String get swapSearchResults => 'Hasil Pencarian';
+
+  @override
+  String swapMatch(int percent) {
+    return 'Cocok $percent%';
+  }
+
+  @override
+  String get swapTopPick => 'Rekomendasi Utama';
+
+  @override
+  String get swapSummaryLabel => 'Ganti:';
+
+  @override
+  String get swapPickHint => 'Pilih tempat pengganti di atas';
+
+  @override
+  String get swapApply => 'Terapkan Penggantian';
+
+  @override
+  String get swapNoFilterResults =>
+      'Tidak ada tempat yang cocok dengan filter ini.';
+
+  @override
+  String get stopSheetDetail => 'Detail Tempat Wisata';
+
+  @override
+  String get stopSheetDetailHint =>
+      'Lihat deskripsi, fasilitas, tiket & ulasan';
+
+  @override
+  String get stopSheetSwap => 'Ganti Lokasi Wisata';
+
+  @override
+  String get stopSheetSwapHint =>
+      'Cari alternatif tempat wisata lain untuk jadwal ini';
+
+  @override
+  String get stopSheetMaps => 'Buka di Google Maps';
+
+  @override
+  String get stopSheetMapsHint => 'Petunjuk arah navigasi rute ke lokasi';
+
+  @override
+  String stopSheetFromYou(String km) {
+    return '± $km km dari lokasimu';
+  }
+
+  @override
+  String swapSlot(int order) {
+    return 'Tempat ke-$order hari ini';
+  }
+
+  @override
+  String swapDriveMinutes(int minutes) {
+    return '±$minutes mnt berkendara';
+  }
+
+  @override
+  String swapRouteShorter(String km, int minutes) {
+    return 'Rute hari ini lebih hemat ±$km km (±$minutes mnt).';
+  }
+
+  @override
+  String swapRouteLonger(String km, int minutes) {
+    return 'Rute hari ini bertambah ±$km km (±$minutes mnt).';
+  }
+
+  @override
+  String get swapRouteSame =>
+      'Searah dengan rute hari ini, jarak tempuh hampir sama.';
+
+  @override
+  String swapDeltaSave(String km) {
+    return 'Hemat $km km';
+  }
+
+  @override
+  String swapDeltaExtra(String km) {
+    return '+$km km';
+  }
+
+  @override
+  String get swapDeltaSame => '≈ sama';
+
+  @override
+  String swapDurationHours(int hours) {
+    return '$hours jam';
+  }
+
+  @override
+  String swapDurationHoursMinutes(int hours, int minutes) {
+    return '${hours}j ${minutes}m';
+  }
+
+  @override
+  String get swapBusyTitle => 'Mengganti tempat';
+
+  @override
+  String swapBusyMessage(String name, int day) {
+    return '$name masuk ke jadwal Hari $day dan rutenya disusun ulang. Tunggu sebentar ya.';
+  }
+
+  @override
+  String swapDone(String name) {
+    return 'Diganti dengan $name.';
+  }
+
+  @override
+  String get weatherClear => 'Cerah';
+
+  @override
+  String get weatherCloudy => 'Berawan';
+
+  @override
+  String get weatherFog => 'Berkabut';
+
+  @override
+  String get weatherRain => 'Hujan';
+
+  @override
+  String get weatherThunderstorm => 'Hujan petir';
+
+  @override
+  String weatherSummary(int min, int max, int chance) {
+    return '$min-$max°C · peluang hujan $chance%';
+  }
+
+  @override
+  String weatherRainWarning(int count) {
+    return 'Diprediksi hujan, ada $count tempat luar ruangan hari ini. Pertimbangkan menggantinya dengan tempat dalam ruangan.';
+  }
+
+  @override
+  String get weatherRainBadge => 'Hujan, ganti?';
+
+  @override
+  String weatherReminderTitle(String title) {
+    return 'Cek cuaca untuk $title';
+  }
+
+  @override
+  String get weatherReminderBody =>
+      'Trip kamu tinggal 7 hari lagi. Prakiraan cuaca sudah bisa dilihat di itinerary.';
+
+  @override
+  String get weatherReminderChannel => 'Pengingat cuaca';
+
+  @override
+  String get weatherReminderChannelDescription =>
+      'Pengingat cek prakiraan cuaca menjelang trip';
+
+  @override
+  String dayReminderTitle(String title, int day) {
+    return '$title: hari ke-$day';
+  }
+
+  @override
+  String dayReminderBody(int count, String first, String time) {
+    return '$count tempat menunggu hari ini, mulai dari $first pukul $time.';
+  }
+
+  @override
+  String get dayReminderChannel => 'Pengingat hari trip';
+
+  @override
+  String get dayReminderChannelDescription =>
+      'Pengingat di awal setiap hari trip';
+
+  @override
+  String get tripPaceRelaxed => 'Santai';
+
+  @override
+  String get tripPaceStandard => 'Standar';
+
+  @override
+  String get tripPacePacked => 'Padat';
+
+  @override
+  String get tripSummaryBudget => 'Anggaran';
+
+  @override
+  String get tripSummaryDuration => 'Durasi';
+
+  @override
+  String get tripSummaryHours => 'Jam harian';
+
+  @override
+  String liveMapDay(int day) {
+    return 'Hari $day';
+  }
+
+  @override
+  String liveMapProgress(int visited, int total) {
+    return '$visited dari $total tempat dikunjungi';
+  }
+
+  @override
+  String get liveMapStop => 'Hentikan';
+
+  @override
+  String get dayPointPinOnMap => 'Pin di peta';
+
+  @override
+  String get dayPointPinOnMapHint =>
+      'Untuk penginapan yang tidak ada di katalog';
+
+  @override
+  String get dayPointSearchTitle => 'Atau cari hotel';
+
+  @override
+  String get dayPointMainHotel => 'Hotel utama';
+
+  @override
+  String dayPointMainHotelCaption(String name) {
+    return 'Sama seperti hari lainnya: $name';
+  }
+
+  @override
+  String get dayPointSameAsStart => 'Sama dengan titik awal';
+
+  @override
+  String get dayPointSameAsStartCaption =>
+      'Hari ini pulang ke tempat berangkat';
+
+  @override
+  String dayPointStartTitle(int day) {
+    return 'Titik awal Hari $day';
+  }
+
+  @override
+  String dayPointEndTitle(int day) {
+    return 'Titik akhir Hari $day';
+  }
+
+  @override
+  String get dayPointStart => 'Mulai';
+
+  @override
+  String get dayPointEnd => 'Selesai';
+
+  @override
+  String get dayPointChange => 'Ganti';
+
+  @override
+  String dayPointEndAt(String name) {
+    return 'Selesai di $name';
+  }
+
+  @override
+  String get dayPointBusyTitle => 'Menghitung ulang rute';
+
+  @override
+  String dayPointBusyStart(int day) {
+    return 'Menyimpan titik awal Hari $day dan menyusun ulang rutenya. Tunggu sebentar ya.';
+  }
+
+  @override
+  String dayPointBusyEnd(int day) {
+    return 'Menyimpan titik akhir Hari $day dan menyusun ulang rutenya. Tunggu sebentar ya.';
+  }
+
+  @override
+  String get tripHotelBusyTitle => 'Menyimpan titik perjalanan';
+
+  @override
+  String get tripHotelBusySimple =>
+      'Hotel disimpan sebagai titik awal dan akhir setiap hari. Tunggu sebentar ya.';
+
+  @override
+  String get tripHotelBusyDetail =>
+      'Hotel dan titik awal/akhir tiap hari disimpan, rute tiap hari ikut disiapkan. Tunggu sebentar ya.';
+
+  @override
+  String dayPointSaved(int day) {
+    return 'Titik Hari $day disimpan, rutenya dihitung ulang.';
+  }
+
+  @override
+  String get tripHotelModeSimple => 'Simpel';
+
+  @override
+  String get tripHotelModeDetail => 'Detail';
+
+  @override
+  String get tripHotelModeSimpleHint =>
+      'Satu hotel untuk semua hari: berangkat dan pulang ke hotel yang sama.';
+
+  @override
+  String get tripHotelModeDetailHint =>
+      'Pindah hotel di tengah trip? Atur titik mulai dan selesai tiap hari di bawah.';
+
+  @override
+  String get tripHotelMainLabel => 'Hotel utama';
+
+  @override
+  String get tripHotelPerDayTitle => 'Titik mulai & selesai per hari';
+
+  @override
+  String get tripHotelPerDayHint =>
+      'Defaultnya hotel utama. Ganti hari yang berbeda saja.';
+
+  @override
+  String get tripHotelPickMainFirst => 'Pilih hotel utama dulu';
+
+  @override
+  String get wishlistEyebrow => 'KOLEKSIMU';
+
+  @override
+  String get wishlistTitle => 'Wishlist Saya';
+
+  @override
+  String get wishlistSearchHint => 'Cari di wishlist';
+
+  @override
+  String wishlistSavedCount(int count) {
+    return '$count tempat tersimpan';
+  }
+
+  @override
+  String get wishlistSortTitle => 'Urutkan';
+
+  @override
+  String get wishlistSortNewest => 'Baru disimpan';
+
+  @override
+  String get wishlistSortRating => 'Rating tertinggi';
+
+  @override
+  String get wishlistSortName => 'Nama (A-Z)';
+
+  @override
+  String get wishlistSortCost => 'Biaya terendah';
+
+  @override
+  String get wishlistSelect => 'Pilih banyak';
+
+  @override
+  String get wishlistSelectDone => 'Selesai';
+
+  @override
+  String wishlistSelectedCount(int count) {
+    return '$count dipilih';
+  }
+
+  @override
+  String get wishlistSelectHint =>
+      'Pilih tempat untuk dihapus atau dimasukkan ke trip';
+
+  @override
+  String get wishlistRemove => 'Hapus';
+
+  @override
+  String wishlistRemoved(String name) {
+    return '$name dihapus dari wishlist.';
+  }
+
+  @override
+  String get wishlistUndo => 'Batalkan';
+
+  @override
+  String wishlistRemovedMany(int count) {
+    return '$count tempat dihapus dari wishlist.';
+  }
+
+  @override
+  String wishlistRemoveFailed(int count) {
+    return '$count tempat gagal dihapus. Coba lagi.';
+  }
+
+  @override
+  String wishlistAddedMany(int count, String title) {
+    return '$count tempat ditambahkan ke wishlist $title.';
+  }
+
+  @override
+  String wishlistAddedManyNeedsRegenerate(int count, String title) {
+    return '$count tempat ditambahkan ke wishlist $title. Buat ulang itinerary-nya supaya tempat ini ikut dihitung.';
+  }
+
+  @override
+  String wishlistAddFailed(int count) {
+    return '$count tempat gagal ditambahkan.';
+  }
+
+  @override
+  String get wishlistGuestTitle => 'Masuk untuk melihat wishlist';
+
+  @override
+  String get wishlistGuestBody =>
+      'Tempat yang kamu simpan dengan ikon hati akan terkumpul di sini.';
+
+  @override
+  String get wishlistEmptyTitle => 'Wishlist masih kosong';
+
+  @override
+  String get wishlistEmptyBody =>
+      'Tekan ikon hati pada tempat di katalog untuk menyimpannya ke sini.';
+
+  @override
+  String get wishlistExplore => 'Jelajahi katalog';
+
+  @override
+  String get wishlistClearFilters => 'Hapus filter';
+
+  @override
+  String get wishlistLoadFailed => 'Wishlist gagal dimuat. Coba lagi.';
 }

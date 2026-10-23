@@ -8,7 +8,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/error/trip_error_message.dart';
-import '../../core/theme/app_tokens.dart';
+import '../../core/theme/app_colors.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/trip.dart';
 import '../../services/live_tracking_service.dart';
@@ -18,6 +18,9 @@ import '../../services/visit_sync.dart';
 import '../../widgets/load_error_view.dart';
 import '../../widgets/osm_tile_layers.dart';
 import '../../widgets/place_photo.dart';
+import '../../widgets/primary_button.dart';
+import '../../widgets/screen_header.dart';
+import '../trip/widgets/source_badge.dart';
 
 /// E1. Peta Live - Figma Mockup, node 114:354 (US6, US7, F012, F013).
 ///
@@ -37,9 +40,7 @@ class LiveMapScreen extends ConsumerStatefulWidget {
 }
 
 class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
-  static const _visitedColor = Color(0xFF9AA4B1);
-  static const _pendingColor = Color(0xFF16659A);
-  static const _selectedColor = Color(0xFF004C79);
+  static const _visitedLine = Color(0xFF9AA4B1);
   static const _userColor = Color(0xFF1A73E8);
 
   final _mapController = MapController();
@@ -193,10 +194,12 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
   }
 
   List<LatLng> _dayPoints(ItineraryDay day, TripHotel? hotel) {
+    final end = day.end;
     return [
       if (hotel != null) LatLng(hotel.lat, hotel.lng),
       for (final item in day.items)
         if (item.place != null) LatLng(item.place!.lat, item.place!.lng),
+      if (day.hasOwnEnd && end != null) LatLng(end.lat, end.lng),
     ];
   }
 
@@ -225,31 +228,37 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
           height: 34,
           child: Tooltip(
             message: hotel.name.isEmpty ? l10n.liveMapHotel : hotel.name,
-            child: const _PinBadge(label: 'H', background: Color(0xFF0B1C30), foreground: Colors.white),
+            child: const _PinBadge(icon: Icons.hotel_rounded, background: AppColors.sun400, foreground: AppColors.navy900),
           ),
         ),
       for (final item in day.items)
         if (item.place != null)
           Marker(
             point: LatLng(item.place!.lat, item.place!.lng),
-            width: 34,
-            height: 34,
+            width: 40,
+            height: 40,
             child: GestureDetector(
               onTap: () => setState(() => _selectedItemId = item.itineraryItemsId),
               onLongPress: () => _toggleVisit(item, l10n),
               child: _PinBadge(
-                label: item.isVisited ? '✓' : '${item.visitOrder}',
-                background: item.isVisited
-                    ? _visitedColor
-                    : item.itineraryItemsId == _selectedItemId
-                        ? _selectedColor
-                        : const Color(0xFFD3E4FE),
-                foreground: item.isVisited || item.itineraryItemsId == _selectedItemId
-                    ? Colors.white
-                    : _selectedColor,
+                label: '${item.visitOrder}',
+                icon: item.isVisited ? Icons.done_all_rounded : null,
+                background: item.isVisited ? AppColors.sea600 : AppColors.navy900,
+                foreground: Colors.white,
+                isSelected: item.itineraryItemsId == _selectedItemId,
               ),
             ),
           ),
+      if (day.hasOwnEnd && day.end != null)
+        Marker(
+          point: LatLng(day.end!.lat, day.end!.lng),
+          width: 34,
+          height: 34,
+          child: Tooltip(
+            message: day.end!.name,
+            child: const _PinBadge(icon: Icons.flag_rounded, background: AppColors.sun400, foreground: AppColors.navy900),
+          ),
+        ),
       if (position != null)
         Marker(
           point: position,
@@ -284,12 +293,27 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
         polylines.add(Polyline(
           points: points,
           strokeWidth: 5,
-          color: item.isVisited ? _visitedColor : _pendingColor,
+          color: item.isVisited ? _visitedLine : AppColors.sea600,
           // No road route stored: a dashed straight line marks the estimate.
           pattern: hasRoute ? const StrokePattern.solid() : StrokePattern.dashed(segments: const [16, 10]),
         ));
       }
       previous = destination;
+    }
+
+    // The way to where the day ends: the stored road route, or a dashed
+    // estimate when the day ends somewhere other than its start.
+    final end = day.end;
+    final toEnd = day.polylineToEnd;
+    if (end != null && previous != null && day.items.isNotEmpty && (toEnd != null || day.hasOwnEnd)) {
+      final hasRoute = toEnd != null && toEnd.isNotEmpty;
+      final allVisited = day.items.every((item) => item.isVisited);
+      polylines.add(Polyline(
+        points: hasRoute ? decodePolyline(toEnd) : [previous, LatLng(end.lat, end.lng)],
+        strokeWidth: 5,
+        color: allVisited ? _visitedLine : AppColors.sea600.withValues(alpha: 0.55),
+        pattern: hasRoute ? const StrokePattern.solid() : StrokePattern.dashed(segments: const [16, 10]),
+      ));
     }
     return polylines;
   }
@@ -297,40 +321,16 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final tokens = context.tokens;
     final tripState = ref.watch(tripDetailProvider(widget.tripsId));
 
     return Scaffold(
-      backgroundColor: tokens.screenBackground,
-      appBar: AppBar(
-        backgroundColor: Colors.white.withValues(alpha: 0.9),
-        surfaceTintColor: Colors.transparent,
-        titleSpacing: 0,
-        title: Row(
-          children: [
-            CircleAvatar(
-              radius: 14,
-              backgroundColor: _pendingColor,
-              child: const Icon(Icons.explore, size: 15, color: Colors.white),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(l10n.liveMapTitle, style: Theme.of(context).textTheme.labelLarge),
-                  Text(
-                    l10n.liveMapSubtitle(widget.dayNumber),
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(color: tokens.textSecondary),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+      backgroundColor: AppColors.surface,
+      appBar: ScreenHeader(
+        subtitle: l10n.liveMapTitle,
+        trailing: _HeaderPill(label: l10n.liveMapDay(widget.dayNumber)),
       ),
       body: tripState.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(child: CircularProgressIndicator(color: AppColors.sea600)),
         error: (error, _) => LoadErrorView(
           message: tripErrorMessage(error, l10n),
           onRetry: () => ref.invalidate(tripDetailProvider(widget.tripsId)),
@@ -345,14 +345,13 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
   }
 
   Widget _buildDay(Trip trip, ItineraryDay day, AppLocalizations l10n) {
-    final theme = Theme.of(context);
-    final tokens = context.tokens;
-    final hotel = trip.hotel;
+    final hotel = day.start;
     final isTracking = _tracking.isTracking(day.itineraryDaysId);
     final nextItem = day.items.where((item) => !item.isVisited).firstOrNull;
     final selected = day.items.where((item) => item.itineraryItemsId == _selectedItemId).firstOrNull ??
         nextItem ??
         day.items.firstOrNull;
+    final visited = day.items.where((item) => item.isVisited).length;
 
     unawaited(_resumeIfActive(trip, day, l10n));
 
@@ -378,6 +377,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
                   osmAttribution(),
                 ],
               ),
+              Positioned(left: 12, top: 12, child: _TrackingChip(isTracking: isTracking)),
               Positioned(
                 top: 12,
                 right: 12,
@@ -385,80 +385,78 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
                   color: Colors.white,
                   shape: const CircleBorder(),
                   elevation: 3,
+                  shadowColor: const Color(0x330A2440),
                   child: IconButton(
                     tooltip: l10n.liveMapCenter,
-                    icon: Icon(Icons.my_location, color: tokens.link, size: 20),
+                    icon: const Icon(Icons.my_location_rounded, color: AppColors.sea600, size: 20),
                     onPressed: () => _centerOnUser(day, hotel),
                   ),
                 ),
-              ),
-              Positioned(
-                left: 12,
-                top: 12,
-                child: _TrackingChip(isTracking: isTracking),
               ),
             ],
           ),
         ),
         Expanded(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(14, 16, 14, 24),
-            children: [
-              if (isTracking)
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton.icon(
-                    onPressed: _stopDay,
-                    icon: const Icon(Icons.stop_circle_outlined, size: 18),
-                    label: Text(l10n.liveMapStopTracking),
-                  ),
-                )
-              else
-                FilledButton.icon(
-                  onPressed: _isStarting ? null : () => _startDay(trip, day, l10n),
-                  style: FilledButton.styleFrom(
-                    minimumSize: const Size.fromHeight(48),
-                    backgroundColor: tokens.accent,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTokens.radius)),
-                  ),
-                  icon: _isStarting
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                        )
-                      : const Icon(Icons.play_arrow_rounded),
-                  label: Text(l10n.liveMapStartDay),
-                ),
-              const SizedBox(height: 12),
-              if (selected != null)
-                _SelectedStopCard(
-                  item: selected,
-                  hasArrived: selected.itineraryItemsId == _arrivedItemId && selected.isVisited,
-                  onToggleVisit: () => _toggleVisit(selected, l10n),
-                  onNavigate: selected.place == null ? null : () => _openNavigation(selected.place!),
-                ),
-              const SizedBox(height: 12),
-              _StopList(
-                day: day,
-                nextItemId: nextItem?.itineraryItemsId,
-                selectedItemId: selected?.itineraryItemsId,
-                onSelect: (item) {
-                  setState(() => _selectedItemId = item.itineraryItemsId);
-                  final place = item.place;
-                  if (place != null) {
-                    _mapController.move(LatLng(place.lat, place.lng), 15);
-                  }
-                },
-                onToggleVisit: (item) => _toggleVisit(item, l10n),
+          // The panel slides up over the map's bottom edge.
+          child: Transform.translate(
+            offset: const Offset(0, -18),
+            child: Container(
+              decoration: const BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
               ),
-              const SizedBox(height: 8),
-              Text(
-                l10n.liveMapLongPressHint,
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodySmall?.copyWith(color: tokens.textHint),
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 18, 16, 24),
+                children: [
+                  if (isTracking)
+                    _TrackingBar(visited: visited, total: day.items.length, onStop: _stopDay)
+                  else
+                    PrimaryButton(
+                      label: l10n.liveMapStartDay,
+                      trailingIcon: Icons.play_arrow_rounded,
+                      isLoading: _isStarting,
+                      onPressed: () => _startDay(trip, day, l10n),
+                    ),
+                  const SizedBox(height: 14),
+                  if (selected != null) ...[
+                    _SelectedStopCard(
+                      item: selected,
+                      hasArrived: selected.itineraryItemsId == _arrivedItemId && selected.isVisited,
+                      onToggleVisit: () => _toggleVisit(selected, l10n),
+                      onNavigate: selected.place == null ? null : () => _openNavigation(selected.place!),
+                    ),
+                    const SizedBox(height: 14),
+                  ],
+                  _StopList(
+                    day: day,
+                    nextItemId: nextItem?.itineraryItemsId,
+                    selectedItemId: selected?.itineraryItemsId,
+                    onSelect: (item) {
+                      setState(() => _selectedItemId = item.itineraryItemsId);
+                      final place = item.place;
+                      if (place != null) {
+                        _mapController.move(LatLng(place.lat, place.lng), 15);
+                      }
+                    },
+                    onToggleVisit: (item) => _toggleVisit(item, l10n),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.touch_app_outlined, size: 15, color: AppColors.inkMuted),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          l10n.liveMapLongPressHint,
+                          style: appText(11.5, FontWeight.w500, AppColors.inkMuted, height: 16),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ],
@@ -466,35 +464,117 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
   }
 }
 
+/// "Hari 1" in the navy header, the same pill as the trip setup steps.
+class _HeaderPill extends StatelessWidget {
+  const _HeaderPill({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(right: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.24)),
+      ),
+      child: Text(label, style: appText(12, FontWeight.w700, Colors.white)),
+    );
+  }
+}
+
 class _TrackingChip extends StatelessWidget {
   const _TrackingChip({required this.isTracking});
+
+  static const _activeColor = Color(0xFF16A34A);
 
   final bool isTracking;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final tokens = context.tokens;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.95),
-        borderRadius: BorderRadius.circular(9999),
-        border: Border.all(color: const Color(0x4DC0C7D1)),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(999),
+        boxShadow: AppColors.cardShadow,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            isTracking ? Icons.near_me : Icons.near_me_disabled_outlined,
-            size: 12,
-            color: isTracking ? tokens.onSuccess : tokens.textSecondary,
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              color: isTracking ? _activeColor : AppColors.inkMuted.withValues(alpha: 0.5),
+              shape: BoxShape.circle,
+            ),
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 7),
           Text(
             isTracking ? l10n.liveMapTrackingActive : l10n.liveMapTrackingOff,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w700),
+            style: appText(12, FontWeight.w700, AppColors.ink),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// While the day is tracked: progress through the day and the stop button.
+class _TrackingBar extends StatelessWidget {
+  const _TrackingBar({required this.visited, required this.total, required this.onStop});
+
+  final int visited;
+  final int total;
+  final VoidCallback onStop;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(colors: [AppColors.navy700, AppColors.navy900]),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.near_me_rounded, size: 20, color: AppColors.sun400),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(l10n.liveMapTrackingActive, style: appText(14, FontWeight.w800, Colors.white)),
+                const SizedBox(height: 6),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(999),
+                  child: LinearProgressIndicator(
+                    value: total == 0 ? 0 : visited / total,
+                    minHeight: 5,
+                    backgroundColor: Colors.white.withValues(alpha: 0.16),
+                    color: AppColors.sun400,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  l10n.liveMapProgress(visited, total),
+                  style: appText(11, FontWeight.w600, Colors.white.withValues(alpha: 0.75)),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          TextButton(
+            onPressed: onStop,
+            style: TextButton.styleFrom(foregroundColor: AppColors.sun400),
+            child: Text(l10n.liveMapStop, style: appText(13, FontWeight.w700, AppColors.sun400)),
           ),
         ],
       ),
@@ -510,6 +590,9 @@ class _SelectedStopCard extends StatelessWidget {
     required this.onNavigate,
   });
 
+  static const _successFill = Color(0xFFE7F6EC);
+  static const _successInk = Color(0xFF166534);
+
   final ItineraryItem item;
   final bool hasArrived;
   final VoidCallback onToggleVisit;
@@ -518,81 +601,58 @@ class _SelectedStopCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    final tokens = context.tokens;
     final place = item.place;
     final minutes = place?.estimatedVisitMinutes;
+    final kecamatan = place?.kecamatan;
 
     return Container(
-      padding: const EdgeInsets.all(15),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(AppTokens.radius),
-        border: Border.all(color: const Color(0x4DC0C7D1)),
-        boxShadow: AppTokens.softShadow,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: AppColors.cardShadow,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (hasArrived) ...[
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
-              decoration: BoxDecoration(
-                color: tokens.successFill.withValues(alpha: 0.4),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: tokens.onSuccess.withValues(alpha: 0.2)),
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(color: _successFill, borderRadius: BorderRadius.circular(12)),
               child: Row(
                 children: [
-                  Icon(Icons.place, size: 15, color: tokens.onSuccess),
+                  const Icon(Icons.place_rounded, size: 16, color: _successInk),
                   const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      l10n.liveMapArrived,
-                      style: theme.textTheme.labelSmall?.copyWith(color: tokens.onSuccess, fontWeight: FontWeight.w700),
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4)),
-                    child: Text(
-                      l10n.liveMapAutoCheckIn,
-                      style: theme.textTheme.labelSmall?.copyWith(fontSize: 10, color: tokens.onSuccess),
-                    ),
-                  ),
+                  Expanded(child: Text(l10n.liveMapArrived, style: appText(12, FontWeight.w700, _successInk))),
+                  Text(l10n.liveMapAutoCheckIn, style: appText(10.5, FontWeight.w700, _successInk)),
                 ],
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
           ],
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SizedBox(
-                width: 64,
-                height: 64,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(AppTokens.radius),
-                      child: PlacePhoto(url: place?.photoUrl),
-                    ),
-                    Positioned(
-                      left: 4,
-                      top: 4,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF004C79),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          '#${item.visitOrder}',
-                          style: theme.textTheme.labelSmall?.copyWith(color: Colors.white, fontSize: 9),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: SizedBox(
+                  width: 76,
+                  height: 76,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      PlacePhoto(url: place?.photoUrl),
+                      Positioned(
+                        left: 6,
+                        top: 6,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                          decoration: BoxDecoration(color: AppColors.navy900, borderRadius: BorderRadius.circular(999)),
+                          child: Text('#${item.visitOrder}', style: appText(10.5, FontWeight.w800, Colors.white)),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -600,32 +660,24 @@ class _SelectedStopCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (place?.kecamatan != null)
-                      Text(
-                        place!.kecamatan!.toUpperCase(),
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          fontSize: 10,
-                          letterSpacing: 0.5,
-                          color: const Color(0xFF004C79),
-                        ),
-                      ),
+                    SourceBadge(isFromWishlist: item.isFromWishlist),
+                    const SizedBox(height: 5),
                     Text(
                       place?.name ?? l10n.itineraryUnknownPlace,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                      style: appText(15, FontWeight.w800, AppColors.ink, height: 20),
                     ),
-                    if (minutes != null)
-                      Row(
-                        children: [
-                          Icon(Icons.schedule, size: 12, color: tokens.textSecondary),
-                          const SizedBox(width: 4),
-                          Text(
-                            l10n.liveMapAllocation(minutes),
-                            style: theme.textTheme.labelSmall?.copyWith(color: tokens.textSecondary),
-                          ),
-                        ],
-                      ),
+                    const SizedBox(height: 4),
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 2,
+                      children: [
+                        if (kecamatan != null && kecamatan.isNotEmpty)
+                          _Meta(icon: Icons.place_outlined, text: kecamatan),
+                        if (minutes != null) _Meta(icon: Icons.timer_outlined, text: l10n.liveMapAllocation(minutes)),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -635,36 +687,91 @@ class _SelectedStopCard extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: FilledButton.icon(
+                child: _CardButton(
+                  icon: item.isVisited ? Icons.undo_rounded : Icons.check_circle_outline_rounded,
+                  label: item.isVisited ? l10n.liveMapUnmarkVisited : l10n.liveMapMarkVisited,
+                  filled: !item.isVisited,
                   onPressed: onToggleVisit,
-                  style: FilledButton.styleFrom(
-                    minimumSize: const Size.fromHeight(40),
-                    backgroundColor: item.isVisited ? tokens.chipFill : const Color(0xFF16659A),
-                    foregroundColor: item.isVisited ? const Color(0xFF004C79) : Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                  icon: Icon(item.isVisited ? Icons.undo : Icons.check_circle_outline, size: 16),
-                  label: Text(item.isVisited ? l10n.liveMapUnmarkVisited : l10n.liveMapMarkVisited),
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: OutlinedButton.icon(
+                child: _CardButton(
+                  icon: Icons.navigation_outlined,
+                  label: l10n.liveMapNavigate,
+                  filled: false,
                   onPressed: onNavigate,
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size.fromHeight(40),
-                    backgroundColor: tokens.fieldFill,
-                    foregroundColor: const Color(0xFF004C79),
-                    side: const BorderSide(color: Color(0x66C0C7D1)),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                  icon: const Icon(Icons.navigation_outlined, size: 16),
-                  label: Text(l10n.liveMapNavigate),
                 ),
               ),
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _Meta extends StatelessWidget {
+  const _Meta({required this.icon, required this.text});
+
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 13, color: AppColors.inkMuted),
+        const SizedBox(width: 4),
+        Text(text, style: appText(12, FontWeight.w500, AppColors.inkMuted, height: 16)),
+      ],
+    );
+  }
+}
+
+/// The two actions on the stop card: sea blue filled, or white with a line.
+class _CardButton extends StatelessWidget {
+  const _CardButton({required this.icon, required this.label, required this.filled, required this.onPressed});
+
+  final IconData icon;
+  final String label;
+  final bool filled;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final foreground = filled ? Colors.white : AppColors.navy900;
+    return Material(
+      color: filled ? AppColors.sea600 : Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: filled ? BorderSide.none : const BorderSide(color: AppColors.line),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onPressed,
+        child: SizedBox(
+          height: 44,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, size: 17, color: foreground),
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: appText(13, FontWeight.w700, foreground),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -688,36 +795,34 @@ class _StopList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    final tokens = context.tokens;
 
     return Container(
-      padding: const EdgeInsets.all(15),
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 6),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(AppTokens.radius),
-        border: Border.all(color: const Color(0x4DC0C7D1)),
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: AppColors.cardShadow,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             children: [
-              Icon(Icons.timeline, size: 18, color: tokens.link),
-              const SizedBox(width: 6),
-              Expanded(child: Text(l10n.liveMapStopsTitle, style: theme.textTheme.labelLarge)),
+              const Icon(Icons.route_rounded, size: 18, color: AppColors.sea600),
+              const SizedBox(width: 8),
+              Expanded(child: Text(l10n.liveMapStopsTitle, style: appText(15, FontWeight.w800, AppColors.ink))),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(color: tokens.fieldFill, borderRadius: BorderRadius.circular(9999)),
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+                decoration: BoxDecoration(color: AppColors.field, borderRadius: BorderRadius.circular(999)),
                 child: Text(
                   l10n.liveMapStopsCount(day.items.length),
-                  style: theme.textTheme.labelSmall?.copyWith(fontSize: 10, color: const Color(0xFF004C79)),
+                  style: appText(11, FontWeight.w700, AppColors.navy700),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 10),
-          for (final item in day.items) ...[
+          for (final item in day.items)
             _StopRow(
               item: item,
               isNext: item.itineraryItemsId == nextItemId,
@@ -725,8 +830,6 @@ class _StopList extends StatelessWidget {
               onTap: () => onSelect(item),
               onLongPress: () => onToggleVisit(item),
             ),
-            const SizedBox(height: 8),
-          ],
         ],
       ),
     );
@@ -751,8 +854,6 @@ class _StopRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    final tokens = context.tokens;
     final minutes = item.place?.estimatedVisitMinutes;
 
     final status = item.isVisited
@@ -760,111 +861,111 @@ class _StopRow extends StatelessWidget {
         : isNext
             ? l10n.liveMapStopNext
             : l10n.liveMapStopPending;
-    final subtitle = minutes == null ? status : '$status • ${l10n.liveMapAllocation(minutes)}';
+    final subtitle = minutes == null ? status : '$status · ${l10n.liveMapAllocation(minutes)}';
 
-    return Row(
-      children: [
-        Container(
-          width: 28,
-          height: 28,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: item.isVisited
-                ? tokens.successFill
-                : isNext
-                    ? const Color(0xFF16659A)
-                    : const Color(0xFFD3E4FE),
-          ),
-          child: item.isVisited
-              ? Icon(Icons.done_all, size: 14, color: tokens.onSuccess)
-              : Text(
-                  '${item.visitOrder}',
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: isNext ? Colors.white : const Color(0xFF41474F),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: isSelected ? AppColors.field : Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: onTap,
+          onLongPress: onLongPress,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            child: Row(
+              children: [
+                Container(
+                  width: 30,
+                  height: 30,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: item.isVisited ? AppColors.sea600 : AppColors.navy900,
+                    shape: BoxShape.circle,
+                    border: isNext ? Border.all(color: AppColors.sun400, width: 2.5) : null,
+                  ),
+                  child: item.isVisited
+                      ? const Icon(Icons.done_all_rounded, size: 14, color: Colors.white)
+                      : Text('${item.visitOrder}', style: appText(12, FontWeight.w800, Colors.white)),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.place?.name ?? l10n.itineraryUnknownPlace,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: appText(
+                          14,
+                          FontWeight.w700,
+                          item.isVisited ? AppColors.inkMuted : AppColors.ink,
+                        ).copyWith(decoration: item.isVisited ? TextDecoration.lineThrough : null),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: appText(11.5, FontWeight.w500, AppColors.inkMuted),
+                      ),
+                    ],
                   ),
                 ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Material(
-            color: isSelected ? const Color(0x4DCEE5FF) : const Color(0x80EFF4FF),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-              side: BorderSide(color: isSelected ? const Color(0x6616659A) : const Color(0x33C0C7D1)),
-            ),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(8),
-              onTap: onTap,
-              onLongPress: onLongPress,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '${item.visitOrder}. ${item.place?.name ?? l10n.itineraryUnknownPlace}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.labelMedium?.copyWith(
-                              color: isSelected ? const Color(0xFF004C79) : null,
-                            ),
-                          ),
-                          Text(
-                            subtitle,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              fontWeight: FontWeight.w400,
-                              color: const Color(0xFF41474F),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (isNext)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(color: tokens.successFill, borderRadius: BorderRadius.circular(9999)),
-                        child: Text(
-                          l10n.liveMapNextBadge,
-                          style: theme.textTheme.labelSmall?.copyWith(fontSize: 10, color: const Color(0xFF006F66)),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
+                if (isNext) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+                    decoration: BoxDecoration(color: AppColors.sun400, borderRadius: BorderRadius.circular(999)),
+                    child: Text(l10n.liveMapNextBadge, style: appText(10.5, FontWeight.w800, AppColors.navy900)),
+                  ),
+                ],
+              ],
             ),
           ),
         ),
-      ],
+      ),
     );
   }
 }
 
+/// A map pin: a number or an icon on a coloured disc with a white ring; the
+/// selected stop gets a sun ring and grows a little.
 class _PinBadge extends StatelessWidget {
-  const _PinBadge({required this.label, required this.background, required this.foreground});
+  const _PinBadge({
+    this.label,
+    this.icon,
+    required this.background,
+    required this.foreground,
+    this.isSelected = false,
+  });
 
-  final String label;
+  final String? label;
+  final IconData? icon;
   final Color background;
   final Color foreground;
+  final bool isSelected;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: background,
-        shape: BoxShape.circle,
-        border: Border.all(color: Colors.white, width: 2),
-        boxShadow: const [BoxShadow(color: Color(0x33000000), blurRadius: 4, offset: Offset(0, 2))],
-      ),
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.labelLarge?.copyWith(color: foreground, fontWeight: FontWeight.w700),
+    final size = isSelected ? 40.0 : 32.0;
+    return Center(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        width: size,
+        height: size,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: background,
+          shape: BoxShape.circle,
+          border: Border.all(color: isSelected ? AppColors.sun400 : Colors.white, width: isSelected ? 3 : 2),
+          boxShadow: const [BoxShadow(color: Color(0x400A2440), blurRadius: 6, offset: Offset(0, 2))],
+        ),
+        child: icon != null
+            ? Icon(icon, size: isSelected ? 18 : 15, color: foreground)
+            : Text(label ?? '', style: appText(isSelected ? 14 : 12.5, FontWeight.w800, foreground)),
       ),
     );
   }

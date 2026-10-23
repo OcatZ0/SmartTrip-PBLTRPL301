@@ -1,100 +1,63 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter/services.dart';
 
-import '../core/auth/session_controller.dart';
-import '../core/theme/app_tokens.dart';
+import '../core/theme/app_colors.dart';
 
-/// Frosted 64px top bar shared by the trip screens (Figma "Header"): back
-/// button, logo, app name with the screen name below it, and the user avatar.
-class ScreenHeader extends ConsumerWidget implements PreferredSizeWidget {
+/// Navy 56px top bar shared by the trip screens, the same look as the place
+/// detail's [GlassTopBar]: back button and the screen name.
+class ScreenHeader extends StatelessWidget implements PreferredSizeWidget {
   const ScreenHeader({super.key, required this.subtitle, this.onBack, this.trailing});
 
+  static const height = 56.0;
+
+  /// The screen name, e.g. "Atur Trip".
   final String subtitle;
   final VoidCallback? onBack;
 
-  /// Shown before the avatar, e.g. a log-in button for a guest.
+  /// Shown at the end of the bar, e.g. a log-in button for a guest.
   final Widget? trailing;
 
   @override
-  Size get preferredSize => const Size.fromHeight(64);
+  Size get preferredSize => const Size.fromHeight(height);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final tokens = context.tokens;
-    final userName = ref.watch(sessionControllerProvider).valueOrNull?.name;
+  Widget build(BuildContext context) {
     final canGoBack = onBack != null || Navigator.of(context).canPop();
 
-    return ClipRect(
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-        child: Container(
-          decoration: BoxDecoration(
-            color: tokens.screenBackground.withValues(alpha: 0.85),
-            boxShadow: const [
-              BoxShadow(color: Color(0x0A000000), blurRadius: 8, offset: Offset(0, 1)),
-            ],
-          ),
-          child: SafeArea(
-            bottom: false,
-            child: SizedBox(
-              height: 64,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Row(
-                  children: [
-                    if (canGoBack)
-                      IconButton(
-                        tooltip: MaterialLocalizations.of(context).backButtonTooltip,
-                        icon: const Icon(Icons.arrow_back, size: 22),
-                        onPressed: onBack ?? () => Navigator.of(context).maybePop(),
-                      )
-                    else
-                      const SizedBox(width: 8),
-                    SvgPicture.asset('assets/images/logo.svg', width: 30, height: 30),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'SmartTrip',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                              fontVariations: const [FontVariation.weight(700)],
-                            ),
-                          ),
-                          Text(
-                            subtitle,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: tokens.textSecondary,
-                            ),
-                          ),
-                        ],
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: AppColors.navy900,
+          border: Border(bottom: BorderSide(color: Colors.white.withValues(alpha: 0.12))),
+        ),
+        child: SafeArea(
+          bottom: false,
+          child: SizedBox(
+            height: height,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Row(
+                children: [
+                  if (canGoBack)
+                    IconButton(
+                      tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+                      icon: const Icon(Icons.chevron_left_rounded, size: 28, color: Colors.white),
+                      onPressed: onBack ?? () => Navigator.of(context).maybePop(),
+                    ),
+                  Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.only(left: canGoBack ? 0 : 8),
+                      child: Text(
+                        subtitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: appText(16, FontWeight.w700, Colors.white),
                       ),
                     ),
-                    if (trailing != null) trailing!,
-                    if (userName != null && userName.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: CircleAvatar(
-                          radius: 16,
-                          backgroundColor: tokens.accentSoft,
-                          child: Text(
-                            userName.characters.first.toUpperCase(),
-                            style: theme.textTheme.labelLarge?.copyWith(color: tokens.link),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
+                  ),
+                  if (trailing != null) trailing!,
+                ],
               ),
             ),
           ),

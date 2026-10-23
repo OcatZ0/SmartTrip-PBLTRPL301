@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -20,6 +21,8 @@ import '../../widgets/app_bottom_bar.dart';
 import '../../widgets/category_icons.dart';
 import '../../widgets/load_error_view.dart';
 import 'widgets/featured_place_card.dart';
+import 'widgets/catalog_filter_chip.dart';
+import 'widgets/catalog_search_field.dart';
 import 'widgets/place_grid_card.dart';
 import 'widgets/place_open_container.dart';
 
@@ -62,7 +65,6 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
 
   void _goToLogin() => context.go(AppRoutes.login);
 
-  // Only the catalog exists so far; the other tabs get their screens later.
   void _selectTab(AppTab tab) {
     switch (tab) {
       case AppTab.home:
@@ -161,18 +163,22 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
             child: CustomScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               slivers: [
-                SliverToBoxAdapter(
-                  child: _CatalogHeader(
-                    isLoggedIn: isLoggedIn,
+                SliverPersistentHeader(
+                  pinned: true,
+                  delegate: _CatalogHeaderDelegate(
+                    topInset: MediaQuery.paddingOf(context).top,
+                    eyebrow: l10n.catalogEyebrow,
+                    greeting: l10n.catalogGreeting,
+                    loginLabel: isLoggedIn ? null : l10n.catalogLogin,
                     onLogin: _goToLogin,
-                    search: _SearchField(
+                    search: CatalogSearchField(
                       controller: _searchController,
                       onChanged: _onSearchChanged,
                       onClear: _clearSearch,
                     ),
+                    chips: _ChipBar(filter: state.filter),
                   ),
                 ),
-                SliverToBoxAdapter(child: _ChipBar(filter: state.filter)),
                 if (featured.isNotEmpty) ...[
                   SliverPadding(
                     padding: const EdgeInsets.fromLTRB(16, 22, 16, 12),
@@ -363,194 +369,179 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
   }
 }
 
-class _CatalogHeader extends StatelessWidget {
-  const _CatalogHeader({
-    required this.isLoggedIn,
+/// Panorama with the greeting, the search field and the filter chips.
+/// Scrolling down shrinks the panorama into a navy bar that keeps the search
+/// field, with the chips pinned right below it; the greeting fades out.
+class _CatalogHeaderDelegate extends SliverPersistentHeaderDelegate {
+  _CatalogHeaderDelegate({
+    required this.topInset,
+    required this.eyebrow,
+    required this.greeting,
+    required this.loginLabel,
     required this.onLogin,
     required this.search,
+    required this.chips,
   });
 
   static const _panoramaHeight = 200.0;
+  static const _searchHeight = 52.0;
   static const _searchOverlap = 26.0;
+  static const _chipsHeight = 52.0;
+  static const _barPadding = 8.0;
 
-  final bool isLoggedIn;
+  final double topInset;
+  final String eyebrow;
+  final String greeting;
+
+  /// Shown to guests only.
+  final String? loginLabel;
   final VoidCallback onLogin;
   final Widget search;
+  final Widget chips;
+
+  double get _barHeight => topInset + _barPadding * 2 + _searchHeight;
 
   @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final topInset = MediaQuery.paddingOf(context).top;
+  double get maxExtent => topInset + _panoramaHeight + _searchOverlap + _chipsHeight;
 
-    return SizedBox(
-      height: topInset + _panoramaHeight + _searchOverlap,
+  @override
+  double get minExtent => _barHeight + _chipsHeight;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    final t = (shrinkOffset / (maxExtent - minExtent)).clamp(0.0, 1.0);
+    double lerp(double a, double b) => a + (b - a) * t;
+
+    final panorama = lerp(topInset + _panoramaHeight, _barHeight);
+    final searchTop = lerp(topInset + _panoramaHeight - _searchOverlap, topInset + _barPadding);
+    final introOpacity = (1 - t * 2).clamp(0.0, 1.0);
+    final label = loginLabel;
+
+    return _KeepPageStill(
       child: Stack(
-        children: [
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            height: topInset + _panoramaHeight,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                SvgPicture.asset(
+      children: [
+        Positioned.fill(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              // A hairline shadow once collapsed, so the list scrolls under it.
+              boxShadow: t > 0.98 ? const [BoxShadow(color: Color(0x140A2440), blurRadius: 8, offset: Offset(0, 2))] : null,
+            ),
+          ),
+        ),
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          height: panorama,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              const ColoredBox(color: AppColors.navy900),
+              Opacity(
+                opacity: 1 - t * 0.85,
+                child: SvgPicture.asset(
                   'assets/images/login_panorama.svg',
                   fit: BoxFit.cover,
                   alignment: Alignment.bottomCenter,
                 ),
-                const DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [Color(0x8C0A2440), Color(0x000A2440)],
-                      stops: [0, 0.7],
-                    ),
+              ),
+              const DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Color(0x8C0A2440), Color(0x000A2440)],
+                    stops: [0, 0.7],
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-          Positioned(
-            top: topInset + 18,
-            left: 16,
-            right: 16,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        l10n.catalogEyebrow,
-                        style: appText(
-                          11,
-                          FontWeight.w700,
-                          AppColors.sun400,
-                          height: 16,
-                          letterSpacing: 0.88,
+        ),
+        // Always in the tree, only faded: dropping it would shift the
+        // Stack's children and rebuild the chip bar, losing its scroll.
+        Positioned(
+          top: topInset + 18 - shrinkOffset * 0.4,
+          left: 16,
+          right: 16,
+          child: IgnorePointer(
+            ignoring: introOpacity == 0,
+            child: Opacity(
+              opacity: introOpacity,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          eyebrow,
+                          style: appText(11, FontWeight.w700, AppColors.sun400, height: 16, letterSpacing: 0.88),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 240),
-                        child: Text(
-                          l10n.catalogGreeting,
-                          style: appText(
-                            24,
-                            FontWeight.w800,
-                            Colors.white,
-                            height: 30,
-                            letterSpacing: -0.48,
+                        const SizedBox(height: 4),
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 240),
+                          child: Text(
+                            greeting,
+                            style: appText(24, FontWeight.w800, Colors.white, height: 30, letterSpacing: -0.48),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (!isLoggedIn) ...[
-                  const SizedBox(width: 12),
-                  Material(
-                    color: Colors.white.withValues(alpha: 0.16),
-                    shape: StadiumBorder(
-                      side: BorderSide(
-                        color: Colors.white.withValues(alpha: 0.28),
-                      ),
+                      ],
                     ),
-                    child: InkWell(
-                      customBorder: const StadiumBorder(),
-                      onTap: onLogin,
-                      child: Container(
-                        height: 36,
-                        padding: const EdgeInsets.symmetric(horizontal: 14),
-                        alignment: Alignment.center,
-                        child: Text(
-                          l10n.catalogLogin,
-                          style: appText(12, FontWeight.w600, Colors.white),
+                  ),
+                  if (label != null) ...[
+                    const SizedBox(width: 12),
+                    Material(
+                      color: Colors.white.withValues(alpha: 0.16),
+                      shape: StadiumBorder(side: BorderSide(color: Colors.white.withValues(alpha: 0.28))),
+                      child: InkWell(
+                        customBorder: const StadiumBorder(),
+                        onTap: onLogin,
+                        child: Container(
+                          height: 36,
+                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          alignment: Alignment.center,
+                          child: Text(label, style: appText(12, FontWeight.w600, Colors.white)),
                         ),
                       ),
                     ),
-                  ),
+                  ],
                 ],
-              ],
-            ),
-          ),
-          Positioned(left: 16, right: 16, bottom: 0, child: search),
-        ],
-      ),
-    );
-  }
-}
-
-class _SearchField extends StatelessWidget {
-  const _SearchField({
-    required this.controller,
-    required this.onChanged,
-    required this.onClear,
-  });
-
-  final TextEditingController controller;
-  final ValueChanged<String> onChanged;
-  final VoidCallback onClear;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-
-    return Container(
-      height: 52,
-      padding: const EdgeInsets.only(left: 14, right: 4),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: AppColors.floatShadow,
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.search, size: 22, color: AppColors.sea600),
-          const SizedBox(width: 10),
-          Expanded(
-            child: TextField(
-              controller: controller,
-              onChanged: onChanged,
-              textInputAction: TextInputAction.search,
-              cursorColor: AppColors.sea600,
-              style: appText(14, FontWeight.w400, AppColors.ink),
-              decoration: InputDecoration(
-                isCollapsed: true,
-                border: InputBorder.none,
-                hintText: l10n.catalogSearchHint,
-                hintMaxLines: 1,
-                hintStyle: appText(
-                  14,
-                  FontWeight.w400,
-                  AppColors.inkMuted,
-                ),
               ),
             ),
           ),
-          // Listens to the field itself, so typing does not rebuild the
-          // whole catalog just to show or hide this button.
-          ValueListenableBuilder<TextEditingValue>(
-            valueListenable: controller,
-            builder: (context, value, _) => value.text.isEmpty
-                ? const SizedBox.shrink()
-                : IconButton(
-                    tooltip: l10n.catalogClearSearch,
-                    onPressed: onClear,
-                    icon: const Icon(
-                      Icons.close,
-                      size: 18,
-                      color: AppColors.inkMuted,
-                    ),
-                  ),
-          ),
-        ],
+        ),
+        Positioned(left: 16, right: 16, top: searchTop, height: _searchHeight, child: search),
+        Positioned(left: 0, right: 0, top: searchTop + _searchHeight, height: _chipsHeight, child: chips),
+      ],
       ),
     );
   }
+
+  @override
+  bool shouldRebuild(_CatalogHeaderDelegate old) => true;
+}
+
+/// The header is pinned, so it is always on screen already. Without this,
+/// focusing the search field asks the page to scroll its caret into view
+/// and the list jumps far down.
+class _KeepPageStill extends SingleChildRenderObjectWidget {
+  const _KeepPageStill({required super.child});
+
+  @override
+  RenderObject createRenderObject(BuildContext context) => _RenderKeepPageStill();
+}
+
+class _RenderKeepPageStill extends RenderProxyBox {
+  @override
+  void showOnScreen({
+    RenderObject? descendant,
+    Rect? rect,
+    Duration duration = Duration.zero,
+    Curve curve = Curves.ease,
+  }) {}
 }
 
 class _ChipBar extends ConsumerWidget {
@@ -569,7 +560,7 @@ class _ChipBar extends ConsumerWidget {
 
     final kecamatan = filter.kecamatan;
     final chips = <Widget>[
-      _FilterChip(
+      CatalogFilterChip(
         label: kecamatan ?? l10n.catalogKecamatanAll,
         selected: kecamatan != null,
         leading: Icons.place_outlined,
@@ -577,19 +568,19 @@ class _ChipBar extends ConsumerWidget {
         onTap: () => _pickKecamatan(context),
       ),
       Center(child: Container(width: 1, height: 24, color: AppColors.line)),
-      _FilterChip(
+      CatalogFilterChip(
         label: l10n.catalogFilterAll,
         selected: filter.categorySlug == null && filter.type == null,
         onTap: () => controller.selectCategory(null),
       ),
       for (final category in categories)
-        _FilterChip(
+        CatalogFilterChip(
           label: category.localizedName(languageCode),
           selected: filter.categorySlug == category.slug,
           leading: categoryIcon(category.iconSymbol),
           onTap: () => controller.selectCategory(category.slug),
         ),
-      _FilterChip(
+      CatalogFilterChip(
         label: l10n.catalogFilterLodging,
         selected: filter.type == 'lodging',
         onTap: () => controller.selectType('lodging'),
@@ -701,81 +692,6 @@ class _KecamatanSheet extends ConsumerWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _FilterChip extends StatelessWidget {
-  const _FilterChip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-    this.leading,
-    this.trailing,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-  final IconData? leading;
-  final IconData? trailing;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      selected: selected,
-      child: Material(
-        color: selected ? AppColors.navy900 : Colors.white,
-        shape: StadiumBorder(
-          side: selected
-              ? BorderSide.none
-              : const BorderSide(color: AppColors.line),
-        ),
-        child: InkWell(
-          customBorder: const StadiumBorder(),
-          onTap: onTap,
-          child: Container(
-            height: 36,
-            padding: EdgeInsets.only(
-              left: leading == null ? 16 : 12,
-              right: trailing == null ? 16 : 10,
-            ),
-            alignment: Alignment.center,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (leading != null) ...[
-                  Icon(
-                    leading,
-                    size: 16,
-                    color: selected
-                        ? AppColors.sun400
-                        : AppColors.sea600,
-                  ),
-                  const SizedBox(width: 6),
-                ],
-                Text(
-                  label,
-                  style: appText(
-                    13,
-                    selected ? FontWeight.w700 : FontWeight.w600,
-                    selected ? Colors.white : AppColors.ink,
-                  ),
-                ),
-                if (trailing != null) ...[
-                  const SizedBox(width: 4),
-                  Icon(
-                    trailing,
-                    size: 18,
-                    color: selected ? Colors.white : AppColors.inkMuted,
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }

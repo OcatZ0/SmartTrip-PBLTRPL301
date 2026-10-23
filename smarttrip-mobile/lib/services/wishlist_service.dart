@@ -5,6 +5,7 @@ import '../core/api/api_client.dart';
 import '../core/api/providers.dart';
 import '../core/auth/session_controller.dart';
 import '../core/error/api_failure.dart';
+import '../models/place.dart';
 
 /// The user's own wishlist (heart on catalog cards, tab Wishlist), separate
 /// from a trip's wishlist step (C2).
@@ -21,6 +22,15 @@ class WishlistService {
         .cast<Map<String, dynamic>>()
         .map((place) => place['places_id'] as int)
         .toSet();
+  }
+
+  /// Fetches the user's saved wishlist places from GET /wishlist
+  Future<List<CatalogPlace>> fetchWishlistPlaces() async {
+    final body = await _call(() => _dio.get<Map<String, dynamic>>('/wishlist'));
+    return (body['data'] as List? ?? const [])
+        .cast<Map<String, dynamic>>()
+        .map(CatalogPlace.fromJson)
+        .toList();
   }
 
   Future<void> add(int placesId) async {
@@ -75,6 +85,7 @@ class UserWishlistController extends AsyncNotifier<Set<int>> {
       } else {
         await repository.add(placesId);
       }
+      ref.invalidate(userWishlistPlacesControllerProvider);
     } catch (_) {
       _set(placesId, saved: wasSaved);
       rethrow;
@@ -96,3 +107,26 @@ class UserWishlistController extends AsyncNotifier<Set<int>> {
 
 final userWishlistControllerProvider =
     AsyncNotifierProvider<UserWishlistController, Set<int>>(UserWishlistController.new);
+
+/// Full list of places in the user's wishlist from GET /wishlist
+class UserWishlistPlacesController extends AsyncNotifier<List<CatalogPlace>> {
+  @override
+  Future<List<CatalogPlace>> build() async {
+    final usersId = ref.watch(sessionControllerProvider.select((session) => session.valueOrNull?.usersId));
+    if (usersId == null) return const [];
+
+    return ref.read(wishlistServiceProvider).fetchWishlistPlaces();
+  }
+
+  Future<void> refresh() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() => ref.read(wishlistServiceProvider).fetchWishlistPlaces());
+  }
+
+  void removeLocally(int placesId) {
+    state = state.whenData((places) => places.where((p) => p.placesId != placesId).toList());
+  }
+}
+
+final userWishlistPlacesControllerProvider =
+    AsyncNotifierProvider<UserWishlistPlacesController, List<CatalogPlace>>(UserWishlistPlacesController.new);

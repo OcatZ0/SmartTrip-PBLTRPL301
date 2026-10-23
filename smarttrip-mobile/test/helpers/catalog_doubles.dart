@@ -184,6 +184,10 @@ class FakeWishlistService implements WishlistService {
   Future<Set<int>> fetchPlaceIds() async => {...saved};
 
   @override
+  Future<List<CatalogPlace>> fetchWishlistPlaces() async =>
+      saved.map((id) => catalogPlace(id > 0 ? id - 1 : 0)).toList();
+
+  @override
   Future<void> add(int placesId) async {
     _maybeFail();
     added.add(placesId);

@@ -204,15 +204,19 @@ void main() {
     expect(find.text('Destinasi di Batam'), findsOneWidget);
   });
 
-  testWidgets('the bottom bar opens trip setup and says the other tabs are coming', (tester) async {
+  testWidgets('the bottom bar opens the wishlist and trip setup', (tester) async {
     await _pumpCatalog(tester);
 
     expect(find.text('Trip Saya'), findsOneWidget);
     expect(find.text('Profil'), findsOneWidget);
 
-    await tester.tap(find.text('Profil'));
+    await tester.tap(find.text('Wishlist'));
     await tester.pumpAndSettle();
-    expect(find.text('Segera hadir'), findsOneWidget);
+    expect(find.text('Wishlist Saya'), findsOneWidget);
+
+    await tester.tap(find.text('Home'));
+    await tester.pumpAndSettle();
+    expect(find.text(_greeting), findsOneWidget);
 
     await tester.tap(find.bySemanticsLabel('Buat Trip'));
     await tester.pumpAndSettle();

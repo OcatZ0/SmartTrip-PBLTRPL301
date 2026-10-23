@@ -1488,4 +1488,107 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get tripHotelPickMainFirst => 'Pilih hotel utama dulu';
+
+  @override
+  String get wishlistEyebrow => 'KOLEKSIMU';
+
+  @override
+  String get wishlistTitle => 'Wishlist Saya';
+
+  @override
+  String get wishlistSearchHint => 'Cari di wishlist';
+
+  @override
+  String wishlistSavedCount(int count) {
+    return '$count tempat tersimpan';
+  }
+
+  @override
+  String get wishlistSortTitle => 'Urutkan';
+
+  @override
+  String get wishlistSortNewest => 'Baru disimpan';
+
+  @override
+  String get wishlistSortRating => 'Rating tertinggi';
+
+  @override
+  String get wishlistSortName => 'Nama (A-Z)';
+
+  @override
+  String get wishlistSortCost => 'Biaya terendah';
+
+  @override
+  String get wishlistSelect => 'Pilih banyak';
+
+  @override
+  String get wishlistSelectDone => 'Selesai';
+
+  @override
+  String wishlistSelectedCount(int count) {
+    return '$count dipilih';
+  }
+
+  @override
+  String get wishlistSelectHint =>
+      'Pilih tempat untuk dihapus atau dimasukkan ke trip';
+
+  @override
+  String get wishlistRemove => 'Hapus';
+
+  @override
+  String wishlistRemoved(String name) {
+    return '$name dihapus dari wishlist.';
+  }
+
+  @override
+  String get wishlistUndo => 'Batalkan';
+
+  @override
+  String wishlistRemovedMany(int count) {
+    return '$count tempat dihapus dari wishlist.';
+  }
+
+  @override
+  String wishlistRemoveFailed(int count) {
+    return '$count tempat gagal dihapus. Coba lagi.';
+  }
+
+  @override
+  String wishlistAddedMany(int count, String title) {
+    return '$count tempat ditambahkan ke wishlist $title.';
+  }
+
+  @override
+  String wishlistAddedManyNeedsRegenerate(int count, String title) {
+    return '$count tempat ditambahkan ke wishlist $title. Buat ulang itinerary-nya supaya tempat ini ikut dihitung.';
+  }
+
+  @override
+  String wishlistAddFailed(int count) {
+    return '$count tempat gagal ditambahkan.';
+  }
+
+  @override
+  String get wishlistGuestTitle => 'Masuk untuk melihat wishlist';
+
+  @override
+  String get wishlistGuestBody =>
+      'Tempat yang kamu simpan dengan ikon hati akan terkumpul di sini.';
+
+  @override
+  String get wishlistEmptyTitle => 'Wishlist masih kosong';
+
+  @override
+  String get wishlistEmptyBody =>
+      'Tekan ikon hati pada tempat di katalog untuk menyimpannya ke sini.';
+
+  @override
+  String get wishlistExplore => 'Jelajahi katalog';
+
+  @override
+  String get wishlistClearFilters => 'Hapus filter';
+
+  @override
+  String get wishlistLoadFailed => 'Wishlist gagal dimuat. Coba lagi.';
 }

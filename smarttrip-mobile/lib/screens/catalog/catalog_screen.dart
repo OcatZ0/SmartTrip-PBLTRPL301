@@ -65,7 +65,6 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
 
   void _goToLogin() => context.go(AppRoutes.login);
 
-  // Only the catalog exists so far; the other tabs get their screens later.
   void _selectTab(AppTab tab) {
     switch (tab) {
       case AppTab.home:

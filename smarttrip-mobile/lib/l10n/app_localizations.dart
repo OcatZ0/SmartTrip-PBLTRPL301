@@ -2689,6 +2689,174 @@ abstract class AppLocalizations {
   /// In id, this message translates to:
   /// **'Pilih hotel utama dulu'**
   String get tripHotelPickMainFirst;
+
+  /// No description provided for @wishlistEyebrow.
+  ///
+  /// In id, this message translates to:
+  /// **'KOLEKSIMU'**
+  String get wishlistEyebrow;
+
+  /// No description provided for @wishlistTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Wishlist Saya'**
+  String get wishlistTitle;
+
+  /// No description provided for @wishlistSearchHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Cari di wishlist'**
+  String get wishlistSearchHint;
+
+  /// No description provided for @wishlistSavedCount.
+  ///
+  /// In id, this message translates to:
+  /// **'{count} tempat tersimpan'**
+  String wishlistSavedCount(int count);
+
+  /// No description provided for @wishlistSortTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Urutkan'**
+  String get wishlistSortTitle;
+
+  /// No description provided for @wishlistSortNewest.
+  ///
+  /// In id, this message translates to:
+  /// **'Baru disimpan'**
+  String get wishlistSortNewest;
+
+  /// No description provided for @wishlistSortRating.
+  ///
+  /// In id, this message translates to:
+  /// **'Rating tertinggi'**
+  String get wishlistSortRating;
+
+  /// No description provided for @wishlistSortName.
+  ///
+  /// In id, this message translates to:
+  /// **'Nama (A-Z)'**
+  String get wishlistSortName;
+
+  /// No description provided for @wishlistSortCost.
+  ///
+  /// In id, this message translates to:
+  /// **'Biaya terendah'**
+  String get wishlistSortCost;
+
+  /// No description provided for @wishlistSelect.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih banyak'**
+  String get wishlistSelect;
+
+  /// No description provided for @wishlistSelectDone.
+  ///
+  /// In id, this message translates to:
+  /// **'Selesai'**
+  String get wishlistSelectDone;
+
+  /// No description provided for @wishlistSelectedCount.
+  ///
+  /// In id, this message translates to:
+  /// **'{count} dipilih'**
+  String wishlistSelectedCount(int count);
+
+  /// No description provided for @wishlistSelectHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih tempat untuk dihapus atau dimasukkan ke trip'**
+  String get wishlistSelectHint;
+
+  /// No description provided for @wishlistRemove.
+  ///
+  /// In id, this message translates to:
+  /// **'Hapus'**
+  String get wishlistRemove;
+
+  /// No description provided for @wishlistRemoved.
+  ///
+  /// In id, this message translates to:
+  /// **'{name} dihapus dari wishlist.'**
+  String wishlistRemoved(String name);
+
+  /// No description provided for @wishlistUndo.
+  ///
+  /// In id, this message translates to:
+  /// **'Batalkan'**
+  String get wishlistUndo;
+
+  /// No description provided for @wishlistRemovedMany.
+  ///
+  /// In id, this message translates to:
+  /// **'{count} tempat dihapus dari wishlist.'**
+  String wishlistRemovedMany(int count);
+
+  /// No description provided for @wishlistRemoveFailed.
+  ///
+  /// In id, this message translates to:
+  /// **'{count} tempat gagal dihapus. Coba lagi.'**
+  String wishlistRemoveFailed(int count);
+
+  /// No description provided for @wishlistAddedMany.
+  ///
+  /// In id, this message translates to:
+  /// **'{count} tempat ditambahkan ke wishlist {title}.'**
+  String wishlistAddedMany(int count, String title);
+
+  /// No description provided for @wishlistAddedManyNeedsRegenerate.
+  ///
+  /// In id, this message translates to:
+  /// **'{count} tempat ditambahkan ke wishlist {title}. Buat ulang itinerary-nya supaya tempat ini ikut dihitung.'**
+  String wishlistAddedManyNeedsRegenerate(int count, String title);
+
+  /// No description provided for @wishlistAddFailed.
+  ///
+  /// In id, this message translates to:
+  /// **'{count} tempat gagal ditambahkan.'**
+  String wishlistAddFailed(int count);
+
+  /// No description provided for @wishlistGuestTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Masuk untuk melihat wishlist'**
+  String get wishlistGuestTitle;
+
+  /// No description provided for @wishlistGuestBody.
+  ///
+  /// In id, this message translates to:
+  /// **'Tempat yang kamu simpan dengan ikon hati akan terkumpul di sini.'**
+  String get wishlistGuestBody;
+
+  /// No description provided for @wishlistEmptyTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Wishlist masih kosong'**
+  String get wishlistEmptyTitle;
+
+  /// No description provided for @wishlistEmptyBody.
+  ///
+  /// In id, this message translates to:
+  /// **'Tekan ikon hati pada tempat di katalog untuk menyimpannya ke sini.'**
+  String get wishlistEmptyBody;
+
+  /// No description provided for @wishlistExplore.
+  ///
+  /// In id, this message translates to:
+  /// **'Jelajahi katalog'**
+  String get wishlistExplore;
+
+  /// No description provided for @wishlistClearFilters.
+  ///
+  /// In id, this message translates to:
+  /// **'Hapus filter'**
+  String get wishlistClearFilters;
+
+  /// No description provided for @wishlistLoadFailed.
+  ///
+  /// In id, this message translates to:
+  /// **'Wishlist gagal dimuat. Coba lagi.'**
+  String get wishlistLoadFailed;
 }
 
 class _AppLocalizationsDelegate

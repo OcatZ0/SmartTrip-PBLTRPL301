@@ -85,6 +85,7 @@ class UserWishlistController extends AsyncNotifier<Set<int>> {
       } else {
         await repository.add(placesId);
       }
+      ref.invalidate(userWishlistPlacesControllerProvider);
     } catch (_) {
       _set(placesId, saved: wasSaved);
       rethrow;
@@ -106,3 +107,26 @@ class UserWishlistController extends AsyncNotifier<Set<int>> {
 
 final userWishlistControllerProvider =
     AsyncNotifierProvider<UserWishlistController, Set<int>>(UserWishlistController.new);
+
+/// Full list of places in the user's wishlist from GET /wishlist
+class UserWishlistPlacesController extends AsyncNotifier<List<CatalogPlace>> {
+  @override
+  Future<List<CatalogPlace>> build() async {
+    final usersId = ref.watch(sessionControllerProvider.select((session) => session.valueOrNull?.usersId));
+    if (usersId == null) return const [];
+
+    return ref.read(wishlistServiceProvider).fetchPlaces();
+  }
+
+  Future<void> refresh() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() => ref.read(wishlistServiceProvider).fetchPlaces());
+  }
+
+  void removeLocally(int placesId) {
+    state = state.whenData((places) => places.where((p) => p.placesId != placesId).toList());
+  }
+}
+
+final userWishlistPlacesControllerProvider =
+    AsyncNotifierProvider<UserWishlistPlacesController, List<CatalogPlace>>(UserWishlistPlacesController.new);

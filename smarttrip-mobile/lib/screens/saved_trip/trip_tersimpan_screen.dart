@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/error/trip_error_message.dart';
@@ -10,6 +9,7 @@ import '../../l10n/app_localizations.dart';
 import '../../models/saved_trip.dart';
 import '../../services/trip_service.dart';
 import '../../widgets/app_bottom_bar.dart';
+import '../../widgets/panorama_header.dart';
 import '../../widgets/load_error_view.dart';
 import 'widgets/trip_card.dart';
 
@@ -52,11 +52,7 @@ class _TripTersimpanScreenState extends ConsumerState<TripTersimpanScreen> {
       case AppTab.home:
         context.go(AppRoutes.catalog);
       case AppTab.wishlist:
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(
-            const SnackBar(content: Text('Wishlist — segera hadir!')),
-          );
+        context.go(AppRoutes.wishlist);
       case AppTab.trips:
         break; // Sudah berada di halaman Trip Saya.
       case AppTab.profile:
@@ -81,7 +77,7 @@ class _TripTersimpanScreenState extends ConsumerState<TripTersimpanScreen> {
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
           slivers: [
-            SliverToBoxAdapter(child: _Header(tabs: _buildTabBar(allTrips, activeTab))),
+            SliverToBoxAdapter(child: PanoramaHeader(eyebrow: 'PERJALANANMU', title: 'Trip Tersimpan', bottom: _buildTabBar(allTrips, activeTab))),
             const SliverToBoxAdapter(child: SizedBox(height: 18)),
             if (tripsState.isLoading && !tripsState.hasValue)
               const SliverFillRemaining(
@@ -182,72 +178,6 @@ class _TripTersimpanScreenState extends ConsumerState<TripTersimpanScreen> {
             textAlign: TextAlign.center,
             style: appText(13, FontWeight.w500, AppColors.inkMuted),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Barelang panorama with the page title, like the catalog, and the status
-/// tabs floating over its bottom edge.
-class _Header extends StatelessWidget {
-  const _Header({required this.tabs});
-
-  final Widget tabs;
-
-  static const _panoramaHeight = 132.0;
-  static const _tabOverlap = 30.0;
-
-  @override
-  Widget build(BuildContext context) {
-    final topInset = MediaQuery.paddingOf(context).top;
-
-    return SizedBox(
-      height: topInset + _panoramaHeight + _tabOverlap,
-      child: Stack(
-        children: [
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            height: topInset + _panoramaHeight,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                SvgPicture.asset('assets/images/login_panorama.svg', fit: BoxFit.cover, alignment: Alignment.bottomCenter),
-                const DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [Color(0x8C0A2440), Color(0x000A2440)],
-                      stops: [0, 0.75],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Positioned(
-            top: topInset + 18,
-            left: 16,
-            right: 16,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'PERJALANANMU',
-                  style: appText(11, FontWeight.w700, AppColors.sun400, height: 16, letterSpacing: 0.88),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Trip Tersimpan',
-                  style: appText(24, FontWeight.w800, Colors.white, height: 30, letterSpacing: -0.48),
-                ),
-              ],
-            ),
-          ),
-          Positioned(left: 16, right: 16, bottom: 0, child: tabs),
         ],
       ),
     );

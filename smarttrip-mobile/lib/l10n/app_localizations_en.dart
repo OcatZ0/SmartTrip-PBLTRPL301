@@ -1520,4 +1520,107 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tripHotelPickMainFirst => 'Pick the main hotel first';
+
+  @override
+  String get wishlistEyebrow => 'YOUR COLLECTION';
+
+  @override
+  String get wishlistTitle => 'My Wishlist';
+
+  @override
+  String get wishlistSearchHint => 'Search your wishlist';
+
+  @override
+  String wishlistSavedCount(int count) {
+    return '$count saved places';
+  }
+
+  @override
+  String get wishlistSortTitle => 'Sort by';
+
+  @override
+  String get wishlistSortNewest => 'Recently saved';
+
+  @override
+  String get wishlistSortRating => 'Highest rated';
+
+  @override
+  String get wishlistSortName => 'Name (A-Z)';
+
+  @override
+  String get wishlistSortCost => 'Lowest cost';
+
+  @override
+  String get wishlistSelect => 'Select';
+
+  @override
+  String get wishlistSelectDone => 'Done';
+
+  @override
+  String wishlistSelectedCount(int count) {
+    return '$count selected';
+  }
+
+  @override
+  String get wishlistSelectHint => 'Pick places to remove or add to a trip';
+
+  @override
+  String get wishlistRemove => 'Remove';
+
+  @override
+  String wishlistRemoved(String name) {
+    return '$name removed from your wishlist.';
+  }
+
+  @override
+  String get wishlistUndo => 'Undo';
+
+  @override
+  String wishlistRemovedMany(int count) {
+    return '$count places removed from your wishlist.';
+  }
+
+  @override
+  String wishlistRemoveFailed(int count) {
+    return '$count places couldn\'t be removed. Try again.';
+  }
+
+  @override
+  String wishlistAddedMany(int count, String title) {
+    return '$count places added to the $title wishlist.';
+  }
+
+  @override
+  String wishlistAddedManyNeedsRegenerate(int count, String title) {
+    return '$count places added to the $title wishlist. Generate its itinerary again so they are counted.';
+  }
+
+  @override
+  String wishlistAddFailed(int count) {
+    return '$count places couldn\'t be added.';
+  }
+
+  @override
+  String get wishlistGuestTitle => 'Log in to see your wishlist';
+
+  @override
+  String get wishlistGuestBody =>
+      'The places you save with the heart are collected here.';
+
+  @override
+  String get wishlistEmptyTitle => 'Your wishlist is empty';
+
+  @override
+  String get wishlistEmptyBody =>
+      'Tap the heart on a place in the catalog to save it here.';
+
+  @override
+  String get wishlistExplore => 'Explore the catalog';
+
+  @override
+  String get wishlistClearFilters => 'Clear filters';
+
+  @override
+  String get wishlistLoadFailed =>
+      'Your wishlist couldn\'t be loaded. Try again.';
 }

@@ -65,7 +65,6 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
 
   void _goToLogin() => context.go(AppRoutes.login);
 
-  // Only the catalog exists so far; the other tabs get their screens later.
   void _selectTab(AppTab tab) {
     switch (tab) {
       case AppTab.home:
@@ -75,11 +74,7 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
       case AppTab.profile:
         context.push(AppRoutes.profile);
       case AppTab.wishlist:
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(
-            SnackBar(content: Text(AppLocalizations.of(context).comingSoon)),
-          );
+        context.go(AppRoutes.wishlist);
     }
   }
 

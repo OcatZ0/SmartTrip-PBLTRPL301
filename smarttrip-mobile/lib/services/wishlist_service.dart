@@ -33,6 +33,9 @@ class WishlistService {
         .toList();
   }
 
+  /// Alias for fetchPlaces for backward compatibility.
+  Future<List<CatalogPlace>> fetchWishlistPlaces() => fetchPlaces();
+
   Future<void> add(int placesId) async {
     await _call(() => _dio.post<Map<String, dynamic>>('/wishlist', data: {'places_id': placesId}));
   }

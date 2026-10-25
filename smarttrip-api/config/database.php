@@ -99,6 +99,38 @@ return [
             'sslmode' => env('DB_SSLMODE', 'prefer'),
         ],
 
+        // Per-actor connections: the admin panel and the mobile API each log in
+        // to PostgreSQL with their own role, so a query that escapes one side
+        // (SQL injection through /api) never runs with the other side's grants.
+        // 'pgsql' above stays the owner connection for artisan migrate/commands.
+        'pgsql_admin' => [
+            'driver' => 'pgsql',
+            'host' => env('DB_HOST', '127.0.0.1'),
+            'port' => env('DB_PORT', '5432'),
+            'database' => env('DB_DATABASE', 'laravel'),
+            'username' => env('DB_ADMIN_USERNAME', 'admin'),
+            'password' => env('DB_ADMIN_PASSWORD', ''),
+            'charset' => env('DB_CHARSET', 'utf8'),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'search_path' => 'public',
+            'sslmode' => env('DB_SSLMODE', 'prefer'),
+        ],
+
+        'pgsql_wisatawan' => [
+            'driver' => 'pgsql',
+            'host' => env('DB_HOST', '127.0.0.1'),
+            'port' => env('DB_PORT', '5432'),
+            'database' => env('DB_DATABASE', 'laravel'),
+            'username' => env('DB_WISATAWAN_USERNAME', 'wisatawan'),
+            'password' => env('DB_WISATAWAN_PASSWORD', ''),
+            'charset' => env('DB_CHARSET', 'utf8'),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'search_path' => 'public',
+            'sslmode' => env('DB_SSLMODE', 'prefer'),
+        ],
+
         'sqlsrv' => [
             'driver' => 'sqlsrv',
             'url' => env('DB_URL'),
@@ -130,6 +162,22 @@ return [
     'migrations' => [
         'table' => 'migrations',
         'update_date_on_publish' => true,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Actor Connections
+    |--------------------------------------------------------------------------
+    |
+    | Connection name used for HTTP requests per actor, selected by the
+    | UseActorDatabaseConnection middleware. Leave empty (tests, sqlite) to
+    | keep the default connection for every request.
+    |
+    */
+
+    'actor_connections' => [
+        'admin' => env('DB_ADMIN_CONNECTION'),
+        'wisatawan' => env('DB_WISATAWAN_CONNECTION'),
     ],
 
     /*

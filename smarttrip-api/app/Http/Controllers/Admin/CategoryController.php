@@ -146,8 +146,9 @@ class CategoryController extends Controller
     {
         // FK ON DELETE RESTRICT hanya menolak hard delete; soft delete adalah
         // UPDATE, jadi pemakaian harus dicek di sini (PRD audit 2026-10-10).
+        // Pivot tables only: the admin DB role reads trips through v_trips_admin, not the table.
         $inUse = $category->places()->withTrashed()->exists()
-            || $category->trips()->withTrashed()->exists()
+            || DB::table('trip_interest_category')->where('categories_id', $category->categories_id)->exists()
             || DB::table('user_default_interest_category')->where('categories_id', $category->categories_id)->exists();
 
         if ($inUse) {

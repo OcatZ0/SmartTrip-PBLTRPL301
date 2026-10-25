@@ -6,11 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\Place;
 use App\Models\PlaceCandidate;
 use App\Models\PlaceReview;
-use App\Models\Trip;
 use App\Services\ApiUsage;
 use App\Services\Places\GeoapifyPlacesClient;
 use App\Services\Places\GooglePlaceLookupClient;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 /**
  * F024 (US14, SKPPL UC-022) - status sinkronisasi (kapan discovery dan
@@ -52,7 +52,8 @@ class DashboardController extends Controller
                 ->take(self::MOST_WISHLISTED_LIMIT)
                 ->get(),
             'averageInAppRating' => PlaceReview::avg('rating'),
-            'tripVolume' => Trip::count(),
+            // v_trips_admin hides share tokens and budget; the admin DB role cannot read trips directly.
+            'tripVolume' => DB::table('v_trips_admin')->whereNull('deleted_at')->count(),
             // "Data belum lengkap": how many places miss each kind of data.
             'dataGaps' => collect(Place::DATA_GAPS)->map(fn (array $gap, string $key) => [
                 'label' => $gap[0],

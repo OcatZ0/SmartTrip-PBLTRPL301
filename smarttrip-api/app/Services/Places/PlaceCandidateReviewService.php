@@ -56,6 +56,13 @@ class PlaceCandidateReviewService
         $details = $this->detailsClient->fetch($candidate->external_place_id);
 
         $place = DB::transaction(function () use ($candidate, $details) {
+            // Row lock: two admins approving the same candidate at the same time
+            // would otherwise both pass the status check and create two places.
+            $locked = PlaceCandidate::whereKey($candidate->getKey())->lockForUpdate()->first();
+            if ($locked === null || $locked->status === 'approved') {
+                throw new RuntimeException('kandidat ini sudah disetujui');
+            }
+
             $place = Place::create([
                 'external_place_id' => $candidate->external_place_id,
                 'name' => $details['name'] !== '' ? $details['name'] : $candidate->name,

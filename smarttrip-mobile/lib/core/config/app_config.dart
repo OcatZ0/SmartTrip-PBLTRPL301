@@ -8,7 +8,7 @@ class AppConfig {
 
   static const String apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'https://smarttrip.filltech.network/api',
+    defaultValue: 'https://smarttrips.my.id/api',
   );
 
   /// OAuth *web* client ID the backend verifies Google id_tokens against.

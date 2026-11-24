@@ -26,6 +26,10 @@ Route::get('/auth/reset-password', [AuthController::class, 'showResetPasswordFor
 Route::post('/auth/reset-password', [AuthController::class, 'submitResetPasswordForm'])
     ->name('auth.reset-password.submit');
 
+// F016 invite link: the app opens it (Android App Links); without the app it
+// lands on this page. The token is only checked when the app joins.
+Route::view('/undangan/{token}', 'auth.invite')->name('trip.invite');
+
 // Admin web panel (Blade + Bootstrap, session auth) - docs/prd Section 8.
 // Entirely separate from routes/api.php, which the Flutter app consumes.
 Route::prefix('admin')->name('admin.')->group(function () {

@@ -71,20 +71,34 @@
                     <a href="#endpoints">Endpoints</a>
                 </li>
                                     <ul id="tocify-subheader-endpoints" class="tocify-subheader">
-                                                    <li class="tocify-item level-2" data-unique="endpoints-GETapi-places">
+                                                    <li class="tocify-item level-2" data-unique="endpoints-GETapi-categories">
+                                <a href="#endpoints-GETapi-categories">GET api/categories</a>
+                            </li>
+                                                                                <li class="tocify-item level-2" data-unique="endpoints-GETapi-places">
                                 <a href="#endpoints-GETapi-places">GET api/places</a>
+                            </li>
+                                                                                <li class="tocify-item level-2" data-unique="endpoints-GETapi-places-kecamatan">
+                                <a href="#endpoints-GETapi-places-kecamatan">Kecamatan that have at least one open place, for the catalog's
+kecamatan filter. Grouped case-insensitively because admins type the
+value by hand, matching the case-insensitive ?kecamatan= filter.</a>
                             </li>
                                                                                 <li class="tocify-item level-2" data-unique="endpoints-GETapi-places--place_places_id-">
                                 <a href="#endpoints-GETapi-places--place_places_id-">GET api/places/{place_places_id}</a>
-                            </li>
-                                                                                <li class="tocify-item level-2" data-unique="endpoints-GETapi-shared-itinerary--shareToken-">
-                                <a href="#endpoints-GETapi-shared-itinerary--shareToken-">GET api/shared-itinerary/{shareToken}</a>
                             </li>
                                                                                 <li class="tocify-item level-2" data-unique="endpoints-GETapi-profile-preferences">
                                 <a href="#endpoints-GETapi-profile-preferences">GET api/profile/preferences</a>
                             </li>
                                                                                 <li class="tocify-item level-2" data-unique="endpoints-PUTapi-profile-preferences">
                                 <a href="#endpoints-PUTapi-profile-preferences">PUT api/profile/preferences</a>
+                            </li>
+                                                                                <li class="tocify-item level-2" data-unique="endpoints-GETapi-wishlist">
+                                <a href="#endpoints-GETapi-wishlist">GET api/wishlist</a>
+                            </li>
+                                                                                <li class="tocify-item level-2" data-unique="endpoints-POSTapi-wishlist">
+                                <a href="#endpoints-POSTapi-wishlist">POST api/wishlist</a>
+                            </li>
+                                                                                <li class="tocify-item level-2" data-unique="endpoints-DELETEapi-wishlist--place_places_id-">
+                                <a href="#endpoints-DELETEapi-wishlist--place_places_id-">DELETE api/wishlist/{place_places_id}</a>
                             </li>
                                                                                 <li class="tocify-item level-2" data-unique="endpoints-GETapi-trips">
                                 <a href="#endpoints-GETapi-trips">F011: daftar trip yang pernah dibuat user login - punya sendiri saja
@@ -110,6 +124,15 @@ langkah accept/reject terpisah, begitu berhasil auth langsung masuk.</a>
 riwayat kunjungan yang sudah pernah dilihat viewer dkk tetap utuh
 di database, cuma hilang dari daftar/pencarian aktif.</a>
                             </li>
+                                                                                <li class="tocify-item level-2" data-unique="endpoints-PATCHapi-trips--trip_trips_id-">
+                                <a href="#endpoints-PATCHapi-trips--trip_trips_id-">F011: edit trip tersimpan (PRD audit 2026-10-10 - endpoint ini
+sebelumnya tidak ada walau Section 12/13 mengasumsikan trip bisa
+diedit). Owner-only. Kalau field yang menentukan susunan hari berubah
+(num_days, budget_total, jam harian) dan itinerary sudah ada, itinerary
+lama dibuang - design spec Section 13 langkah 9 memang "regenerate
+penuh"; mobile memanggil POST /generate lagi setelah ini. start_date
+dan title tidak membuang itinerary.</a>
+                            </li>
                                                                                 <li class="tocify-item level-2" data-unique="endpoints-POSTapi-trips--trip_trips_id--weights">
                                 <a href="#endpoints-POSTapi-trips--trip_trips_id--weights">F008 langkah 3: minat (trip_interest_category) + bobot 4 kriteria
 dalam satu request - dua hal yang disatukan sengaja, sesuai flow di
@@ -118,6 +141,11 @@ bobot sama rata, tidak diblokir.</a>
                             </li>
                                                                                 <li class="tocify-item level-2" data-unique="endpoints-POSTapi-trips--trip_trips_id--hotel">
                                 <a href="#endpoints-POSTapi-trips--trip_trips_id--hotel">F008 langkah 4: set hotel - dari katalog (places_id) atau custom pin.</a>
+                            </li>
+                                                                                <li class="tocify-item level-2" data-unique="endpoints-PUTapi-trips--trip_trips_id--days--dayNumber--points">
+                                <a href="#endpoints-PUTapi-trips--trip_trips_id--days--dayNumber--points">Detail mode: where one day starts and ends. "end": null makes the day
+end where it starts. A day that already has stops gets its route
+recomputed; its places stay.</a>
                             </li>
                                                                                 <li class="tocify-item level-2" data-unique="endpoints-GETapi-trips--trip_trips_id--hotel-options">
                                 <a href="#endpoints-GETapi-trips--trip_trips_id--hotel-options">F008 langkah 4: top-3 rekomendasi hotel TOPSIS. Kosong kalau trip
@@ -137,23 +165,12 @@ ketemu ditolak dengan pesan jelas, bukan diam-diam diabaikan.</a>
                                 <a href="#endpoints-DELETEapi-trips--trip_trips_id--viewers--viewer-">DELETE api/trips/{trip_trips_id}/viewers/{viewer}</a>
                             </li>
                                                                                 <li class="tocify-item level-2" data-unique="endpoints-POSTapi-trips--trip_trips_id--viewer-invite-link">
-                                <a href="#endpoints-POSTapi-trips--trip_trips_id--viewer-invite-link">Idempotent seperti share_token (Section 10) - link yang sama terus
+                                <a href="#endpoints-POSTapi-trips--trip_trips_id--viewer-invite-link">Idempotent (Section 10) - link yang sama terus
 dipakai sampai sengaja di-reset, bukan generate ulang tiap tap.</a>
                             </li>
                                                                                 <li class="tocify-item level-2" data-unique="endpoints-DELETEapi-trips--trip_trips_id--viewer-invite-link">
                                 <a href="#endpoints-DELETEapi-trips--trip_trips_id--viewer-invite-link">Cuma menutup jalur masuk baru - viewer yang sudah join lewat link
 lama tetap punya akses, baris trip_viewers-nya tidak disentuh.</a>
-                            </li>
-                                                                                <li class="tocify-item level-2" data-unique="endpoints-POSTapi-trips--trip_trips_id--share-link">
-                                <a href="#endpoints-POSTapi-trips--trip_trips_id--share-link">F017 (docs/prd design spec Section 10) - generate/ambil share_token
-publik. Idempotent - link yang sama terus dipakai sampai sengaja
-di-reset, bukan generate ulang tiap tap.</a>
-                            </li>
-                                                                                <li class="tocify-item level-2" data-unique="endpoints-DELETEapi-trips--trip_trips_id--share-link">
-                                <a href="#endpoints-DELETEapi-trips--trip_trips_id--share-link">Matikan link publik - link lama langsung mati buat siapapun yang
-masih pegang, beda dari viewer_invite_token (F015) yang cuma
-menutup jalur masuk baru tanpa mencabut akses yang sudah join
-(share link anon tidak punya baris akses yang bisa "sudah join").</a>
                             </li>
                                                                                 <li class="tocify-item level-2" data-unique="endpoints-GETapi-trips--trip_trips_id--wishlist">
                                 <a href="#endpoints-GETapi-trips--trip_trips_id--wishlist">GET api/trips/{trip_trips_id}/wishlist</a>
@@ -226,7 +243,7 @@ identitasnya.</a>
     </ul>
 
     <ul class="toc-footer" id="last-updated">
-        <li>Last updated: September 29, 2026</li>
+        <li>Last updated: November 24, 2026</li>
     </ul>
 </div>
 
@@ -253,7 +270,215 @@ Panel admin (`/admin/*`, session auth `guard:web`, Laravel Blade + Bootstrap) se
 
     
 
-                                <h2 id="endpoints-GETapi-places">GET api/places</h2>
+                                <h2 id="endpoints-GETapi-categories">GET api/categories</h2>
+
+<p>
+</p>
+
+
+
+<span id="example-requests-GETapi-categories">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request GET \
+    --get "http://localhost:8000/api/categories" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json"</code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:8000/api/categories"
+);
+
+const headers = {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+
+fetch(url, {
+    method: "GET",
+    headers,
+}).then(response =&gt; response.json());</code></pre></div>
+
+</span>
+
+<span id="example-responses-GETapi-categories">
+            <blockquote>
+            <p>Example response (200):</p>
+        </blockquote>
+                <details class="annotation">
+            <summary style="cursor: pointer;">
+                <small onclick="textContent = parentElement.parentElement.open ? 'Show headers' : 'Hide headers'">Show headers</small>
+            </summary>
+            <pre><code class="language-http">cache-control: no-cache, private
+content-type: application/json
+access-control-allow-origin: *
+ </code></pre></details>         <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;data&quot;: [
+        {
+            &quot;categories_id&quot;: 8,
+            &quot;name_id&quot;: &quot;Belanja&quot;,
+            &quot;name_en&quot;: &quot;Shopping&quot;,
+            &quot;slug&quot;: &quot;belanja&quot;,
+            &quot;icon_symbol&quot;: &quot;ombak&quot;,
+            &quot;show_in_onboarding&quot;: true
+        },
+        {
+            &quot;categories_id&quot;: 10,
+            &quot;name_id&quot;: &quot;Kuliner Lokal&quot;,
+            &quot;name_en&quot;: &quot;Local Food&quot;,
+            &quot;slug&quot;: &quot;kuliner-lokal&quot;,
+            &quot;icon_symbol&quot;: &quot;ombak&quot;,
+            &quot;show_in_onboarding&quot;: true
+        },
+        {
+            &quot;categories_id&quot;: 9,
+            &quot;name_id&quot;: &quot;Kuliner Seafood&quot;,
+            &quot;name_en&quot;: &quot;Seafood&quot;,
+            &quot;slug&quot;: &quot;kuliner-seafood&quot;,
+            &quot;icon_symbol&quot;: &quot;ombak&quot;,
+            &quot;show_in_onboarding&quot;: true
+        },
+        {
+            &quot;categories_id&quot;: 5,
+            &quot;name_id&quot;: &quot;Landmark &amp; Ikon Kota&quot;,
+            &quot;name_en&quot;: &quot;Landmarks&quot;,
+            &quot;slug&quot;: &quot;landmark&quot;,
+            &quot;icon_symbol&quot;: &quot;ombak&quot;,
+            &quot;show_in_onboarding&quot;: true
+        },
+        {
+            &quot;categories_id&quot;: 1,
+            &quot;name_id&quot;: &quot;Pantai&quot;,
+            &quot;name_en&quot;: &quot;Beach&quot;,
+            &quot;slug&quot;: &quot;pantai&quot;,
+            &quot;icon_symbol&quot;: &quot;ombak&quot;,
+            &quot;show_in_onboarding&quot;: true
+        },
+        {
+            &quot;categories_id&quot;: 3,
+            &quot;name_id&quot;: &quot;Sejarah &amp; Budaya&quot;,
+            &quot;name_en&quot;: &quot;History &amp; Culture&quot;,
+            &quot;slug&quot;: &quot;sejarah&quot;,
+            &quot;icon_symbol&quot;: &quot;ombak&quot;,
+            &quot;show_in_onboarding&quot;: true
+        },
+        {
+            &quot;categories_id&quot;: 6,
+            &quot;name_id&quot;: &quot;Spot Foto&quot;,
+            &quot;name_en&quot;: &quot;Photo Spots&quot;,
+            &quot;slug&quot;: &quot;spot-foto&quot;,
+            &quot;icon_symbol&quot;: &quot;ombak&quot;,
+            &quot;show_in_onboarding&quot;: true
+        },
+        {
+            &quot;categories_id&quot;: 7,
+            &quot;name_id&quot;: &quot;Taman &amp; Rekreasi&quot;,
+            &quot;name_en&quot;: &quot;Parks &amp; Recreation&quot;,
+            &quot;slug&quot;: &quot;rekreasi&quot;,
+            &quot;icon_symbol&quot;: &quot;ombak&quot;,
+            &quot;show_in_onboarding&quot;: true
+        },
+        {
+            &quot;categories_id&quot;: 2,
+            &quot;name_id&quot;: &quot;Wisata Alam&quot;,
+            &quot;name_en&quot;: &quot;Nature&quot;,
+            &quot;slug&quot;: &quot;alam&quot;,
+            &quot;icon_symbol&quot;: &quot;ombak&quot;,
+            &quot;show_in_onboarding&quot;: true
+        },
+        {
+            &quot;categories_id&quot;: 4,
+            &quot;name_id&quot;: &quot;Wisata Religi&quot;,
+            &quot;name_en&quot;: &quot;Religious Sites&quot;,
+            &quot;slug&quot;: &quot;religi&quot;,
+            &quot;icon_symbol&quot;: &quot;ombak&quot;,
+            &quot;show_in_onboarding&quot;: true
+        }
+    ]
+}</code>
+ </pre>
+    </span>
+<span id="execution-results-GETapi-categories" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-GETapi-categories"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-GETapi-categories"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-GETapi-categories" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-GETapi-categories">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-GETapi-categories" data-method="GET"
+      data-path="api/categories"
+      data-authed="0"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('GETapi-categories', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-GETapi-categories"
+                    onclick="tryItOut('GETapi-categories');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-GETapi-categories"
+                    onclick="cancelTryOut('GETapi-categories');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-GETapi-categories"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-green">GET</small>
+            <b><code>api/categories</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="GETapi-categories"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="GETapi-categories"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        </form>
+
+                    <h2 id="endpoints-GETapi-places">GET api/places</h2>
 
 <p>
 </p>
@@ -303,17 +528,498 @@ access-control-allow-origin: *
  </code></pre></details>         <pre>
 
 <code class="language-json" style="max-height: 300px;">{
-    &quot;data&quot;: [],
+    &quot;data&quot;: [
+        {
+            &quot;places_id&quot;: 1,
+            &quot;name&quot;: &quot;Jembatan Barelang (Raja Haji Fisabilillah)&quot;,
+            &quot;type&quot;: &quot;attraction&quot;,
+            &quot;kecamatan&quot;: null,
+            &quot;lat&quot;: 0.98154,
+            &quot;lng&quot;: 104.0416,
+            &quot;photo_url&quot;: null,
+            &quot;rating&quot;: null,
+            &quot;review_count_in_app&quot;: 0,
+            &quot;estimated_cost_idr&quot;: null,
+            &quot;is_outdoor&quot;: true,
+            &quot;categories&quot;: [
+                {
+                    &quot;categories_id&quot;: 5,
+                    &quot;name_id&quot;: &quot;Landmark &amp; Ikon Kota&quot;,
+                    &quot;name_en&quot;: &quot;Landmarks&quot;,
+                    &quot;slug&quot;: &quot;landmark&quot;
+                },
+                {
+                    &quot;categories_id&quot;: 6,
+                    &quot;name_id&quot;: &quot;Spot Foto&quot;,
+                    &quot;name_en&quot;: &quot;Photo Spots&quot;,
+                    &quot;slug&quot;: &quot;spot-foto&quot;
+                }
+            ]
+        },
+        {
+            &quot;places_id&quot;: 2,
+            &quot;name&quot;: &quot;Monumen Welcome to Batam&quot;,
+            &quot;type&quot;: &quot;attraction&quot;,
+            &quot;kecamatan&quot;: &quot;Batam Kota&quot;,
+            &quot;lat&quot;: 1.12216,
+            &quot;lng&quot;: 104.05434,
+            &quot;photo_url&quot;: null,
+            &quot;rating&quot;: null,
+            &quot;review_count_in_app&quot;: 0,
+            &quot;estimated_cost_idr&quot;: null,
+            &quot;is_outdoor&quot;: true,
+            &quot;categories&quot;: [
+                {
+                    &quot;categories_id&quot;: 5,
+                    &quot;name_id&quot;: &quot;Landmark &amp; Ikon Kota&quot;,
+                    &quot;name_en&quot;: &quot;Landmarks&quot;,
+                    &quot;slug&quot;: &quot;landmark&quot;
+                },
+                {
+                    &quot;categories_id&quot;: 6,
+                    &quot;name_id&quot;: &quot;Spot Foto&quot;,
+                    &quot;name_en&quot;: &quot;Photo Spots&quot;,
+                    &quot;slug&quot;: &quot;spot-foto&quot;
+                }
+            ]
+        },
+        {
+            &quot;places_id&quot;: 3,
+            &quot;name&quot;: &quot;Masjid Agung Batam&quot;,
+            &quot;type&quot;: &quot;attraction&quot;,
+            &quot;kecamatan&quot;: &quot;Batam Kota&quot;,
+            &quot;lat&quot;: 1.1264,
+            &quot;lng&quot;: 104.05338,
+            &quot;photo_url&quot;: null,
+            &quot;rating&quot;: null,
+            &quot;review_count_in_app&quot;: 0,
+            &quot;estimated_cost_idr&quot;: null,
+            &quot;is_outdoor&quot;: false,
+            &quot;categories&quot;: [
+                {
+                    &quot;categories_id&quot;: 3,
+                    &quot;name_id&quot;: &quot;Sejarah &amp; Budaya&quot;,
+                    &quot;name_en&quot;: &quot;History &amp; Culture&quot;,
+                    &quot;slug&quot;: &quot;sejarah&quot;
+                },
+                {
+                    &quot;categories_id&quot;: 4,
+                    &quot;name_id&quot;: &quot;Wisata Religi&quot;,
+                    &quot;name_en&quot;: &quot;Religious Sites&quot;,
+                    &quot;slug&quot;: &quot;religi&quot;
+                }
+            ]
+        },
+        {
+            &quot;places_id&quot;: 4,
+            &quot;name&quot;: &quot;Dataran Engku Putri&quot;,
+            &quot;type&quot;: &quot;attraction&quot;,
+            &quot;kecamatan&quot;: &quot;Batam Kota&quot;,
+            &quot;lat&quot;: 1.12864,
+            &quot;lng&quot;: 104.05406,
+            &quot;photo_url&quot;: null,
+            &quot;rating&quot;: null,
+            &quot;review_count_in_app&quot;: 0,
+            &quot;estimated_cost_idr&quot;: null,
+            &quot;is_outdoor&quot;: true,
+            &quot;categories&quot;: [
+                {
+                    &quot;categories_id&quot;: 7,
+                    &quot;name_id&quot;: &quot;Taman &amp; Rekreasi&quot;,
+                    &quot;name_en&quot;: &quot;Parks &amp; Recreation&quot;,
+                    &quot;slug&quot;: &quot;rekreasi&quot;
+                }
+            ]
+        },
+        {
+            &quot;places_id&quot;: 5,
+            &quot;name&quot;: &quot;Maha Vihara Duta Maitreya&quot;,
+            &quot;type&quot;: &quot;attraction&quot;,
+            &quot;kecamatan&quot;: &quot;Batam Kota&quot;,
+            &quot;lat&quot;: 1.12944,
+            &quot;lng&quot;: 104.03472,
+            &quot;photo_url&quot;: null,
+            &quot;rating&quot;: null,
+            &quot;review_count_in_app&quot;: 0,
+            &quot;estimated_cost_idr&quot;: null,
+            &quot;is_outdoor&quot;: false,
+            &quot;categories&quot;: [
+                {
+                    &quot;categories_id&quot;: 3,
+                    &quot;name_id&quot;: &quot;Sejarah &amp; Budaya&quot;,
+                    &quot;name_en&quot;: &quot;History &amp; Culture&quot;,
+                    &quot;slug&quot;: &quot;sejarah&quot;
+                },
+                {
+                    &quot;categories_id&quot;: 4,
+                    &quot;name_id&quot;: &quot;Wisata Religi&quot;,
+                    &quot;name_en&quot;: &quot;Religious Sites&quot;,
+                    &quot;slug&quot;: &quot;religi&quot;
+                }
+            ]
+        },
+        {
+            &quot;places_id&quot;: 6,
+            &quot;name&quot;: &quot;Museum Raja Ali Haji&quot;,
+            &quot;type&quot;: &quot;attraction&quot;,
+            &quot;kecamatan&quot;: &quot;Batam Kota&quot;,
+            &quot;lat&quot;: 1.12939,
+            &quot;lng&quot;: 104.05377,
+            &quot;photo_url&quot;: null,
+            &quot;rating&quot;: null,
+            &quot;review_count_in_app&quot;: 0,
+            &quot;estimated_cost_idr&quot;: null,
+            &quot;is_outdoor&quot;: false,
+            &quot;categories&quot;: [
+                {
+                    &quot;categories_id&quot;: 3,
+                    &quot;name_id&quot;: &quot;Sejarah &amp; Budaya&quot;,
+                    &quot;name_en&quot;: &quot;History &amp; Culture&quot;,
+                    &quot;slug&quot;: &quot;sejarah&quot;
+                }
+            ]
+        },
+        {
+            &quot;places_id&quot;: 7,
+            &quot;name&quot;: &quot;Pantai Ocarina&quot;,
+            &quot;type&quot;: &quot;attraction&quot;,
+            &quot;kecamatan&quot;: &quot;Bengkong&quot;,
+            &quot;lat&quot;: 1.15196,
+            &quot;lng&quot;: 104.05471,
+            &quot;photo_url&quot;: null,
+            &quot;rating&quot;: null,
+            &quot;review_count_in_app&quot;: 0,
+            &quot;estimated_cost_idr&quot;: null,
+            &quot;is_outdoor&quot;: true,
+            &quot;categories&quot;: [
+                {
+                    &quot;categories_id&quot;: 1,
+                    &quot;name_id&quot;: &quot;Pantai&quot;,
+                    &quot;name_en&quot;: &quot;Beach&quot;,
+                    &quot;slug&quot;: &quot;pantai&quot;
+                },
+                {
+                    &quot;categories_id&quot;: 7,
+                    &quot;name_id&quot;: &quot;Taman &amp; Rekreasi&quot;,
+                    &quot;name_en&quot;: &quot;Parks &amp; Recreation&quot;,
+                    &quot;slug&quot;: &quot;rekreasi&quot;
+                }
+            ]
+        },
+        {
+            &quot;places_id&quot;: 8,
+            &quot;name&quot;: &quot;Pantai Nongsa&quot;,
+            &quot;type&quot;: &quot;attraction&quot;,
+            &quot;kecamatan&quot;: &quot;Nongsa&quot;,
+            &quot;lat&quot;: 1.19468,
+            &quot;lng&quot;: 104.08896,
+            &quot;photo_url&quot;: null,
+            &quot;rating&quot;: null,
+            &quot;review_count_in_app&quot;: 0,
+            &quot;estimated_cost_idr&quot;: null,
+            &quot;is_outdoor&quot;: true,
+            &quot;categories&quot;: [
+                {
+                    &quot;categories_id&quot;: 1,
+                    &quot;name_id&quot;: &quot;Pantai&quot;,
+                    &quot;name_en&quot;: &quot;Beach&quot;,
+                    &quot;slug&quot;: &quot;pantai&quot;
+                },
+                {
+                    &quot;categories_id&quot;: 2,
+                    &quot;name_id&quot;: &quot;Wisata Alam&quot;,
+                    &quot;name_en&quot;: &quot;Nature&quot;,
+                    &quot;slug&quot;: &quot;alam&quot;
+                }
+            ]
+        },
+        {
+            &quot;places_id&quot;: 9,
+            &quot;name&quot;: &quot;Pantai Setokok&quot;,
+            &quot;type&quot;: &quot;attraction&quot;,
+            &quot;kecamatan&quot;: null,
+            &quot;lat&quot;: 0.92335,
+            &quot;lng&quot;: 104.06094,
+            &quot;photo_url&quot;: null,
+            &quot;rating&quot;: null,
+            &quot;review_count_in_app&quot;: 0,
+            &quot;estimated_cost_idr&quot;: null,
+            &quot;is_outdoor&quot;: true,
+            &quot;categories&quot;: [
+                {
+                    &quot;categories_id&quot;: 1,
+                    &quot;name_id&quot;: &quot;Pantai&quot;,
+                    &quot;name_en&quot;: &quot;Beach&quot;,
+                    &quot;slug&quot;: &quot;pantai&quot;
+                },
+                {
+                    &quot;categories_id&quot;: 2,
+                    &quot;name_id&quot;: &quot;Wisata Alam&quot;,
+                    &quot;name_en&quot;: &quot;Nature&quot;,
+                    &quot;slug&quot;: &quot;alam&quot;
+                }
+            ]
+        },
+        {
+            &quot;places_id&quot;: 10,
+            &quot;name&quot;: &quot;Infinite Studio Kota Tua&quot;,
+            &quot;type&quot;: &quot;attraction&quot;,
+            &quot;kecamatan&quot;: &quot;Nongsa&quot;,
+            &quot;lat&quot;: 1.18677,
+            &quot;lng&quot;: 104.09755,
+            &quot;photo_url&quot;: null,
+            &quot;rating&quot;: null,
+            &quot;review_count_in_app&quot;: 0,
+            &quot;estimated_cost_idr&quot;: null,
+            &quot;is_outdoor&quot;: true,
+            &quot;categories&quot;: [
+                {
+                    &quot;categories_id&quot;: 6,
+                    &quot;name_id&quot;: &quot;Spot Foto&quot;,
+                    &quot;name_en&quot;: &quot;Photo Spots&quot;,
+                    &quot;slug&quot;: &quot;spot-foto&quot;
+                },
+                {
+                    &quot;categories_id&quot;: 7,
+                    &quot;name_id&quot;: &quot;Taman &amp; Rekreasi&quot;,
+                    &quot;name_en&quot;: &quot;Parks &amp; Recreation&quot;,
+                    &quot;slug&quot;: &quot;rekreasi&quot;
+                }
+            ]
+        },
+        {
+            &quot;places_id&quot;: 11,
+            &quot;name&quot;: &quot;Tangga 1000 Taman Habibie&quot;,
+            &quot;type&quot;: &quot;attraction&quot;,
+            &quot;kecamatan&quot;: &quot;Sekupang&quot;,
+            &quot;lat&quot;: 1.14504,
+            &quot;lng&quot;: 103.94751,
+            &quot;photo_url&quot;: null,
+            &quot;rating&quot;: null,
+            &quot;review_count_in_app&quot;: 0,
+            &quot;estimated_cost_idr&quot;: null,
+            &quot;is_outdoor&quot;: true,
+            &quot;categories&quot;: [
+                {
+                    &quot;categories_id&quot;: 2,
+                    &quot;name_id&quot;: &quot;Wisata Alam&quot;,
+                    &quot;name_en&quot;: &quot;Nature&quot;,
+                    &quot;slug&quot;: &quot;alam&quot;
+                },
+                {
+                    &quot;categories_id&quot;: 6,
+                    &quot;name_id&quot;: &quot;Spot Foto&quot;,
+                    &quot;name_en&quot;: &quot;Photo Spots&quot;,
+                    &quot;slug&quot;: &quot;spot-foto&quot;
+                }
+            ]
+        },
+        {
+            &quot;places_id&quot;: 12,
+            &quot;name&quot;: &quot;Monumen Perahu Eks Pengungsi Vietnam&quot;,
+            &quot;type&quot;: &quot;attraction&quot;,
+            &quot;kecamatan&quot;: &quot;Galang&quot;,
+            &quot;lat&quot;: 0.75369,
+            &quot;lng&quot;: 104.20348,
+            &quot;photo_url&quot;: null,
+            &quot;rating&quot;: null,
+            &quot;review_count_in_app&quot;: 0,
+            &quot;estimated_cost_idr&quot;: null,
+            &quot;is_outdoor&quot;: true,
+            &quot;categories&quot;: [
+                {
+                    &quot;categories_id&quot;: 3,
+                    &quot;name_id&quot;: &quot;Sejarah &amp; Budaya&quot;,
+                    &quot;name_en&quot;: &quot;History &amp; Culture&quot;,
+                    &quot;slug&quot;: &quot;sejarah&quot;
+                }
+            ]
+        },
+        {
+            &quot;places_id&quot;: 13,
+            &quot;name&quot;: &quot;Masjid Sultan Mahmud Riayat Syah&quot;,
+            &quot;type&quot;: &quot;attraction&quot;,
+            &quot;kecamatan&quot;: &quot;Batu Aji&quot;,
+            &quot;lat&quot;: 1.05113,
+            &quot;lng&quot;: 103.93511,
+            &quot;photo_url&quot;: null,
+            &quot;rating&quot;: null,
+            &quot;review_count_in_app&quot;: 0,
+            &quot;estimated_cost_idr&quot;: null,
+            &quot;is_outdoor&quot;: false,
+            &quot;categories&quot;: [
+                {
+                    &quot;categories_id&quot;: 4,
+                    &quot;name_id&quot;: &quot;Wisata Religi&quot;,
+                    &quot;name_en&quot;: &quot;Religious Sites&quot;,
+                    &quot;slug&quot;: &quot;religi&quot;
+                }
+            ]
+        },
+        {
+            &quot;places_id&quot;: 14,
+            &quot;name&quot;: &quot;Nagoya Hill Shopping Centre&quot;,
+            &quot;type&quot;: &quot;attraction&quot;,
+            &quot;kecamatan&quot;: &quot;Lubuk Baja&quot;,
+            &quot;lat&quot;: 1.14627,
+            &quot;lng&quot;: 104.01261,
+            &quot;photo_url&quot;: null,
+            &quot;rating&quot;: null,
+            &quot;review_count_in_app&quot;: 0,
+            &quot;estimated_cost_idr&quot;: null,
+            &quot;is_outdoor&quot;: false,
+            &quot;categories&quot;: [
+                {
+                    &quot;categories_id&quot;: 8,
+                    &quot;name_id&quot;: &quot;Belanja&quot;,
+                    &quot;name_en&quot;: &quot;Shopping&quot;,
+                    &quot;slug&quot;: &quot;belanja&quot;
+                }
+            ]
+        },
+        {
+            &quot;places_id&quot;: 15,
+            &quot;name&quot;: &quot;Mega Mall Batam Centre&quot;,
+            &quot;type&quot;: &quot;attraction&quot;,
+            &quot;kecamatan&quot;: &quot;Batam Kota&quot;,
+            &quot;lat&quot;: 1.12924,
+            &quot;lng&quot;: 104.05598,
+            &quot;photo_url&quot;: null,
+            &quot;rating&quot;: null,
+            &quot;review_count_in_app&quot;: 0,
+            &quot;estimated_cost_idr&quot;: null,
+            &quot;is_outdoor&quot;: false,
+            &quot;categories&quot;: [
+                {
+                    &quot;categories_id&quot;: 8,
+                    &quot;name_id&quot;: &quot;Belanja&quot;,
+                    &quot;name_en&quot;: &quot;Shopping&quot;,
+                    &quot;slug&quot;: &quot;belanja&quot;
+                }
+            ]
+        },
+        {
+            &quot;places_id&quot;: 16,
+            &quot;name&quot;: &quot;Golden Prawn Seafood&quot;,
+            &quot;type&quot;: &quot;culinary&quot;,
+            &quot;kecamatan&quot;: &quot;Bengkong&quot;,
+            &quot;lat&quot;: 1.1603,
+            &quot;lng&quot;: 104.03718,
+            &quot;photo_url&quot;: null,
+            &quot;rating&quot;: null,
+            &quot;review_count_in_app&quot;: 0,
+            &quot;estimated_cost_idr&quot;: null,
+            &quot;is_outdoor&quot;: false,
+            &quot;categories&quot;: [
+                {
+                    &quot;categories_id&quot;: 9,
+                    &quot;name_id&quot;: &quot;Kuliner Seafood&quot;,
+                    &quot;name_en&quot;: &quot;Seafood&quot;,
+                    &quot;slug&quot;: &quot;kuliner-seafood&quot;
+                }
+            ]
+        },
+        {
+            &quot;places_id&quot;: 17,
+            &quot;name&quot;: &quot;Wey Wey Seafood&quot;,
+            &quot;type&quot;: &quot;culinary&quot;,
+            &quot;kecamatan&quot;: &quot;Batu Ampar&quot;,
+            &quot;lat&quot;: 1.15253,
+            &quot;lng&quot;: 103.99804,
+            &quot;photo_url&quot;: null,
+            &quot;rating&quot;: null,
+            &quot;review_count_in_app&quot;: 0,
+            &quot;estimated_cost_idr&quot;: null,
+            &quot;is_outdoor&quot;: false,
+            &quot;categories&quot;: [
+                {
+                    &quot;categories_id&quot;: 9,
+                    &quot;name_id&quot;: &quot;Kuliner Seafood&quot;,
+                    &quot;name_en&quot;: &quot;Seafood&quot;,
+                    &quot;slug&quot;: &quot;kuliner-seafood&quot;
+                }
+            ]
+        },
+        {
+            &quot;places_id&quot;: 18,
+            &quot;name&quot;: &quot;Setia Budi Seafood Restaurant&quot;,
+            &quot;type&quot;: &quot;culinary&quot;,
+            &quot;kecamatan&quot;: &quot;Nongsa&quot;,
+            &quot;lat&quot;: 1.19538,
+            &quot;lng&quot;: 104.08562,
+            &quot;photo_url&quot;: null,
+            &quot;rating&quot;: null,
+            &quot;review_count_in_app&quot;: 0,
+            &quot;estimated_cost_idr&quot;: null,
+            &quot;is_outdoor&quot;: false,
+            &quot;categories&quot;: [
+                {
+                    &quot;categories_id&quot;: 9,
+                    &quot;name_id&quot;: &quot;Kuliner Seafood&quot;,
+                    &quot;name_en&quot;: &quot;Seafood&quot;,
+                    &quot;slug&quot;: &quot;kuliner-seafood&quot;
+                }
+            ]
+        },
+        {
+            &quot;places_id&quot;: 19,
+            &quot;name&quot;: &quot;Ocean Garden Seafood&quot;,
+            &quot;type&quot;: &quot;culinary&quot;,
+            &quot;kecamatan&quot;: &quot;Batam Kota&quot;,
+            &quot;lat&quot;: 1.13439,
+            &quot;lng&quot;: 104.04797,
+            &quot;photo_url&quot;: null,
+            &quot;rating&quot;: null,
+            &quot;review_count_in_app&quot;: 0,
+            &quot;estimated_cost_idr&quot;: null,
+            &quot;is_outdoor&quot;: false,
+            &quot;categories&quot;: [
+                {
+                    &quot;categories_id&quot;: 9,
+                    &quot;name_id&quot;: &quot;Kuliner Seafood&quot;,
+                    &quot;name_en&quot;: &quot;Seafood&quot;,
+                    &quot;slug&quot;: &quot;kuliner-seafood&quot;
+                }
+            ]
+        },
+        {
+            &quot;places_id&quot;: 20,
+            &quot;name&quot;: &quot;Kedai Kopi Pelangi (Sup Ikan)&quot;,
+            &quot;type&quot;: &quot;culinary&quot;,
+            &quot;kecamatan&quot;: &quot;Lubuk Baja&quot;,
+            &quot;lat&quot;: 1.13274,
+            &quot;lng&quot;: 104.01116,
+            &quot;photo_url&quot;: null,
+            &quot;rating&quot;: null,
+            &quot;review_count_in_app&quot;: 0,
+            &quot;estimated_cost_idr&quot;: null,
+            &quot;is_outdoor&quot;: false,
+            &quot;categories&quot;: [
+                {
+                    &quot;categories_id&quot;: 9,
+                    &quot;name_id&quot;: &quot;Kuliner Seafood&quot;,
+                    &quot;name_en&quot;: &quot;Seafood&quot;,
+                    &quot;slug&quot;: &quot;kuliner-seafood&quot;
+                },
+                {
+                    &quot;categories_id&quot;: 10,
+                    &quot;name_id&quot;: &quot;Kuliner Lokal&quot;,
+                    &quot;name_en&quot;: &quot;Local Food&quot;,
+                    &quot;slug&quot;: &quot;kuliner-lokal&quot;
+                }
+            ]
+        }
+    ],
     &quot;links&quot;: {
         &quot;first&quot;: &quot;http://localhost:8000/api/places?page=1&quot;,
-        &quot;last&quot;: &quot;http://localhost:8000/api/places?page=1&quot;,
+        &quot;last&quot;: &quot;http://localhost:8000/api/places?page=2&quot;,
         &quot;prev&quot;: null,
-        &quot;next&quot;: null
+        &quot;next&quot;: &quot;http://localhost:8000/api/places?page=2&quot;
     },
     &quot;meta&quot;: {
         &quot;current_page&quot;: 1,
-        &quot;from&quot;: null,
-        &quot;last_page&quot;: 1,
+        &quot;from&quot;: 1,
+        &quot;last_page&quot;: 2,
         &quot;links&quot;: [
             {
                 &quot;url&quot;: null,
@@ -328,16 +1034,22 @@ access-control-allow-origin: *
                 &quot;active&quot;: true
             },
             {
-                &quot;url&quot;: null,
+                &quot;url&quot;: &quot;http://localhost:8000/api/places?page=2&quot;,
+                &quot;label&quot;: &quot;2&quot;,
+                &quot;page&quot;: 2,
+                &quot;active&quot;: false
+            },
+            {
+                &quot;url&quot;: &quot;http://localhost:8000/api/places?page=2&quot;,
                 &quot;label&quot;: &quot;Next &amp;raquo;&quot;,
-                &quot;page&quot;: null,
+                &quot;page&quot;: 2,
                 &quot;active&quot;: false
             }
         ],
         &quot;path&quot;: &quot;http://localhost:8000/api/places&quot;,
         &quot;per_page&quot;: 20,
-        &quot;to&quot;: null,
-        &quot;total&quot;: 0
+        &quot;to&quot;: 20,
+        &quot;total&quot;: 31
     }
 }</code>
  </pre>
@@ -415,6 +1127,168 @@ You can check the Dev Tools console for debugging information.</code></pre>
             </div>
                         </form>
 
+                    <h2 id="endpoints-GETapi-places-kecamatan">Kecamatan that have at least one open place, for the catalog&#039;s
+kecamatan filter. Grouped case-insensitively because admins type the
+value by hand, matching the case-insensitive ?kecamatan= filter.</h2>
+
+<p>
+</p>
+
+
+
+<span id="example-requests-GETapi-places-kecamatan">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request GET \
+    --get "http://localhost:8000/api/places/kecamatan" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json"</code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:8000/api/places/kecamatan"
+);
+
+const headers = {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+
+fetch(url, {
+    method: "GET",
+    headers,
+}).then(response =&gt; response.json());</code></pre></div>
+
+</span>
+
+<span id="example-responses-GETapi-places-kecamatan">
+            <blockquote>
+            <p>Example response (200):</p>
+        </blockquote>
+                <details class="annotation">
+            <summary style="cursor: pointer;">
+                <small onclick="textContent = parentElement.parentElement.open ? 'Show headers' : 'Hide headers'">Show headers</small>
+            </summary>
+            <pre><code class="language-http">cache-control: no-cache, private
+content-type: application/json
+access-control-allow-origin: *
+ </code></pre></details>         <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;data&quot;: [
+        {
+            &quot;name&quot;: &quot;Batam Kota&quot;,
+            &quot;places_count&quot;: 10
+        },
+        {
+            &quot;name&quot;: &quot;Batu Aji&quot;,
+            &quot;places_count&quot;: 1
+        },
+        {
+            &quot;name&quot;: &quot;Batu Ampar&quot;,
+            &quot;places_count&quot;: 3
+        },
+        {
+            &quot;name&quot;: &quot;Bengkong&quot;,
+            &quot;places_count&quot;: 2
+        },
+        {
+            &quot;name&quot;: &quot;Galang&quot;,
+            &quot;places_count&quot;: 1
+        },
+        {
+            &quot;name&quot;: &quot;Lubuk Baja&quot;,
+            &quot;places_count&quot;: 7
+        },
+        {
+            &quot;name&quot;: &quot;Nongsa&quot;,
+            &quot;places_count&quot;: 4
+        },
+        {
+            &quot;name&quot;: &quot;Sekupang&quot;,
+            &quot;places_count&quot;: 1
+        }
+    ]
+}</code>
+ </pre>
+    </span>
+<span id="execution-results-GETapi-places-kecamatan" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-GETapi-places-kecamatan"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-GETapi-places-kecamatan"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-GETapi-places-kecamatan" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-GETapi-places-kecamatan">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-GETapi-places-kecamatan" data-method="GET"
+      data-path="api/places/kecamatan"
+      data-authed="0"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('GETapi-places-kecamatan', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-GETapi-places-kecamatan"
+                    onclick="tryItOut('GETapi-places-kecamatan');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-GETapi-places-kecamatan"
+                    onclick="cancelTryOut('GETapi-places-kecamatan');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-GETapi-places-kecamatan"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-green">GET</small>
+            <b><code>api/places/kecamatan</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="GETapi-places-kecamatan"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="GETapi-places-kecamatan"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        </form>
+
                     <h2 id="endpoints-GETapi-places--place_places_id-">GET api/places/{place_places_id}</h2>
 
 <p>
@@ -428,14 +1302,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://localhost:8000/api/places/16" \
+    --get "http://localhost:8000/api/places/1" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/places/16"
+    "http://localhost:8000/api/places/1"
 );
 
 const headers = {
@@ -453,7 +1327,7 @@ fetch(url, {
 
 <span id="example-responses-GETapi-places--place_places_id-">
             <blockquote>
-            <p>Example response (404):</p>
+            <p>Example response (200):</p>
         </blockquote>
                 <details class="annotation">
             <summary style="cursor: pointer;">
@@ -465,7 +1339,41 @@ access-control-allow-origin: *
  </code></pre></details>         <pre>
 
 <code class="language-json" style="max-height: 300px;">{
-    &quot;message&quot;: &quot;No query results for model [App\\Models\\Place] 16&quot;
+    &quot;data&quot;: {
+        &quot;places_id&quot;: 1,
+        &quot;name&quot;: &quot;Jembatan Barelang (Raja Haji Fisabilillah)&quot;,
+        &quot;type&quot;: &quot;attraction&quot;,
+        &quot;address&quot;: &quot;Jembatan Barelang 1, Batam&quot;,
+        &quot;kecamatan&quot;: null,
+        &quot;lat&quot;: 0.98154,
+        &quot;lng&quot;: 104.0416,
+        &quot;maps_url&quot;: &quot;https://www.google.com/maps/search/?api=1&amp;query=0.9815400,104.0416000&quot;,
+        &quot;photo_url&quot;: null,
+        &quot;photos&quot;: [],
+        &quot;description_id&quot;: null,
+        &quot;description_en&quot;: null,
+        &quot;opening_hours&quot;: null,
+        &quot;rating&quot;: null,
+        &quot;review_count_in_app&quot;: 0,
+        &quot;estimated_cost_idr&quot;: null,
+        &quot;is_outdoor&quot;: true,
+        &quot;estimated_visit_minutes&quot;: 60,
+        &quot;categories&quot;: [
+            {
+                &quot;categories_id&quot;: 5,
+                &quot;name_id&quot;: &quot;Landmark &amp; Ikon Kota&quot;,
+                &quot;name_en&quot;: &quot;Landmarks&quot;,
+                &quot;slug&quot;: &quot;landmark&quot;
+            },
+            {
+                &quot;categories_id&quot;: 6,
+                &quot;name_id&quot;: &quot;Spot Foto&quot;,
+                &quot;name_en&quot;: &quot;Photo Spots&quot;,
+                &quot;slug&quot;: &quot;spot-foto&quot;
+            }
+        ],
+        &quot;reviews&quot;: []
+    }
 }</code>
  </pre>
     </span>
@@ -548,150 +1456,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="number" style="display: none"
                step="any"               name="place_places_id"                data-endpoint="GETapi-places--place_places_id-"
-               value="16"
+               value="1"
                data-component="url">
     <br>
-<p>The ID of the place places. Example: <code>16</code></p>
-            </div>
-                    </form>
-
-                    <h2 id="endpoints-GETapi-shared-itinerary--shareToken-">GET api/shared-itinerary/{shareToken}</h2>
-
-<p>
-</p>
-
-
-
-<span id="example-requests-GETapi-shared-itinerary--shareToken-">
-<blockquote>Example request:</blockquote>
-
-
-<div class="bash-example">
-    <pre><code class="language-bash">curl --request GET \
-    --get "http://localhost:8000/api/shared-itinerary/architecto" \
-    --header "Content-Type: application/json" \
-    --header "Accept: application/json"</code></pre></div>
-
-
-<div class="javascript-example">
-    <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/shared-itinerary/architecto"
-);
-
-const headers = {
-    "Content-Type": "application/json",
-    "Accept": "application/json",
-};
-
-
-fetch(url, {
-    method: "GET",
-    headers,
-}).then(response =&gt; response.json());</code></pre></div>
-
-</span>
-
-<span id="example-responses-GETapi-shared-itinerary--shareToken-">
-            <blockquote>
-            <p>Example response (404):</p>
-        </blockquote>
-                <details class="annotation">
-            <summary style="cursor: pointer;">
-                <small onclick="textContent = parentElement.parentElement.open ? 'Show headers' : 'Hide headers'">Show headers</small>
-            </summary>
-            <pre><code class="language-http">cache-control: no-cache, private
-content-type: application/json
-access-control-allow-origin: *
- </code></pre></details>         <pre>
-
-<code class="language-json" style="max-height: 300px;">{
-    &quot;message&quot;: &quot;&quot;
-}</code>
- </pre>
-    </span>
-<span id="execution-results-GETapi-shared-itinerary--shareToken-" hidden>
-    <blockquote>Received response<span
-                id="execution-response-status-GETapi-shared-itinerary--shareToken-"></span>:
-    </blockquote>
-    <pre class="json"><code id="execution-response-content-GETapi-shared-itinerary--shareToken-"
-      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
-</span>
-<span id="execution-error-GETapi-shared-itinerary--shareToken-" hidden>
-    <blockquote>Request failed with error:</blockquote>
-    <pre><code id="execution-error-message-GETapi-shared-itinerary--shareToken-">
-
-Tip: Check that you&#039;re properly connected to the network.
-If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
-You can check the Dev Tools console for debugging information.</code></pre>
-</span>
-<form id="form-GETapi-shared-itinerary--shareToken-" data-method="GET"
-      data-path="api/shared-itinerary/{shareToken}"
-      data-authed="0"
-      data-hasfiles="0"
-      data-isarraybody="0"
-      autocomplete="off"
-      onsubmit="event.preventDefault(); executeTryOut('GETapi-shared-itinerary--shareToken-', this);">
-    <h3>
-        Request&nbsp;&nbsp;&nbsp;
-                    <button type="button"
-                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-tryout-GETapi-shared-itinerary--shareToken-"
-                    onclick="tryItOut('GETapi-shared-itinerary--shareToken-');">Try it out ⚡
-            </button>
-            <button type="button"
-                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-canceltryout-GETapi-shared-itinerary--shareToken-"
-                    onclick="cancelTryOut('GETapi-shared-itinerary--shareToken-');" hidden>Cancel 🛑
-            </button>&nbsp;&nbsp;
-            <button type="submit"
-                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-executetryout-GETapi-shared-itinerary--shareToken-"
-                    data-initial-text="Send Request 💥"
-                    data-loading-text="⏱ Sending..."
-                    hidden>Send Request 💥
-            </button>
-            </h3>
-            <p>
-            <small class="badge badge-green">GET</small>
-            <b><code>api/shared-itinerary/{shareToken}</code></b>
-        </p>
-                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
-                                <div style="padding-left: 28px; clear: unset;">
-                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
-&nbsp;
- &nbsp;
- &nbsp;
-                <input type="text" style="display: none"
-                              name="Content-Type"                data-endpoint="GETapi-shared-itinerary--shareToken-"
-               value="application/json"
-               data-component="header">
-    <br>
-<p>Example: <code>application/json</code></p>
-            </div>
-                                <div style="padding-left: 28px; clear: unset;">
-                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
-&nbsp;
- &nbsp;
- &nbsp;
-                <input type="text" style="display: none"
-                              name="Accept"                data-endpoint="GETapi-shared-itinerary--shareToken-"
-               value="application/json"
-               data-component="header">
-    <br>
-<p>Example: <code>application/json</code></p>
-            </div>
-                        <h4 class="fancy-heading-panel"><b>URL Parameters</b></h4>
-                    <div style="padding-left: 28px; clear: unset;">
-                <b style="line-height: 2;"><code>shareToken</code></b>&nbsp;&nbsp;
-<small>string</small>&nbsp;
- &nbsp;
- &nbsp;
-                <input type="text" style="display: none"
-                              name="shareToken"                data-endpoint="GETapi-shared-itinerary--shareToken-"
-               value="architecto"
-               data-component="url">
-    <br>
-<p>Example: <code>architecto</code></p>
+<p>The ID of the place places. Example: <code>1</code></p>
             </div>
                     </form>
 
@@ -1016,13 +1784,397 @@ You can check the Dev Tools console for debugging information.</code></pre>
         </div>
         </form>
 
+                    <h2 id="endpoints-GETapi-wishlist">GET api/wishlist</h2>
+
+<p>
+</p>
+
+
+
+<span id="example-requests-GETapi-wishlist">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request GET \
+    --get "http://localhost:8000/api/wishlist" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json"</code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:8000/api/wishlist"
+);
+
+const headers = {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+
+fetch(url, {
+    method: "GET",
+    headers,
+}).then(response =&gt; response.json());</code></pre></div>
+
+</span>
+
+<span id="example-responses-GETapi-wishlist">
+            <blockquote>
+            <p>Example response (401):</p>
+        </blockquote>
+                <details class="annotation">
+            <summary style="cursor: pointer;">
+                <small onclick="textContent = parentElement.parentElement.open ? 'Show headers' : 'Hide headers'">Show headers</small>
+            </summary>
+            <pre><code class="language-http">cache-control: no-cache, private
+content-type: application/json
+access-control-allow-origin: *
+ </code></pre></details>         <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;message&quot;: &quot;Unauthenticated.&quot;
+}</code>
+ </pre>
+    </span>
+<span id="execution-results-GETapi-wishlist" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-GETapi-wishlist"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-GETapi-wishlist"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-GETapi-wishlist" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-GETapi-wishlist">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-GETapi-wishlist" data-method="GET"
+      data-path="api/wishlist"
+      data-authed="0"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('GETapi-wishlist', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-GETapi-wishlist"
+                    onclick="tryItOut('GETapi-wishlist');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-GETapi-wishlist"
+                    onclick="cancelTryOut('GETapi-wishlist');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-GETapi-wishlist"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-green">GET</small>
+            <b><code>api/wishlist</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="GETapi-wishlist"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="GETapi-wishlist"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        </form>
+
+                    <h2 id="endpoints-POSTapi-wishlist">POST api/wishlist</h2>
+
+<p>
+</p>
+
+
+
+<span id="example-requests-POSTapi-wishlist">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request POST \
+    "http://localhost:8000/api/wishlist" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json" \
+    --data "{
+    \"places_id\": 16
+}"
+</code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:8000/api/wishlist"
+);
+
+const headers = {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+let body = {
+    "places_id": 16
+};
+
+fetch(url, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body),
+}).then(response =&gt; response.json());</code></pre></div>
+
+</span>
+
+<span id="example-responses-POSTapi-wishlist">
+</span>
+<span id="execution-results-POSTapi-wishlist" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-POSTapi-wishlist"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-POSTapi-wishlist"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-POSTapi-wishlist" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-POSTapi-wishlist">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-POSTapi-wishlist" data-method="POST"
+      data-path="api/wishlist"
+      data-authed="0"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('POSTapi-wishlist', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-POSTapi-wishlist"
+                    onclick="tryItOut('POSTapi-wishlist');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-POSTapi-wishlist"
+                    onclick="cancelTryOut('POSTapi-wishlist');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-POSTapi-wishlist"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-black">POST</small>
+            <b><code>api/wishlist</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="POSTapi-wishlist"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="POSTapi-wishlist"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <h4 class="fancy-heading-panel"><b>Body Parameters</b></h4>
+        <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>places_id</code></b>&nbsp;&nbsp;
+<small>integer</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="number" style="display: none"
+               step="any"               name="places_id"                data-endpoint="POSTapi-wishlist"
+               value="16"
+               data-component="body">
+    <br>
+<p>Example: <code>16</code></p>
+        </div>
+        </form>
+
+                    <h2 id="endpoints-DELETEapi-wishlist--place_places_id-">DELETE api/wishlist/{place_places_id}</h2>
+
+<p>
+</p>
+
+
+
+<span id="example-requests-DELETEapi-wishlist--place_places_id-">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request DELETE \
+    "http://localhost:8000/api/wishlist/1" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json"</code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:8000/api/wishlist/1"
+);
+
+const headers = {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+
+fetch(url, {
+    method: "DELETE",
+    headers,
+}).then(response =&gt; response.json());</code></pre></div>
+
+</span>
+
+<span id="example-responses-DELETEapi-wishlist--place_places_id-">
+</span>
+<span id="execution-results-DELETEapi-wishlist--place_places_id-" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-DELETEapi-wishlist--place_places_id-"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-DELETEapi-wishlist--place_places_id-"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-DELETEapi-wishlist--place_places_id-" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-DELETEapi-wishlist--place_places_id-">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-DELETEapi-wishlist--place_places_id-" data-method="DELETE"
+      data-path="api/wishlist/{place_places_id}"
+      data-authed="0"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('DELETEapi-wishlist--place_places_id-', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-DELETEapi-wishlist--place_places_id-"
+                    onclick="tryItOut('DELETEapi-wishlist--place_places_id-');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-DELETEapi-wishlist--place_places_id-"
+                    onclick="cancelTryOut('DELETEapi-wishlist--place_places_id-');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-DELETEapi-wishlist--place_places_id-"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-red">DELETE</small>
+            <b><code>api/wishlist/{place_places_id}</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="DELETEapi-wishlist--place_places_id-"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="DELETEapi-wishlist--place_places_id-"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        <h4 class="fancy-heading-panel"><b>URL Parameters</b></h4>
+                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>place_places_id</code></b>&nbsp;&nbsp;
+<small>integer</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="number" style="display: none"
+               step="any"               name="place_places_id"                data-endpoint="DELETEapi-wishlist--place_places_id-"
+               value="1"
+               data-component="url">
+    <br>
+<p>The ID of the place places. Example: <code>1</code></p>
+            </div>
+                    </form>
+
                     <h2 id="endpoints-GETapi-trips">F011: daftar trip yang pernah dibuat user login - punya sendiri saja
 (bukan yang dibagikan ke dia - itu GET /api/trips/shared, F016).</h2>
 
 <p>
 </p>
 
-<p>Terurut trip terbaru dulu.</p>
+<p>Terurut trip terbaru dulu. Each trip also carries a "summary" for the
+Trip Tersimpan card (see tripSummary()).</p>
 
 <span id="example-requests-GETapi-trips">
 <blockquote>Example request:</blockquote>
@@ -1164,9 +2316,9 @@ You can check the Dev Tools console for debugging information.</code></pre>
     \"title\": \"b\",
     \"num_days\": 22,
     \"budget_total\": 67,
-    \"start_date\": \"2026-09-29T09:37:40\",
-    \"daily_start_time\": \"09:37\",
-    \"daily_end_time\": \"2052-10-22\",
+    \"start_date\": \"2026-11-24T12:43:13\",
+    \"daily_start_time\": \"12:43\",
+    \"daily_end_time\": \"2052-12-17\",
     \"has_own_hotel\": true
 }"
 </code></pre></div>
@@ -1186,9 +2338,9 @@ let body = {
     "title": "b",
     "num_days": 22,
     "budget_total": 67,
-    "start_date": "2026-09-29T09:37:40",
-    "daily_start_time": "09:37",
-    "daily_end_time": "2052-10-22",
+    "start_date": "2026-11-24T12:43:13",
+    "daily_start_time": "12:43",
+    "daily_end_time": "2052-12-17",
     "has_own_hotel": true
 };
 
@@ -1317,10 +2469,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="start_date"                data-endpoint="POSTapi-trips"
-               value="2026-09-29T09:37:40"
+               value="2026-11-24T12:43:13"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-09-29T09:37:40</code></p>
+<p>Must be a valid date. Example: <code>2026-11-24T12:43:13</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>daily_start_time</code></b>&nbsp;&nbsp;
@@ -1329,10 +2481,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="daily_start_time"                data-endpoint="POSTapi-trips"
-               value="09:37"
+               value="12:43"
                data-component="body">
     <br>
-<p>Must be a valid date in the format <code>H:i</code>. Example: <code>09:37</code></p>
+<p>Must be a valid date in the format <code>H:i</code>. Example: <code>12:43</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>daily_end_time</code></b>&nbsp;&nbsp;
@@ -1341,10 +2493,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="daily_end_time"                data-endpoint="POSTapi-trips"
-               value="2052-10-22"
+               value="2052-12-17"
                data-component="body">
     <br>
-<p>Must be a valid date in the format <code>H:i</code>. Must be a date after <code>daily_start_time</code>. Example: <code>2052-10-22</code></p>
+<p>Must be a valid date in the format <code>H:i</code>. Must be a date after <code>daily_start_time</code>. Example: <code>2052-12-17</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>has_own_hotel</code></b>&nbsp;&nbsp;
@@ -1890,6 +3042,227 @@ You can check the Dev Tools console for debugging information.</code></pre>
             </div>
                     </form>
 
+                    <h2 id="endpoints-PATCHapi-trips--trip_trips_id-">F011: edit trip tersimpan (PRD audit 2026-10-10 - endpoint ini
+sebelumnya tidak ada walau Section 12/13 mengasumsikan trip bisa
+diedit). Owner-only. Kalau field yang menentukan susunan hari berubah
+(num_days, budget_total, jam harian) dan itinerary sudah ada, itinerary
+lama dibuang - design spec Section 13 langkah 9 memang &quot;regenerate
+penuh&quot;; mobile memanggil POST /generate lagi setelah ini. start_date
+dan title tidak membuang itinerary.</h2>
+
+<p>
+</p>
+
+
+
+<span id="example-requests-PATCHapi-trips--trip_trips_id-">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request PATCH \
+    "http://localhost:8000/api/trips/16" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json" \
+    --data "{
+    \"title\": \"b\",
+    \"num_days\": 22,
+    \"budget_total\": 67,
+    \"start_date\": \"2026-11-24T12:43:13\",
+    \"daily_start_time\": \"12:43\",
+    \"daily_end_time\": \"12:43\"
+}"
+</code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:8000/api/trips/16"
+);
+
+const headers = {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+let body = {
+    "title": "b",
+    "num_days": 22,
+    "budget_total": 67,
+    "start_date": "2026-11-24T12:43:13",
+    "daily_start_time": "12:43",
+    "daily_end_time": "12:43"
+};
+
+fetch(url, {
+    method: "PATCH",
+    headers,
+    body: JSON.stringify(body),
+}).then(response =&gt; response.json());</code></pre></div>
+
+</span>
+
+<span id="example-responses-PATCHapi-trips--trip_trips_id-">
+</span>
+<span id="execution-results-PATCHapi-trips--trip_trips_id-" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-PATCHapi-trips--trip_trips_id-"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-PATCHapi-trips--trip_trips_id-"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-PATCHapi-trips--trip_trips_id-" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-PATCHapi-trips--trip_trips_id-">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-PATCHapi-trips--trip_trips_id-" data-method="PATCH"
+      data-path="api/trips/{trip_trips_id}"
+      data-authed="0"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('PATCHapi-trips--trip_trips_id-', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-PATCHapi-trips--trip_trips_id-"
+                    onclick="tryItOut('PATCHapi-trips--trip_trips_id-');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-PATCHapi-trips--trip_trips_id-"
+                    onclick="cancelTryOut('PATCHapi-trips--trip_trips_id-');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-PATCHapi-trips--trip_trips_id-"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-purple">PATCH</small>
+            <b><code>api/trips/{trip_trips_id}</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="PATCHapi-trips--trip_trips_id-"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="PATCHapi-trips--trip_trips_id-"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        <h4 class="fancy-heading-panel"><b>URL Parameters</b></h4>
+                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>trip_trips_id</code></b>&nbsp;&nbsp;
+<small>integer</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="number" style="display: none"
+               step="any"               name="trip_trips_id"                data-endpoint="PATCHapi-trips--trip_trips_id-"
+               value="16"
+               data-component="url">
+    <br>
+<p>The ID of the trip trips. Example: <code>16</code></p>
+            </div>
+                            <h4 class="fancy-heading-panel"><b>Body Parameters</b></h4>
+        <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>title</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="title"                data-endpoint="PATCHapi-trips--trip_trips_id-"
+               value="b"
+               data-component="body">
+    <br>
+<p>Must not be greater than 255 characters. Example: <code>b</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>num_days</code></b>&nbsp;&nbsp;
+<small>integer</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="number" style="display: none"
+               step="any"               name="num_days"                data-endpoint="PATCHapi-trips--trip_trips_id-"
+               value="22"
+               data-component="body">
+    <br>
+<p>Must be at least 1. Example: <code>22</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>budget_total</code></b>&nbsp;&nbsp;
+<small>integer</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="number" style="display: none"
+               step="any"               name="budget_total"                data-endpoint="PATCHapi-trips--trip_trips_id-"
+               value="67"
+               data-component="body">
+    <br>
+<p>Must be at least 1. Example: <code>67</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>start_date</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="start_date"                data-endpoint="PATCHapi-trips--trip_trips_id-"
+               value="2026-11-24T12:43:13"
+               data-component="body">
+    <br>
+<p>Must be a valid date. Example: <code>2026-11-24T12:43:13</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>daily_start_time</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="daily_start_time"                data-endpoint="PATCHapi-trips--trip_trips_id-"
+               value="12:43"
+               data-component="body">
+    <br>
+<p>Must be a valid date in the format <code>H:i</code>. Example: <code>12:43</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>daily_end_time</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="daily_end_time"                data-endpoint="PATCHapi-trips--trip_trips_id-"
+               value="12:43"
+               data-component="body">
+    <br>
+<p>Must be a valid date in the format <code>H:i</code>. Example: <code>12:43</code></p>
+        </div>
+        </form>
+
                     <h2 id="endpoints-POSTapi-trips--trip_trips_id--weights">F008 langkah 3: minat (trip_interest_category) + bobot 4 kriteria
 dalam satu request - dua hal yang disatukan sengaja, sesuai flow di
 mobile (satu layar). US1: 0 slider disentuh tetap submit dengan
@@ -2115,14 +3488,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     <pre><code class="language-bash">curl --request POST \
     "http://localhost:8000/api/trips/16/hotel" \
     --header "Content-Type: application/json" \
-    --header "Accept: application/json" \
-    --data "{
-    \"places_id\": 16,
-    \"custom_name\": \"n\",
-    \"custom_lat\": -90,
-    \"custom_lng\": -179
-}"
-</code></pre></div>
+    --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
@@ -2135,17 +3501,10 @@ const headers = {
     "Accept": "application/json",
 };
 
-let body = {
-    "places_id": 16,
-    "custom_name": "n",
-    "custom_lat": -90,
-    "custom_lng": -179
-};
 
 fetch(url, {
     method: "POST",
     headers,
-    body: JSON.stringify(body),
 }).then(response =&gt; response.json());</code></pre></div>
 
 </span>
@@ -2236,54 +3595,169 @@ You can check the Dev Tools console for debugging information.</code></pre>
     <br>
 <p>The ID of the trip trips. Example: <code>16</code></p>
             </div>
-                            <h4 class="fancy-heading-panel"><b>Body Parameters</b></h4>
-        <div style=" padding-left: 28px;  clear: unset;">
-            <b style="line-height: 2;"><code>places_id</code></b>&nbsp;&nbsp;
+                    </form>
+
+                    <h2 id="endpoints-PUTapi-trips--trip_trips_id--days--dayNumber--points">Detail mode: where one day starts and ends. &quot;end&quot;: null makes the day
+end where it starts. A day that already has stops gets its route
+recomputed; its places stay.</h2>
+
+<p>
+</p>
+
+
+
+<span id="example-requests-PUTapi-trips--trip_trips_id--days--dayNumber--points">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request PUT \
+    "http://localhost:8000/api/trips/16/days/564/points" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json" \
+</code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:8000/api/trips/16/days/564/points"
+);
+
+const headers = {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+
+fetch(url, {
+    method: "PUT",
+    headers,
+}).then(response =&gt; response.json());</code></pre></div>
+
+</span>
+
+<span id="example-responses-PUTapi-trips--trip_trips_id--days--dayNumber--points">
+</span>
+<span id="execution-results-PUTapi-trips--trip_trips_id--days--dayNumber--points" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-PUTapi-trips--trip_trips_id--days--dayNumber--points"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-PUTapi-trips--trip_trips_id--days--dayNumber--points"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-PUTapi-trips--trip_trips_id--days--dayNumber--points" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-PUTapi-trips--trip_trips_id--days--dayNumber--points">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-PUTapi-trips--trip_trips_id--days--dayNumber--points" data-method="PUT"
+      data-path="api/trips/{trip_trips_id}/days/{dayNumber}/points"
+      data-authed="0"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('PUTapi-trips--trip_trips_id--days--dayNumber--points', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-PUTapi-trips--trip_trips_id--days--dayNumber--points"
+                    onclick="tryItOut('PUTapi-trips--trip_trips_id--days--dayNumber--points');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-PUTapi-trips--trip_trips_id--days--dayNumber--points"
+                    onclick="cancelTryOut('PUTapi-trips--trip_trips_id--days--dayNumber--points');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-PUTapi-trips--trip_trips_id--days--dayNumber--points"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-darkblue">PUT</small>
+            <b><code>api/trips/{trip_trips_id}/days/{dayNumber}/points</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="PUTapi-trips--trip_trips_id--days--dayNumber--points"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="PUTapi-trips--trip_trips_id--days--dayNumber--points"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        <h4 class="fancy-heading-panel"><b>URL Parameters</b></h4>
+                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>trip_trips_id</code></b>&nbsp;&nbsp;
 <small>integer</small>&nbsp;
-<i>optional</i> &nbsp;
+ &nbsp;
  &nbsp;
                 <input type="number" style="display: none"
-               step="any"               name="places_id"                data-endpoint="POSTapi-trips--trip_trips_id--hotel"
+               step="any"               name="trip_trips_id"                data-endpoint="PUTapi-trips--trip_trips_id--days--dayNumber--points"
                value="16"
-               data-component="body">
+               data-component="url">
     <br>
-<p>Example: <code>16</code></p>
-        </div>
-                <div style=" padding-left: 28px;  clear: unset;">
-            <b style="line-height: 2;"><code>custom_name</code></b>&nbsp;&nbsp;
+<p>The ID of the trip trips. Example: <code>16</code></p>
+            </div>
+                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>dayNumber</code></b>&nbsp;&nbsp;
 <small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="dayNumber"                data-endpoint="PUTapi-trips--trip_trips_id--days--dayNumber--points"
+               value="564"
+               data-component="url">
+    <br>
+<p>Example: <code>564</code></p>
+            </div>
+                            <h4 class="fancy-heading-panel"><b>Body Parameters</b></h4>
+        <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>start</code></b>&nbsp;&nbsp;
+<small>object</small>&nbsp;
 <i>optional</i> &nbsp;
  &nbsp;
                 <input type="text" style="display: none"
-                              name="custom_name"                data-endpoint="POSTapi-trips--trip_trips_id--hotel"
-               value="n"
+                              name="start"                data-endpoint="PUTapi-trips--trip_trips_id--days--dayNumber--points"
+               value=""
                data-component="body">
     <br>
-<p>This field is required when <code>places_id</code> is not present. Must not be greater than 255 characters. Example: <code>n</code></p>
+
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
-            <b style="line-height: 2;"><code>custom_lat</code></b>&nbsp;&nbsp;
-<small>number</small>&nbsp;
+            <b style="line-height: 2;"><code>end</code></b>&nbsp;&nbsp;
+<small>object</small>&nbsp;
 <i>optional</i> &nbsp;
  &nbsp;
-                <input type="number" style="display: none"
-               step="any"               name="custom_lat"                data-endpoint="POSTapi-trips--trip_trips_id--hotel"
-               value="-90"
+                <input type="text" style="display: none"
+                              name="end"                data-endpoint="PUTapi-trips--trip_trips_id--days--dayNumber--points"
+               value=""
                data-component="body">
     <br>
-<p>This field is required when <code>places_id</code> is not present. Must be between -90 and 90. Example: <code>-90</code></p>
-        </div>
-                <div style=" padding-left: 28px;  clear: unset;">
-            <b style="line-height: 2;"><code>custom_lng</code></b>&nbsp;&nbsp;
-<small>number</small>&nbsp;
-<i>optional</i> &nbsp;
- &nbsp;
-                <input type="number" style="display: none"
-               step="any"               name="custom_lng"                data-endpoint="POSTapi-trips--trip_trips_id--hotel"
-               value="-179"
-               data-component="body">
-    <br>
-<p>This field is required when <code>places_id</code> is not present. Must be between -180 and 180. Example: <code>-179</code></p>
+
         </div>
         </form>
 
@@ -2975,7 +4449,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             </div>
                     </form>
 
-                    <h2 id="endpoints-POSTapi-trips--trip_trips_id--viewer-invite-link">Idempotent seperti share_token (Section 10) - link yang sama terus
+                    <h2 id="endpoints-POSTapi-trips--trip_trips_id--viewer-invite-link">Idempotent (Section 10) - link yang sama terus
 dipakai sampai sengaja di-reset, bukan generate ulang tiap tap.</h2>
 
 <p>
@@ -3218,259 +4692,6 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="number" style="display: none"
                step="any"               name="trip_trips_id"                data-endpoint="DELETEapi-trips--trip_trips_id--viewer-invite-link"
-               value="16"
-               data-component="url">
-    <br>
-<p>The ID of the trip trips. Example: <code>16</code></p>
-            </div>
-                    </form>
-
-                    <h2 id="endpoints-POSTapi-trips--trip_trips_id--share-link">F017 (docs/prd design spec Section 10) - generate/ambil share_token
-publik. Idempotent - link yang sama terus dipakai sampai sengaja
-di-reset, bukan generate ulang tiap tap.</h2>
-
-<p>
-</p>
-
-
-
-<span id="example-requests-POSTapi-trips--trip_trips_id--share-link">
-<blockquote>Example request:</blockquote>
-
-
-<div class="bash-example">
-    <pre><code class="language-bash">curl --request POST \
-    "http://localhost:8000/api/trips/16/share-link" \
-    --header "Content-Type: application/json" \
-    --header "Accept: application/json"</code></pre></div>
-
-
-<div class="javascript-example">
-    <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/trips/16/share-link"
-);
-
-const headers = {
-    "Content-Type": "application/json",
-    "Accept": "application/json",
-};
-
-
-fetch(url, {
-    method: "POST",
-    headers,
-}).then(response =&gt; response.json());</code></pre></div>
-
-</span>
-
-<span id="example-responses-POSTapi-trips--trip_trips_id--share-link">
-</span>
-<span id="execution-results-POSTapi-trips--trip_trips_id--share-link" hidden>
-    <blockquote>Received response<span
-                id="execution-response-status-POSTapi-trips--trip_trips_id--share-link"></span>:
-    </blockquote>
-    <pre class="json"><code id="execution-response-content-POSTapi-trips--trip_trips_id--share-link"
-      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
-</span>
-<span id="execution-error-POSTapi-trips--trip_trips_id--share-link" hidden>
-    <blockquote>Request failed with error:</blockquote>
-    <pre><code id="execution-error-message-POSTapi-trips--trip_trips_id--share-link">
-
-Tip: Check that you&#039;re properly connected to the network.
-If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
-You can check the Dev Tools console for debugging information.</code></pre>
-</span>
-<form id="form-POSTapi-trips--trip_trips_id--share-link" data-method="POST"
-      data-path="api/trips/{trip_trips_id}/share-link"
-      data-authed="0"
-      data-hasfiles="0"
-      data-isarraybody="0"
-      autocomplete="off"
-      onsubmit="event.preventDefault(); executeTryOut('POSTapi-trips--trip_trips_id--share-link', this);">
-    <h3>
-        Request&nbsp;&nbsp;&nbsp;
-                    <button type="button"
-                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-tryout-POSTapi-trips--trip_trips_id--share-link"
-                    onclick="tryItOut('POSTapi-trips--trip_trips_id--share-link');">Try it out ⚡
-            </button>
-            <button type="button"
-                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-canceltryout-POSTapi-trips--trip_trips_id--share-link"
-                    onclick="cancelTryOut('POSTapi-trips--trip_trips_id--share-link');" hidden>Cancel 🛑
-            </button>&nbsp;&nbsp;
-            <button type="submit"
-                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-executetryout-POSTapi-trips--trip_trips_id--share-link"
-                    data-initial-text="Send Request 💥"
-                    data-loading-text="⏱ Sending..."
-                    hidden>Send Request 💥
-            </button>
-            </h3>
-            <p>
-            <small class="badge badge-black">POST</small>
-            <b><code>api/trips/{trip_trips_id}/share-link</code></b>
-        </p>
-                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
-                                <div style="padding-left: 28px; clear: unset;">
-                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
-&nbsp;
- &nbsp;
- &nbsp;
-                <input type="text" style="display: none"
-                              name="Content-Type"                data-endpoint="POSTapi-trips--trip_trips_id--share-link"
-               value="application/json"
-               data-component="header">
-    <br>
-<p>Example: <code>application/json</code></p>
-            </div>
-                                <div style="padding-left: 28px; clear: unset;">
-                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
-&nbsp;
- &nbsp;
- &nbsp;
-                <input type="text" style="display: none"
-                              name="Accept"                data-endpoint="POSTapi-trips--trip_trips_id--share-link"
-               value="application/json"
-               data-component="header">
-    <br>
-<p>Example: <code>application/json</code></p>
-            </div>
-                        <h4 class="fancy-heading-panel"><b>URL Parameters</b></h4>
-                    <div style="padding-left: 28px; clear: unset;">
-                <b style="line-height: 2;"><code>trip_trips_id</code></b>&nbsp;&nbsp;
-<small>integer</small>&nbsp;
- &nbsp;
- &nbsp;
-                <input type="number" style="display: none"
-               step="any"               name="trip_trips_id"                data-endpoint="POSTapi-trips--trip_trips_id--share-link"
-               value="16"
-               data-component="url">
-    <br>
-<p>The ID of the trip trips. Example: <code>16</code></p>
-            </div>
-                    </form>
-
-                    <h2 id="endpoints-DELETEapi-trips--trip_trips_id--share-link">Matikan link publik - link lama langsung mati buat siapapun yang
-masih pegang, beda dari viewer_invite_token (F015) yang cuma
-menutup jalur masuk baru tanpa mencabut akses yang sudah join
-(share link anon tidak punya baris akses yang bisa &quot;sudah join&quot;).</h2>
-
-<p>
-</p>
-
-
-
-<span id="example-requests-DELETEapi-trips--trip_trips_id--share-link">
-<blockquote>Example request:</blockquote>
-
-
-<div class="bash-example">
-    <pre><code class="language-bash">curl --request DELETE \
-    "http://localhost:8000/api/trips/16/share-link" \
-    --header "Content-Type: application/json" \
-    --header "Accept: application/json"</code></pre></div>
-
-
-<div class="javascript-example">
-    <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/trips/16/share-link"
-);
-
-const headers = {
-    "Content-Type": "application/json",
-    "Accept": "application/json",
-};
-
-
-fetch(url, {
-    method: "DELETE",
-    headers,
-}).then(response =&gt; response.json());</code></pre></div>
-
-</span>
-
-<span id="example-responses-DELETEapi-trips--trip_trips_id--share-link">
-</span>
-<span id="execution-results-DELETEapi-trips--trip_trips_id--share-link" hidden>
-    <blockquote>Received response<span
-                id="execution-response-status-DELETEapi-trips--trip_trips_id--share-link"></span>:
-    </blockquote>
-    <pre class="json"><code id="execution-response-content-DELETEapi-trips--trip_trips_id--share-link"
-      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
-</span>
-<span id="execution-error-DELETEapi-trips--trip_trips_id--share-link" hidden>
-    <blockquote>Request failed with error:</blockquote>
-    <pre><code id="execution-error-message-DELETEapi-trips--trip_trips_id--share-link">
-
-Tip: Check that you&#039;re properly connected to the network.
-If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
-You can check the Dev Tools console for debugging information.</code></pre>
-</span>
-<form id="form-DELETEapi-trips--trip_trips_id--share-link" data-method="DELETE"
-      data-path="api/trips/{trip_trips_id}/share-link"
-      data-authed="0"
-      data-hasfiles="0"
-      data-isarraybody="0"
-      autocomplete="off"
-      onsubmit="event.preventDefault(); executeTryOut('DELETEapi-trips--trip_trips_id--share-link', this);">
-    <h3>
-        Request&nbsp;&nbsp;&nbsp;
-                    <button type="button"
-                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-tryout-DELETEapi-trips--trip_trips_id--share-link"
-                    onclick="tryItOut('DELETEapi-trips--trip_trips_id--share-link');">Try it out ⚡
-            </button>
-            <button type="button"
-                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-canceltryout-DELETEapi-trips--trip_trips_id--share-link"
-                    onclick="cancelTryOut('DELETEapi-trips--trip_trips_id--share-link');" hidden>Cancel 🛑
-            </button>&nbsp;&nbsp;
-            <button type="submit"
-                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-executetryout-DELETEapi-trips--trip_trips_id--share-link"
-                    data-initial-text="Send Request 💥"
-                    data-loading-text="⏱ Sending..."
-                    hidden>Send Request 💥
-            </button>
-            </h3>
-            <p>
-            <small class="badge badge-red">DELETE</small>
-            <b><code>api/trips/{trip_trips_id}/share-link</code></b>
-        </p>
-                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
-                                <div style="padding-left: 28px; clear: unset;">
-                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
-&nbsp;
- &nbsp;
- &nbsp;
-                <input type="text" style="display: none"
-                              name="Content-Type"                data-endpoint="DELETEapi-trips--trip_trips_id--share-link"
-               value="application/json"
-               data-component="header">
-    <br>
-<p>Example: <code>application/json</code></p>
-            </div>
-                                <div style="padding-left: 28px; clear: unset;">
-                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
-&nbsp;
- &nbsp;
- &nbsp;
-                <input type="text" style="display: none"
-                              name="Accept"                data-endpoint="DELETEapi-trips--trip_trips_id--share-link"
-               value="application/json"
-               data-component="header">
-    <br>
-<p>Example: <code>application/json</code></p>
-            </div>
-                        <h4 class="fancy-heading-panel"><b>URL Parameters</b></h4>
-                    <div style="padding-left: 28px; clear: unset;">
-                <b style="line-height: 2;"><code>trip_trips_id</code></b>&nbsp;&nbsp;
-<small>integer</small>&nbsp;
- &nbsp;
- &nbsp;
-                <input type="number" style="display: none"
-               step="any"               name="trip_trips_id"                data-endpoint="DELETEapi-trips--trip_trips_id--share-link"
                value="16"
                data-component="url">
     <br>
@@ -4383,7 +5604,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://localhost:8000/api/places/16/reviews" \
+    "http://localhost:8000/api/places/1/reviews" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -4396,7 +5617,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/places/16/reviews"
+    "http://localhost:8000/api/places/1/reviews"
 );
 
 const headers = {
@@ -4499,10 +5720,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="number" style="display: none"
                step="any"               name="place_places_id"                data-endpoint="POSTapi-places--place_places_id--reviews"
-               value="16"
+               value="1"
                data-component="url">
     <br>
-<p>The ID of the place places. Example: <code>16</code></p>
+<p>The ID of the place places. Example: <code>1</code></p>
             </div>
                             <h4 class="fancy-heading-panel"><b>Body Parameters</b></h4>
         <div style=" padding-left: 28px;  clear: unset;">

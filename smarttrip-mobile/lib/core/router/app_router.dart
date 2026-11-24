@@ -12,6 +12,7 @@ import '../../screens/live_trip/live_map_screen.dart';
 import '../../screens/onboarding/onboarding_screen.dart';
 import '../../screens/place_review/review_form_screen.dart';
 import '../../screens/profile/profile_screen.dart';
+import '../../screens/saved_trip/join_invite_screen.dart';
 import '../../screens/saved_trip/trip_tersimpan_screen.dart';
 import '../../screens/splash/splash_screen.dart';
 import '../../screens/trip/generate_itinerary_screen.dart';
@@ -41,9 +42,15 @@ final routerProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       final session = ref.read(sessionControllerProvider);
       final location = state.matchedLocation;
+      // A link opened from outside (invite link) waits through the splash
+      // and login in `from`, then opens.
+      final from = state.uri.queryParameters['from'];
+      String carrying(String target, String link) =>
+          Uri(path: target, queryParameters: {'from': link}).toString();
 
       if (session.isLoading) {
-        return location == AppRoutes.splash ? null : AppRoutes.splash;
+        if (location == AppRoutes.splash) return null;
+        return AppRoutes.isInvite(location) ? carrying(AppRoutes.splash, location) : AppRoutes.splash;
       }
 
       // Let the launch animation finish before leaving the splash.
@@ -57,10 +64,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         final leavesGuestArea =
             location == AppRoutes.splash ||
             AppRoutes.guestOnlyPaths.contains(location);
-        return leavesGuestArea ? AppRoutes.catalog : null;
+        if (!leavesGuestArea) return null;
+        return from != null && AppRoutes.isInvite(from) ? from : AppRoutes.catalog;
       }
 
-      if (location == AppRoutes.splash) return AppRoutes.login;
+      if (location == AppRoutes.splash) {
+        return from != null && AppRoutes.isInvite(from) ? carrying(AppRoutes.login, from) : AppRoutes.login;
+      }
+      if (AppRoutes.isInvite(location)) return carrying(AppRoutes.login, location);
       if (!AppRoutes.isPublic(location)) return AppRoutes.login;
       return null;
     },
@@ -93,6 +104,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.review,
         builder: (context, state) => const ReviewFormScreen(),
+      ),
+      GoRoute(
+        path: '/undangan/:token',
+        builder: (context, state) => JoinInviteScreen(token: state.pathParameters['token']!),
       ),
       GoRoute(
         path: '/shared-trip/:tripsId',

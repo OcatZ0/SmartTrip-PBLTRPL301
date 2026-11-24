@@ -1,0 +1,10 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.smarttrip.batam.smarttrip_mobile",
+      "sha256_cert_fingerprints": ["BE:23:B3:43:4F:0D:D7:FA:C9:D1:29:24:64:CC:DB:A6:ED:3F:42:DC:60:DD:0D:C5:96:9B:7C:97:2F:8B:ED:C3"]
+    }
+  }
+]

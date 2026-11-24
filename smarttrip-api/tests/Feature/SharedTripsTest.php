@@ -216,4 +216,22 @@ class SharedTripsTest extends TestCase
         $this->assertStringNotContainsString('tok123', $show->getContent());
         $this->assertStringNotContainsString('tok123', $join->getContent());
     }
+
+    // --- Invite link opened outside the app (F016) ---
+
+    public function test_the_invite_link_without_the_app_shows_how_to_open_it(): void
+    {
+        $this->get('/undangan/abc123')
+            ->assertOk()
+            ->assertSee('Kamu diundang melihat trip')
+            ->assertSee('Punya tautan undangan?');
+    }
+
+    public function test_assetlinks_lets_the_app_open_invite_links(): void
+    {
+        $links = json_decode(file_get_contents(public_path('.well-known/assetlinks.json')), true);
+
+        $this->assertSame('com.smarttrip.batam.smarttrip_mobile', $links[0]['target']['package_name']);
+        $this->assertCount(1, $links[0]['target']['sha256_cert_fingerprints']);
+    }
 }

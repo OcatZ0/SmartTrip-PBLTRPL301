@@ -12,9 +12,8 @@ class AppConfig {
   );
 
   /// Link the owner sends to invite a viewer (F015), on the API's host.
-  /// shortcut: opening it in the app is F016 (deep link + `POST
-  /// /trips/join-viewer/{token}`); until then the link is only a carrier
-  /// for the token.
+  /// Android opens it in the app (App Link, JoinInviteScreen); the
+  /// intent filter in AndroidManifest.xml only covers smarttrips.my.id.
   static String viewerInviteUrl(String token) =>
       Uri.parse(apiBaseUrl).replace(path: '/undangan/$token').toString();
 

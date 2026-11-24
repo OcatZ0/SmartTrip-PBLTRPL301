@@ -31,6 +31,9 @@ class AppRoutes {
   /// A trip someone shared with the user, read-only (F016).
   static String sharedTrip(int tripsId) => '/shared-trip/$tripsId';
 
+  /// An invite link opened from outside the app (F016), see AppConfig.viewerInviteUrl.
+  static bool isInvite(String location) => location.startsWith('/undangan/');
+
   /// Reachable without being logged in (PRD Section 8: browsing is public).
   static const publicPaths = {catalog, login, register, forgotPassword, trips, wishlist, review};
 

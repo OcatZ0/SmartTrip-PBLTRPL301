@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
@@ -6,10 +7,11 @@ import '../../../core/router/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../models/saved_trip.dart';
 import '../../../widgets/place_photo.dart';
+import '../../trip/widgets/trip_actions.dart';
 
 /// One saved trip: a mosaic of up to four of its places' photos with the
 /// status on top, then the title, the facts and the trip's next action.
-class TripCard extends StatelessWidget {
+class TripCard extends ConsumerWidget {
   const TripCard({super.key, required this.trip});
 
   final TripModel trip;
@@ -29,7 +31,7 @@ class TripCard extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
       child: DecoratedBox(
@@ -48,7 +50,11 @@ class TripCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _PhotoHeader(trip: trip),
+                  _PhotoHeader(
+                    trip: trip,
+                    onEdit: () => context.push(AppRoutes.tripEdit(trip.id)),
+                    onDelete: () => confirmDeleteTrip(context, ref, tripsId: trip.id, title: trip.title),
+                  ),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
                     child: _Body(trip: trip),
@@ -65,9 +71,11 @@ class TripCard extends StatelessWidget {
 
 /// The photo mosaic with the status badge and the day pill on top.
 class _PhotoHeader extends StatelessWidget {
-  const _PhotoHeader({required this.trip});
+  const _PhotoHeader({required this.trip, required this.onEdit, required this.onDelete});
 
   final TripModel trip;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
 
   static const _height = 148.0;
 
@@ -104,6 +112,18 @@ class _PhotoHeader extends StatelessWidget {
                 _StatusBadge(status: trip.status),
                 const Spacer(),
                 _GlassPill(text: _dayLabel()),
+                // F011: edit or delete the trip without opening it.
+                PopupMenuButton<String>(
+                  tooltip: 'Kelola trip',
+                  icon: const Icon(Icons.more_vert_rounded, color: Colors.white),
+                  padding: EdgeInsets.zero,
+                  color: Colors.white,
+                  onSelected: (value) => value == 'edit' ? onEdit() : onDelete(),
+                  itemBuilder: (_) => const [
+                    PopupMenuItem(value: 'edit', child: Text('Ubah Trip')),
+                    PopupMenuItem(value: 'delete', child: Text('Hapus Trip')),
+                  ],
+                ),
               ],
             ),
           ),

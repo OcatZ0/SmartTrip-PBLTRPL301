@@ -17,6 +17,9 @@ class AppRoutes {
   static String tripHotel(int tripsId) => '/trips/$tripsId/hotel';
   static String tripGenerate(int tripsId) => '/trips/$tripsId/generate';
   static String trip(int tripsId) => '/trips/$tripsId';
+
+  /// F011: change the trip's step-1 data (title, dates, hours, budget).
+  static String tripEdit(int tripsId) => '/trips/$tripsId/edit';
   static String liveMap(int tripsId, int dayNumber) =>
       '/trips/$tripsId/days/$dayNumber/map';
 

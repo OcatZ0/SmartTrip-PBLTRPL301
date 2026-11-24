@@ -26,6 +26,7 @@ import 'swap_place_screen.dart';
 import 'widgets/setup_card.dart';
 import 'widgets/day_point_sheet.dart';
 import 'widgets/invite_viewer_sheet.dart';
+import 'widgets/trip_actions.dart';
 import 'widgets/source_badge.dart';
 import 'widgets/stop_detail_sheet.dart';
 
@@ -241,6 +242,11 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
     }
   }
 
+  Future<void> _deleteTrip(Trip trip) async {
+    final deleted = await confirmDeleteTrip(context, ref, tripsId: trip.tripsId, title: trip.title);
+    if (deleted && mounted) context.go(AppRoutes.trips);
+  }
+
   void _showInviteSheet() {
     showModalBottomSheet(
       context: context,
@@ -269,6 +275,8 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
             : _TripMenu(
                 onExport: trip.hasStops ? () => _exportPdf(trip) : null,
                 onInvite: widget.readOnly ? null : _showInviteSheet,
+                onEdit: widget.readOnly ? null : () => context.push(AppRoutes.tripEdit(trip.tripsId)),
+                onDelete: widget.readOnly ? null : () => _deleteTrip(trip),
               ),
       ),
       bottomNavigationBar: widget.readOnly || trip == null || day == null
@@ -457,13 +465,16 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
   }
 }
 
-/// The ⋮ menu in the navy header: export the itinerary to PDF or invite
-/// someone. Export is hidden until the itinerary has stops.
+/// The ⋮ menu in the navy header: export the itinerary to PDF, and for the
+/// owner invite someone, edit or delete the trip. Export is hidden until the
+/// itinerary has stops.
 class _TripMenu extends StatelessWidget {
-  const _TripMenu({required this.onExport, required this.onInvite});
+  const _TripMenu({required this.onExport, required this.onInvite, this.onEdit, this.onDelete});
 
   final VoidCallback? onExport;
   final VoidCallback? onInvite;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -487,10 +498,14 @@ class _TripMenu extends StatelessWidget {
       onSelected: (value) {
         if (value == 'export') onExport?.call();
         if (value == 'invite') onInvite?.call();
+        if (value == 'edit') onEdit?.call();
+        if (value == 'delete') onDelete?.call();
       },
       itemBuilder: (_) => [
         if (onExport != null) item('export', Icons.picture_as_pdf_outlined, 'Ekspor PDF'),
         if (onInvite != null) item('invite', Icons.person_add_alt_outlined, 'Undang ke Itinerary'),
+        if (onEdit != null) item('edit', Icons.edit_outlined, 'Ubah Trip'),
+        if (onDelete != null) item('delete', Icons.delete_outline_rounded, 'Hapus Trip'),
       ],
     );
   }

@@ -139,6 +139,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => ItineraryScreen(tripsId: _tripsId(state)),
         routes: [
           GoRoute(
+            path: 'edit',
+            pageBuilder: (context, state) => PageTransitions.sharedAxis(
+              state,
+              TripSetupScreen(editTripsId: _tripsId(state)),
+            ),
+          ),
+          GoRoute(
             path: 'wishlist',
             pageBuilder: (context, state) => PageTransitions.sharedAxis(
               state,

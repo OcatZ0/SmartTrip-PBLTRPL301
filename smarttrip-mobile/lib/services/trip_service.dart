@@ -66,6 +66,11 @@ class TripService {
         ));
   }
 
+  /// F011: soft delete on the server; the trip leaves every list.
+  Future<void> deleteTrip(int tripsId) async {
+    await _call(() => _dio.delete<Map<String, dynamic>>('/trips/$tripsId'));
+  }
+
   Future<List<TripCategory>> fetchCategories() async {
     final body = await _call(() => _dio.get<Map<String, dynamic>>('/categories'));
     return (body['data'] as List)

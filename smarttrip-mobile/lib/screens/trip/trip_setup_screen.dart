@@ -9,18 +9,24 @@ import 'package:intl/intl.dart';
 import '../../core/error/trip_error_message.dart';
 import '../../core/router/app_routes.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/error/api_failure.dart';
 import '../../l10n/app_localizations.dart';
+import '../../models/trip.dart';
 import '../../services/trip_service.dart';
 import '../../widgets/bottom_action_bar.dart';
 import '../../widgets/primary_button.dart';
 import '../../widgets/rupiah_input_formatter.dart';
 import '../../widgets/screen_header.dart';
 import '../../widgets/step_pill.dart';
+import '../saved_trip/trip_tersimpan_screen.dart';
 import 'widgets/setup_card.dart';
 
-/// C1. Atur Trip - Figma Mockup, node 85:2541 (US2).
+/// C1. Atur Trip - Figma Mockup, node 85:2541 (US2). With [editTripsId] the
+/// same form changes an existing trip (F011 Ubah Trip) and saves in place.
 class TripSetupScreen extends ConsumerStatefulWidget {
-  const TripSetupScreen({super.key});
+  const TripSetupScreen({super.key, this.editTripsId});
+
+  final int? editTripsId;
 
   @override
   ConsumerState<TripSetupScreen> createState() => _TripSetupScreenState();
@@ -65,6 +71,93 @@ class _TripSetupScreenState extends ConsumerState<TripSetupScreen> {
   TimeOfDay _dailyEnd = const TimeOfDay(hour: 19, minute: 0);
   String? _budgetError;
   String? _timeError;
+
+  /// Edit mode: the trip as loaded, so changes can be compared, and the save.
+  Trip? _original;
+  bool _saving = false;
+
+  bool get _isEditing => widget.editTripsId != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final tripsId = widget.editTripsId;
+    if (tripsId == null) return;
+    ref.listenManual(tripDetailProvider(tripsId), (_, next) {
+      final trip = next.valueOrNull;
+      if (trip != null && _original == null) setState(() => _prefill(trip));
+    }, fireImmediately: true);
+  }
+
+  void _prefill(Trip trip) {
+    TimeOfDay time(String value) {
+      final parts = value.split(':');
+      return TimeOfDay(hour: int.tryParse(parts.first) ?? 9, minute: parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0);
+    }
+
+    _original = trip;
+    _titleEdited = true;
+    _titleController.text = trip.title;
+    _budgetController.text = RupiahInputFormatter.format(trip.budgetTotal);
+    _numDays = trip.numDays;
+    _startDate = DateUtils.dateOnly(trip.startDate);
+    _dailyStart = time(trip.dailyStartTime);
+    _dailyEnd = time(trip.dailyEndTime);
+  }
+
+  /// UC-013 A3: changing days, budget or daily hours of a trip that has an
+  /// itinerary makes the server drop its stops, so the user is asked first.
+  Future<void> _saveEdit(AppLocalizations l10n, {required String title, required int budget}) async {
+    final original = _original!;
+    final start = _formatTime(_dailyStart);
+    final end = _formatTime(_dailyEnd);
+    final structural = _numDays != original.numDays ||
+        budget != original.budgetTotal ||
+        start != original.dailyStartTime.substring(0, 5) ||
+        end != original.dailyEndTime.substring(0, 5);
+
+    if (structural && original.hasStops) {
+      final proceed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Itinerary akan dibuat ulang'),
+          content: const Text(
+            'Mengubah jumlah hari, anggaran, atau jam harian menghapus itinerary yang sekarang. '
+            'Setelah disimpan, buat itinerary lagi dari halaman trip.',
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('Batal')),
+            TextButton(onPressed: () => Navigator.of(dialogContext).pop(true), child: const Text('Simpan')),
+          ],
+        ),
+      );
+      if (proceed != true || !mounted) return;
+    }
+
+    setState(() => _saving = true);
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await ref.read(tripServiceProvider).updateTrip(
+            original.tripsId,
+            title: title,
+            numDays: _numDays,
+            budgetTotal: budget,
+            startDate: _startDate,
+            dailyStartTime: start,
+            dailyEndTime: end,
+          );
+      ref.invalidate(tripDetailProvider(original.tripsId));
+      ref.invalidate(savedTripsProvider);
+      messenger.showSnackBar(const SnackBar(content: Text('Perubahan trip disimpan')));
+      if (mounted) context.pop();
+    } on ValidationFailure catch (failure) {
+      messenger.showSnackBar(SnackBar(content: Text(failure.message ?? l10n.errorGeneric)));
+    } catch (error) {
+      messenger.showSnackBar(SnackBar(content: Text(tripErrorMessage(error, l10n))));
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -131,8 +224,13 @@ class _TripSetupScreenState extends ConsumerState<TripSetupScreen> {
     if (!hasValidBudget || !hasValidTimes) return;
 
     final typed = _titleController.text.trim();
+    final title = typed.isEmpty ? _defaultTitle(l10n, Localizations.localeOf(context).languageCode) : typed;
+    if (_isEditing) {
+      _saveEdit(l10n, title: title, budget: budget);
+      return;
+    }
     ref.read(tripSetupControllerProvider.notifier).submit(
-          title: typed.isEmpty ? _defaultTitle(l10n, Localizations.localeOf(context).languageCode) : typed,
+          title: title,
           numDays: _numDays,
           budgetTotal: budget,
           startDate: _startDate,
@@ -237,17 +335,30 @@ class _TripSetupScreenState extends ConsumerState<TripSetupScreen> {
       if (tripId != null) context.push(AppRoutes.tripWishlist(tripId));
     });
 
+    if (_isEditing && _original == null) {
+      final loadError = ref.watch(tripDetailProvider(widget.editTripsId!)).error;
+      return Scaffold(
+        backgroundColor: AppColors.surface,
+        appBar: ScreenHeader(subtitle: 'Ubah Trip', onBack: () => context.pop()),
+        body: Center(
+          child: loadError == null
+              ? const CircularProgressIndicator(color: AppColors.sea600)
+              : Text(tripErrorMessage(loadError, l10n)),
+        ),
+      );
+    }
+
     return PopScope(
-      canPop: false,
+      canPop: _isEditing,
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) _confirmLeave(l10n);
       },
       child: Scaffold(
         backgroundColor: AppColors.surface,
         appBar: ScreenHeader(
-          subtitle: l10n.tripSetupHeader,
-          onBack: () => _confirmLeave(l10n),
-          trailing: StepPill(step: 1, total: 4, label: l10n.tripStepLabel(1, 4, l10n.tripSetupHeader)),
+          subtitle: _isEditing ? 'Ubah Trip' : l10n.tripSetupHeader,
+          onBack: _isEditing ? () => context.pop() : () => _confirmLeave(l10n),
+          trailing: _isEditing ? null : StepPill(step: 1, total: 4, label: l10n.tripStepLabel(1, 4, l10n.tripSetupHeader)),
         ),
         bottomNavigationBar: BottomActionBar(
           child: Column(
@@ -275,9 +386,9 @@ class _TripSetupScreenState extends ConsumerState<TripSetupScreen> {
               ),
               const SizedBox(height: 12),
               PrimaryButton(
-                label: l10n.tripSetupNext,
-                trailingIcon: Icons.arrow_forward_rounded,
-                isLoading: setupState.isLoading,
+                label: _isEditing ? 'Simpan Perubahan' : l10n.tripSetupNext,
+                trailingIcon: _isEditing ? Icons.check_rounded : Icons.arrow_forward_rounded,
+                isLoading: _isEditing ? _saving : setupState.isLoading,
                 onPressed: () => _submit(l10n),
               ),
             ],

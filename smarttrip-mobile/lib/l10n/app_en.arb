@@ -52,7 +52,6 @@
   "errorNetwork": "Cannot reach the server. Check your internet connection.",
   "errorGeneric": "Something went wrong. Please try again.",
   "errorGoogleNotConfigured": "Google sign-in is not configured in this build.",
-  "comingSoon": "Coming soon",
   "actionRetry": "Try Again",
   "actionBack": "Back",
   "actionCancel": "Cancel",
@@ -469,5 +468,12 @@
   "wishlistEmptyBody": "Tap the heart on a place in the catalog to save it here.",
   "wishlistExplore": "Explore the catalog",
   "wishlistClearFilters": "Clear filters",
-  "wishlistLoadFailed": "Your wishlist couldn't be loaded. Try again."
+  "wishlistLoadFailed": "Your wishlist couldn't be loaded. Try again.",
+  "forgotTitle": "Forgot Password",
+  "forgotSubtitle": "Enter your account email. We will send a link to set a new password.",
+  "forgotSubmit": "Send Link",
+  "forgotSentTitle": "Check your email",
+  "forgotSentFallback": "If the email is registered, a password reset link has been sent.",
+  "forgotSentHint": "Open the link in that email, set a new password, then come back here to sign in. The link is valid for 60 minutes.",
+  "forgotRemembered": "Remember your password?"
 }

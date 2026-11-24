@@ -410,12 +410,6 @@ abstract class AppLocalizations {
   /// **'Masuk dengan Google belum dikonfigurasi pada build ini.'**
   String get errorGoogleNotConfigured;
 
-  /// No description provided for @comingSoon.
-  ///
-  /// In id, this message translates to:
-  /// **'Segera hadir'**
-  String get comingSoon;
-
   /// No description provided for @actionRetry.
   ///
   /// In id, this message translates to:
@@ -2857,6 +2851,48 @@ abstract class AppLocalizations {
   /// In id, this message translates to:
   /// **'Wishlist gagal dimuat. Coba lagi.'**
   String get wishlistLoadFailed;
+
+  /// No description provided for @forgotTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Lupa Kata Sandi'**
+  String get forgotTitle;
+
+  /// No description provided for @forgotSubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Masukkan email akunmu. Kami kirim tautan untuk membuat kata sandi baru.'**
+  String get forgotSubtitle;
+
+  /// No description provided for @forgotSubmit.
+  ///
+  /// In id, this message translates to:
+  /// **'Kirim Tautan'**
+  String get forgotSubmit;
+
+  /// No description provided for @forgotSentTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Cek email kamu'**
+  String get forgotSentTitle;
+
+  /// No description provided for @forgotSentFallback.
+  ///
+  /// In id, this message translates to:
+  /// **'Jika email terdaftar, tautan atur ulang kata sandi telah dikirim.'**
+  String get forgotSentFallback;
+
+  /// No description provided for @forgotSentHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Buka tautan di email itu, buat kata sandi baru, lalu kembali ke sini untuk masuk. Tautan berlaku 60 menit.'**
+  String get forgotSentHint;
+
+  /// No description provided for @forgotRemembered.
+  ///
+  /// In id, this message translates to:
+  /// **'Ingat kata sandimu?'**
+  String get forgotRemembered;
 }
 
 class _AppLocalizationsDelegate

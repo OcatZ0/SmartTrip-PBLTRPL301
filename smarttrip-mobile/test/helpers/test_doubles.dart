@@ -104,6 +104,18 @@ class FakeAuthService implements AuthService {
     return onRegister?.call(name, email, password, passwordConfirmation) ??
         Future.value('Silakan cek email Anda untuk verifikasi akun.');
   }
+
+  final forgotCalls = <String>[];
+
+  /// Throw from here to simulate a failed request.
+  Future<String> Function(String email)? onForgotPassword;
+
+  @override
+  Future<String> forgotPassword({required String email}) {
+    forgotCalls.add(email);
+    return onForgotPassword?.call(email) ??
+        Future.value('Jika email terdaftar, tautan atur ulang kata sandi telah dikirim.');
+  }
 }
 
 class FakeGoogleAuthService implements GoogleAuthService {

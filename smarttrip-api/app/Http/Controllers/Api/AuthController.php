@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Mail\RegistrationVerificationMail;
+use App\Services\EmailJs;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -11,7 +12,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
@@ -68,7 +68,20 @@ class AuthController extends Controller
 
         $verificationUrl = URL::route('auth.verify-registration', ['email' => $data['email'], 'token' => $token]);
 
-        Mail::to($data['email'])->send(new RegistrationVerificationMail($verificationUrl));
+        $sent = EmailJs::deliver($data['email'], new RegistrationVerificationMail($verificationUrl), [
+            'subject' => 'Verifikasi Akun SmartTrip',
+            'heading' => 'Satu langkah lagi',
+            'message' => "Halo {$data['name']}, terima kasih sudah mendaftar di SmartTrip Batam. Tekan tombol di bawah ini untuk memverifikasi email dan mengaktifkan akun Anda.",
+            'action_label' => 'Verifikasi Email',
+            'action_url' => $verificationUrl,
+            'note' => 'Tautan ini berlaku selama 60 menit. Abaikan email ini jika Anda tidak merasa mendaftar di SmartTrip.',
+        ]);
+
+        if (! $sent) {
+            return response()->json([
+                'message' => 'Email verifikasi gagal dikirim. Coba daftar lagi beberapa saat lagi.',
+            ], 503);
+        }
 
         return response()->json([
             'message' => 'Silakan cek email Anda untuk verifikasi akun.',

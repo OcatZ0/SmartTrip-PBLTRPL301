@@ -52,7 +52,6 @@
   "errorNetwork": "Tidak dapat terhubung ke server. Periksa koneksi internetmu.",
   "errorGeneric": "Terjadi kesalahan. Coba lagi.",
   "errorGoogleNotConfigured": "Masuk dengan Google belum dikonfigurasi pada build ini.",
-  "comingSoon": "Segera hadir",
   "actionRetry": "Coba Lagi",
   "actionBack": "Kembali",
   "actionCancel": "Batal",
@@ -766,5 +765,12 @@
   "wishlistEmptyBody": "Tekan ikon hati pada tempat di katalog untuk menyimpannya ke sini.",
   "wishlistExplore": "Jelajahi katalog",
   "wishlistClearFilters": "Hapus filter",
-  "wishlistLoadFailed": "Wishlist gagal dimuat. Coba lagi."
+  "wishlistLoadFailed": "Wishlist gagal dimuat. Coba lagi.",
+  "forgotTitle": "Lupa Kata Sandi",
+  "forgotSubtitle": "Masukkan email akunmu. Kami kirim tautan untuk membuat kata sandi baru.",
+  "forgotSubmit": "Kirim Tautan",
+  "forgotSentTitle": "Cek email kamu",
+  "forgotSentFallback": "Jika email terdaftar, tautan atur ulang kata sandi telah dikirim.",
+  "forgotSentHint": "Buka tautan di email itu, buat kata sandi baru, lalu kembali ke sini untuk masuk. Tautan berlaku 60 menit.",
+  "forgotRemembered": "Ingat kata sandimu?"
 }

@@ -171,9 +171,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Google sign-in is not configured in this build.';
 
   @override
-  String get comingSoon => 'Coming soon';
-
-  @override
   String get actionRetry => 'Try Again';
 
   @override
@@ -1623,4 +1620,28 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get wishlistLoadFailed =>
       'Your wishlist couldn\'t be loaded. Try again.';
+
+  @override
+  String get forgotTitle => 'Forgot Password';
+
+  @override
+  String get forgotSubtitle =>
+      'Enter your account email. We will send a link to set a new password.';
+
+  @override
+  String get forgotSubmit => 'Send Link';
+
+  @override
+  String get forgotSentTitle => 'Check your email';
+
+  @override
+  String get forgotSentFallback =>
+      'If the email is registered, a password reset link has been sent.';
+
+  @override
+  String get forgotSentHint =>
+      'Open the link in that email, set a new password, then come back here to sign in. The link is valid for 60 minutes.';
+
+  @override
+  String get forgotRemembered => 'Remember your password?';
 }

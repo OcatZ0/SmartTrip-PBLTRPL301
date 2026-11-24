@@ -257,7 +257,8 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Lupa kata sandi?'));
     await tester.pumpAndSettle();
-    expect(find.text('Segera hadir'), findsOneWidget);
+    expect(find.text('Lupa Kata Sandi'), findsOneWidget);
+    expect(find.text('Kirim Tautan'), findsOneWidget);
   });
 
   testWidgets('a stored token restores the session straight into the app', (tester) async {

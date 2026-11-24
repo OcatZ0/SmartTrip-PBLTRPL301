@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Mail\PasswordResetMail;
+use App\Services\EmailJs;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -12,7 +13,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
 use Laravel\Sanctum\HasApiTokens;
 
@@ -145,6 +145,15 @@ class User extends Authenticatable
             'token' => $token,
         ]);
 
-        Mail::to($this->email)->send(new PasswordResetMail($url));
+        // The reply never says whether the email exists, so a failed send is
+        // only logged (EmailJs::deliver), not reported to the requester.
+        EmailJs::deliver($this->email, new PasswordResetMail($url), [
+            'subject' => 'Atur Ulang Kata Sandi - SmartTrip',
+            'heading' => 'Atur ulang kata sandi',
+            'message' => 'Kami menerima permintaan atur ulang kata sandi untuk akun SmartTrip Anda. Tekan tombol di bawah ini untuk membuat kata sandi baru.',
+            'action_label' => 'Buat Kata Sandi Baru',
+            'action_url' => $url,
+            'note' => 'Tautan ini berlaku selama 60 menit. Abaikan email ini jika Anda tidak meminta atur ulang kata sandi; kata sandi Anda tidak akan berubah.',
+        ]);
     }
 }

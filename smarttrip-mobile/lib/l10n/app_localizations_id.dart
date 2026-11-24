@@ -172,9 +172,6 @@ class AppLocalizationsId extends AppLocalizations {
       'Masuk dengan Google belum dikonfigurasi pada build ini.';
 
   @override
-  String get comingSoon => 'Segera hadir';
-
-  @override
   String get actionRetry => 'Coba Lagi';
 
   @override
@@ -1591,4 +1588,28 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get wishlistLoadFailed => 'Wishlist gagal dimuat. Coba lagi.';
+
+  @override
+  String get forgotTitle => 'Lupa Kata Sandi';
+
+  @override
+  String get forgotSubtitle =>
+      'Masukkan email akunmu. Kami kirim tautan untuk membuat kata sandi baru.';
+
+  @override
+  String get forgotSubmit => 'Kirim Tautan';
+
+  @override
+  String get forgotSentTitle => 'Cek email kamu';
+
+  @override
+  String get forgotSentFallback =>
+      'Jika email terdaftar, tautan atur ulang kata sandi telah dikirim.';
+
+  @override
+  String get forgotSentHint =>
+      'Buka tautan di email itu, buat kata sandi baru, lalu kembali ke sini untuk masuk. Tautan berlaku 60 menit.';
+
+  @override
+  String get forgotRemembered => 'Ingat kata sandimu?';
 }

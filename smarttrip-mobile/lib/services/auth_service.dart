@@ -65,6 +65,21 @@ class AuthService {
     }
   }
 
+  /// F027 / UC-006: the server emails a reset link (the new password is set
+  /// on the web page it opens). The reply is the same whether or not the
+  /// email is registered.
+  Future<String> forgotPassword({required String email}) async {
+    try {
+      final response = await _apiClient.dio.post<Map<String, dynamic>>(
+        '/auth/forgot-password',
+        data: {'email': email},
+      );
+      return (response.data?['message'] as String?) ?? '';
+    } on DioException catch (error) {
+      throw ApiFailure.fromDioException(error);
+    }
+  }
+
   Future<AuthSession> _authenticate(
     String path,
     Map<String, dynamic> body,

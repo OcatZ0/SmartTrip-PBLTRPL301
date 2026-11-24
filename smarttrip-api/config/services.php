@@ -18,6 +18,15 @@ return [
         'key' => env('POSTMARK_API_KEY'),
     ],
 
+    // App emails through the EmailJS REST API (App\Services\EmailJs). Leave
+    // empty to send with the Laravel mailer instead (local, tests).
+    'emailjs' => [
+        'service_id' => env('EMAILJS_SERVICE_ID'),
+        'template_id' => env('EMAILJS_TEMPLATE_ID'),
+        'public_key' => env('EMAILJS_PUBLIC_KEY'),
+        'private_key' => env('EMAILJS_PRIVATE_KEY'),
+    ],
+
     'resend' => [
         'key' => env('RESEND_API_KEY'),
     ],

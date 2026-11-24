@@ -25,18 +25,9 @@ import '../../widgets/screen_header.dart';
 import 'swap_place_screen.dart';
 import 'widgets/setup_card.dart';
 import 'widgets/day_point_sheet.dart';
+import 'widgets/invite_viewer_sheet.dart';
 import 'widgets/source_badge.dart';
 import 'widgets/stop_detail_sheet.dart';
-
-enum MemberRole { editor, viewer }
-
-class TripMember {
-  final String name;
-  final String email;
-  final MemberRole role;
-
-  const TripMember({required this.name, required this.email, required this.role});
-}
 
 /// Rain colours shared by the weather card, the rain badge and the notices.
 const _rainFill = Color(0xFFFFF4E5);
@@ -56,7 +47,6 @@ class ItineraryScreen extends ConsumerStatefulWidget {
 
 class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
   int _selectedDayNumber = 1;
-  final List<TripMember> _members = [];
   bool _reminderScheduled = false;
 
   @override
@@ -247,70 +237,14 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
   }
 
   void _showInviteSheet() {
-    final emailCtrl = TextEditingController();
-    MemberRole role = MemberRole.viewer;
-
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true, // supaya naik saat keyboard muncul
+      isScrollControlled: true, // naik saat keyboard muncul
       backgroundColor: Colors.white,
       showDragHandle: true,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (sheetCtx) => StatefulBuilder(
-        builder: (ctx, setSheetState) => Padding(
-          padding: EdgeInsets.fromLTRB(20, 0, 20, 20 + MediaQuery.of(ctx).viewInsets.bottom),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text('Undang ke Itinerary', style: appText(18, FontWeight.w800, AppColors.ink, height: 24)),
-              const SizedBox(height: 16),
-              TextField(
-                controller: emailCtrl,
-                keyboardType: TextInputType.emailAddress,
-                style: appText(14, FontWeight.w600, AppColors.ink),
-                decoration: InputDecoration(
-                  hintText: 'Email teman',
-                  hintStyle: appText(14, FontWeight.w500, AppColors.inkMuted),
-                  prefixIcon: const Icon(Icons.mail_outline_rounded, color: AppColors.inkMuted),
-                  filled: true,
-                  fillColor: AppColors.field,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
-                ),
-              ),
-              const SizedBox(height: 12),
-              SegmentedButton<MemberRole>(
-                style: SegmentedButton.styleFrom(
-                  selectedBackgroundColor: AppColors.sea600,
-                  selectedForegroundColor: Colors.white,
-                  foregroundColor: AppColors.ink,
-                  side: const BorderSide(color: AppColors.line),
-                ),
-                segments: const [
-                  ButtonSegment(value: MemberRole.viewer, label: Text('Viewer')),
-                  ButtonSegment(value: MemberRole.editor, label: Text('Editor')),
-                ],
-                selected: {role},
-                onSelectionChanged: (s) => setSheetState(() => role = s.first),
-              ),
-              const SizedBox(height: 16),
-              PrimaryButton(
-                label: 'Kirim Undangan',
-                onPressed: () {
-                  final email = emailCtrl.text.trim();
-                  if (email.isEmpty || !email.contains('@')) return;
-                  setState(() {
-                    _members.add(TripMember(name: email.split('@').first, email: email, role: role));
-                  });
-                  Navigator.pop(sheetCtx);
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Undangan dikirim ke $email')));
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-    ).whenComplete(emailCtrl.dispose);
+      builder: (_) => InviteViewerSheet(tripsId: widget.tripsId),
+    );
   }
 
   @override

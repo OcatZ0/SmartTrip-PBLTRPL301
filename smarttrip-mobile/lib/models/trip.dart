@@ -477,3 +477,21 @@ class TripWishlistItem {
 
   bool get isCustomPin => placesId == null;
 }
+
+/// Someone the owner shared the trip with, read-only (F015,
+/// `GET /api/trips/{id}/viewers`).
+class TripViewer {
+  const TripViewer({required this.usersId, required this.name, required this.email});
+
+  factory TripViewer.fromJson(Map<String, dynamic> json) {
+    return TripViewer(
+      usersId: json['users_id'] as int,
+      name: json['name'] as String? ?? '',
+      email: json['email'] as String? ?? '',
+    );
+  }
+
+  final int usersId;
+  final String name;
+  final String email;
+}

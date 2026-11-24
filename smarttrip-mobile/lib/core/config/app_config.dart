@@ -11,6 +11,13 @@ class AppConfig {
     defaultValue: 'https://smarttrips.my.id/api',
   );
 
+  /// Link the owner sends to invite a viewer (F015), on the API's host.
+  /// shortcut: opening it in the app is F016 (deep link + `POST
+  /// /trips/join-viewer/{token}`); until then the link is only a carrier
+  /// for the token.
+  static String viewerInviteUrl(String token) =>
+      Uri.parse(apiBaseUrl).replace(path: '/undangan/$token').toString();
+
   /// OAuth *web* client ID the backend verifies Google id_tokens against.
   static const String googleServerClientId = String.fromEnvironment(
     'GOOGLE_SERVER_CLIENT_ID',

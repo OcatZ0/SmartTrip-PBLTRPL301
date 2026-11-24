@@ -302,6 +302,35 @@ class TripService {
     return '${date.year}-$month-$day';
   }
 
+  // --- F015 Mengundang Viewer (sisi pemilik trip) ---
+
+  Future<List<TripViewer>> fetchViewers(int tripsId) async {
+    final body = await _call(() => _dio.get<Map<String, dynamic>>('/trips/$tripsId/viewers'));
+    return (body['data'] as List? ?? const []).cast<Map<String, dynamic>>().map(TripViewer.fromJson).toList();
+  }
+
+  /// Only registered users can be invited; the API answers 422 with an
+  /// `email` error otherwise (thrown as [ValidationFailure]).
+  Future<TripViewer> inviteViewer(int tripsId, String email) async {
+    final body = await _call(() => _dio.post<Map<String, dynamic>>('/trips/$tripsId/viewers', data: {'email': email}));
+    return TripViewer.fromJson(body);
+  }
+
+  Future<void> removeViewer(int tripsId, int usersId) async {
+    await _call(() => _dio.delete<Map<String, dynamic>>('/trips/$tripsId/viewers/$usersId'));
+  }
+
+  /// Returns the same token until the link is turned off.
+  Future<String> createViewerInviteLink(int tripsId) async {
+    final body = await _call(() => _dio.post<Map<String, dynamic>>('/trips/$tripsId/viewer-invite-link'));
+    return body['viewer_invite_token'] as String;
+  }
+
+  /// Closes the link for new people; viewers who already joined keep access.
+  Future<void> disableViewerInviteLink(int tripsId) async {
+    await _call(() => _dio.delete<Map<String, dynamic>>('/trips/$tripsId/viewer-invite-link'));
+  }
+
   Future<Map<String, dynamic>> _call(
     Future<Response<Map<String, dynamic>>> Function() request,
   ) async {

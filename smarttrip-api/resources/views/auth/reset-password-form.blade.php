@@ -36,6 +36,6 @@
         <svg class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
     </button>
 
-    <p class="m-0 mt-1.5 text-center text-[13px] text-[#5d6b7c]">Setelah disimpan, masuk lagi di aplikasi SmartTrip dengan kata sandi baru.</p>
+    <p class="m-0 mt-1.5 text-center text-[13px] text-[#5d6b7c]">Setelah disimpan, masuk lagi dengan email dan kata sandi baru.</p>
 </form>
 @endsection

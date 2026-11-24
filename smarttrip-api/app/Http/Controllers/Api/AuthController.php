@@ -308,13 +308,18 @@ class AuthController extends Controller
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ]);
 
-        $status = Password::reset($data, function (User $user, string $password) {
+        $resetUser = null;
+        $status = Password::reset($data, function (User $user, string $password) use (&$resetUser) {
             $user->forceFill(['password' => $password])->save();
+            $resetUser = $user;
         });
 
+        // Admins (panel login) and wisatawan (mobile app) share this page, so
+        // the next step depends on who just reset.
         return view('auth.reset-password-result', [
             'success' => $status === Password::PASSWORD_RESET,
             'message' => $this->passwordStatusMessage($status),
+            'isAdmin' => $resetUser?->isAdmin() ?? false,
         ]);
     }
 

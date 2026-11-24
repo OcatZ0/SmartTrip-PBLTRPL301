@@ -131,4 +131,47 @@ class PasswordResetTest extends TestCase
 
         $response->assertUnprocessable();
     }
+
+    /** @return string the result page after resetting through the emailed link */
+    private function resetThroughLink(string $email): string
+    {
+        Mail::fake();
+        $this->postJson('/api/auth/forgot-password', ['email' => $email])->assertOk();
+
+        $url = null;
+        Mail::assertSent(PasswordResetMail::class, function (PasswordResetMail $mail) use (&$url) {
+            $url = $mail->resetUrl;
+
+            return true;
+        });
+        parse_str(parse_url($url, PHP_URL_QUERY), $query);
+
+        return $this->post('/auth/reset-password', [
+            'email' => $query['email'],
+            'token' => $query['token'],
+            'password' => 'brandnewpassword',
+            'password_confirmation' => 'brandnewpassword',
+        ])->assertOk()->getContent();
+    }
+
+    public function test_an_admin_is_sent_back_to_the_admin_panel_after_resetting(): void
+    {
+        User::factory()->create(['email' => 'admin@example.com', 'role' => 'admin']);
+
+        $page = $this->resetThroughLink('admin@example.com');
+
+        $this->assertStringContainsString('Masuk ke Panel Admin', $page);
+        $this->assertStringContainsString(route('admin.login'), $page);
+        $this->assertStringNotContainsString('Buka aplikasi SmartTrip', $page);
+    }
+
+    public function test_a_wisatawan_is_told_to_sign_in_in_the_app_after_resetting(): void
+    {
+        User::factory()->create(['email' => 'wisatawan@example.com']);
+
+        $page = $this->resetThroughLink('wisatawan@example.com');
+
+        $this->assertStringContainsString('Buka aplikasi SmartTrip', $page);
+        $this->assertStringNotContainsString('Masuk ke Panel Admin', $page);
+    }
 }

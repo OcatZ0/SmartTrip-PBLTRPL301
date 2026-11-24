@@ -500,48 +500,4 @@ class TripController extends Controller
 
         return response()->json(['message' => 'Trip dihapus.']);
     }
-
-    /**
-     * F017 (docs/prd design spec Section 10) - generate/ambil share_token
-     * publik. Idempotent - link yang sama terus dipakai sampai sengaja
-     * di-reset, bukan generate ulang tiap tap.
-     */
-    public function storeShareLink(Request $request, Trip $trip)
-    {
-        if (! $trip->isOwnedBy($request->user())) {
-            abort(403);
-        }
-
-        if ($trip->share_token === null) {
-            $trip->update(['share_token' => $this->generateUniqueShareToken()]);
-        }
-
-        return response()->json(['share_token' => $trip->share_token]);
-    }
-
-    /**
-     * Matikan link publik - link lama langsung mati buat siapapun yang
-     * masih pegang, beda dari viewer_invite_token (F015) yang cuma
-     * menutup jalur masuk baru tanpa mencabut akses yang sudah join
-     * (share link anon tidak punya baris akses yang bisa "sudah join").
-     */
-    public function destroyShareLink(Request $request, Trip $trip)
-    {
-        if (! $trip->isOwnedBy($request->user())) {
-            abort(403);
-        }
-
-        $trip->update(['share_token' => null]);
-
-        return response()->json(['message' => 'Link publik dimatikan.']);
-    }
-
-    private function generateUniqueShareToken(): string
-    {
-        do {
-            $token = Str::random(32);
-        } while (Trip::where('share_token', $token)->exists());
-
-        return $token;
-    }
 }

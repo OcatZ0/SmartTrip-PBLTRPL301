@@ -31,7 +31,6 @@ class Trip extends Model
         'weight_anggaran',
         'weight_rating',
         'viewer_invite_token',
-        'share_token',
     ];
 
     protected function casts(): array

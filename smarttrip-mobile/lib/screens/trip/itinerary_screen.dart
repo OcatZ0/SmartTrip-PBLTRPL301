@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:share_plus/share_plus.dart';
+import 'package:printing/printing.dart';
 
 import '../../core/error/trip_error_message.dart';
 import '../../core/notifications/local_notification_service.dart';
@@ -13,6 +12,7 @@ import '../../l10n/app_localizations.dart';
 import '../../models/saved_trip.dart' show TripModel;
 import '../../models/trip.dart';
 import '../../models/weather.dart';
+import '../../services/itinerary_pdf_service.dart';
 import '../../services/polyline_codec.dart';
 import '../../services/trip_service.dart';
 import '../../services/weather_service.dart';
@@ -232,16 +232,18 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
     }
   }
 
-  void _showShareSheet(int tripsId) {
-    final link = 'https://smarttrip.app/share/$tripsId';
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      showDragHandle: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (_) => _ShareItinerarySheet(link: link),
-    );
+  /// UC-018: the PDF is built on the device from the loaded trip, then handed
+  /// to the system share sheet (save to files or send to another app).
+  Future<void> _exportPdf(Trip trip) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final languageCode = Localizations.localeOf(context).languageCode;
+    try {
+      final bytes = await const ItineraryPdfService().build(trip, languageCode: languageCode);
+      final slug = trip.title.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '-').replaceAll(RegExp(r'^-|-$'), '');
+      await Printing.sharePdf(bytes: bytes, filename: 'itinerary-${slug.isEmpty ? trip.tripsId : slug}.pdf');
+    } catch (_) {
+      messenger.showSnackBar(const SnackBar(content: Text('Gagal mengekspor PDF. Coba lagi.')));
+    }
   }
 
   void _showInviteSheet() {
@@ -325,7 +327,7 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
         onBack: _leave,
         trailing: trip == null
             ? null
-            : _TripMenu(onShare: () => _showShareSheet(trip.tripsId), onInvite: _showInviteSheet),
+            : _TripMenu(onExport: trip.hasStops ? () => _exportPdf(trip) : null, onInvite: _showInviteSheet),
       ),
       bottomNavigationBar: trip == null || day == null
           ? null
@@ -506,11 +508,12 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
   }
 }
 
-/// The ⋮ menu in the navy header: share the itinerary or invite someone.
+/// The ⋮ menu in the navy header: export the itinerary to PDF or invite
+/// someone. Export is hidden until the itinerary has stops.
 class _TripMenu extends StatelessWidget {
-  const _TripMenu({required this.onShare, required this.onInvite});
+  const _TripMenu({required this.onExport, required this.onInvite});
 
-  final VoidCallback onShare;
+  final VoidCallback? onExport;
   final VoidCallback onInvite;
 
   @override
@@ -533,11 +536,11 @@ class _TripMenu extends StatelessWidget {
       color: Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       onSelected: (value) {
-        if (value == 'share') onShare();
+        if (value == 'export') onExport?.call();
         if (value == 'invite') onInvite();
       },
       itemBuilder: (_) => [
-        item('share', Icons.share_outlined, 'Bagikan Itinerary'),
+        if (onExport != null) item('export', Icons.picture_as_pdf_outlined, 'Ekspor PDF'),
         item('invite', Icons.person_add_alt_outlined, 'Undang ke Itinerary'),
       ],
     );
@@ -1141,72 +1144,6 @@ class _RainBadge extends StatelessWidget {
               Text(l10n.weatherRainBadge, style: appText(11, FontWeight.w800, _rainText, height: 15)),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ShareItinerarySheet extends StatelessWidget {
-  const _ShareItinerarySheet({required this.link});
-
-  final String link;
-
-  Future<void> _copyLink(BuildContext context) async {
-    final navigator = Navigator.of(context);
-    final messenger = ScaffoldMessenger.of(context);
-
-    await Clipboard.setData(ClipboardData(text: link));
-
-    navigator.pop();
-    messenger.showSnackBar(const SnackBar(content: Text('Link disalin')));
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text('Bagikan Itinerary', style: appText(18, FontWeight.w800, AppColors.ink, height: 24)),
-            const SizedBox(height: 4),
-            Text(
-              'Siapa pun dengan link ini bisa melihat (read-only).',
-              style: appText(13, FontWeight.w500, AppColors.inkMuted, height: 18),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.only(left: 14, right: 4),
-              decoration: BoxDecoration(color: AppColors.field, borderRadius: BorderRadius.circular(14)),
-              child: Row(
-                children: [
-                  const Icon(Icons.link_rounded, size: 18, color: AppColors.inkMuted),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      link,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: appText(13, FontWeight.w600, AppColors.ink),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.copy_rounded, size: 18, color: AppColors.sea600),
-                    onPressed: () => _copyLink(context),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            PrimaryButton(
-              label: 'Bagikan ke aplikasi lain',
-              trailingIcon: Icons.share_outlined,
-              onPressed: () => Share.share('Lihat itinerary saya: $link'),
-            ),
-          ],
         ),
       ),
     );

@@ -74,8 +74,6 @@ dependencies:
 
   # Routing/navigation
   go_router: ^14.6.2
-  share_plus: ^10.0.0
-
   # Opens Google Maps turn-by-turn navigation from the live map (E1)
   url_launcher: ^6.3.2
 
@@ -83,6 +81,8 @@ dependencies:
   # container transform)
   animations: ^3.0.0
   bootstrap_icons: ^1.13.2
+  pdf: ^3.13.1
+  printing: ^5.15.1
 
 dev_dependencies:
   flutter_test:

@@ -94,7 +94,7 @@ class TripViewerController extends Controller
     }
 
     /**
-     * Idempotent seperti share_token (Section 10) - link yang sama terus
+     * Idempotent (Section 10) - link yang sama terus
      * dipakai sampai sengaja di-reset, bukan generate ulang tiap tap.
      */
     public function storeInviteLink(Request $request, Trip $trip)

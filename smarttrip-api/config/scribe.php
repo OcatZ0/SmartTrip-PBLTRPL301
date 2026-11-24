@@ -110,8 +110,7 @@ return [
 
         // Set this to true if your API should be authenticated by default. If so, you must also set `enabled` (above) to true.
         // You can then use @unauthenticated or @authenticated on individual endpoints to change their status from the default.
-        // Sebagian besar endpoint butuh auth:sanctum, tapi cukup banyak yang publik (katalog tempat, auth routes,
-        // shared-itinerary) - Scribe deteksi otomatis dari middleware auth:sanctum tiap route, jadi default false di sini.
+        // Sebagian besar endpoint butuh auth:sanctum, tapi cukup banyak yang publik (katalog tempat, auth routes) - Scribe deteksi otomatis dari middleware auth:sanctum tiap route, jadi default false di sini.
         'default' => false,
 
         // Where is the auth value meant to be sent in a request?

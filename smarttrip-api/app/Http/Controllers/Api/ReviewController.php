@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ItineraryItem;
 use App\Models\Place;
 use App\Models\PlaceReview;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -20,16 +21,10 @@ class ReviewController extends Controller
 {
     public function store(Request $request, Place $place)
     {
-        $existing = PlaceReview::query()
-            ->where('places_id', $place->places_id)
-            ->where('users_id', $request->user()->users_id)
-            ->first();
+        $existing = $this->existingReview($place, $request->user()->users_id);
 
         if ($existing) {
-            return response()->json([
-                'message' => 'Kamu sudah pernah memberi ulasan untuk tempat ini. Ubah ulasan yang sudah ada.',
-                'errors' => ['place_reviews_id' => [$existing->place_reviews_id]],
-            ], 422);
+            return $this->alreadyReviewed($existing);
         }
 
         $data = $request->validate([
@@ -42,15 +37,37 @@ class ReviewController extends Controller
             $this->assertItineraryItemBelongsToPlaceAndUser($data['itinerary_items_id'], $place, $request->user());
         }
 
-        $review = PlaceReview::create([
-            'places_id' => $place->places_id,
-            'users_id' => $request->user()->users_id,
-            'rating' => $data['rating'],
-            'comment' => $data['comment'] ?? null,
-            'itinerary_items_id' => $data['itinerary_items_id'] ?? null,
-        ]);
+        try {
+            $review = PlaceReview::create([
+                'places_id' => $place->places_id,
+                'users_id' => $request->user()->users_id,
+                'rating' => $data['rating'],
+                'comment' => $data['comment'] ?? null,
+                'itinerary_items_id' => $data['itinerary_items_id'] ?? null,
+            ]);
+        } catch (UniqueConstraintViolationException) {
+            // A double tap: the other request saved first, between the check
+            // above and this insert.
+            return $this->alreadyReviewed($this->existingReview($place, $request->user()->users_id));
+        }
 
         return response()->json($review, 201);
+    }
+
+    private function existingReview(Place $place, int $usersId): ?PlaceReview
+    {
+        return PlaceReview::query()
+            ->where('places_id', $place->places_id)
+            ->where('users_id', $usersId)
+            ->first();
+    }
+
+    private function alreadyReviewed(?PlaceReview $existing)
+    {
+        return response()->json([
+            'message' => 'Kamu sudah pernah memberi ulasan untuk tempat ini. Ubah ulasan yang sudah ada.',
+            'errors' => ['place_reviews_id' => [$existing?->place_reviews_id]],
+        ], 422);
     }
 
     public function update(Request $request, PlaceReview $review)

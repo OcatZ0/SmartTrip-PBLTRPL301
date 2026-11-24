@@ -18,7 +18,9 @@ sealed class ApiFailure implements Exception {
 
     return switch (response.statusCode) {
       401 => UnauthorizedFailure(serverMessage),
-      422 => ValidationFailure(serverMessage, _parseFieldErrors(data)),
+      // The auth rate limit (429) answers in the same shape, so its message
+      // lands under the email field.
+      422 || 429 => ValidationFailure(serverMessage, _parseFieldErrors(data)),
       final status => ServerFailure(status, serverMessage),
     };
   }

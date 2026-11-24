@@ -116,4 +116,15 @@ class VisitTrackingTest extends TestCase
         $response->assertOk();
         $this->assertNotNull($response->json('days.0.items.0.visited_at'));
     }
+
+    public function test_a_stop_of_a_deleted_trip_answers_404_instead_of_crashing(): void
+    {
+        $user = User::factory()->create();
+        ['trip' => $trip, 'item' => $item] = $this->tripWithOneItem($user);
+        $trip->delete();
+
+        $this->withHeaders($this->authHeader($user))
+            ->postJson("/api/itinerary-items/{$item->itinerary_items_id}/visit")
+            ->assertNotFound();
+    }
 }

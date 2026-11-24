@@ -118,18 +118,18 @@ class PasswordResetTest extends TestCase
         ])->assertOk();
     }
 
-    public function test_reset_password_api_endpoint_rejects_an_invalid_token(): void
+    public function test_the_reset_form_rejects_an_invalid_token(): void
     {
-        User::factory()->create(['email' => 'wisatawan@example.com']);
+        User::factory()->create(['email' => 'wisatawan@example.com', 'password' => 'password123']);
 
-        $response = $this->postJson('/api/auth/reset-password', [
+        $this->post('/auth/reset-password', [
             'email' => 'wisatawan@example.com',
             'token' => 'not-a-real-token',
             'password' => 'brandnewpassword',
             'password_confirmation' => 'brandnewpassword',
-        ]);
+        ])->assertOk()->assertSee('tidak valid atau sudah kedaluwarsa');
 
-        $response->assertUnprocessable();
+        $this->postJson('/api/auth/login', ['email' => 'wisatawan@example.com', 'password' => 'password123'])->assertOk();
     }
 
     /** @return string the result page after resetting through the emailed link */

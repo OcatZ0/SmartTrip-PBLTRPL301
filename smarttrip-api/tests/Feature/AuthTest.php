@@ -314,4 +314,55 @@ class AuthTest extends TestCase
         $user = User::where('email', 'manual@example.com')->first();
         $this->assertSame('google-sub-4', $user->google_id);
     }
+
+    public function test_google_login_rejects_a_token_whose_email_google_has_not_verified(): void
+    {
+        User::factory()->create(['email' => 'korban@example.com', 'google_id' => null]);
+        $this->fakeGoogleToken('korban@example.com', 'google-sub-attacker', ['email_verified' => 'false']);
+
+        $this->postJson('/api/auth/google', ['id_token' => 'fake-token'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('id_token');
+
+        $this->assertNull(User::where('email', 'korban@example.com')->value('google_id'));
+    }
+
+    public function test_login_is_rate_limited_after_five_failed_attempts_per_minute(): void
+    {
+        User::factory()->create(['email' => 'wisatawan@example.com']);
+
+        for ($attempt = 1; $attempt <= 5; $attempt++) {
+            $this->postJson('/api/auth/login', ['email' => 'wisatawan@example.com', 'password' => 'salah'])->assertUnprocessable();
+        }
+
+        $this->postJson('/api/auth/login', ['email' => 'wisatawan@example.com', 'password' => 'salah'])
+            ->assertStatus(429)
+            ->assertJsonPath('errors.email.0', 'Terlalu banyak percobaan. Coba lagi dalam 1 menit.');
+    }
+
+    public function test_register_sends_at_most_three_emails_per_address_per_hour(): void
+    {
+        Mail::fake();
+        $payload = ['name' => 'Wisatawan', 'email' => 'baru@example.com', 'password' => 'password123', 'password_confirmation' => 'password123'];
+
+        for ($attempt = 1; $attempt <= 3; $attempt++) {
+            $this->postJson('/api/auth/register', $payload)->assertStatus(202);
+        }
+
+        $this->postJson('/api/auth/register', $payload)->assertStatus(429);
+        Mail::assertSentCount(3);
+    }
+
+    public function test_a_login_token_expires_after_thirty_days(): void
+    {
+        $user = User::factory()->create();
+        $token = $user->createToken('mobile')->plainTextToken;
+
+        $this->travel(29)->days();
+        $this->withToken($token)->getJson('/api/user')->assertOk();
+
+        $this->travel(2)->days();
+        $this->app['auth']->forgetGuards();
+        $this->withToken($token)->getJson('/api/user')->assertUnauthorized();
+    }
 }

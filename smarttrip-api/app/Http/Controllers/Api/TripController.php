@@ -28,6 +28,13 @@ class TripController extends Controller
     private const CARD_PHOTO_LIMIT = 4;
 
     /**
+     * Each day is a database row and a K-Means cluster, so an unbounded
+     * num_days lets one request insert rows until PHP times out. The app only
+     * warns past 7 days (design spec Section 4); 30 leaves room for that.
+     */
+    private const MAX_DAYS = 30;
+
+    /**
      * F011: daftar trip yang pernah dibuat user login - punya sendiri saja
      * (bukan yang dibagikan ke dia - itu GET /api/trips/shared, F016).
      * Terurut trip terbaru dulu. Each trip also carries a "summary" for the
@@ -126,7 +133,7 @@ class TripController extends Controller
     {
         $data = $request->validate([
             'title' => ['nullable', 'string', 'max:255'],
-            'num_days' => ['required', 'integer', 'min:1'],
+            'num_days' => ['required', 'integer', 'min:1', 'max:'.self::MAX_DAYS],
             'budget_total' => ['required', 'integer', 'min:1'],
             'start_date' => ['required', 'date'],
             'daily_start_time' => ['nullable', 'date_format:H:i'],
@@ -443,7 +450,7 @@ class TripController extends Controller
 
         $data = $request->validate([
             'title' => ['sometimes', 'string', 'max:255'],
-            'num_days' => ['sometimes', 'integer', 'min:1'],
+            'num_days' => ['sometimes', 'integer', 'min:1', 'max:'.self::MAX_DAYS],
             'budget_total' => ['sometimes', 'integer', 'min:1'],
             'start_date' => ['sometimes', 'date'],
             'daily_start_time' => ['sometimes', 'date_format:H:i'],

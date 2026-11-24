@@ -31,6 +31,13 @@ class ItineraryGenerator
 
     private const AVERAGE_SPEED_KMH = 27.5;
 
+    /**
+     * Recommended places this close to a day's centre come first (still in
+     * TOPSIS order), so the user's weights pick the places without the day
+     * zigzagging across the island.
+     */
+    private const NEARBY_KM = 8.0;
+
     public function __construct(private readonly OpenRouteServiceClient $routesClient) {}
 
     /**
@@ -65,7 +72,12 @@ class ItineraryGenerator
 
         $wishlistStops = $this->normalizedWishlist($trip);
 
-        $candidatePool = $this->scoredCandidatePool($trip, $wishlistStops, $tripCategoryIds, $start);
+        [$candidatePool, $wishlistCost] = $this->scoredCandidatePool($trip, $wishlistStops, $tripCategoryIds, $start);
+
+        // budget_total caps the entry costs of the stops. Wishlist places are
+        // the user's own picks and always stay; recommendations only use what
+        // is left.
+        $remainingBudget = (int) $trip->budget_total - $wishlistCost;
 
         $dayBuckets = $this->assignBucketsToDays($this->clusterIntoDays($trip->num_days, $wishlistStops), $starts, $ends);
 
@@ -121,7 +133,7 @@ class ItineraryGenerator
             }
 
             $openCandidates = $candidatePool->reject(fn ($candidate) => in_array($weekdays[$dayNumber], $candidate['closed_weekdays'], true));
-            $stops = $this->fillEmptySlots($stops, $centroid, $dayStart, $dayEnd, $windowMinutes, $openCandidates, $usedPlaceIds);
+            $stops = $this->fillEmptySlots($stops, $centroid, $dayStart, $dayEnd, $windowMinutes, $openCandidates, $usedPlaceIds, $remainingBudget);
 
             foreach ($stops as $stop) {
                 if ($stop['places_id'] !== null) {
@@ -209,9 +221,9 @@ class ItineraryGenerator
      * Langkah 5: matriks TOPSIS buat kandidat attraction/culinary di luar
      * wishlist (wishlist sudah pasti masuk, tidak perlu direkomendasikan).
      *
-     * @return Collection<int, array{places_id: int, lat: float, lng: float, visit_minutes: int, cost: int, topsis_score: float}>
+     * @return array{0: Collection<int, array{places_id: int, lat: float, lng: float, visit_minutes: int, cost: int, topsis_score: float}>, 1: int} the pool and the wishlist's estimated cost
      */
-    private function scoredCandidatePool(Trip $trip, Collection $wishlistStops, array $tripCategoryIds, array $start): Collection
+    private function scoredCandidatePool(Trip $trip, Collection $wishlistStops, array $tripCategoryIds, array $start): array
     {
         $excludedIds = $wishlistStops->pluck('places_id')->filter()->all();
 
@@ -223,11 +235,14 @@ class ItineraryGenerator
             ->withCount('reviews')
             ->get();
 
-        if ($places->isEmpty()) {
-            return collect();
-        }
-
         $costEstimator = new PlaceCostEstimator($places);
+        $wishlistCost = $excludedIds === []
+            ? 0
+            : (int) Place::whereIn('places_id', $excludedIds)->get()->sum(fn (Place $place) => $costEstimator->estimate($place));
+
+        if ($places->isEmpty()) {
+            return [collect(), $wishlistCost];
+        }
         $ratingEstimator = new PlaceRatingEstimator($places);
 
         $matrix = [];
@@ -250,15 +265,18 @@ class ItineraryGenerator
 
         $scores = Topsis::rank($matrix, $weights, $isBenefit);
 
-        return $places->map(fn (Place $place) => [
+        $pool = $places->map(fn (Place $place) => [
             'places_id' => $place->places_id,
             'lat' => (float) $place->lat,
             'lng' => (float) $place->lng,
             'visit_minutes' => (int) ($place->estimated_visit_minutes ?? 60),
+            'cost' => $matrix[$place->places_id]['anggaran'],
             'label' => $place->name,
             'topsis_score' => $scores[$place->places_id],
             'closed_weekdays' => OpeningHours::closedWeekdays($place->opening_hours),
         ])->sortByDesc('topsis_score')->values();
+
+        return [$pool, $wishlistCost];
     }
 
     /**
@@ -463,23 +481,30 @@ class ItineraryGenerator
         return [$stops, $overflow];
     }
 
-    private function fillEmptySlots(array $stops, ?array $centroid, array $start, array $end, int $windowMinutes, Collection $candidatePool, Collection $usedPlaceIds): array
+    private function fillEmptySlots(array $stops, ?array $centroid, array $start, array $end, int $windowMinutes, Collection $candidatePool, Collection $usedPlaceIds, int &$remainingBudget): array
     {
         $reference = $centroid ?? $start;
 
-        $available = $candidatePool
+        // partition() keeps the pool's TOPSIS order inside each half.
+        [$nearby, $farther] = $candidatePool
             ->filter(fn ($candidate) => ! $usedPlaceIds->has($candidate['places_id']))
-            ->sortBy(fn ($candidate) => Haversine::km($reference['lat'], $reference['lng'], $candidate['lat'], $candidate['lng']))
-            ->values();
+            ->partition(fn ($candidate) => Haversine::km($reference['lat'], $reference['lng'], $candidate['lat'], $candidate['lng']) <= self::NEARBY_KM);
 
-        foreach ($available as $candidate) {
+        foreach ($nearby->concat($farther) as $candidate) {
+            if ($candidate['cost'] > $remainingBudget) {
+                continue;
+            }
+
+            // A higher-ranked place may not fit while a lower-ranked one
+            // still does, so keep looking instead of stopping here.
             $projected = array_merge($stops, [$candidate]);
             if ($this->projectedMinutes($projected, $start, $end) > $windowMinutes) {
-                break;
+                continue;
             }
 
             $stops[] = array_merge($candidate, ['wishlist_id' => null, 'source' => 'recommended']);
             $usedPlaceIds[$candidate['places_id']] = true;
+            $remainingBudget -= $candidate['cost'];
         }
 
         return $stops;

@@ -34,7 +34,9 @@ Route::view('/undangan/{token}', 'auth.invite')->name('trip.invite');
 // Entirely separate from routes/api.php, which the Flutter app consumes.
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/login', [AdminAuthController::class, 'showLogin'])->name('login');
-    Route::post('/login', [AdminAuthController::class, 'login'])->name('login.attempt');
+    Route::post('/login', [AdminAuthController::class, 'login'])
+        ->middleware('throttle:login')
+        ->name('login.attempt');
     Route::get('/forgot-password', [AdminAuthController::class, 'showForgotPassword'])->name('password.request');
     Route::post('/forgot-password', [AdminAuthController::class, 'sendResetLink'])
         ->middleware('throttle:5,1')

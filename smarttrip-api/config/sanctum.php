@@ -50,7 +50,9 @@ return [
     |
     */
 
-    'expiration' => null,
+    // 30 days: a token copied off a lost or rooted phone stops working on
+    // its own; the app sends a 401 back to the login screen.
+    'expiration' => 60 * 24 * 30,
 
     /*
     |--------------------------------------------------------------------------

@@ -651,4 +651,57 @@ class ItineraryGenerationTest extends TestCase
         // New days start where the last day did.
         $this->assertSame($hotel->places_id, $trip->days()->where('day_number', 4)->value('start_places_id'));
     }
+
+    // --- weights and budget pick the recommendations ---
+
+    public function test_recommendations_follow_the_topsis_weights_not_just_distance(): void
+    {
+        $user = User::factory()->create();
+        $trip = $this->readyTrip($user, 1);
+        // One hour of visiting fits the day, two do not.
+        $trip->update([
+            'daily_start_time' => '09:00', 'daily_end_time' => '10:15',
+            'weight_kategori' => 0, 'weight_jarak' => 0, 'weight_anggaran' => 1, 'weight_rating' => 0,
+        ]);
+        $category = $trip->interestCategories()->first();
+
+        $nearExpensive = $this->makePlace(['name' => 'Dekat Mahal', 'lat' => 1.1310, 'lng' => 104.0310, 'estimated_cost_idr' => 200000, 'external_place_id' => 'gp-near']);
+        $fartherCheap = $this->makePlace(['name' => 'Agak Jauh Murah', 'lat' => 1.1400, 'lng' => 104.0400, 'estimated_cost_idr' => 10000, 'external_place_id' => 'gp-cheap']);
+        $nearExpensive->categories()->attach($category->categories_id);
+        $fartherCheap->categories()->attach($category->categories_id);
+
+        $this->fakeRoutes();
+
+        $response = $this->withHeaders($this->authHeader($user))->postJson("/api/trips/{$trip->trips_id}/generate");
+
+        $response->assertOk();
+        $this->assertSame([$fartherCheap->places_id], $response->json('days.0.items.*.places_id'));
+    }
+
+    public function test_recommendations_stay_within_the_trip_budget(): void
+    {
+        $user = User::factory()->create();
+        $trip = $this->readyTrip($user, 1);
+        $trip->update(['budget_total' => 60000]);
+        $category = $trip->interestCategories()->first();
+
+        $wishlist = $this->makePlace(['name' => 'Wishlist', 'lat' => 1.1302, 'lng' => 104.0302, 'estimated_cost_idr' => 20000, 'external_place_id' => 'gp-w']);
+        $trip->wishlistPlaces()->create(['places_id' => $wishlist->places_id]);
+        foreach ([1, 2, 3] as $index) {
+            $this->makePlace([
+                'name' => "Rekomendasi {$index}", 'lat' => 1.1300 + $index / 1000, 'lng' => 104.0300,
+                'estimated_cost_idr' => 30000, 'estimated_visit_minutes' => 30, 'external_place_id' => "gp-r{$index}",
+            ])->categories()->attach($category->categories_id);
+        }
+
+        $this->fakeRoutes();
+
+        $response = $this->withHeaders($this->authHeader($user))->postJson("/api/trips/{$trip->trips_id}/generate");
+
+        $response->assertOk();
+        // 60.000 - 20.000 for the wishlist leaves room for one 30.000 place.
+        $items = collect($response->json('days.0.items'));
+        $this->assertContains($wishlist->places_id, $items->pluck('places_id'));
+        $this->assertCount(1, $items->where('source', 'recommended'));
+    }
 }

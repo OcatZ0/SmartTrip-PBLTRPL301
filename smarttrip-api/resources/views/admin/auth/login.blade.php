@@ -92,7 +92,7 @@
                             setTimeout(function () { window.location.assign(body.redirect); }, reduceMotion ? 0 : 700);
                         });
                     }
-                    if (response.status === 422) {
+                    if (response.status === 422 || response.status === 429) {
                         return response.json().then(function (body) {
                             showErrors(body.errors || {});
                             submit.disabled = false;

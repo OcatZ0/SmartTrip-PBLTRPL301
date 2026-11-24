@@ -182,7 +182,11 @@ class AuthController extends Controller
         // supaya build dengan client ID berbeda tetap bisa login.
         $clientIds = array_filter(array_map('trim', explode(',', (string) config('services.google.client_id'))));
 
-        if (! in_array($payload['aud'] ?? null, $clientIds, true)) {
+        // Linking by email below is only safe when Google proved the inbox;
+        // a Google account can carry someone else's address unverified.
+        $emailVerified = filter_var($payload['email_verified'] ?? false, FILTER_VALIDATE_BOOLEAN);
+
+        if (! in_array($payload['aud'] ?? null, $clientIds, true) || ! $emailVerified || empty($payload['sub']) || empty($payload['email'])) {
             throw ValidationException::withMessages([
                 'id_token' => ['Token Google tidak valid.'],
             ]);
@@ -269,27 +273,6 @@ class AuthController extends Controller
         return response()->json([
             'message' => 'Jika email terdaftar, tautan atur ulang kata sandi telah dikirim.',
         ]);
-    }
-
-    public function resetPassword(Request $request)
-    {
-        $data = $request->validate([
-            'email' => ['required', 'string', 'email'],
-            'token' => ['required', 'string'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
-        ]);
-
-        $status = Password::reset($data, function (User $user, string $password) {
-            $user->forceFill(['password' => $password])->save();
-        });
-
-        if ($status !== Password::PASSWORD_RESET) {
-            throw ValidationException::withMessages([
-                'email' => [$this->passwordStatusMessage($status)],
-            ]);
-        }
-
-        return response()->json(['message' => 'Kata sandi berhasil diubah.']);
     }
 
     public function showResetPasswordForm(Request $request)

@@ -104,7 +104,9 @@ class TripViewerController extends Controller
         }
 
         if ($trip->viewer_invite_token === null) {
-            $trip->update(['viewer_invite_token' => $this->generateUniqueToken()]);
+            // 40 random characters never collide in practice; the unique index
+            // still guards the column.
+            $trip->update(['viewer_invite_token' => Str::random(40)]);
         }
 
         return response()->json(['viewer_invite_token' => $trip->viewer_invite_token]);
@@ -123,15 +125,6 @@ class TripViewerController extends Controller
         $trip->update(['viewer_invite_token' => null]);
 
         return response()->json(['message' => 'Link undangan dimatikan.']);
-    }
-
-    private function generateUniqueToken(): string
-    {
-        do {
-            $token = Str::random(32);
-        } while (Trip::where('viewer_invite_token', $token)->exists());
-
-        return $token;
     }
 
     /**

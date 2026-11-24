@@ -60,11 +60,10 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 Route::prefix('auth')->group(function () {
-    Route::post('/register', [AuthController::class, 'register']);
-    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:auth-email');
+    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
     Route::post('/google', [AuthController::class, 'loginWithGoogle']);
-    Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
-    Route::post('/reset-password', [AuthController::class, 'resetPassword']);
+    Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:auth-email');
     Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
     Route::put('/password', [AuthController::class, 'changePassword'])->middleware('auth:sanctum');
 });

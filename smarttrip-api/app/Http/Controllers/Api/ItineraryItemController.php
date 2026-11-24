@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\ItineraryItem;
 use App\Models\Place;
+use App\Models\Trip;
 use App\Services\Itinerary\ItineraryGenerator;
 use App\Services\Itinerary\SwapCandidateFinder;
 use Illuminate\Http\Request;
@@ -21,7 +22,7 @@ class ItineraryItemController extends Controller
 {
     public function swapCandidates(Request $request, ItineraryItem $itineraryItem, SwapCandidateFinder $finder)
     {
-        $trip = $itineraryItem->day->trip;
+        $trip = $this->tripOf($itineraryItem);
 
         if (! $trip->isReadableBy($request->user())) {
             abort(403);
@@ -53,7 +54,7 @@ class ItineraryItemController extends Controller
     public function update(Request $request, ItineraryItem $itineraryItem, SwapCandidateFinder $finder, ItineraryGenerator $generator)
     {
         $day = $itineraryItem->day;
-        $trip = $day->trip;
+        $trip = $this->tripOf($itineraryItem);
 
         if (! $trip->isOwnedBy($request->user())) {
             abort(403);
@@ -126,7 +127,7 @@ class ItineraryItemController extends Controller
      */
     public function visit(Request $request, ItineraryItem $itineraryItem)
     {
-        $trip = $itineraryItem->day->trip;
+        $trip = $this->tripOf($itineraryItem);
 
         if (! $trip->isOwnedBy($request->user())) {
             abort(403);
@@ -140,5 +141,14 @@ class ItineraryItemController extends Controller
             'itinerary_items_id' => $itineraryItem->itinerary_items_id,
             'visited_at' => $itineraryItem->visited_at,
         ]);
+    }
+
+    /**
+     * A deleted trip keeps its stops (soft delete), but ->trip skips it and
+     * returns null; a screen still open on it gets a 404, not a crash.
+     */
+    private function tripOf(ItineraryItem $itineraryItem): Trip
+    {
+        return $itineraryItem->day->trip ?? abort(404);
     }
 }

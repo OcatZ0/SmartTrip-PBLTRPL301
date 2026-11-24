@@ -383,4 +383,15 @@ class ManageTripsTest extends TestCase
         $this->assertArrayNotHasKey('wishlist_places', $trip);
         $this->assertSame(1, $trip['days_count']);
     }
+
+    public function test_a_trip_cannot_have_more_than_thirty_days(): void
+    {
+        $user = User::factory()->create();
+
+        $this->withHeaders($this->authHeader($user))->postJson('/api/trips', [
+            'num_days' => 31, 'budget_total' => 1000000, 'start_date' => now()->addWeek()->toDateString(),
+        ])->assertUnprocessable()->assertJsonValidationErrors('num_days');
+
+        $this->assertDatabaseCount('trips', 0);
+    }
 }

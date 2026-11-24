@@ -1,15 +1,15 @@
-<!doctype html>
-<html lang="id">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Atur Ulang Kata Sandi - SmartTrip</title>
-    <link rel="icon" href="{{ asset('images/logo.svg') }}" type="image/svg+xml">
-    <link rel="icon" href="{{ asset('images/logo.png') }}" type="image/png">
-    <link rel="apple-touch-icon" href="{{ asset('images/logo.png') }}">
-</head>
-<body style="font-family: sans-serif; text-align: center; padding-top: 4rem;">
-    <h1>{{ $success ? 'Kata Sandi Berhasil Diubah' : 'Gagal Mengatur Ulang Kata Sandi' }}</h1>
-    <p>{{ $message }}</p>
-</body>
-</html>
+@extends('admin.auth.layout')
+
+@section('public', true)
+@section('title', 'Atur Ulang Kata Sandi')
+
+@section('content')
+    @include('auth.partials.result-card', [
+        'success' => $success,
+        'heading' => $success ? 'Kata sandi berhasil diubah' : 'Tautan tidak dapat dipakai',
+        'message' => $message,
+        'hint' => $success
+            ? 'Buka aplikasi SmartTrip di ponselmu, lalu masuk dengan email dan kata sandi baru.'
+            : 'Minta tautan baru dari aplikasi SmartTrip: buka halaman Masuk, lalu pilih "Lupa kata sandi?". Tautan hanya berlaku 60 menit dan sekali pakai.',
+    ])
+@endsection

@@ -3,7 +3,8 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>@yield('title') · SmartTrip Admin</title>
+    {{-- Also used by the public pages a wisatawan reaches from email (reset password, verify account): they set @section('public', true). --}}
+    <title>@yield('title') · {{ $__env->hasSection('public') ? 'SmartTrip' : 'SmartTrip Admin' }}</title>
     <link rel="icon" type="image/svg+xml" href="{{ asset('images/logo.svg') }}">
     <link rel="icon" href="{{ asset('images/logo.png') }}" type="image/png">
     <link rel="apple-touch-icon" href="{{ asset('images/logo.png') }}">
@@ -114,7 +115,9 @@
             <img src="{{ asset('images/logo.svg') }}" alt="" class="h-6 w-6">
         </span>
         <span class="text-[17px] font-extrabold">SmartTrip</span>
-        <span class="rounded-full border border-white/30 bg-white/15 px-2.5 py-0.5 text-xs font-bold">Admin</span>
+        @sectionMissing('public')
+            <span class="rounded-full border border-white/30 bg-white/15 px-2.5 py-0.5 text-xs font-bold">Admin</span>
+        @endif
     </header>
 
     <main class="relative flex flex-1 items-center justify-center px-4 pb-16 pt-6">

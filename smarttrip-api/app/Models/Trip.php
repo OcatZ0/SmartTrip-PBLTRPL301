@@ -17,6 +17,13 @@ class Trip extends Model
 
     public const UPDATED_AT = null;
 
+    /**
+     * The invite token lets anyone who holds it join as a viewer, so it never
+     * leaves the server inside trip JSON (viewers read trips too). The owner
+     * gets it from POST /trips/{id}/viewer-invite-link.
+     */
+    protected $hidden = ['viewer_invite_token'];
+
     protected $fillable = [
         'users_id',
         'title',

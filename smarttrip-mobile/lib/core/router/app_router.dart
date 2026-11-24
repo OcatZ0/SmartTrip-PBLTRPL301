@@ -13,7 +13,6 @@ import '../../screens/onboarding/onboarding_screen.dart';
 import '../../screens/place_review/review_form_screen.dart';
 import '../../screens/profile/profile_screen.dart';
 import '../../screens/saved_trip/trip_tersimpan_screen.dart';
-import '../../screens/shared_trip/share_trip_readonly_screen.dart';
 import '../../screens/splash/splash_screen.dart';
 import '../../screens/trip/generate_itinerary_screen.dart';
 import '../../screens/trip/itinerary_screen.dart';
@@ -96,8 +95,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const ReviewFormScreen(),
       ),
       GoRoute(
-        path: AppRoutes.sharedTrip,
-        builder: (context, state) => const ShareTripReadonlyScreen(),
+        path: '/shared-trip/:tripsId',
+        builder: (context, state) => ItineraryScreen(tripsId: _tripsId(state), readOnly: true),
       ),
       GoRoute(
         path: AppRoutes.login,

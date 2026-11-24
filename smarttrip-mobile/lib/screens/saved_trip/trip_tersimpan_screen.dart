@@ -11,6 +11,7 @@ import '../../services/trip_service.dart';
 import '../../widgets/app_bottom_bar.dart';
 import '../../widgets/panorama_header.dart';
 import '../../widgets/load_error_view.dart';
+import 'widgets/shared_trips_view.dart';
 import 'widgets/trip_card.dart';
 
 /// The user's own trips from `GET /api/trips`; fetched again each time the
@@ -31,6 +32,9 @@ class _TripTersimpanScreenState extends ConsumerState<TripTersimpanScreen> {
 
   /// Until the user picks a tab, the page opens on the first one that has trips.
   bool _tabPicked = false;
+
+  /// The "Dibagikan" tab: trips others shared with the user (F016).
+  bool _sharedTab = false;
 
   static const _tabIcons = {
     TripStatus.berlangsung: Icons.near_me_rounded,
@@ -64,6 +68,7 @@ class _TripTersimpanScreenState extends ConsumerState<TripTersimpanScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final tripsState = ref.watch(savedTripsProvider);
+    final sharedCount = ref.watch(sharedTripsProvider).valueOrNull?.length ?? 0;
     final allTrips = tripsState.valueOrNull ?? const <TripModel>[];
     final activeTab = _tabPicked ? _activeTab : _firstTabWithTrips(allTrips);
     final trips = allTrips.where((trip) => trip.status == activeTab).toList();
@@ -73,13 +78,18 @@ class _TripTersimpanScreenState extends ConsumerState<TripTersimpanScreen> {
       backgroundColor: AppColors.surface,
       body: RefreshIndicator(
         color: AppColors.navy900,
-        onRefresh: () => ref.refresh(savedTripsProvider.future),
+        onRefresh: () => _sharedTab ? ref.refresh(sharedTripsProvider.future) : ref.refresh(savedTripsProvider.future),
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
           slivers: [
-            SliverToBoxAdapter(child: PanoramaHeader(eyebrow: 'PERJALANANMU', title: 'Trip Tersimpan', bottom: _buildTabBar(allTrips, activeTab))),
+            SliverToBoxAdapter(child: PanoramaHeader(eyebrow: 'PERJALANANMU', title: 'Trip Tersimpan', bottom: _buildTabBar(allTrips, activeTab, sharedCount))),
             const SliverToBoxAdapter(child: SizedBox(height: 18)),
-            if (tripsState.isLoading && !tripsState.hasValue)
+            if (_sharedTab)
+              SliverPadding(
+                padding: EdgeInsets.only(bottom: bottomSpace),
+                sliver: const SliverToBoxAdapter(child: SharedTripsView()),
+              )
+            else if (tripsState.isLoading && !tripsState.hasValue)
               const SliverFillRemaining(
                 hasScrollBody: false,
                 child: Center(child: CircularProgressIndicator(color: AppColors.navy900)),
@@ -124,8 +134,8 @@ class _TripTersimpanScreenState extends ConsumerState<TripTersimpanScreen> {
 
   // ── Status tabs: four equal segments on a white bar over the header ─────
   // An icon with the count as a small badge above a short label, so all
-  // four fit on a phone without scrolling.
-  Widget _buildTabBar(List<TripModel> trips, TripStatus activeTab) {
+  // five (four statuses + Dibagikan) fit on a phone without scrolling.
+  Widget _buildTabBar(List<TripModel> trips, TripStatus activeTab, int sharedCount) {
     return Container(
       height: 62,
       padding: const EdgeInsets.all(5),
@@ -142,13 +152,23 @@ class _TripTersimpanScreenState extends ConsumerState<TripTersimpanScreen> {
                 icon: _tabIcons[status]!,
                 label: status.label,
                 count: trips.where((trip) => trip.status == status).length,
-                isActive: status == activeTab,
+                isActive: !_sharedTab && status == activeTab,
                 onTap: () => setState(() {
                   _activeTab = status;
                   _tabPicked = true;
+                  _sharedTab = false;
                 }),
               ),
             ),
+          Expanded(
+            child: _StatusTab(
+              icon: Icons.group_rounded,
+              label: 'Dibagikan',
+              count: sharedCount,
+              isActive: _sharedTab,
+              onTap: () => setState(() => _sharedTab = true),
+            ),
+          ),
         ],
       ),
     );

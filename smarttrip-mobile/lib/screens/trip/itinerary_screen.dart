@@ -37,9 +37,14 @@ const _rainText = Color(0xFF8A4B00);
 /// picker, that day's weather and notices, and the stops on a timeline that
 /// starts at the hotel. The bottom bar opens the live map of the day.
 class ItineraryScreen extends ConsumerStatefulWidget {
-  const ItineraryScreen({super.key, required this.tripsId});
+  const ItineraryScreen({super.key, required this.tripsId, this.readOnly = false});
 
   final int tripsId;
+
+  /// F016: a viewer reads someone else's trip. Nothing that changes the trip
+  /// is shown (swap, day points, generate, invite, live map with visits,
+  /// reminders); exporting to PDF stays.
+  final bool readOnly;
 
   @override
   ConsumerState<ItineraryScreen> createState() => _ItineraryScreenState();
@@ -55,7 +60,7 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
     // Once per screen: a changed start date is picked up the next time.
     ref.listenManual(tripDetailProvider(widget.tripsId), (_, next) {
       final trip = next.valueOrNull;
-      if (trip == null || !trip.hasStops || _reminderScheduled) return;
+      if (widget.readOnly || trip == null || !trip.hasStops || _reminderScheduled) return;
       _reminderScheduled = true;
       _scheduleReminders(trip);
     }, fireImmediately: true);
@@ -261,9 +266,12 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
         onBack: _leave,
         trailing: trip == null
             ? null
-            : _TripMenu(onExport: trip.hasStops ? () => _exportPdf(trip) : null, onInvite: _showInviteSheet),
+            : _TripMenu(
+                onExport: trip.hasStops ? () => _exportPdf(trip) : null,
+                onInvite: widget.readOnly ? null : _showInviteSheet,
+              ),
       ),
-      bottomNavigationBar: trip == null || day == null
+      bottomNavigationBar: widget.readOnly || trip == null || day == null
           ? null
           : BottomActionBar(
               child: PrimaryButton(
@@ -313,12 +321,14 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
                 textAlign: TextAlign.center,
                 style: appText(14, FontWeight.w600, AppColors.inkMuted, height: 20),
               ),
-              const SizedBox(height: 18),
-              PrimaryButton(
-                label: l10n.itineraryGenerateNow,
-                trailingIcon: Icons.auto_awesome_rounded,
-                onPressed: () => context.push(AppRoutes.tripGenerate(trip.tripsId)),
-              ),
+              if (!widget.readOnly) ...[
+                const SizedBox(height: 18),
+                PrimaryButton(
+                  label: l10n.itineraryGenerateNow,
+                  trailingIcon: Icons.auto_awesome_rounded,
+                  onPressed: () => context.push(AppRoutes.tripGenerate(trip.tripsId)),
+                ),
+              ],
             ],
           ),
         ),
@@ -349,6 +359,11 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
       child: ListView(
         padding: const EdgeInsets.only(bottom: 28),
         children: [
+          if (widget.readOnly)
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
+              child: _NoticeBanner(text: 'Trip ini dibagikan kepadamu. Kamu hanya dapat melihatnya.'),
+            ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
             child: _TripSummaryCard(trip: trip, languageCode: languageCode),
@@ -420,10 +435,10 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
                   )
                 : _Timeline(
                     day: day,
-                    onChangeStart: () => _changeDayPoint(day, isStart: true),
-                    onChangeEnd: () => _changeDayPoint(day, isStart: false),
-                    onOpenStop: (item) => _openStop(day, item, rainy: rainy),
-                    onSwapForRain: rainy
+                    onChangeStart: widget.readOnly ? null : () => _changeDayPoint(day, isStart: true),
+                    onChangeEnd: widget.readOnly ? null : () => _changeDayPoint(day, isStart: false),
+                    onOpenStop: widget.readOnly ? null : (item) => _openStop(day, item, rainy: rainy),
+                    onSwapForRain: rainy && !widget.readOnly
                         ? (item) => _swapPlace(item, dayNumber: day.dayNumber, preferIndoor: true)
                         : null,
                   ),
@@ -448,7 +463,7 @@ class _TripMenu extends StatelessWidget {
   const _TripMenu({required this.onExport, required this.onInvite});
 
   final VoidCallback? onExport;
-  final VoidCallback onInvite;
+  final VoidCallback? onInvite;
 
   @override
   Widget build(BuildContext context) {
@@ -471,11 +486,11 @@ class _TripMenu extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       onSelected: (value) {
         if (value == 'export') onExport?.call();
-        if (value == 'invite') onInvite();
+        if (value == 'invite') onInvite?.call();
       },
       itemBuilder: (_) => [
         if (onExport != null) item('export', Icons.picture_as_pdf_outlined, 'Ekspor PDF'),
-        item('invite', Icons.person_add_alt_outlined, 'Undang ke Itinerary'),
+        if (onInvite != null) item('invite', Icons.person_add_alt_outlined, 'Undang ke Itinerary'),
       ],
     );
   }
@@ -691,11 +706,11 @@ class _Timeline extends StatelessWidget {
   });
 
   final ItineraryDay day;
-  final VoidCallback onChangeStart;
-  final VoidCallback onChangeEnd;
+  final VoidCallback? onChangeStart;
+  final VoidCallback? onChangeEnd;
 
   /// The button on a stop card: opens its detail sheet.
-  final ValueChanged<ItineraryItem> onOpenStop;
+  final ValueChanged<ItineraryItem>? onOpenStop;
 
   /// Set on a day with rain in the forecast: outdoor stops get a badge that
   /// opens Ganti Tempat with indoor places first (F025).
@@ -740,7 +755,7 @@ class _Timeline extends StatelessWidget {
     final end = day.end;
 
     // The day's start and end on the rail, in sun, each with a Ganti button.
-    Widget point({required IconData icon, required String text, required VoidCallback onChange, bool lineAbove = true, bool lineBelow = true}) {
+    Widget point({required IconData icon, required String text, required VoidCallback? onChange, bool lineAbove = true, bool lineBelow = true}) {
       return _entry(
         lineAbove: lineAbove,
         lineBelow: lineBelow,
@@ -762,15 +777,16 @@ class _Timeline extends StatelessWidget {
                   style: appText(13, FontWeight.w700, AppColors.ink, height: 18),
                 ),
               ),
-              TextButton(
-                onPressed: onChange,
-                style: TextButton.styleFrom(
-                  foregroundColor: AppColors.sea600,
-                  visualDensity: VisualDensity.compact,
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
+              if (onChange != null)
+                TextButton(
+                  onPressed: onChange,
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.sea600,
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                  ),
+                  child: Text(l10n.dayPointChange, style: appText(12.5, FontWeight.w700, AppColors.sea600)),
                 ),
-                child: Text(l10n.dayPointChange, style: appText(12.5, FontWeight.w700, AppColors.sea600)),
-              ),
             ],
           ),
         ),
@@ -836,7 +852,7 @@ class _Timeline extends StatelessWidget {
                 ],
                 _StopCard(
                   item: item,
-                  onOpen: () => onOpenStop(item),
+                  onOpen: onOpenStop == null ? null : () => onOpenStop!(item),
                   onSwapForRain: onSwapForRain != null && place?.isOutdoor == true && !item.isVisited
                       ? () => onSwapForRain!(item)
                       : null,
@@ -865,7 +881,7 @@ class _StopCard extends StatelessWidget {
   const _StopCard({required this.item, required this.onOpen, this.onSwapForRain});
 
   final ItineraryItem item;
-  final VoidCallback onOpen;
+  final VoidCallback? onOpen;
   final VoidCallback? onSwapForRain;
 
   @override
@@ -954,16 +970,17 @@ class _StopCard extends StatelessWidget {
               ],
             ),
           ),
-          Positioned(
-            top: 4,
-            right: 2,
-            child: IconButton(
-              tooltip: l10n.placeSheetTooltip,
-              onPressed: onOpen,
-              visualDensity: VisualDensity.compact,
-              icon: const Icon(Icons.more_vert_rounded, size: 20, color: AppColors.inkSoft),
+          if (onOpen != null)
+            Positioned(
+              top: 4,
+              right: 2,
+              child: IconButton(
+                tooltip: l10n.placeSheetTooltip,
+                onPressed: onOpen,
+                visualDensity: VisualDensity.compact,
+                icon: const Icon(Icons.more_vert_rounded, size: 20, color: AppColors.inkSoft),
+              ),
             ),
-          ),
         ],
       ),
     );

@@ -25,10 +25,11 @@ class AppRoutes {
   static const trips = '/trips';
   static const wishlist = '/wishlist';
   static const review = '/review';
-  static const sharedTrip = '/shared-trip';
+  /// A trip someone shared with the user, read-only (F016).
+  static String sharedTrip(int tripsId) => '/shared-trip/$tripsId';
 
   /// Reachable without being logged in (PRD Section 8: browsing is public).
-  static const publicPaths = {catalog, login, register, forgotPassword, trips, wishlist, review, sharedTrip};
+  static const publicPaths = {catalog, login, register, forgotPassword, trips, wishlist, review};
 
   /// Place details are public too, like the catalog they open from.
   static bool isPublic(String location) =>

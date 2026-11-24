@@ -114,6 +114,7 @@ class TripController extends Controller
         $perPage = min(max((int) $request->integer('per_page', 20), 1), 50);
 
         $trips = $request->user()->sharedTrips()
+            ->with('owner:users_id,name')
             ->withCount(['days as days_count' => fn ($days) => $days->whereHas('items')])
             ->orderByDesc('trip_viewers.added_at')
             ->paginate($perPage);

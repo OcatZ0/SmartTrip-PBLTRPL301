@@ -185,4 +185,35 @@ class SharedTripsTest extends TestCase
         $response->assertOk();
         $this->assertCount(0, $response->json('data'));
     }
+
+    public function test_the_shared_list_names_the_owner_and_never_exposes_the_invite_token(): void
+    {
+        $owner = User::factory()->create(['name' => 'Budi']);
+        $viewer = User::factory()->create();
+        $trip = $this->makeTrip($owner, ['viewer_invite_token' => 'tok123']);
+        $trip->viewers()->attach($viewer->users_id, ['added_at' => now()]);
+
+        $response = $this->withHeaders($this->authHeader($viewer))->getJson('/api/trips/shared');
+
+        $response->assertOk();
+        $this->assertSame('Budi', $response->json('data.0.owner.name'));
+        $this->assertArrayNotHasKey('viewer_invite_token', $response->json('data.0'));
+        $this->assertStringNotContainsString('tok123', $response->getContent());
+    }
+
+    public function test_a_viewer_reading_the_trip_does_not_get_the_invite_token(): void
+    {
+        $owner = User::factory()->create();
+        $viewer = User::factory()->create();
+        $trip = $this->makeTrip($owner, ['viewer_invite_token' => 'tok123']);
+        $trip->viewers()->attach($viewer->users_id, ['added_at' => now()]);
+
+        $show = $this->withHeaders($this->authHeader($viewer))->getJson("/api/trips/{$trip->trips_id}");
+        $join = $this->withHeaders($this->authHeader($viewer))->postJson('/api/trips/join-viewer/tok123');
+
+        $show->assertOk();
+        $join->assertOk();
+        $this->assertStringNotContainsString('tok123', $show->getContent());
+        $this->assertStringNotContainsString('tok123', $join->getContent());
+    }
 }

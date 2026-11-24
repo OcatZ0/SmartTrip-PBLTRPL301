@@ -495,3 +495,35 @@ class TripViewer {
   final String name;
   final String email;
 }
+
+/// A trip someone else shared with the user as a viewer (F016,
+/// `GET /api/trips/shared`).
+class SharedTripSummary {
+  const SharedTripSummary({
+    required this.tripsId,
+    required this.title,
+    required this.numDays,
+    required this.ownerName,
+    this.startDate,
+    this.hasItinerary = false,
+  });
+
+  factory SharedTripSummary.fromJson(Map<String, dynamic> json) {
+    final owner = json['owner'];
+    return SharedTripSummary(
+      tripsId: json['trips_id'] as int,
+      title: (json['title'] as String?)?.trim().isNotEmpty == true ? json['title'] as String : 'Trip tanpa judul',
+      numDays: (json['num_days'] as num?)?.toInt() ?? 0,
+      ownerName: owner is Map ? owner['name'] as String? ?? '' : '',
+      startDate: _toDate(json['start_date']),
+      hasItinerary: ((json['days_count'] as num?) ?? 0) > 0,
+    );
+  }
+
+  final int tripsId;
+  final String title;
+  final int numDays;
+  final String ownerName;
+  final DateTime? startDate;
+  final bool hasItinerary;
+}

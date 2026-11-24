@@ -331,6 +331,30 @@ class TripService {
     await _call(() => _dio.delete<Map<String, dynamic>>('/trips/$tripsId/viewer-invite-link'));
   }
 
+  // --- F016 Melihat Trip yang Dibagikan (sisi penerima) ---
+
+  Future<List<SharedTripSummary>> fetchSharedTrips() async {
+    final body = await _call(() => _dio.get<Map<String, dynamic>>('/trips/shared', queryParameters: {'per_page': 50}));
+    return (body['data'] as List? ?? const []).cast<Map<String, dynamic>>().map(SharedTripSummary.fromJson).toList();
+  }
+
+  /// Joins as a viewer with an invite link or its bare token; returns the
+  /// trip id to open. An unknown or disabled link answers 404.
+  Future<int> joinAsViewer(String linkOrToken) async {
+    final token = inviteTokenFrom(linkOrToken);
+    final body = await _call(() => _dio.post<Map<String, dynamic>>('/trips/join-viewer/${Uri.encodeComponent(token)}'));
+    return body['trips_id'] as int;
+  }
+
+  /// The token at the end of `https://.../undangan/{token}`, or the text
+  /// itself when only the token was pasted.
+  static String inviteTokenFrom(String linkOrToken) {
+    final text = linkOrToken.trim();
+    final uri = Uri.tryParse(text);
+    final segments = uri?.pathSegments.where((segment) => segment.isNotEmpty).toList() ?? const [];
+    return uri != null && uri.hasScheme && segments.isNotEmpty ? segments.last : text;
+  }
+
   Future<Map<String, dynamic>> _call(
     Future<Response<Map<String, dynamic>>> Function() request,
   ) async {

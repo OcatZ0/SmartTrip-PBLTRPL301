@@ -178,7 +178,7 @@ class FakeTripService implements TripService {
   final added = <({int tripsId, int placesId})>[];
 
   @override
-  Future<List<TripCategory>> fetchCategories() async => const [kulinerSeafood, pantai];
+  Future<List<TripCategory>> fetchCategories({bool onboardingOnly = false}) async => const [kulinerSeafood, pantai];
 
   @override
   Future<List<TripSummary>> fetchMyTrips() async => trips;

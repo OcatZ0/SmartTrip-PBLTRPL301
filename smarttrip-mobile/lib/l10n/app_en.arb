@@ -475,5 +475,14 @@
   "forgotSentTitle": "Check your email",
   "forgotSentFallback": "If the email is registered, a password reset link has been sent.",
   "forgotSentHint": "Open the link in that email, set a new password, then come back here to sign in. The link is valid for 60 minutes.",
-  "forgotRemembered": "Remember your password?"
+  "forgotRemembered": "Remember your password?",
+  "onboardingTitle": "Pick your travel interests",
+  "onboardingGreeting": "Hi {name}, what do you enjoy?",
+  "@onboardingGreeting": {"placeholders": {"name": {"type": "String"}}},
+  "onboardingSubtitle": "Pick at least one interest. Place recommendations and itineraries follow your choice.",
+  "onboardingPickHint": "Pick at least one interest to continue",
+  "onboardingSelectedCount": "{count} interests picked",
+  "@onboardingSelectedCount": {"placeholders": {"count": {"type": "int"}}},
+  "onboardingContinue": "Start Exploring",
+  "onboardingLaterHint": "You can change interests and priorities anytime in Profile."
 }

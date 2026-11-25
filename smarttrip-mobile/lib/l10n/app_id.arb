@@ -764,5 +764,14 @@
   "forgotSentTitle": "Cek email kamu",
   "forgotSentFallback": "Jika email terdaftar, tautan atur ulang kata sandi telah dikirim.",
   "forgotSentHint": "Buka tautan di email itu, buat kata sandi baru, lalu kembali ke sini untuk masuk. Tautan berlaku 60 menit.",
-  "forgotRemembered": "Ingat kata sandimu?"
+  "forgotRemembered": "Ingat kata sandimu?",
+  "onboardingTitle": "Pilih minat wisatamu",
+  "onboardingGreeting": "Hai {name}, apa yang kamu suka?",
+  "@onboardingGreeting": {"placeholders": {"name": {"type": "String"}}},
+  "onboardingSubtitle": "Pilih minimal satu minat. Rekomendasi tempat dan itinerary akan menyesuaikan pilihanmu.",
+  "onboardingPickHint": "Pilih minimal satu minat untuk lanjut",
+  "onboardingSelectedCount": "{count} minat dipilih",
+  "@onboardingSelectedCount": {"placeholders": {"count": {"type": "int"}}},
+  "onboardingContinue": "Mulai Jelajahi",
+  "onboardingLaterHint": "Minat dan prioritas bisa diubah kapan saja di Profil."
 }

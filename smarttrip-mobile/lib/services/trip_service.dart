@@ -71,8 +71,12 @@ class TripService {
     await _call(() => _dio.delete<Map<String, dynamic>>('/trips/$tripsId'));
   }
 
-  Future<List<TripCategory>> fetchCategories() async {
-    final body = await _call(() => _dio.get<Map<String, dynamic>>('/categories'));
+  /// [onboardingOnly]: just the categories the admin shows on Pilih Minat.
+  Future<List<TripCategory>> fetchCategories({bool onboardingOnly = false}) async {
+    final body = await _call(() => _dio.get<Map<String, dynamic>>(
+          '/categories',
+          queryParameters: onboardingOnly ? {'onboarding': 1} : null,
+        ));
     return (body['data'] as List)
         .cast<Map<String, dynamic>>()
         .map(TripCategory.fromJson)

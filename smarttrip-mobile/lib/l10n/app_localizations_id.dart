@@ -1608,4 +1608,31 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get forgotRemembered => 'Ingat kata sandimu?';
+
+  @override
+  String get onboardingTitle => 'Pilih minat wisatamu';
+
+  @override
+  String onboardingGreeting(String name) {
+    return 'Hai $name, apa yang kamu suka?';
+  }
+
+  @override
+  String get onboardingSubtitle =>
+      'Pilih minimal satu minat. Rekomendasi tempat dan itinerary akan menyesuaikan pilihanmu.';
+
+  @override
+  String get onboardingPickHint => 'Pilih minimal satu minat untuk lanjut';
+
+  @override
+  String onboardingSelectedCount(int count) {
+    return '$count minat dipilih';
+  }
+
+  @override
+  String get onboardingContinue => 'Mulai Jelajahi';
+
+  @override
+  String get onboardingLaterHint =>
+      'Minat dan prioritas bisa diubah kapan saja di Profil.';
 }

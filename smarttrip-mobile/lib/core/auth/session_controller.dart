@@ -43,6 +43,12 @@ class SessionController extends AsyncNotifier<AuthUser?> {
     if (user != null) state = AsyncData(user.withPassword());
   }
 
+  /// After the Pilih Minat screen saved the first interests.
+  void markInterestsSet() {
+    final user = state.valueOrNull;
+    if (user != null) state = AsyncData(user.withInterests());
+  }
+
   /// Revokes the token on the server when it can; the local login is
   /// cleared either way, so an offline phone still logs out.
   Future<void> signOut() async {

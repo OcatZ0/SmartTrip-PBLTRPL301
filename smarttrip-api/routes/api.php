@@ -71,5 +71,5 @@ Route::prefix('auth')->group(function () {
 });
 
 Route::get('/user', #[Group('Profil')] #[Endpoint('Data akun login', 'Nama, email, peran, dan status kata sandi akun pemilik token.')] function (Request $request) {
-    return $request->user();
+    return $request->user()->withAccountFlags();
 })->middleware('auth:sanctum');

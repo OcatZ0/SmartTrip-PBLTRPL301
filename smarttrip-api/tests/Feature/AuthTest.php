@@ -369,7 +369,7 @@ class AuthTest extends TestCase
     public function test_login_and_the_current_user_carry_only_the_fields_the_app_reads(): void
     {
         User::factory()->create(['email' => 'wisatawan@example.com', 'password' => 'password123', 'google_id' => 'google-sub-9']);
-        $fields = ['users_id', 'name', 'email', 'role', 'has_password'];
+        $fields = ['users_id', 'name', 'email', 'role', 'has_password', 'has_interests'];
 
         $login = $this->postJson('/api/auth/login', ['email' => 'wisatawan@example.com', 'password' => 'password123'])->assertOk();
         $this->assertEqualsCanonicalizing($fields, array_keys($login->json('user')));
@@ -377,5 +377,19 @@ class AuthTest extends TestCase
         $this->withToken($login->json('token'))->getJson('/api/user')->assertOk()
             ->assertJsonMissingPath('google_id')
             ->assertJsonStructure($fields);
+    }
+
+    public function test_the_account_says_whether_default_interests_are_picked(): void
+    {
+        $user = User::factory()->create();
+        $token = $user->createToken('mobile')->plainTextToken;
+
+        $this->withToken($token)->getJson('/api/user')->assertOk()->assertJsonPath('has_interests', false);
+
+        $category = \App\Models\Category::create(['name_id' => 'Pantai', 'name_en' => 'Beach', 'slug' => 'pantai']);
+        $user->defaultInterestCategories()->attach($category->categories_id);
+        $this->app['auth']->forgetGuards();
+
+        $this->withToken($token)->getJson('/api/user')->assertOk()->assertJsonPath('has_interests', true);
     }
 }

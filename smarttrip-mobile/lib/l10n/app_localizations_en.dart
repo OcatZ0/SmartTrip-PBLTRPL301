@@ -1640,4 +1640,31 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get forgotRemembered => 'Remember your password?';
+
+  @override
+  String get onboardingTitle => 'Pick your travel interests';
+
+  @override
+  String onboardingGreeting(String name) {
+    return 'Hi $name, what do you enjoy?';
+  }
+
+  @override
+  String get onboardingSubtitle =>
+      'Pick at least one interest. Place recommendations and itineraries follow your choice.';
+
+  @override
+  String get onboardingPickHint => 'Pick at least one interest to continue';
+
+  @override
+  String onboardingSelectedCount(int count) {
+    return '$count interests picked';
+  }
+
+  @override
+  String get onboardingContinue => 'Start Exploring';
+
+  @override
+  String get onboardingLaterHint =>
+      'You can change interests and priorities anytime in Profile.';
 }

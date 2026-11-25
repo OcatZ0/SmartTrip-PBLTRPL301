@@ -60,6 +60,18 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isLoggedIn = session.valueOrNull != null;
 
       if (isLoggedIn) {
+        // F009: a user without interests picks them first; an invite link
+        // they opened waits in `from` and opens afterwards.
+        final needsInterests = !session.requireValue!.hasInterests;
+        final pending = from ?? (AppRoutes.isInvite(location) ? location : null);
+        if (needsInterests && location != AppRoutes.onboarding) {
+          return pending == null ? AppRoutes.onboarding : carrying(AppRoutes.onboarding, pending);
+        }
+        if (!needsInterests && location == AppRoutes.onboarding) {
+          return pending != null && AppRoutes.isInvite(pending) ? pending : AppRoutes.catalog;
+        }
+        if (location == AppRoutes.onboarding) return null;
+
         final leavesGuestArea =
             location == AppRoutes.splash ||
             AppRoutes.guestOnlyPaths.contains(location);

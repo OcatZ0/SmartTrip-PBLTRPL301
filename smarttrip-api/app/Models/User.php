@@ -65,7 +65,7 @@ class User extends Authenticatable
      * The only fields a user's JSON carries (login, Google login, /api/user):
      * what the app reads. New columns stay private unless added here.
      */
-    protected $visible = ['users_id', 'name', 'email', 'role', 'has_password'];
+    protected $visible = ['users_id', 'name', 'email', 'role', 'has_password', 'has_interests'];
 
     /**
      * has_password lets the app tell a Google-only account, which sets its
@@ -78,6 +78,25 @@ class User extends Authenticatable
     protected function hasPassword(): Attribute
     {
         return Attribute::get(fn () => $this->password !== null);
+    }
+
+    /**
+     * Whether the user has picked default interests; the app shows the Pilih
+     * Minat screen until they have. Appended only to the account responses
+     * (withAccountFlags), so a list of users does not run a query per user.
+     */
+    protected function hasInterests(): Attribute
+    {
+        return Attribute::get(fn () => $this->defaultInterestCategories()->exists());
+    }
+
+    /**
+     * The user as the app's account responses send it (login, Google login,
+     * GET /api/user).
+     */
+    public function withAccountFlags(): static
+    {
+        return $this->append('has_interests');
     }
 
     /**

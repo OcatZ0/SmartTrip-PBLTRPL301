@@ -2893,6 +2893,48 @@ abstract class AppLocalizations {
   /// In id, this message translates to:
   /// **'Ingat kata sandimu?'**
   String get forgotRemembered;
+
+  /// No description provided for @onboardingTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih minat wisatamu'**
+  String get onboardingTitle;
+
+  /// No description provided for @onboardingGreeting.
+  ///
+  /// In id, this message translates to:
+  /// **'Hai {name}, apa yang kamu suka?'**
+  String onboardingGreeting(String name);
+
+  /// No description provided for @onboardingSubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih minimal satu minat. Rekomendasi tempat dan itinerary akan menyesuaikan pilihanmu.'**
+  String get onboardingSubtitle;
+
+  /// No description provided for @onboardingPickHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih minimal satu minat untuk lanjut'**
+  String get onboardingPickHint;
+
+  /// No description provided for @onboardingSelectedCount.
+  ///
+  /// In id, this message translates to:
+  /// **'{count} minat dipilih'**
+  String onboardingSelectedCount(int count);
+
+  /// No description provided for @onboardingContinue.
+  ///
+  /// In id, this message translates to:
+  /// **'Mulai Jelajahi'**
+  String get onboardingContinue;
+
+  /// No description provided for @onboardingLaterHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Minat dan prioritas bisa diubah kapan saja di Profil.'**
+  String get onboardingLaterHint;
 }
 
 class _AppLocalizationsDelegate

@@ -163,7 +163,7 @@ class AuthController extends Controller
         $user = User::where('email', $credentials['email'])->firstOrFail();
 
         return response()->json([
-            'user' => $user,
+            'user' => $user->withAccountFlags(),
             'token' => $user->createToken('mobile')->plainTextToken,
         ]);
     }
@@ -231,7 +231,7 @@ class AuthController extends Controller
         }
 
         return response()->json([
-            'user' => $user,
+            'user' => $user->withAccountFlags(),
             'token' => $user->createToken('mobile')->plainTextToken,
         ]);
     }

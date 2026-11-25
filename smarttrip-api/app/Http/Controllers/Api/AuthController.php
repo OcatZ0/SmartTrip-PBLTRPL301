@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Mail\RegistrationVerificationMail;
-use App\Services\EmailJs;
 use App\Models\User;
+use App\Services\EmailJs;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -16,6 +16,9 @@ use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Knuckles\Scribe\Attributes\Endpoint;
+use Knuckles\Scribe\Attributes\Group;
+use Knuckles\Scribe\Attributes\Unauthenticated;
 
 /**
  * F001-F004: registrasi (dengan verifikasi email), login (email/password +
@@ -34,10 +37,13 @@ use Illuminate\Validation\ValidationException;
  *   alur manual di atas) langsung menautkan google_id tanpa verifikasi
  *   tambahan, karena kepemilikan email itu sudah dibuktikan sebelumnya.
  */
+#[Group('Autentikasi', 'Daftar, masuk, dan kelola kata sandi akun wisatawan. Login, daftar, dan lupa kata sandi dibatasi jumlah percobaannya.')]
 class AuthController extends Controller
 {
     private const VERIFICATION_MINUTES = 60;
 
+    #[Endpoint('Daftar akun', 'Menyimpan pendaftaran dan mengirim email verifikasi; akun aktif setelah link di email diklik. Maksimal 3 email per alamat per jam.')]
+    #[Unauthenticated]
     public function register(Request $request)
     {
         $data = $request->validate([
@@ -136,6 +142,8 @@ class AuthController extends Controller
         ]);
     }
 
+    #[Endpoint('Masuk dengan email', 'Mengembalikan token Sanctum untuk header Authorization: Bearer. Maksimal 5 percobaan per menit per email.')]
+    #[Unauthenticated]
     public function login(Request $request)
     {
         $credentials = $request->validate([
@@ -160,6 +168,8 @@ class AuthController extends Controller
         ]);
     }
 
+    #[Endpoint('Masuk dengan Google', 'Menerima id_token dari Google Sign-In (email harus sudah diverifikasi Google) dan mengembalikan token Sanctum.')]
+    #[Unauthenticated]
     public function loginWithGoogle(Request $request)
     {
         $data = $request->validate([
@@ -232,6 +242,7 @@ class AuthController extends Controller
      * token Sanctum yang dipakai untuk sampai ke sini sudah membuktikan
      * identitasnya.
      */
+    #[Endpoint('Ubah kata sandi', 'Akun Google yang belum punya kata sandi tidak perlu mengisi current_password.')]
     public function changePassword(Request $request)
     {
         $user = $request->user();
@@ -264,6 +275,8 @@ class AuthController extends Controller
      * yang sama supaya endpoint ini tidak bisa dipakai mengecek email mana
      * yang terdaftar.
      */
+    #[Endpoint('Lupa kata sandi', 'Mengirim link atur ulang kata sandi ke email. Balasannya selalu sama, email terdaftar atau tidak.')]
+    #[Unauthenticated]
     public function forgotPassword(Request $request)
     {
         $request->validate(['email' => ['required', 'string', 'email']]);
@@ -316,6 +329,7 @@ class AuthController extends Controller
         };
     }
 
+    #[Endpoint('Keluar', 'Mencabut token yang sedang dipakai.')]
     public function logout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();

@@ -7,6 +7,8 @@ use App\Services\Itinerary\Topsis;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Knuckles\Scribe\Attributes\Endpoint;
+use Knuckles\Scribe\Attributes\Group;
 
 /**
  * F009 - preferensi default akun (docs/prd design spec Section 12):
@@ -15,8 +17,10 @@ use Illuminate\Validation\Rule;
  * digenerate tetap pakai snapshot bobotnya sendiri, tidak ikut berubah
  * kalau default di profil diedit belakangan.
  */
+#[Group('Profil', 'Data akun dan preferensi default untuk trip baru.')]
 class ProfileController extends Controller
 {
+    #[Endpoint('Lihat preferensi', 'Minat dan bobot kriteria default untuk trip baru.')]
     public function show(Request $request)
     {
         $user = $request->user()->load('defaultInterestCategories');
@@ -24,6 +28,7 @@ class ProfileController extends Controller
         return response()->json($this->present($user));
     }
 
+    #[Endpoint('Simpan preferensi', 'Rating 0-10 per kriteria dinormalkan jadi bobot dengan total 1; semua 0 berarti bobot sama rata.')]
     public function update(Request $request)
     {
         $data = $request->validate([

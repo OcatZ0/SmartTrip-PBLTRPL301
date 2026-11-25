@@ -3,12 +3,12 @@
 REST API untuk aplikasi mobile SmartTrip (Flutter) - autentikasi, katalog tempat, wishlist, generate itinerary otomatis, swap, live tracking, review, dan share trip.
 
 <aside>
-    <strong>Base URL</strong>: <code>http://localhost:8000</code>
+    <strong>Base URL</strong>: <code>https://smarttrips.my.id</code>
 </aside>
 
-    Dokumentasi ini mencakup seluruh endpoint `/api/*` yang dikonsumsi mobile app SmartTrip lewat Laravel Sanctum bearer token.
+    Dokumentasi seluruh endpoint `/api/*` yang dipakai aplikasi mobile SmartTrip.
 
-    Panel admin (`/admin/*`, session auth `guard:web`, Laravel Blade + Bootstrap) sengaja **tidak** termasuk di sini - itu bukan REST API, cuma HTML form biasa buat kurasi data.
+    Cara mencoba: panggil **Autentikasi > Masuk dengan email**, salin `token` dari response, lalu isi di kolom Bearer token sebelum mencoba endpoint lain.
 
-    <aside>Klik endpoint mana pun di sebelah kiri untuk lihat detail parameter, contoh request, dan contoh response.</aside>
+    Panel admin (`/admin/*`) tidak termasuk di sini karena memakai login sesi web, bukan token.
 

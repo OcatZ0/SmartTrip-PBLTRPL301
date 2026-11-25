@@ -11,23 +11,25 @@ use function Knuckles\Scribe\Config\removeStrategies;
 
 return [
     // The HTML <title> for the generated documentation.
-    'title' => 'SmartTrip API Documentation',
+    'title' => 'SmartTrip Batam API',
 
     // A short description of your API. Will be included in the docs webpage, Postman collection and OpenAPI spec.
     'description' => 'REST API untuk aplikasi mobile SmartTrip (Flutter) - autentikasi, katalog tempat, wishlist, generate itinerary otomatis, swap, live tracking, review, dan share trip.',
 
     // Text to place in the "Introduction" section, right after the `description`. Markdown and HTML are supported.
     'intro_text' => <<<'INTRO'
-            Dokumentasi ini mencakup seluruh endpoint `/api/*` yang dikonsumsi mobile app SmartTrip lewat Laravel Sanctum bearer token.
+            Dokumentasi seluruh endpoint `/api/*` yang dipakai aplikasi mobile SmartTrip.
 
-            Panel admin (`/admin/*`, session auth `guard:web`, Laravel Blade + Bootstrap) sengaja **tidak** termasuk di sini - itu bukan REST API, cuma HTML form biasa buat kurasi data.
+            Cara mencoba: panggil **Autentikasi > Masuk dengan email**, salin `token` dari response, lalu isi di kolom Bearer token sebelum mencoba endpoint lain.
 
-            <aside>Klik endpoint mana pun di sebelah kiri untuk lihat detail parameter, contoh request, dan contoh response.</aside>
+            Panel admin (`/admin/*`) tidak termasuk di sini karena memakai login sesi web, bukan token.
         INTRO,
 
     // The base URL displayed in the docs.
     // If you're using `laravel` type, you can set this to a dynamic string, like '{{ config("app.tenant_url") }}' to get a dynamic base URL.
-    'base_url' => config('app.url'),
+    // Fixed, not config('app.url'): the docs are generated on a laptop but read
+    // (and tried out) on production, and openapi.yaml is served as a plain file.
+    'base_url' => env('SCRIBE_BASE_URL', 'https://smarttrips.my.id'),
 
     // Routes to include in the docs
     'routes' => [
@@ -59,7 +61,7 @@ return [
     'type' => 'laravel',
 
     // See https://scribe.knuckles.wtf/laravel/reference/config#theme for supported options
-    'theme' => 'default',
+    'theme' => 'elements',
 
     'static' => [
         // HTML documentation, assets and Postman collection will be generated to this folder.
@@ -111,7 +113,7 @@ return [
         // Set this to true if your API should be authenticated by default. If so, you must also set `enabled` (above) to true.
         // You can then use @unauthenticated or @authenticated on individual endpoints to change their status from the default.
         // Sebagian besar endpoint butuh auth:sanctum, tapi cukup banyak yang publik (katalog tempat, auth routes) - Scribe deteksi otomatis dari middleware auth:sanctum tiap route, jadi default false di sini.
-        'default' => false,
+        'default' => true,
 
         // Where is the auth value meant to be sent in a request?
         'in' => AuthIn::BEARER->value,
@@ -175,13 +177,23 @@ return [
 
     'groups' => [
         // Endpoints which don't have a @group will be placed in this default group.
-        'default' => 'Endpoints',
+        'default' => 'Lainnya',
 
         // By default, Scribe will sort groups alphabetically, and endpoints in the order their routes are defined.
         // You can override this by listing the groups, subgroups and endpoints here in the order you want them.
         // See https://scribe.knuckles.wtf/blog/laravel-v4#easier-sorting and https://scribe.knuckles.wtf/laravel/reference/config#order for details
         // Note: does not work for `external` docs types
-        'order' => [],
+        'order' => [
+            'Autentikasi',
+            'Profil',
+            'Katalog Tempat',
+            'Ulasan Tempat',
+            'Wishlist Pribadi',
+            'Trip',
+            'Wishlist Trip',
+            'Penyusunan Itinerary',
+            'Berbagi Trip',
+        ],
     ],
 
     // Custom logo path. This will be used as the value of the src attribute for the <img> tag,

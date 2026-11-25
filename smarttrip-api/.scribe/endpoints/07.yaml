@@ -1,0 +1,204 @@
+name: 'Ulasan Tempat'
+description: 'Satu ulasan per pengguna per tempat; ulasan kedua berarti mengubah yang lama.'
+endpoints:
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: 'api/places/{place_places_id}/reviews'
+    metadata:
+      custom: []
+      groupName: 'Ulasan Tempat'
+      groupDescription: 'Satu ulasan per pengguna per tempat; ulasan kedua berarti mengubah yang lama.'
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Beri ulasan'
+      description: 'Rating 1-5 dan komentar opsional. itinerary_items_id boleh diisi kalau ulasan ditulis dari stop trip milik sendiri.'
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_SANCTUM_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      place_places_id:
+        custom: []
+        name: place_places_id
+        description: 'The ID of the place places.'
+        required: true
+        example: 2
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      place_places_id: 2
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      rating:
+        custom: []
+        name: rating
+        description: 'Must be at least 1. Must not be greater than 5.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      comment:
+        custom: []
+        name: comment
+        description: 'Must not be greater than 2000 characters.'
+        required: false
+        example: 'n'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      itinerary_items_id:
+        custom: []
+        name: itinerary_items_id
+        description: ''
+        required: false
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+    cleanBodyParameters:
+      rating: 1
+      comment: 'n'
+      itinerary_items_id: 16
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PATCH
+    uri: 'api/reviews/{review_place_reviews_id}'
+    metadata:
+      custom: []
+      groupName: 'Ulasan Tempat'
+      groupDescription: 'Satu ulasan per pengguna per tempat; ulasan kedua berarti mengubah yang lama.'
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Ubah ulasan'
+      description: 'Hanya pemilik ulasan.'
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_SANCTUM_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      review_place_reviews_id:
+        custom: []
+        name: review_place_reviews_id
+        description: 'The ID of the review place reviews.'
+        required: true
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      review_place_reviews_id: 16
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      rating:
+        custom: []
+        name: rating
+        description: 'Must be at least 1. Must not be greater than 5.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      comment:
+        custom: []
+        name: comment
+        description: 'Must not be greater than 2000 characters.'
+        required: false
+        example: 'n'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+    cleanBodyParameters:
+      rating: 1
+      comment: 'n'
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - DELETE
+    uri: 'api/reviews/{review_place_reviews_id}'
+    metadata:
+      custom: []
+      groupName: 'Ulasan Tempat'
+      groupDescription: 'Satu ulasan per pengguna per tempat; ulasan kedua berarti mengubah yang lama.'
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Hapus ulasan'
+      description: 'Hanya pemilik ulasan.'
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_SANCTUM_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      review_place_reviews_id:
+        custom: []
+        name: review_place_reviews_id
+        description: 'The ID of the review place reviews.'
+        required: true
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      review_place_reviews_id: 16
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null

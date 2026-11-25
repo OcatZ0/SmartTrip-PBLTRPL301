@@ -1,2 +1,6 @@
 *
 !.gitignore
+# Scribe's OpenAPI spec and Postman collection, served by /docs.openapi and
+# /docs.postman on the server, so they ship with the repo.
+!scribe/
+!scribe/*

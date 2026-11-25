@@ -7,6 +7,9 @@ use App\Http\Resources\PlaceDetailResource;
 use App\Http\Resources\PlaceResource;
 use App\Models\Place;
 use Illuminate\Http\Request;
+use Knuckles\Scribe\Attributes\Endpoint;
+use Knuckles\Scribe\Attributes\Group;
+use Knuckles\Scribe\Attributes\Unauthenticated;
 
 /**
  * F005-F006: katalog tempat wisata (browse/search publik) dan detail
@@ -15,8 +18,11 @@ use Illuminate\Http\Request;
  * type=lodging dipakai pencarian hotel di trip setup (C4).
  * GET /api/places/kecamatan mengisi pilihan filter kecamatan di katalog.
  */
+#[Group('Katalog Tempat')]
 class PlaceController extends Controller
 {
+    #[Endpoint('Cari tempat', 'Filter search, category (slug), kecamatan, dan type (attraction, culinary, lodging). Hasil dipaginasi, per_page maksimal 50.')]
+    #[Unauthenticated]
     public function index(Request $request)
     {
         $perPage = min(max((int) $request->integer('per_page', 20), 1), 50);
@@ -52,6 +58,8 @@ class PlaceController extends Controller
      * kecamatan filter. Grouped case-insensitively because admins type the
      * value by hand, matching the case-insensitive ?kecamatan= filter.
      */
+    #[Endpoint('Daftar kecamatan', 'Kecamatan yang punya tempat, untuk pilihan filter katalog.')]
+    #[Unauthenticated]
     public function kecamatan()
     {
         $rows = Place::query()
@@ -68,6 +76,7 @@ class PlaceController extends Controller
             $key = mb_strtolower($name);
             if (isset($kecamatan[$key])) {
                 $kecamatan[$key]['places_count'] += (int) $row->places_count;
+
                 continue;
             }
             $kecamatan[$key] = ['name' => $name, 'places_count' => (int) $row->places_count];
@@ -76,6 +85,8 @@ class PlaceController extends Controller
         return response()->json(['data' => collect($kecamatan)->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)->values()]);
     }
 
+    #[Endpoint('Detail tempat', 'Info lengkap, foto, dan ulasan satu tempat.')]
+    #[Unauthenticated]
     public function show(Place $place)
     {
         $place->loadAvg('reviews', 'rating')

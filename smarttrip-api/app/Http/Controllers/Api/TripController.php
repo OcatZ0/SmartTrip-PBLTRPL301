@@ -12,15 +12,17 @@ use App\Services\Itinerary\Topsis;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\ProhibitedIf;
 use Illuminate\Validation\ValidationException;
+use Knuckles\Scribe\Attributes\Endpoint;
+use Knuckles\Scribe\Attributes\Group;
 use RuntimeException;
 
 /**
  * Trip setup + F008 (docs/prd design spec Section 7 & 12).
  */
+#[Group('Trip', 'Membuat, melihat, mengubah, dan menghapus trip milik pengguna.')]
 class TripController extends Controller
 {
     /**
@@ -41,6 +43,7 @@ class TripController extends Controller
      * Terurut trip terbaru dulu. Each trip also carries a "summary" for the
      * Trip Tersimpan card (see tripSummary()).
      */
+    #[Endpoint('Daftar trip saya', 'Trip milik pengguna beserta ringkasan status, jumlah stop, dan foto.')]
     public function index(Request $request)
     {
         $perPage = min(max((int) $request->integer('per_page', 20), 1), 50);
@@ -117,6 +120,8 @@ class TripController extends Controller
      * sebagai viewer (baris trip_viewers), bukan trip miliknya sendiri.
      * Terurut kapan diundang (added_at) terbaru dulu.
      */
+    #[Group('Berbagi Trip')]
+    #[Endpoint('Trip yang dibagikan ke saya', 'Trip orang lain tempat pengguna menjadi viewer, terbaru diundang di atas.')]
     public function shared(Request $request)
     {
         $perPage = min(max((int) $request->integer('per_page', 20), 1), 50);
@@ -130,6 +135,7 @@ class TripController extends Controller
         return response()->json($trips);
     }
 
+    #[Endpoint('Buat trip', 'num_days 1 sampai 30.')]
     public function store(Request $request)
     {
         $data = $request->validate([
@@ -158,6 +164,7 @@ class TripController extends Controller
         return response()->json($trip, 201);
     }
 
+    #[Endpoint('Detail trip', 'Untuk pemilik dan viewer: hari, stop, serta titik awal dan akhir tiap hari.')]
     public function show(Request $request, Trip $trip)
     {
         if (! $trip->isReadableBy($request->user())) {
@@ -201,6 +208,8 @@ class TripController extends Controller
      * mobile (satu layar). US1: 0 slider disentuh tetap submit dengan
      * bobot sama rata, tidak diblokir.
      */
+    #[Group('Penyusunan Itinerary')]
+    #[Endpoint('Simpan minat dan bobot', 'Langkah 1. Rating 0-10 per kriteria dinormalkan jadi bobot TOPSIS.')]
     public function weights(Request $request, Trip $trip)
     {
         if (! $trip->isOwnedBy($request->user())) {
@@ -233,6 +242,8 @@ class TripController extends Controller
     /**
      * F008 langkah 4: set hotel - dari katalog (places_id) atau custom pin.
      */
+    #[Group('Penyusunan Itinerary')]
+    #[Endpoint('Atur hotel', 'Langkah 2. Hotel dari katalog atau pin sendiri; semua hari mulai dan selesai di sini.')]
     public function hotel(Request $request, Trip $trip, ItineraryGenerator $generator)
     {
         if (! $trip->isOwnedBy($request->user())) {
@@ -260,6 +271,8 @@ class TripController extends Controller
      * end where it starts. A day that already has stops gets its route
      * recomputed; its places stay.
      */
+    #[Group('Penyusunan Itinerary')]
+    #[Endpoint('Atur titik awal dan akhir hari', 'Mode detail: titik awal dan akhir satu hari. end: null berarti hari selesai di titik awal.')]
     public function dayPoints(Request $request, Trip $trip, int $dayNumber, ItineraryGenerator $generator)
     {
         if (! $trip->isOwnedBy($request->user())) {
@@ -358,6 +371,8 @@ class TripController extends Controller
      * F008 langkah 4: top-3 rekomendasi hotel TOPSIS. Kosong kalau trip
      * sudah pakai has_own_hotel (tidak butuh rekomendasi).
      */
+    #[Group('Penyusunan Itinerary')]
+    #[Endpoint('Rekomendasi hotel', 'Langkah 2. Tiga hotel teratas menurut TOPSIS; kosong kalau trip memakai hotel sendiri.')]
     public function hotelOptions(Request $request, Trip $trip, HotelRecommender $recommender)
     {
         if (! $trip->isReadableBy($request->user())) {
@@ -391,6 +406,8 @@ class TripController extends Controller
     /**
      * F008: K-Means + TOPSIS + Nearest-Neighbor + Routes API -> itinerary.
      */
+    #[Group('Penyusunan Itinerary')]
+    #[Endpoint('Buat itinerary', 'Langkah 3. K-Means membagi wishlist per hari, TOPSIS memilih rekomendasi dalam batas budget_total, rute dari OpenRouteService.')]
     public function generate(Request $request, Trip $trip, ItineraryGenerator $generator)
     {
         if (! $trip->isOwnedBy($request->user())) {
@@ -434,6 +451,7 @@ class TripController extends Controller
      * penuh"; mobile memanggil POST /generate lagi setelah ini. start_date
      * dan title tidak membuang itinerary.
      */
+    #[Endpoint('Ubah trip', 'Mengubah jumlah hari, budget, atau jam harian menghapus itinerary yang sudah ada (itinerary_cleared: true); generate ulang setelahnya.')]
     public function update(Request $request, Trip $trip)
     {
         if (! $trip->isOwnedBy($request->user())) {
@@ -490,6 +508,7 @@ class TripController extends Controller
      * riwayat kunjungan yang sudah pernah dilihat viewer dkk tetap utuh
      * di database, cuma hilang dari daftar/pencarian aktif.
      */
+    #[Endpoint('Hapus trip', 'Soft delete; trip hilang dari daftar.')]
     public function destroy(Request $request, Trip $trip)
     {
         if (! $trip->isOwnedBy($request->user())) {

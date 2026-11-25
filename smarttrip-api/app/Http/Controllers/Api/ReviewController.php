@@ -9,6 +9,8 @@ use App\Models\PlaceReview;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Knuckles\Scribe\Attributes\Endpoint;
+use Knuckles\Scribe\Attributes\Group;
 
 /**
  * F014 (docs/prd design spec Section 6 & 12) - review terbuka, siapa saja
@@ -17,8 +19,10 @@ use Illuminate\Validation\Rule;
  * places_id) di skema) - review ulang berarti edit (PATCH), bukan baris
  * baru.
  */
+#[Group('Ulasan Tempat', 'Satu ulasan per pengguna per tempat; ulasan kedua berarti mengubah yang lama.')]
 class ReviewController extends Controller
 {
+    #[Endpoint('Beri ulasan', 'Rating 1-5 dan komentar opsional. itinerary_items_id boleh diisi kalau ulasan ditulis dari stop trip milik sendiri.')]
     public function store(Request $request, Place $place)
     {
         $existing = $this->existingReview($place, $request->user()->users_id);
@@ -70,6 +74,7 @@ class ReviewController extends Controller
         ], 422);
     }
 
+    #[Endpoint('Ubah ulasan', 'Hanya pemilik ulasan.')]
     public function update(Request $request, PlaceReview $review)
     {
         if ($review->users_id !== $request->user()->users_id) {
@@ -86,6 +91,7 @@ class ReviewController extends Controller
         return response()->json($review->fresh());
     }
 
+    #[Endpoint('Hapus ulasan', 'Hanya pemilik ulasan.')]
     public function destroy(Request $request, PlaceReview $review)
     {
         if ($review->users_id !== $request->user()->users_id) {

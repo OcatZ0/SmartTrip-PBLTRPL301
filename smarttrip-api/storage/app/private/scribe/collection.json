@@ -1,0 +1,1702 @@
+{
+    "variable": [
+        {
+            "id": "baseUrl",
+            "key": "baseUrl",
+            "type": "string",
+            "name": "string",
+            "value": "https:\/\/smarttrips.my.id"
+        }
+    ],
+    "info": {
+        "name": "SmartTrip Batam API",
+        "_postman_id": "ea95c87b-593d-41f9-870c-b0852a6f6ee9",
+        "description": "REST API untuk aplikasi mobile SmartTrip (Flutter) - autentikasi, katalog tempat, wishlist, generate itinerary otomatis, swap, live tracking, review, dan share trip.",
+        "schema": "https:\/\/schema.getpostman.com\/json\/collection\/v2.1.0\/collection.json"
+    },
+    "item": [
+        {
+            "name": "Autentikasi",
+            "description": "Daftar, masuk, dan kelola kata sandi akun wisatawan. Login, daftar, dan lupa kata sandi dibatasi jumlah percobaannya.",
+            "item": [
+                {
+                    "name": "Daftar akun",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/auth\/register",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/auth\/register"
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"name\":\"b\",\"email\":\"zbailey@example.net\",\"password\":\"-0pBNvYgxw\"}"
+                        },
+                        "description": "Menyimpan pendaftaran dan mengirim email verifikasi; akun aktif setelah link di email diklik. Maksimal 3 email per alamat per jam.",
+                        "auth": {
+                            "type": "noauth"
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Masuk dengan email",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/auth\/login",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/auth\/login"
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"email\":\"gbailey@example.net\",\"password\":\"|]|{+-\"}"
+                        },
+                        "description": "Mengembalikan token Sanctum untuk header Authorization: Bearer. Maksimal 5 percobaan per menit per email.",
+                        "auth": {
+                            "type": "noauth"
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Masuk dengan Google",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/auth\/google",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/auth\/google"
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"id_token\":\"architecto\"}"
+                        },
+                        "description": "Menerima id_token dari Google Sign-In (email harus sudah diverifikasi Google) dan mengembalikan token Sanctum.",
+                        "auth": {
+                            "type": "noauth"
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Lupa kata sandi",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/auth\/forgot-password",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/auth\/forgot-password"
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"email\":\"gbailey@example.net\"}"
+                        },
+                        "description": "Mengirim link atur ulang kata sandi ke email. Balasannya selalu sama, email terdaftar atau tidak.",
+                        "auth": {
+                            "type": "noauth"
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Keluar",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/auth\/logout",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/auth\/logout"
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": "Mencabut token yang sedang dipakai."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Ubah kata sandi",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/auth\/password",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/auth\/password"
+                        },
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"password\":\"|]|{+-\"}"
+                        },
+                        "description": "Akun Google yang belum punya kata sandi tidak perlu mengisi current_password."
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Profil",
+            "description": "Data akun dan preferensi default untuk trip baru.",
+            "item": [
+                {
+                    "name": "Lihat preferensi",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/profile\/preferences",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/profile\/preferences"
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": "Minat dan bobot kriteria default untuk trip baru."
+                    },
+                    "response": [
+                        {
+                            "header": [
+                                {
+                                    "key": "cache-control",
+                                    "value": "no-cache, private"
+                                },
+                                {
+                                    "key": "content-type",
+                                    "value": "application\/json"
+                                },
+                                {
+                                    "key": "access-control-allow-origin",
+                                    "value": "*"
+                                }
+                            ],
+                            "code": 401,
+                            "body": "{\"message\":\"Unauthenticated.\"}",
+                            "name": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "Simpan preferensi",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/profile\/preferences",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/profile\/preferences"
+                        },
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"category_ids\":[16],\"rating_kategori\":2,\"rating_jarak\":7,\"rating_anggaran\":6,\"rating_rating\":7}"
+                        },
+                        "description": "Rating 0-10 per kriteria dinormalkan jadi bobot dengan total 1; semua 0 berarti bobot sama rata."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Data akun login",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/user",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/user"
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": "Nama, email, peran, dan status kata sandi akun pemilik token."
+                    },
+                    "response": [
+                        {
+                            "header": [
+                                {
+                                    "key": "cache-control",
+                                    "value": "no-cache, private"
+                                },
+                                {
+                                    "key": "content-type",
+                                    "value": "application\/json"
+                                },
+                                {
+                                    "key": "access-control-allow-origin",
+                                    "value": "*"
+                                }
+                            ],
+                            "code": 401,
+                            "body": "{\"message\":\"Unauthenticated.\"}",
+                            "name": ""
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "Katalog Tempat",
+            "description": "Kategori dan tempat wisata Batam. Bisa dibuka tanpa login.",
+            "item": [
+                {
+                    "name": "Daftar kategori",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/categories",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/categories"
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": "Semua kategori tempat wisata; ?onboarding=1 hanya kategori yang tampil di onboarding.",
+                        "auth": {
+                            "type": "noauth"
+                        }
+                    },
+                    "response": [
+                        {
+                            "header": [
+                                {
+                                    "key": "cache-control",
+                                    "value": "no-cache, private"
+                                },
+                                {
+                                    "key": "content-type",
+                                    "value": "application\/json"
+                                },
+                                {
+                                    "key": "access-control-allow-origin",
+                                    "value": "*"
+                                }
+                            ],
+                            "code": 200,
+                            "body": "{\"data\":[{\"categories_id\":8,\"name_id\":\"Belanja\",\"name_en\":\"Shopping\",\"slug\":\"belanja\",\"icon_symbol\":\"belanja\",\"show_in_onboarding\":true},{\"categories_id\":10,\"name_id\":\"Kuliner Lokal\",\"name_en\":\"Local Food\",\"slug\":\"kuliner-lokal\",\"icon_symbol\":\"restoran\",\"show_in_onboarding\":true},{\"categories_id\":9,\"name_id\":\"Kuliner Seafood\",\"name_en\":\"Seafood\",\"slug\":\"kuliner-seafood\",\"icon_symbol\":\"kuliner\",\"show_in_onboarding\":true},{\"categories_id\":5,\"name_id\":\"Landmark & Ikon Kota\",\"name_en\":\"Landmarks\",\"slug\":\"landmark\",\"icon_symbol\":\"landmark\",\"show_in_onboarding\":true},{\"categories_id\":1,\"name_id\":\"Pantai\",\"name_en\":\"Beach\",\"slug\":\"pantai\",\"icon_symbol\":\"pantai\",\"show_in_onboarding\":true},{\"categories_id\":3,\"name_id\":\"Sejarah & Budaya\",\"name_en\":\"History & Culture\",\"slug\":\"sejarah\",\"icon_symbol\":\"sejarah\",\"show_in_onboarding\":true},{\"categories_id\":6,\"name_id\":\"Spot Foto\",\"name_en\":\"Photo Spots\",\"slug\":\"spot-foto\",\"icon_symbol\":\"foto\",\"show_in_onboarding\":true},{\"categories_id\":7,\"name_id\":\"Taman & Rekreasi\",\"name_en\":\"Parks & Recreation\",\"slug\":\"rekreasi\",\"icon_symbol\":\"taman\",\"show_in_onboarding\":true},{\"categories_id\":2,\"name_id\":\"Wisata Alam\",\"name_en\":\"Nature\",\"slug\":\"alam\",\"icon_symbol\":\"alam\",\"show_in_onboarding\":true},{\"categories_id\":4,\"name_id\":\"Wisata Religi\",\"name_en\":\"Religious Sites\",\"slug\":\"religi\",\"icon_symbol\":\"religi\",\"show_in_onboarding\":true}]}",
+                            "name": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "Cari tempat",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/places",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/places"
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": "Filter search, category (slug), kecamatan, dan type (attraction, culinary, lodging). Hasil dipaginasi, per_page maksimal 50.",
+                        "auth": {
+                            "type": "noauth"
+                        }
+                    },
+                    "response": [
+                        {
+                            "header": [
+                                {
+                                    "key": "cache-control",
+                                    "value": "no-cache, private"
+                                },
+                                {
+                                    "key": "content-type",
+                                    "value": "application\/json"
+                                },
+                                {
+                                    "key": "access-control-allow-origin",
+                                    "value": "*"
+                                }
+                            ],
+                            "code": 200,
+                            "body": "{\"data\":[{\"places_id\":1,\"name\":\"Jembatan Barelang (Raja Haji Fisabilillah)\",\"type\":\"attraction\",\"kecamatan\":null,\"lat\":0.98154,\"lng\":104.0416,\"photo_url\":null,\"rating\":null,\"review_count_in_app\":0,\"estimated_cost_idr\":0,\"is_outdoor\":true,\"categories\":[{\"categories_id\":5,\"name_id\":\"Landmark & Ikon Kota\",\"name_en\":\"Landmarks\",\"slug\":\"landmark\"},{\"categories_id\":6,\"name_id\":\"Spot Foto\",\"name_en\":\"Photo Spots\",\"slug\":\"spot-foto\"}]},{\"places_id\":2,\"name\":\"Monumen Welcome to Batam\",\"type\":\"attraction\",\"kecamatan\":\"Batam Kota\",\"lat\":1.12216,\"lng\":104.05434,\"photo_url\":null,\"rating\":null,\"review_count_in_app\":0,\"estimated_cost_idr\":0,\"is_outdoor\":true,\"categories\":[{\"categories_id\":5,\"name_id\":\"Landmark & Ikon Kota\",\"name_en\":\"Landmarks\",\"slug\":\"landmark\"},{\"categories_id\":6,\"name_id\":\"Spot Foto\",\"name_en\":\"Photo Spots\",\"slug\":\"spot-foto\"}]},{\"places_id\":3,\"name\":\"Masjid Agung Batam\",\"type\":\"attraction\",\"kecamatan\":\"Batam Kota\",\"lat\":1.1264,\"lng\":104.05338,\"photo_url\":\"https:\\\/\\\/smarttrips.my.id\\\/storage\\\/place-photos\\\/3\\\/d965b007-58dd-46d0-95d7-51cd2273ec1f.jpg\",\"rating\":null,\"review_count_in_app\":0,\"estimated_cost_idr\":0,\"is_outdoor\":false,\"categories\":[{\"categories_id\":4,\"name_id\":\"Wisata Religi\",\"name_en\":\"Religious Sites\",\"slug\":\"religi\"},{\"categories_id\":3,\"name_id\":\"Sejarah & Budaya\",\"name_en\":\"History & Culture\",\"slug\":\"sejarah\"},{\"categories_id\":5,\"name_id\":\"Landmark & Ikon Kota\",\"name_en\":\"Landmarks\",\"slug\":\"landmark\"}]},{\"places_id\":4,\"name\":\"Dataran Engku Putri\",\"type\":\"attraction\",\"kecamatan\":\"Batam Kota\",\"lat\":1.12864,\"lng\":104.05406,\"photo_url\":null,\"rating\":null,\"review_count_in_app\":0,\"estimated_cost_idr\":0,\"is_outdoor\":true,\"categories\":[{\"categories_id\":7,\"name_id\":\"Taman & Rekreasi\",\"name_en\":\"Parks & Recreation\",\"slug\":\"rekreasi\"}]},{\"places_id\":5,\"name\":\"Maha Vihara Duta Maitreya\",\"type\":\"attraction\",\"kecamatan\":\"Batam Kota\",\"lat\":1.12944,\"lng\":104.03472,\"photo_url\":null,\"rating\":null,\"review_count_in_app\":0,\"estimated_cost_idr\":0,\"is_outdoor\":false,\"categories\":[{\"categories_id\":4,\"name_id\":\"Wisata Religi\",\"name_en\":\"Religious Sites\",\"slug\":\"religi\"},{\"categories_id\":3,\"name_id\":\"Sejarah & Budaya\",\"name_en\":\"History & Culture\",\"slug\":\"sejarah\"}]},{\"places_id\":6,\"name\":\"Museum Raja Ali Haji\",\"type\":\"attraction\",\"kecamatan\":\"Batam Kota\",\"lat\":1.12939,\"lng\":104.05377,\"photo_url\":null,\"rating\":null,\"review_count_in_app\":0,\"estimated_cost_idr\":0,\"is_outdoor\":false,\"categories\":[{\"categories_id\":3,\"name_id\":\"Sejarah & Budaya\",\"name_en\":\"History & Culture\",\"slug\":\"sejarah\"}]},{\"places_id\":7,\"name\":\"Pantai Ocarina\",\"type\":\"attraction\",\"kecamatan\":\"Bengkong\",\"lat\":1.15196,\"lng\":104.05471,\"photo_url\":null,\"rating\":null,\"review_count_in_app\":0,\"estimated_cost_idr\":15000,\"is_outdoor\":true,\"categories\":[{\"categories_id\":1,\"name_id\":\"Pantai\",\"name_en\":\"Beach\",\"slug\":\"pantai\"},{\"categories_id\":7,\"name_id\":\"Taman & Rekreasi\",\"name_en\":\"Parks & Recreation\",\"slug\":\"rekreasi\"}]},{\"places_id\":8,\"name\":\"Pantai Nongsa\",\"type\":\"attraction\",\"kecamatan\":\"Nongsa\",\"lat\":1.19468,\"lng\":104.08896,\"photo_url\":null,\"rating\":null,\"review_count_in_app\":0,\"estimated_cost_idr\":10000,\"is_outdoor\":true,\"categories\":[{\"categories_id\":1,\"name_id\":\"Pantai\",\"name_en\":\"Beach\",\"slug\":\"pantai\"},{\"categories_id\":2,\"name_id\":\"Wisata Alam\",\"name_en\":\"Nature\",\"slug\":\"alam\"}]},{\"places_id\":9,\"name\":\"Pantai Setokok\",\"type\":\"attraction\",\"kecamatan\":null,\"lat\":0.92335,\"lng\":104.06094,\"photo_url\":null,\"rating\":null,\"review_count_in_app\":0,\"estimated_cost_idr\":10000,\"is_outdoor\":true,\"categories\":[{\"categories_id\":1,\"name_id\":\"Pantai\",\"name_en\":\"Beach\",\"slug\":\"pantai\"},{\"categories_id\":2,\"name_id\":\"Wisata Alam\",\"name_en\":\"Nature\",\"slug\":\"alam\"}]},{\"places_id\":10,\"name\":\"Infinite Studio Kota Tua\",\"type\":\"attraction\",\"kecamatan\":\"Nongsa\",\"lat\":1.18677,\"lng\":104.09755,\"photo_url\":null,\"rating\":null,\"review_count_in_app\":0,\"estimated_cost_idr\":150000,\"is_outdoor\":false,\"categories\":[{\"categories_id\":6,\"name_id\":\"Spot Foto\",\"name_en\":\"Photo Spots\",\"slug\":\"spot-foto\"},{\"categories_id\":7,\"name_id\":\"Taman & Rekreasi\",\"name_en\":\"Parks & Recreation\",\"slug\":\"rekreasi\"}]},{\"places_id\":11,\"name\":\"Tangga 1000 Taman Habibie\",\"type\":\"attraction\",\"kecamatan\":\"Sekupang\",\"lat\":1.14504,\"lng\":103.94751,\"photo_url\":null,\"rating\":null,\"review_count_in_app\":0,\"estimated_cost_idr\":0,\"is_outdoor\":true,\"categories\":[{\"categories_id\":2,\"name_id\":\"Wisata Alam\",\"name_en\":\"Nature\",\"slug\":\"alam\"},{\"categories_id\":6,\"name_id\":\"Spot Foto\",\"name_en\":\"Photo Spots\",\"slug\":\"spot-foto\"}]},{\"places_id\":13,\"name\":\"Masjid Sultan Mahmud Riayat Syah\",\"type\":\"attraction\",\"kecamatan\":\"Batu Aji\",\"lat\":1.05113,\"lng\":103.93511,\"photo_url\":null,\"rating\":null,\"review_count_in_app\":0,\"estimated_cost_idr\":0,\"is_outdoor\":false,\"categories\":[{\"categories_id\":4,\"name_id\":\"Wisata Religi\",\"name_en\":\"Religious Sites\",\"slug\":\"religi\"}]},{\"places_id\":14,\"name\":\"Nagoya Hill Shopping Centre\",\"type\":\"attraction\",\"kecamatan\":\"Lubuk Baja\",\"lat\":1.14627,\"lng\":104.01261,\"photo_url\":null,\"rating\":null,\"review_count_in_app\":0,\"estimated_cost_idr\":0,\"is_outdoor\":false,\"categories\":[{\"categories_id\":8,\"name_id\":\"Belanja\",\"name_en\":\"Shopping\",\"slug\":\"belanja\"}]},{\"places_id\":15,\"name\":\"Mega Mall Batam Centre\",\"type\":\"attraction\",\"kecamatan\":\"Batam Kota\",\"lat\":1.12924,\"lng\":104.05598,\"photo_url\":null,\"rating\":null,\"review_count_in_app\":0,\"estimated_cost_idr\":0,\"is_outdoor\":false,\"categories\":[{\"categories_id\":8,\"name_id\":\"Belanja\",\"name_en\":\"Shopping\",\"slug\":\"belanja\"}]},{\"places_id\":16,\"name\":\"Golden Prawn Seafood\",\"type\":\"culinary\",\"kecamatan\":\"Bengkong\",\"lat\":1.1603,\"lng\":104.03718,\"photo_url\":null,\"rating\":null,\"review_count_in_app\":0,\"estimated_cost_idr\":150000,\"is_outdoor\":false,\"categories\":[{\"categories_id\":9,\"name_id\":\"Kuliner Seafood\",\"name_en\":\"Seafood\",\"slug\":\"kuliner-seafood\"},{\"categories_id\":5,\"name_id\":\"Landmark & Ikon Kota\",\"name_en\":\"Landmarks\",\"slug\":\"landmark\"},{\"categories_id\":1,\"name_id\":\"Pantai\",\"name_en\":\"Beach\",\"slug\":\"pantai\"},{\"categories_id\":3,\"name_id\":\"Sejarah & Budaya\",\"name_en\":\"History & Culture\",\"slug\":\"sejarah\"}]},{\"places_id\":17,\"name\":\"Wey Wey Seafood\",\"type\":\"culinary\",\"kecamatan\":\"Batu Ampar\",\"lat\":1.15253,\"lng\":103.99804,\"photo_url\":null,\"rating\":null,\"review_count_in_app\":0,\"estimated_cost_idr\":150000,\"is_outdoor\":false,\"categories\":[{\"categories_id\":9,\"name_id\":\"Kuliner Seafood\",\"name_en\":\"Seafood\",\"slug\":\"kuliner-seafood\"}]},{\"places_id\":18,\"name\":\"Setia Budi Seafood Restaurant\",\"type\":\"culinary\",\"kecamatan\":\"Nongsa\",\"lat\":1.19538,\"lng\":104.08562,\"photo_url\":null,\"rating\":null,\"review_count_in_app\":0,\"estimated_cost_idr\":150000,\"is_outdoor\":false,\"categories\":[{\"categories_id\":9,\"name_id\":\"Kuliner Seafood\",\"name_en\":\"Seafood\",\"slug\":\"kuliner-seafood\"}]},{\"places_id\":19,\"name\":\"Ocean Garden Seafood\",\"type\":\"culinary\",\"kecamatan\":\"Batam Kota\",\"lat\":1.13439,\"lng\":104.04797,\"photo_url\":null,\"rating\":null,\"review_count_in_app\":0,\"estimated_cost_idr\":150000,\"is_outdoor\":false,\"categories\":[{\"categories_id\":9,\"name_id\":\"Kuliner Seafood\",\"name_en\":\"Seafood\",\"slug\":\"kuliner-seafood\"}]},{\"places_id\":20,\"name\":\"Kedai Kopi Pelangi (Sup Ikan)\",\"type\":\"culinary\",\"kecamatan\":\"Lubuk Baja\",\"lat\":1.13274,\"lng\":104.01116,\"photo_url\":null,\"rating\":null,\"review_count_in_app\":0,\"estimated_cost_idr\":45000,\"is_outdoor\":false,\"categories\":[{\"categories_id\":10,\"name_id\":\"Kuliner Lokal\",\"name_en\":\"Local Food\",\"slug\":\"kuliner-lokal\"},{\"categories_id\":9,\"name_id\":\"Kuliner Seafood\",\"name_en\":\"Seafood\",\"slug\":\"kuliner-seafood\"}]},{\"places_id\":21,\"name\":\"Old Place Frog Porridge\",\"type\":\"culinary\",\"kecamatan\":\"Lubuk Baja\",\"lat\":1.14301,\"lng\":104.01179,\"photo_url\":null,\"rating\":null,\"review_count_in_app\":0,\"estimated_cost_idr\":75000,\"is_outdoor\":false,\"categories\":[{\"categories_id\":10,\"name_id\":\"Kuliner Lokal\",\"name_en\":\"Local Food\",\"slug\":\"kuliner-lokal\"}]}],\"links\":{\"first\":\"https:\\\/\\\/smarttrips.my.id\\\/api\\\/places?page=1\",\"last\":\"https:\\\/\\\/smarttrips.my.id\\\/api\\\/places?page=5\",\"prev\":null,\"next\":\"https:\\\/\\\/smarttrips.my.id\\\/api\\\/places?page=2\"},\"meta\":{\"current_page\":1,\"from\":1,\"last_page\":5,\"links\":[{\"url\":null,\"label\":\"&laquo; Previous\",\"page\":null,\"active\":false},{\"url\":\"https:\\\/\\\/smarttrips.my.id\\\/api\\\/places?page=1\",\"label\":\"1\",\"page\":1,\"active\":true},{\"url\":\"https:\\\/\\\/smarttrips.my.id\\\/api\\\/places?page=2\",\"label\":\"2\",\"page\":2,\"active\":false},{\"url\":\"https:\\\/\\\/smarttrips.my.id\\\/api\\\/places?page=3\",\"label\":\"3\",\"page\":3,\"active\":false},{\"url\":\"https:\\\/\\\/smarttrips.my.id\\\/api\\\/places?page=4\",\"label\":\"4\",\"page\":4,\"active\":false},{\"url\":\"https:\\\/\\\/smarttrips.my.id\\\/api\\\/places?page=5\",\"label\":\"5\",\"page\":5,\"active\":false},{\"url\":\"https:\\\/\\\/smarttrips.my.id\\\/api\\\/places?page=2\",\"label\":\"Next &raquo;\",\"page\":2,\"active\":false}],\"path\":\"https:\\\/\\\/smarttrips.my.id\\\/api\\\/places\",\"per_page\":20,\"to\":20,\"total\":81}}",
+                            "name": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "Daftar kecamatan",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/places\/kecamatan",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/places\/kecamatan"
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": "Kecamatan yang punya tempat, untuk pilihan filter katalog.",
+                        "auth": {
+                            "type": "noauth"
+                        }
+                    },
+                    "response": [
+                        {
+                            "header": [
+                                {
+                                    "key": "cache-control",
+                                    "value": "no-cache, private"
+                                },
+                                {
+                                    "key": "content-type",
+                                    "value": "application\/json"
+                                },
+                                {
+                                    "key": "access-control-allow-origin",
+                                    "value": "*"
+                                }
+                            ],
+                            "code": 200,
+                            "body": "{\"data\":[{\"name\":\"Batam Kota\",\"places_count\":18},{\"name\":\"Batu Aji\",\"places_count\":1},{\"name\":\"Batu Ampar\",\"places_count\":16},{\"name\":\"Bengkong\",\"places_count\":4},{\"name\":\"Galang\",\"places_count\":6},{\"name\":\"Lubuk Baja\",\"places_count\":11},{\"name\":\"Nongsa\",\"places_count\":13},{\"name\":\"Sekupang\",\"places_count\":6},{\"name\":\"Sungai Beduk\",\"places_count\":4}]}",
+                            "name": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "Detail tempat",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/places\/:place_places_id",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/places\/:place_places_id",
+                            "variable": [
+                                {
+                                    "id": "place_places_id",
+                                    "key": "place_places_id",
+                                    "value": 2,
+                                    "description": "The ID of the place places."
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": "Info lengkap, foto, dan ulasan satu tempat.",
+                        "auth": {
+                            "type": "noauth"
+                        }
+                    },
+                    "response": [
+                        {
+                            "header": [
+                                {
+                                    "key": "cache-control",
+                                    "value": "no-cache, private"
+                                },
+                                {
+                                    "key": "content-type",
+                                    "value": "application\/json"
+                                },
+                                {
+                                    "key": "access-control-allow-origin",
+                                    "value": "*"
+                                }
+                            ],
+                            "code": 200,
+                            "body": "{\"data\":{\"places_id\":2,\"name\":\"Monumen Welcome to Batam\",\"type\":\"attraction\",\"address\":\"Bukit Clara, Batam Centre, Batam\",\"kecamatan\":\"Batam Kota\",\"lat\":1.12216,\"lng\":104.05434,\"maps_url\":\"https:\\\/\\\/www.google.com\\\/maps\\\/search\\\/?api=1&query=1.1221600,104.0543400\",\"photo_url\":null,\"photos\":[],\"description_id\":\"Monumen Welcome to Batam adalah landmark ikonik yang terletak di kawasan Batam Centre dan menjadi salah satu simbol kota yang paling populer. Monumen ini menampilkan tulisan raksasa yang sering dijadikan latar belakang foto kenangan oleh para wisatawan yang berkunjung.\",\"description_en\":\"The Welcome to Batam Monument is an iconic landmark located in the Batam Centre area and serves as one of the city's most popular symbols. Featuring giant lettering, it is frequently used as a backdrop for memorable photos by visiting tourists.\",\"opening_hours\":null,\"rating\":null,\"review_count_in_app\":0,\"estimated_cost_idr\":0,\"is_outdoor\":true,\"estimated_visit_minutes\":30,\"categories\":[{\"categories_id\":5,\"name_id\":\"Landmark & Ikon Kota\",\"name_en\":\"Landmarks\",\"slug\":\"landmark\"},{\"categories_id\":6,\"name_id\":\"Spot Foto\",\"name_en\":\"Photo Spots\",\"slug\":\"spot-foto\"}],\"reviews\":[]}}",
+                            "name": ""
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "Ulasan Tempat",
+            "description": "Satu ulasan per pengguna per tempat; ulasan kedua berarti mengubah yang lama.",
+            "item": [
+                {
+                    "name": "Beri ulasan",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/places\/:place_places_id\/reviews",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/places\/:place_places_id\/reviews",
+                            "variable": [
+                                {
+                                    "id": "place_places_id",
+                                    "key": "place_places_id",
+                                    "value": 2,
+                                    "description": "The ID of the place places."
+                                }
+                            ]
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"rating\":1,\"comment\":\"n\",\"itinerary_items_id\":16}"
+                        },
+                        "description": "Rating 1-5 dan komentar opsional. itinerary_items_id boleh diisi kalau ulasan ditulis dari stop trip milik sendiri."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Ubah ulasan",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/reviews\/:review_place_reviews_id",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/reviews\/:review_place_reviews_id",
+                            "variable": [
+                                {
+                                    "id": "review_place_reviews_id",
+                                    "key": "review_place_reviews_id",
+                                    "value": 16,
+                                    "description": "The ID of the review place reviews."
+                                }
+                            ]
+                        },
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"rating\":1,\"comment\":\"n\"}"
+                        },
+                        "description": "Hanya pemilik ulasan."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Hapus ulasan",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/reviews\/:review_place_reviews_id",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/reviews\/:review_place_reviews_id",
+                            "variable": [
+                                {
+                                    "id": "review_place_reviews_id",
+                                    "key": "review_place_reviews_id",
+                                    "value": 16,
+                                    "description": "The ID of the review place reviews."
+                                }
+                            ]
+                        },
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": "Hanya pemilik ulasan."
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Wishlist Pribadi",
+            "description": "Tempat yang disimpan pengguna, terpisah dari trip.",
+            "item": [
+                {
+                    "name": "Lihat wishlist pribadi",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/wishlist",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/wishlist"
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": "Terbaru di atas."
+                    },
+                    "response": [
+                        {
+                            "header": [
+                                {
+                                    "key": "cache-control",
+                                    "value": "no-cache, private"
+                                },
+                                {
+                                    "key": "content-type",
+                                    "value": "application\/json"
+                                },
+                                {
+                                    "key": "access-control-allow-origin",
+                                    "value": "*"
+                                }
+                            ],
+                            "code": 401,
+                            "body": "{\"message\":\"Unauthenticated.\"}",
+                            "name": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "Simpan tempat",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/wishlist",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/wishlist"
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"places_id\":16}"
+                        },
+                        "description": "Menyimpan tempat yang sama dua kali tidak dianggap error."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Hapus tempat",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/wishlist\/:place_places_id",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/wishlist\/:place_places_id",
+                            "variable": [
+                                {
+                                    "id": "place_places_id",
+                                    "key": "place_places_id",
+                                    "value": 2,
+                                    "description": "The ID of the place places."
+                                }
+                            ]
+                        },
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": "Menghapus tempat dari wishlist pribadi."
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Trip",
+            "description": "Membuat, melihat, mengubah, dan menghapus trip milik pengguna.",
+            "item": [
+                {
+                    "name": "Daftar trip saya",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/trips",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/trips"
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": "Trip milik pengguna beserta ringkasan status, jumlah stop, dan foto."
+                    },
+                    "response": [
+                        {
+                            "header": [
+                                {
+                                    "key": "cache-control",
+                                    "value": "no-cache, private"
+                                },
+                                {
+                                    "key": "content-type",
+                                    "value": "application\/json"
+                                },
+                                {
+                                    "key": "access-control-allow-origin",
+                                    "value": "*"
+                                }
+                            ],
+                            "code": 401,
+                            "body": "{\"message\":\"Unauthenticated.\"}",
+                            "name": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "Buat trip",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/trips",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/trips"
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"title\":\"b\",\"num_days\":22,\"budget_total\":67,\"start_date\":\"2026-11-25T11:09:03\",\"daily_start_time\":\"11:09\",\"daily_end_time\":\"2052-12-18\",\"has_own_hotel\":true}"
+                        },
+                        "description": "num_days 1 sampai 30."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Detail trip",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/trips\/:trip_trips_id",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/trips\/:trip_trips_id",
+                            "variable": [
+                                {
+                                    "id": "trip_trips_id",
+                                    "key": "trip_trips_id",
+                                    "value": 2,
+                                    "description": "The ID of the trip trips."
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": "Untuk pemilik dan viewer: hari, stop, serta titik awal dan akhir tiap hari."
+                    },
+                    "response": [
+                        {
+                            "header": [
+                                {
+                                    "key": "cache-control",
+                                    "value": "no-cache, private"
+                                },
+                                {
+                                    "key": "content-type",
+                                    "value": "application\/json"
+                                },
+                                {
+                                    "key": "access-control-allow-origin",
+                                    "value": "*"
+                                }
+                            ],
+                            "code": 401,
+                            "body": "{\"message\":\"Unauthenticated.\"}",
+                            "name": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "Hapus trip",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/trips\/:trip_trips_id",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/trips\/:trip_trips_id",
+                            "variable": [
+                                {
+                                    "id": "trip_trips_id",
+                                    "key": "trip_trips_id",
+                                    "value": 2,
+                                    "description": "The ID of the trip trips."
+                                }
+                            ]
+                        },
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": "Soft delete; trip hilang dari daftar."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Ubah trip",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/trips\/:trip_trips_id",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/trips\/:trip_trips_id",
+                            "variable": [
+                                {
+                                    "id": "trip_trips_id",
+                                    "key": "trip_trips_id",
+                                    "value": 2,
+                                    "description": "The ID of the trip trips."
+                                }
+                            ]
+                        },
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"title\":\"b\",\"num_days\":22,\"budget_total\":67,\"start_date\":\"2026-11-25T11:09:03\",\"daily_start_time\":\"11:09\",\"daily_end_time\":\"11:09\"}"
+                        },
+                        "description": "Mengubah jumlah hari, budget, atau jam harian menghapus itinerary yang sudah ada (itinerary_cleared: true); generate ulang setelahnya."
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Wishlist Trip",
+            "description": "Tempat dan pin yang ingin dikunjungi dalam satu trip, maksimal 100 item.",
+            "item": [
+                {
+                    "name": "Lihat wishlist trip",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/trips\/:trip_trips_id\/wishlist",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/trips\/:trip_trips_id\/wishlist",
+                            "variable": [
+                                {
+                                    "id": "trip_trips_id",
+                                    "key": "trip_trips_id",
+                                    "value": 2,
+                                    "description": "The ID of the trip trips."
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": "Untuk pemilik dan viewer."
+                    },
+                    "response": [
+                        {
+                            "header": [
+                                {
+                                    "key": "cache-control",
+                                    "value": "no-cache, private"
+                                },
+                                {
+                                    "key": "content-type",
+                                    "value": "application\/json"
+                                },
+                                {
+                                    "key": "access-control-allow-origin",
+                                    "value": "*"
+                                }
+                            ],
+                            "code": 401,
+                            "body": "{\"message\":\"Unauthenticated.\"}",
+                            "name": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "Tambah ke wishlist trip",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/trips\/:trip_trips_id\/wishlist",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/trips\/:trip_trips_id\/wishlist",
+                            "variable": [
+                                {
+                                    "id": "trip_trips_id",
+                                    "key": "trip_trips_id",
+                                    "value": 2,
+                                    "description": "The ID of the trip trips."
+                                }
+                            ]
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"places_id\":16,\"custom_name\":\"n\",\"custom_lat\":-90,\"custom_lng\":-179,\"custom_visit_minutes\":27}"
+                        },
+                        "description": "Tempat dari katalog (places_id) atau pin sendiri (custom_name, custom_lat, custom_lng, custom_visit_minutes maksimal 720)."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Hapus dari wishlist trip",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/trips\/:trip_trips_id\/wishlist\/:wishlist_trip_wishlist_places_id",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/trips\/:trip_trips_id\/wishlist\/:wishlist_trip_wishlist_places_id",
+                            "variable": [
+                                {
+                                    "id": "trip_trips_id",
+                                    "key": "trip_trips_id",
+                                    "value": 2,
+                                    "description": "The ID of the trip trips."
+                                },
+                                {
+                                    "id": "wishlist_trip_wishlist_places_id",
+                                    "key": "wishlist_trip_wishlist_places_id",
+                                    "value": 5,
+                                    "description": "The ID of the wishlist trip wishlist places."
+                                }
+                            ]
+                        },
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": "Hanya pemilik trip."
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Penyusunan Itinerary",
+            "description": "Langkah menyusun itinerary: minat dan bobot, hotel atau titik awal, generate, lalu tukar atau tandai stop.",
+            "item": [
+                {
+                    "name": "Simpan minat dan bobot",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/trips\/:trip_trips_id\/weights",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/trips\/:trip_trips_id\/weights",
+                            "variable": [
+                                {
+                                    "id": "trip_trips_id",
+                                    "key": "trip_trips_id",
+                                    "value": 2,
+                                    "description": "The ID of the trip trips."
+                                }
+                            ]
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"category_ids\":[16],\"rating_kategori\":2,\"rating_jarak\":7,\"rating_anggaran\":6,\"rating_rating\":7}"
+                        },
+                        "description": "Langkah 1. Rating 0-10 per kriteria dinormalkan jadi bobot TOPSIS."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Atur hotel",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/trips\/:trip_trips_id\/hotel",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/trips\/:trip_trips_id\/hotel",
+                            "variable": [
+                                {
+                                    "id": "trip_trips_id",
+                                    "key": "trip_trips_id",
+                                    "value": 2,
+                                    "description": "The ID of the trip trips."
+                                }
+                            ]
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": "Langkah 2. Hotel dari katalog atau pin sendiri; semua hari mulai dan selesai di sini."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Atur titik awal dan akhir hari",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/trips\/:trip_trips_id\/days\/:dayNumber\/points",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/trips\/:trip_trips_id\/days\/:dayNumber\/points",
+                            "variable": [
+                                {
+                                    "id": "trip_trips_id",
+                                    "key": "trip_trips_id",
+                                    "value": 2,
+                                    "description": "The ID of the trip trips."
+                                },
+                                {
+                                    "id": "dayNumber",
+                                    "key": "dayNumber",
+                                    "value": "564",
+                                    "description": ""
+                                }
+                            ]
+                        },
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "[]"
+                        },
+                        "description": "Mode detail: titik awal dan akhir satu hari. end: null berarti hari selesai di titik awal."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Rekomendasi hotel",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/trips\/:trip_trips_id\/hotel-options",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/trips\/:trip_trips_id\/hotel-options",
+                            "variable": [
+                                {
+                                    "id": "trip_trips_id",
+                                    "key": "trip_trips_id",
+                                    "value": 2,
+                                    "description": "The ID of the trip trips."
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": "Langkah 2. Tiga hotel teratas menurut TOPSIS; kosong kalau trip memakai hotel sendiri."
+                    },
+                    "response": [
+                        {
+                            "header": [
+                                {
+                                    "key": "cache-control",
+                                    "value": "no-cache, private"
+                                },
+                                {
+                                    "key": "content-type",
+                                    "value": "application\/json"
+                                },
+                                {
+                                    "key": "access-control-allow-origin",
+                                    "value": "*"
+                                }
+                            ],
+                            "code": 401,
+                            "body": "{\"message\":\"Unauthenticated.\"}",
+                            "name": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "Buat itinerary",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/trips\/:trip_trips_id\/generate",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/trips\/:trip_trips_id\/generate",
+                            "variable": [
+                                {
+                                    "id": "trip_trips_id",
+                                    "key": "trip_trips_id",
+                                    "value": 2,
+                                    "description": "The ID of the trip trips."
+                                }
+                            ]
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": "Langkah 3. K-Means membagi wishlist per hari, TOPSIS memilih rekomendasi dalam batas budget_total, rute dari OpenRouteService."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Kandidat pengganti stop",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/itinerary-items\/:itineraryItem_itinerary_items_id\/swap-candidates",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/itinerary-items\/:itineraryItem_itinerary_items_id\/swap-candidates",
+                            "variable": [
+                                {
+                                    "id": "itineraryItem_itinerary_items_id",
+                                    "key": "itineraryItem_itinerary_items_id",
+                                    "value": 2,
+                                    "description": "The ID of the itineraryItem itinerary items."
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": "Langkah 4. Tempat sejenis yang belum dipakai di trip, diurutkan skor TOPSIS."
+                    },
+                    "response": [
+                        {
+                            "header": [
+                                {
+                                    "key": "cache-control",
+                                    "value": "no-cache, private"
+                                },
+                                {
+                                    "key": "content-type",
+                                    "value": "application\/json"
+                                },
+                                {
+                                    "key": "access-control-allow-origin",
+                                    "value": "*"
+                                }
+                            ],
+                            "code": 401,
+                            "body": "{\"message\":\"Unauthenticated.\"}",
+                            "name": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "Tukar stop",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/itinerary-items\/:itineraryItem_itinerary_items_id",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/itinerary-items\/:itineraryItem_itinerary_items_id",
+                            "variable": [
+                                {
+                                    "id": "itineraryItem_itinerary_items_id",
+                                    "key": "itineraryItem_itinerary_items_id",
+                                    "value": 2,
+                                    "description": "The ID of the itineraryItem itinerary items."
+                                }
+                            ]
+                        },
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"places_id\":16}"
+                        },
+                        "description": "Langkah 4. Mengganti tempat satu stop lalu menyusun ulang rute harinya."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Tandai dikunjungi",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/itinerary-items\/:itineraryItem_itinerary_items_id\/visit",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/itinerary-items\/:itineraryItem_itinerary_items_id\/visit",
+                            "variable": [
+                                {
+                                    "id": "itineraryItem_itinerary_items_id",
+                                    "key": "itineraryItem_itinerary_items_id",
+                                    "value": 2,
+                                    "description": "The ID of the itineraryItem itinerary items."
+                                }
+                            ]
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": "Langkah 5. Bolak-balik: memanggil lagi membatalkan tanda kunjungan."
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Berbagi Trip",
+            "description": "Undang viewer lewat email atau link. Viewer hanya bisa melihat, tidak bisa mengubah.",
+            "item": [
+                {
+                    "name": "Trip yang dibagikan ke saya",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/trips\/shared",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/trips\/shared"
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": "Trip orang lain tempat pengguna menjadi viewer, terbaru diundang di atas."
+                    },
+                    "response": [
+                        {
+                            "header": [
+                                {
+                                    "key": "cache-control",
+                                    "value": "no-cache, private"
+                                },
+                                {
+                                    "key": "content-type",
+                                    "value": "application\/json"
+                                },
+                                {
+                                    "key": "access-control-allow-origin",
+                                    "value": "*"
+                                }
+                            ],
+                            "code": 401,
+                            "body": "{\"message\":\"Unauthenticated.\"}",
+                            "name": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "Gabung lewat link",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/trips\/join-viewer\/:viewerInviteToken",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/trips\/join-viewer\/:viewerInviteToken",
+                            "variable": [
+                                {
+                                    "id": "viewerInviteToken",
+                                    "key": "viewerInviteToken",
+                                    "value": "architecto",
+                                    "description": ""
+                                }
+                            ]
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": "Menjadi viewer trip dari token di link undangan."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Daftar viewer",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/trips\/:trip_trips_id\/viewers",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/trips\/:trip_trips_id\/viewers",
+                            "variable": [
+                                {
+                                    "id": "trip_trips_id",
+                                    "key": "trip_trips_id",
+                                    "value": 2,
+                                    "description": "The ID of the trip trips."
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": "Hanya pemilik trip."
+                    },
+                    "response": [
+                        {
+                            "header": [
+                                {
+                                    "key": "cache-control",
+                                    "value": "no-cache, private"
+                                },
+                                {
+                                    "key": "content-type",
+                                    "value": "application\/json"
+                                },
+                                {
+                                    "key": "access-control-allow-origin",
+                                    "value": "*"
+                                }
+                            ],
+                            "code": 401,
+                            "body": "{\"message\":\"Unauthenticated.\"}",
+                            "name": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "Undang viewer lewat email",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/trips\/:trip_trips_id\/viewers",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/trips\/:trip_trips_id\/viewers",
+                            "variable": [
+                                {
+                                    "id": "trip_trips_id",
+                                    "key": "trip_trips_id",
+                                    "value": 2,
+                                    "description": "The ID of the trip trips."
+                                }
+                            ]
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"email\":\"gbailey@example.net\"}"
+                        },
+                        "description": "Email harus milik pengguna terdaftar."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Cabut akses viewer",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/trips\/:trip_trips_id\/viewers\/:viewer",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/trips\/:trip_trips_id\/viewers\/:viewer",
+                            "variable": [
+                                {
+                                    "id": "trip_trips_id",
+                                    "key": "trip_trips_id",
+                                    "value": 2,
+                                    "description": "The ID of the trip trips."
+                                },
+                                {
+                                    "id": "viewer",
+                                    "key": "viewer",
+                                    "value": "architecto",
+                                    "description": "The viewer."
+                                }
+                            ]
+                        },
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": "Hanya pemilik trip."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Buat link undangan",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/trips\/:trip_trips_id\/viewer-invite-link",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/trips\/:trip_trips_id\/viewer-invite-link",
+                            "variable": [
+                                {
+                                    "id": "trip_trips_id",
+                                    "key": "trip_trips_id",
+                                    "value": 2,
+                                    "description": "The ID of the trip trips."
+                                }
+                            ]
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": "Link yang sama dipakai terus sampai dimatikan."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Matikan link undangan",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/trips\/:trip_trips_id\/viewer-invite-link",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/trips\/:trip_trips_id\/viewer-invite-link",
+                            "variable": [
+                                {
+                                    "id": "trip_trips_id",
+                                    "key": "trip_trips_id",
+                                    "value": 2,
+                                    "description": "The ID of the trip trips."
+                                }
+                            ]
+                        },
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": "Viewer yang sudah bergabung tetap punya akses."
+                    },
+                    "response": []
+                }
+            ]
+        }
+    ],
+    "auth": {
+        "type": "bearer",
+        "bearer": [
+            {
+                "key": "Authorization",
+                "type": "string"
+            }
+        ]
+    }
+}

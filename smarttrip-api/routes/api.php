@@ -12,6 +12,8 @@ use App\Http\Controllers\Api\UserWishlistController;
 use App\Http\Controllers\Api\WishlistController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Knuckles\Scribe\Attributes\Endpoint;
+use Knuckles\Scribe\Attributes\Group;
 
 Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/places', [PlaceController::class, 'index']);
@@ -68,6 +70,6 @@ Route::prefix('auth')->group(function () {
     Route::put('/password', [AuthController::class, 'changePassword'])->middleware('auth:sanctum');
 });
 
-Route::get('/user', function (Request $request) {
+Route::get('/user', #[Group('Profil')] #[Endpoint('Data akun login', 'Nama, email, peran, dan status kata sandi akun pemilik token.')] function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');

@@ -1,0 +1,293 @@
+name: Autentikasi
+description: 'Daftar, masuk, dan kelola kata sandi akun wisatawan. Login, daftar, dan lupa kata sandi dibatasi jumlah percobaannya.'
+endpoints:
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/auth/register
+    metadata:
+      custom: []
+      groupName: Autentikasi
+      groupDescription: 'Daftar, masuk, dan kelola kata sandi akun wisatawan. Login, daftar, dan lupa kata sandi dibatasi jumlah percobaannya.'
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Daftar akun'
+      description: 'Menyimpan pendaftaran dan mengirim email verifikasi; akun aktif setelah link di email diklik. Maksimal 3 email per alamat per jam.'
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      name:
+        custom: []
+        name: name
+        description: 'Must not be greater than 255 characters.'
+        required: true
+        example: b
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      email:
+        custom: []
+        name: email
+        description: 'Must be a valid email address. Must not be greater than 255 characters.'
+        required: true
+        example: zbailey@example.net
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      password:
+        custom: []
+        name: password
+        description: 'Must be at least 8 characters.'
+        required: true
+        example: '-0pBNvYgxw'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      name: b
+      email: zbailey@example.net
+      password: '-0pBNvYgxw'
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/auth/login
+    metadata:
+      custom: []
+      groupName: Autentikasi
+      groupDescription: 'Daftar, masuk, dan kelola kata sandi akun wisatawan. Login, daftar, dan lupa kata sandi dibatasi jumlah percobaannya.'
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Masuk dengan email'
+      description: 'Mengembalikan token Sanctum untuk header Authorization: Bearer. Maksimal 5 percobaan per menit per email.'
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      email:
+        custom: []
+        name: email
+        description: 'Must be a valid email address.'
+        required: true
+        example: gbailey@example.net
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      password:
+        custom: []
+        name: password
+        description: ''
+        required: true
+        example: '|]|{+-'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      email: gbailey@example.net
+      password: '|]|{+-'
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/auth/google
+    metadata:
+      custom: []
+      groupName: Autentikasi
+      groupDescription: 'Daftar, masuk, dan kelola kata sandi akun wisatawan. Login, daftar, dan lupa kata sandi dibatasi jumlah percobaannya.'
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Masuk dengan Google'
+      description: 'Menerima id_token dari Google Sign-In (email harus sudah diverifikasi Google) dan mengembalikan token Sanctum.'
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      id_token:
+        custom: []
+        name: id_token
+        description: ''
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      id_token: architecto
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/auth/forgot-password
+    metadata:
+      custom: []
+      groupName: Autentikasi
+      groupDescription: 'Daftar, masuk, dan kelola kata sandi akun wisatawan. Login, daftar, dan lupa kata sandi dibatasi jumlah percobaannya.'
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Lupa kata sandi'
+      description: 'Mengirim link atur ulang kata sandi ke email. Balasannya selalu sama, email terdaftar atau tidak.'
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      email:
+        custom: []
+        name: email
+        description: 'Must be a valid email address.'
+        required: true
+        example: gbailey@example.net
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      email: gbailey@example.net
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/auth/logout
+    metadata:
+      custom: []
+      groupName: Autentikasi
+      groupDescription: 'Daftar, masuk, dan kelola kata sandi akun wisatawan. Login, daftar, dan lupa kata sandi dibatasi jumlah percobaannya.'
+      subgroup: ''
+      subgroupDescription: ''
+      title: Keluar
+      description: 'Mencabut token yang sedang dipakai.'
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_SANCTUM_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PUT
+    uri: api/auth/password
+    metadata:
+      custom: []
+      groupName: Autentikasi
+      groupDescription: 'Daftar, masuk, dan kelola kata sandi akun wisatawan. Login, daftar, dan lupa kata sandi dibatasi jumlah percobaannya.'
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Ubah kata sandi'
+      description: 'Akun Google yang belum punya kata sandi tidak perlu mengisi current_password.'
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_SANCTUM_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      password:
+        custom: []
+        name: password
+        description: 'Must be at least 8 characters.'
+        required: true
+        example: '|]|{+-'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      password: '|]|{+-'
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null

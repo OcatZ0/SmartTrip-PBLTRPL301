@@ -5,6 +5,9 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use Illuminate\Http\Request;
+use Knuckles\Scribe\Attributes\Endpoint;
+use Knuckles\Scribe\Attributes\Group;
+use Knuckles\Scribe\Attributes\Unauthenticated;
 
 /**
  * Daftar kategori minat untuk chip "Pilih Minat" di mobile (onboarding A4,
@@ -14,8 +17,11 @@ use Illuminate\Http\Request;
  * ?onboarding=1 hanya mengembalikan kategori yang admin tandai tampil di
  * onboarding A4; tanpa parameter (C3, F1) semua kategori dikembalikan.
  */
+#[Group('Katalog Tempat', 'Kategori dan tempat wisata Batam. Bisa dibuka tanpa login.')]
 class CategoryController extends Controller
 {
+    #[Endpoint('Daftar kategori', 'Semua kategori tempat wisata; ?onboarding=1 hanya kategori yang tampil di onboarding.')]
+    #[Unauthenticated]
     public function index(Request $request)
     {
         $categories = Category::query()

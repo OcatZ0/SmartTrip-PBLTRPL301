@@ -9,6 +9,8 @@ use App\Models\TripWishlistPlace;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\ProhibitedIf;
+use Knuckles\Scribe\Attributes\Endpoint;
+use Knuckles\Scribe\Attributes\Group;
 
 /**
  * F007: wishlist tempat wisata - docs/prd design spec Section 12.
@@ -17,6 +19,7 @@ use Illuminate\Validation\Rules\ProhibitedIf;
  * (custom_name/custom_lat/custom_lng/custom_visit_minutes) - mutually
  * exclusive, sama seperti CHECK constraint di migration.
  */
+#[Group('Wishlist Trip', 'Tempat dan pin yang ingin dikunjungi dalam satu trip, maksimal 100 item.')]
 class WishlistController extends Controller
 {
     /**
@@ -31,6 +34,7 @@ class WishlistController extends Controller
      */
     private const MAX_VISIT_MINUTES = 720;
 
+    #[Endpoint('Lihat wishlist trip', 'Untuk pemilik dan viewer.')]
     public function index(Request $request, Trip $trip)
     {
         if (! $trip->isReadableBy($request->user())) {
@@ -44,6 +48,7 @@ class WishlistController extends Controller
         return WishlistItemResource::collection($items);
     }
 
+    #[Endpoint('Tambah ke wishlist trip', 'Tempat dari katalog (places_id) atau pin sendiri (custom_name, custom_lat, custom_lng, custom_visit_minutes maksimal 720).')]
     public function store(Request $request, Trip $trip)
     {
         if (! $trip->isOwnedBy($request->user())) {
@@ -96,6 +101,7 @@ class WishlistController extends Controller
         return (new WishlistItemResource($item))->response()->setStatusCode($status);
     }
 
+    #[Endpoint('Hapus dari wishlist trip', 'Hanya pemilik trip.')]
     public function destroy(Request $request, Trip $trip, TripWishlistPlace $wishlist)
     {
         if (! $trip->isOwnedBy($request->user())) {

@@ -7,6 +7,8 @@ use App\Models\Trip;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Knuckles\Scribe\Attributes\Endpoint;
+use Knuckles\Scribe\Attributes\Group;
 
 /**
  * F015+F016 (docs/prd design spec Section 9 & 12) - Trip Viewer.
@@ -15,8 +17,10 @@ use Illuminate\Support\Str;
  * klaim akses lewat link (join()) - daftar "Dibagikan ke Saya"
  * (GET /api/trips/shared) ada di TripController::shared().
  */
+#[Group('Berbagi Trip', 'Undang viewer lewat email atau link. Viewer hanya bisa melihat, tidak bisa mengubah.')]
 class TripViewerController extends Controller
 {
+    #[Endpoint('Daftar viewer', 'Hanya pemilik trip.')]
     public function index(Request $request, Trip $trip)
     {
         if (! $trip->isOwnedBy($request->user())) {
@@ -41,6 +45,7 @@ class TripViewerController extends Controller
      * Mengundang orang yang sudah jadi viewer = no-op (idempotent, bukan
      * error), sama seperti pola tambah wishlist duplikat (F007).
      */
+    #[Endpoint('Undang viewer lewat email', 'Email harus milik pengguna terdaftar.')]
     public function store(Request $request, Trip $trip)
     {
         if (! $trip->isOwnedBy($request->user())) {
@@ -78,6 +83,7 @@ class TripViewerController extends Controller
         ], 201);
     }
 
+    #[Endpoint('Cabut akses viewer', 'Hanya pemilik trip.')]
     public function destroy(Request $request, Trip $trip, int $viewer)
     {
         if (! $trip->isOwnedBy($request->user())) {
@@ -97,6 +103,7 @@ class TripViewerController extends Controller
      * Idempotent (Section 10) - link yang sama terus
      * dipakai sampai sengaja di-reset, bukan generate ulang tiap tap.
      */
+    #[Endpoint('Buat link undangan', 'Link yang sama dipakai terus sampai dimatikan.')]
     public function storeInviteLink(Request $request, Trip $trip)
     {
         if (! $trip->isOwnedBy($request->user())) {
@@ -116,6 +123,7 @@ class TripViewerController extends Controller
      * Cuma menutup jalur masuk baru - viewer yang sudah join lewat link
      * lama tetap punya akses, baris trip_viewers-nya tidak disentuh.
      */
+    #[Endpoint('Matikan link undangan', 'Viewer yang sudah bergabung tetap punya akses.')]
     public function destroyInviteLink(Request $request, Trip $trip)
     {
         if (! $trip->isOwnedBy($request->user())) {
@@ -132,6 +140,7 @@ class TripViewerController extends Controller
      * 10 yang anon) - route ini sudah di dalam grup auth:sanctum. Tidak ada
      * langkah accept/reject terpisah, begitu berhasil auth langsung masuk.
      */
+    #[Endpoint('Gabung lewat link', 'Menjadi viewer trip dari token di link undangan.')]
     public function join(Request $request, string $viewerInviteToken)
     {
         $trip = Trip::where('viewer_invite_token', $viewerInviteToken)->first();

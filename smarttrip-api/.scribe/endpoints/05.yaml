@@ -1,0 +1,505 @@
+name: 'Penyusunan Itinerary'
+description: 'Langkah menyusun itinerary: minat dan bobot, hotel atau titik awal, generate, lalu tukar atau tandai stop.'
+endpoints:
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: 'api/trips/{trip_trips_id}/weights'
+    metadata:
+      custom: []
+      groupName: 'Penyusunan Itinerary'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Simpan minat dan bobot'
+      description: 'Langkah 1. Rating 0-10 per kriteria dinormalkan jadi bobot TOPSIS.'
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_SANCTUM_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      trip_trips_id:
+        custom: []
+        name: trip_trips_id
+        description: 'The ID of the trip trips.'
+        required: true
+        example: 2
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      trip_trips_id: 2
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      category_ids:
+        custom: []
+        name: category_ids
+        description: ''
+        required: false
+        example:
+          - 16
+        type: 'integer[]'
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      rating_kategori:
+        custom: []
+        name: rating_kategori
+        description: 'Must be at least 0. Must not be greater than 10.'
+        required: true
+        example: 2
+        type: number
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      rating_jarak:
+        custom: []
+        name: rating_jarak
+        description: 'Must be at least 0. Must not be greater than 10.'
+        required: true
+        example: 7
+        type: number
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      rating_anggaran:
+        custom: []
+        name: rating_anggaran
+        description: 'Must be at least 0. Must not be greater than 10.'
+        required: true
+        example: 6
+        type: number
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      rating_rating:
+        custom: []
+        name: rating_rating
+        description: 'Must be at least 0. Must not be greater than 10.'
+        required: true
+        example: 7
+        type: number
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      category_ids:
+        - 16
+      rating_kategori: 2
+      rating_jarak: 7
+      rating_anggaran: 6
+      rating_rating: 7
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: 'api/trips/{trip_trips_id}/hotel'
+    metadata:
+      custom: []
+      groupName: 'Penyusunan Itinerary'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Atur hotel'
+      description: 'Langkah 2. Hotel dari katalog atau pin sendiri; semua hari mulai dan selesai di sini.'
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_SANCTUM_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      trip_trips_id:
+        custom: []
+        name: trip_trips_id
+        description: 'The ID of the trip trips.'
+        required: true
+        example: 2
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      trip_trips_id: 2
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PUT
+    uri: 'api/trips/{trip_trips_id}/days/{dayNumber}/points'
+    metadata:
+      custom: []
+      groupName: 'Penyusunan Itinerary'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Atur titik awal dan akhir hari'
+      description: 'Mode detail: titik awal dan akhir satu hari. end: null berarti hari selesai di titik awal.'
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_SANCTUM_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      trip_trips_id:
+        custom: []
+        name: trip_trips_id
+        description: 'The ID of the trip trips.'
+        required: true
+        example: 2
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      dayNumber:
+        custom: []
+        name: dayNumber
+        description: ''
+        required: true
+        example: '564'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      trip_trips_id: 2
+      dayNumber: '564'
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      start:
+        custom: []
+        name: start
+        description: ''
+        required: false
+        example: null
+        type: object
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      end:
+        custom: []
+        name: end
+        description: ''
+        required: false
+        example: null
+        type: object
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+    cleanBodyParameters: []
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: 'api/trips/{trip_trips_id}/hotel-options'
+    metadata:
+      custom: []
+      groupName: 'Penyusunan Itinerary'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Rekomendasi hotel'
+      description: 'Langkah 2. Tiga hotel teratas menurut TOPSIS; kosong kalau trip memakai hotel sendiri.'
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_SANCTUM_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      trip_trips_id:
+        custom: []
+        name: trip_trips_id
+        description: 'The ID of the trip trips.'
+        required: true
+        example: 2
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      trip_trips_id: 2
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"message":"Unauthenticated."}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: 'api/trips/{trip_trips_id}/generate'
+    metadata:
+      custom: []
+      groupName: 'Penyusunan Itinerary'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Buat itinerary'
+      description: 'Langkah 3. K-Means membagi wishlist per hari, TOPSIS memilih rekomendasi dalam batas budget_total, rute dari OpenRouteService.'
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_SANCTUM_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      trip_trips_id:
+        custom: []
+        name: trip_trips_id
+        description: 'The ID of the trip trips.'
+        required: true
+        example: 2
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      trip_trips_id: 2
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: 'api/itinerary-items/{itineraryItem_itinerary_items_id}/swap-candidates'
+    metadata:
+      custom: []
+      groupName: 'Penyusunan Itinerary'
+      groupDescription: 'Langkah menyusun itinerary: minat dan bobot, hotel atau titik awal, generate, lalu tukar atau tandai stop.'
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Kandidat pengganti stop'
+      description: 'Langkah 4. Tempat sejenis yang belum dipakai di trip, diurutkan skor TOPSIS.'
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_SANCTUM_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      itineraryItem_itinerary_items_id:
+        custom: []
+        name: itineraryItem_itinerary_items_id
+        description: 'The ID of the itineraryItem itinerary items.'
+        required: true
+        example: 2
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      itineraryItem_itinerary_items_id: 2
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"message":"Unauthenticated."}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PATCH
+    uri: 'api/itinerary-items/{itineraryItem_itinerary_items_id}'
+    metadata:
+      custom: []
+      groupName: 'Penyusunan Itinerary'
+      groupDescription: 'Langkah menyusun itinerary: minat dan bobot, hotel atau titik awal, generate, lalu tukar atau tandai stop.'
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Tukar stop'
+      description: 'Langkah 4. Mengganti tempat satu stop lalu menyusun ulang rute harinya.'
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_SANCTUM_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      itineraryItem_itinerary_items_id:
+        custom: []
+        name: itineraryItem_itinerary_items_id
+        description: 'The ID of the itineraryItem itinerary items.'
+        required: true
+        example: 2
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      itineraryItem_itinerary_items_id: 2
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      places_id:
+        custom: []
+        name: places_id
+        description: ''
+        required: true
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      places_id: 16
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: 'api/itinerary-items/{itineraryItem_itinerary_items_id}/visit'
+    metadata:
+      custom: []
+      groupName: 'Penyusunan Itinerary'
+      groupDescription: 'Langkah menyusun itinerary: minat dan bobot, hotel atau titik awal, generate, lalu tukar atau tandai stop.'
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Tandai dikunjungi'
+      description: 'Langkah 5. Bolak-balik: memanggil lagi membatalkan tanda kunjungan.'
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_SANCTUM_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      itineraryItem_itinerary_items_id:
+        custom: []
+        name: itineraryItem_itinerary_items_id
+        description: 'The ID of the itineraryItem itinerary items.'
+        required: true
+        example: 2
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      itineraryItem_itinerary_items_id: 2
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null

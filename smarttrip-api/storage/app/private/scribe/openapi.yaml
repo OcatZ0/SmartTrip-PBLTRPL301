@@ -1,0 +1,2548 @@
+openapi: 3.0.3
+info:
+  title: 'SmartTrip Batam API'
+  description: 'REST API untuk aplikasi mobile SmartTrip (Flutter) - autentikasi, katalog tempat, wishlist, generate itinerary otomatis, swap, live tracking, review, dan share trip.'
+  version: 1.0.0
+servers:
+  -
+    url: 'https://smarttrips.my.id'
+tags:
+  -
+    name: Autentikasi
+    description: 'Daftar, masuk, dan kelola kata sandi akun wisatawan. Login, daftar, dan lupa kata sandi dibatasi jumlah percobaannya.'
+  -
+    name: Profil
+    description: 'Data akun dan preferensi default untuk trip baru.'
+  -
+    name: 'Katalog Tempat'
+    description: 'Kategori dan tempat wisata Batam. Bisa dibuka tanpa login.'
+  -
+    name: 'Ulasan Tempat'
+    description: 'Satu ulasan per pengguna per tempat; ulasan kedua berarti mengubah yang lama.'
+  -
+    name: 'Wishlist Pribadi'
+    description: 'Tempat yang disimpan pengguna, terpisah dari trip.'
+  -
+    name: Trip
+    description: 'Membuat, melihat, mengubah, dan menghapus trip milik pengguna.'
+  -
+    name: 'Wishlist Trip'
+    description: 'Tempat dan pin yang ingin dikunjungi dalam satu trip, maksimal 100 item.'
+  -
+    name: 'Penyusunan Itinerary'
+    description: 'Langkah menyusun itinerary: minat dan bobot, hotel atau titik awal, generate, lalu tukar atau tandai stop.'
+  -
+    name: 'Berbagi Trip'
+    description: 'Undang viewer lewat email atau link. Viewer hanya bisa melihat, tidak bisa mengubah.'
+components:
+  securitySchemes:
+    default:
+      type: http
+      scheme: bearer
+      description: 'Token didapat dari response <code>POST /auth/login</code>, <code>POST /auth/google</code>, atau setelah klik link verifikasi registrasi - berupa Sanctum personal access token (bukan JWT), dipakai sebagai <code>Authorization: Bearer {token}</code>.'
+security:
+  -
+    default: []
+paths:
+  /api/auth/register:
+    post:
+      summary: 'Daftar akun'
+      operationId: daftarAkun
+      description: 'Menyimpan pendaftaran dan mengirim email verifikasi; akun aktif setelah link di email diklik. Maksimal 3 email per alamat per jam.'
+      parameters: []
+      responses: {}
+      tags:
+        - Autentikasi
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: 'Must not be greater than 255 characters.'
+                  example: b
+                email:
+                  type: string
+                  description: 'Must be a valid email address. Must not be greater than 255 characters.'
+                  example: zbailey@example.net
+                password:
+                  type: string
+                  description: 'Must be at least 8 characters.'
+                  example: '-0pBNvYgxw'
+              required:
+                - name
+                - email
+                - password
+      security: []
+  /api/auth/login:
+    post:
+      summary: 'Masuk dengan email'
+      operationId: masukDenganEmail
+      description: 'Mengembalikan token Sanctum untuk header Authorization: Bearer. Maksimal 5 percobaan per menit per email.'
+      parameters: []
+      responses: {}
+      tags:
+        - Autentikasi
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  description: 'Must be a valid email address.'
+                  example: gbailey@example.net
+                password:
+                  type: string
+                  description: ''
+                  example: '|]|{+-'
+              required:
+                - email
+                - password
+      security: []
+  /api/auth/google:
+    post:
+      summary: 'Masuk dengan Google'
+      operationId: masukDenganGoogle
+      description: 'Menerima id_token dari Google Sign-In (email harus sudah diverifikasi Google) dan mengembalikan token Sanctum.'
+      parameters: []
+      responses: {}
+      tags:
+        - Autentikasi
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id_token:
+                  type: string
+                  description: ''
+                  example: architecto
+              required:
+                - id_token
+      security: []
+  /api/auth/forgot-password:
+    post:
+      summary: 'Lupa kata sandi'
+      operationId: lupaKataSandi
+      description: 'Mengirim link atur ulang kata sandi ke email. Balasannya selalu sama, email terdaftar atau tidak.'
+      parameters: []
+      responses: {}
+      tags:
+        - Autentikasi
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  description: 'Must be a valid email address.'
+                  example: gbailey@example.net
+              required:
+                - email
+      security: []
+  /api/auth/logout:
+    post:
+      summary: Keluar
+      operationId: keluar
+      description: 'Mencabut token yang sedang dipakai.'
+      parameters: []
+      responses: {}
+      tags:
+        - Autentikasi
+  /api/auth/password:
+    put:
+      summary: 'Ubah kata sandi'
+      operationId: ubahKataSandi
+      description: 'Akun Google yang belum punya kata sandi tidak perlu mengisi current_password.'
+      parameters: []
+      responses: {}
+      tags:
+        - Autentikasi
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                password:
+                  type: string
+                  description: 'Must be at least 8 characters.'
+                  example: '|]|{+-'
+              required:
+                - password
+  /api/profile/preferences:
+    get:
+      summary: 'Lihat preferensi'
+      operationId: lihatPreferensi
+      description: 'Minat dan bobot kriteria default untuk trip baru.'
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Profil
+    put:
+      summary: 'Simpan preferensi'
+      operationId: simpanPreferensi
+      description: 'Rating 0-10 per kriteria dinormalkan jadi bobot dengan total 1; semua 0 berarti bobot sama rata.'
+      parameters: []
+      responses: {}
+      tags:
+        - Profil
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                category_ids:
+                  type: array
+                  description: ''
+                  example:
+                    - 16
+                  items:
+                    type: integer
+                rating_kategori:
+                  type: number
+                  description: 'Must be at least 0. Must not be greater than 10.'
+                  example: 2
+                rating_jarak:
+                  type: number
+                  description: 'Must be at least 0. Must not be greater than 10.'
+                  example: 7
+                rating_anggaran:
+                  type: number
+                  description: 'Must be at least 0. Must not be greater than 10.'
+                  example: 6
+                rating_rating:
+                  type: number
+                  description: 'Must be at least 0. Must not be greater than 10.'
+                  example: 7
+              required:
+                - rating_kategori
+                - rating_jarak
+                - rating_anggaran
+                - rating_rating
+  /api/user:
+    get:
+      summary: 'Data akun login'
+      operationId: dataAkunLogin
+      description: 'Nama, email, peran, dan status kata sandi akun pemilik token.'
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Profil
+  /api/categories:
+    get:
+      summary: 'Daftar kategori'
+      operationId: daftarKategori
+      description: 'Semua kategori tempat wisata; ?onboarding=1 hanya kategori yang tampil di onboarding.'
+      parameters: []
+      responses:
+        200:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  data:
+                    -
+                      categories_id: 8
+                      name_id: Belanja
+                      name_en: Shopping
+                      slug: belanja
+                      icon_symbol: belanja
+                      show_in_onboarding: true
+                    -
+                      categories_id: 10
+                      name_id: 'Kuliner Lokal'
+                      name_en: 'Local Food'
+                      slug: kuliner-lokal
+                      icon_symbol: restoran
+                      show_in_onboarding: true
+                    -
+                      categories_id: 9
+                      name_id: 'Kuliner Seafood'
+                      name_en: Seafood
+                      slug: kuliner-seafood
+                      icon_symbol: kuliner
+                      show_in_onboarding: true
+                    -
+                      categories_id: 5
+                      name_id: 'Landmark & Ikon Kota'
+                      name_en: Landmarks
+                      slug: landmark
+                      icon_symbol: landmark
+                      show_in_onboarding: true
+                    -
+                      categories_id: 1
+                      name_id: Pantai
+                      name_en: Beach
+                      slug: pantai
+                      icon_symbol: pantai
+                      show_in_onboarding: true
+                    -
+                      categories_id: 3
+                      name_id: 'Sejarah & Budaya'
+                      name_en: 'History & Culture'
+                      slug: sejarah
+                      icon_symbol: sejarah
+                      show_in_onboarding: true
+                    -
+                      categories_id: 6
+                      name_id: 'Spot Foto'
+                      name_en: 'Photo Spots'
+                      slug: spot-foto
+                      icon_symbol: foto
+                      show_in_onboarding: true
+                    -
+                      categories_id: 7
+                      name_id: 'Taman & Rekreasi'
+                      name_en: 'Parks & Recreation'
+                      slug: rekreasi
+                      icon_symbol: taman
+                      show_in_onboarding: true
+                    -
+                      categories_id: 2
+                      name_id: 'Wisata Alam'
+                      name_en: Nature
+                      slug: alam
+                      icon_symbol: alam
+                      show_in_onboarding: true
+                    -
+                      categories_id: 4
+                      name_id: 'Wisata Religi'
+                      name_en: 'Religious Sites'
+                      slug: religi
+                      icon_symbol: religi
+                      show_in_onboarding: true
+                properties:
+                  data:
+                    type: array
+                    example:
+                      -
+                        categories_id: 8
+                        name_id: Belanja
+                        name_en: Shopping
+                        slug: belanja
+                        icon_symbol: belanja
+                        show_in_onboarding: true
+                      -
+                        categories_id: 10
+                        name_id: 'Kuliner Lokal'
+                        name_en: 'Local Food'
+                        slug: kuliner-lokal
+                        icon_symbol: restoran
+                        show_in_onboarding: true
+                      -
+                        categories_id: 9
+                        name_id: 'Kuliner Seafood'
+                        name_en: Seafood
+                        slug: kuliner-seafood
+                        icon_symbol: kuliner
+                        show_in_onboarding: true
+                      -
+                        categories_id: 5
+                        name_id: 'Landmark & Ikon Kota'
+                        name_en: Landmarks
+                        slug: landmark
+                        icon_symbol: landmark
+                        show_in_onboarding: true
+                      -
+                        categories_id: 1
+                        name_id: Pantai
+                        name_en: Beach
+                        slug: pantai
+                        icon_symbol: pantai
+                        show_in_onboarding: true
+                      -
+                        categories_id: 3
+                        name_id: 'Sejarah & Budaya'
+                        name_en: 'History & Culture'
+                        slug: sejarah
+                        icon_symbol: sejarah
+                        show_in_onboarding: true
+                      -
+                        categories_id: 6
+                        name_id: 'Spot Foto'
+                        name_en: 'Photo Spots'
+                        slug: spot-foto
+                        icon_symbol: foto
+                        show_in_onboarding: true
+                      -
+                        categories_id: 7
+                        name_id: 'Taman & Rekreasi'
+                        name_en: 'Parks & Recreation'
+                        slug: rekreasi
+                        icon_symbol: taman
+                        show_in_onboarding: true
+                      -
+                        categories_id: 2
+                        name_id: 'Wisata Alam'
+                        name_en: Nature
+                        slug: alam
+                        icon_symbol: alam
+                        show_in_onboarding: true
+                      -
+                        categories_id: 4
+                        name_id: 'Wisata Religi'
+                        name_en: 'Religious Sites'
+                        slug: religi
+                        icon_symbol: religi
+                        show_in_onboarding: true
+                    items:
+                      type: object
+                      properties:
+                        categories_id:
+                          type: integer
+                          example: 8
+                        name_id:
+                          type: string
+                          example: Belanja
+                        name_en:
+                          type: string
+                          example: Shopping
+                        slug:
+                          type: string
+                          example: belanja
+                        icon_symbol:
+                          type: string
+                          example: belanja
+                        show_in_onboarding:
+                          type: boolean
+                          example: true
+      tags:
+        - 'Katalog Tempat'
+      security: []
+  /api/places:
+    get:
+      summary: 'Cari tempat'
+      operationId: cariTempat
+      description: 'Filter search, category (slug), kecamatan, dan type (attraction, culinary, lodging). Hasil dipaginasi, per_page maksimal 50.'
+      parameters: []
+      responses:
+        200:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  data:
+                    -
+                      places_id: 1
+                      name: 'Jembatan Barelang (Raja Haji Fisabilillah)'
+                      type: attraction
+                      kecamatan: null
+                      lat: 0.98154
+                      lng: 104.0416
+                      photo_url: null
+                      rating: null
+                      review_count_in_app: 0
+                      estimated_cost_idr: 0
+                      is_outdoor: true
+                      categories:
+                        -
+                          categories_id: 5
+                          name_id: 'Landmark & Ikon Kota'
+                          name_en: Landmarks
+                          slug: landmark
+                        -
+                          categories_id: 6
+                          name_id: 'Spot Foto'
+                          name_en: 'Photo Spots'
+                          slug: spot-foto
+                    -
+                      places_id: 2
+                      name: 'Monumen Welcome to Batam'
+                      type: attraction
+                      kecamatan: 'Batam Kota'
+                      lat: 1.12216
+                      lng: 104.05434
+                      photo_url: null
+                      rating: null
+                      review_count_in_app: 0
+                      estimated_cost_idr: 0
+                      is_outdoor: true
+                      categories:
+                        -
+                          categories_id: 5
+                          name_id: 'Landmark & Ikon Kota'
+                          name_en: Landmarks
+                          slug: landmark
+                        -
+                          categories_id: 6
+                          name_id: 'Spot Foto'
+                          name_en: 'Photo Spots'
+                          slug: spot-foto
+                    -
+                      places_id: 3
+                      name: 'Masjid Agung Batam'
+                      type: attraction
+                      kecamatan: 'Batam Kota'
+                      lat: 1.1264
+                      lng: 104.05338
+                      photo_url: 'https://smarttrips.my.id/storage/place-photos/3/d965b007-58dd-46d0-95d7-51cd2273ec1f.jpg'
+                      rating: null
+                      review_count_in_app: 0
+                      estimated_cost_idr: 0
+                      is_outdoor: false
+                      categories:
+                        -
+                          categories_id: 4
+                          name_id: 'Wisata Religi'
+                          name_en: 'Religious Sites'
+                          slug: religi
+                        -
+                          categories_id: 3
+                          name_id: 'Sejarah & Budaya'
+                          name_en: 'History & Culture'
+                          slug: sejarah
+                        -
+                          categories_id: 5
+                          name_id: 'Landmark & Ikon Kota'
+                          name_en: Landmarks
+                          slug: landmark
+                    -
+                      places_id: 4
+                      name: 'Dataran Engku Putri'
+                      type: attraction
+                      kecamatan: 'Batam Kota'
+                      lat: 1.12864
+                      lng: 104.05406
+                      photo_url: null
+                      rating: null
+                      review_count_in_app: 0
+                      estimated_cost_idr: 0
+                      is_outdoor: true
+                      categories:
+                        -
+                          categories_id: 7
+                          name_id: 'Taman & Rekreasi'
+                          name_en: 'Parks & Recreation'
+                          slug: rekreasi
+                    -
+                      places_id: 5
+                      name: 'Maha Vihara Duta Maitreya'
+                      type: attraction
+                      kecamatan: 'Batam Kota'
+                      lat: 1.12944
+                      lng: 104.03472
+                      photo_url: null
+                      rating: null
+                      review_count_in_app: 0
+                      estimated_cost_idr: 0
+                      is_outdoor: false
+                      categories:
+                        -
+                          categories_id: 4
+                          name_id: 'Wisata Religi'
+                          name_en: 'Religious Sites'
+                          slug: religi
+                        -
+                          categories_id: 3
+                          name_id: 'Sejarah & Budaya'
+                          name_en: 'History & Culture'
+                          slug: sejarah
+                    -
+                      places_id: 6
+                      name: 'Museum Raja Ali Haji'
+                      type: attraction
+                      kecamatan: 'Batam Kota'
+                      lat: 1.12939
+                      lng: 104.05377
+                      photo_url: null
+                      rating: null
+                      review_count_in_app: 0
+                      estimated_cost_idr: 0
+                      is_outdoor: false
+                      categories:
+                        -
+                          categories_id: 3
+                          name_id: 'Sejarah & Budaya'
+                          name_en: 'History & Culture'
+                          slug: sejarah
+                    -
+                      places_id: 7
+                      name: 'Pantai Ocarina'
+                      type: attraction
+                      kecamatan: Bengkong
+                      lat: 1.15196
+                      lng: 104.05471
+                      photo_url: null
+                      rating: null
+                      review_count_in_app: 0
+                      estimated_cost_idr: 15000
+                      is_outdoor: true
+                      categories:
+                        -
+                          categories_id: 1
+                          name_id: Pantai
+                          name_en: Beach
+                          slug: pantai
+                        -
+                          categories_id: 7
+                          name_id: 'Taman & Rekreasi'
+                          name_en: 'Parks & Recreation'
+                          slug: rekreasi
+                    -
+                      places_id: 8
+                      name: 'Pantai Nongsa'
+                      type: attraction
+                      kecamatan: Nongsa
+                      lat: 1.19468
+                      lng: 104.08896
+                      photo_url: null
+                      rating: null
+                      review_count_in_app: 0
+                      estimated_cost_idr: 10000
+                      is_outdoor: true
+                      categories:
+                        -
+                          categories_id: 1
+                          name_id: Pantai
+                          name_en: Beach
+                          slug: pantai
+                        -
+                          categories_id: 2
+                          name_id: 'Wisata Alam'
+                          name_en: Nature
+                          slug: alam
+                    -
+                      places_id: 9
+                      name: 'Pantai Setokok'
+                      type: attraction
+                      kecamatan: null
+                      lat: 0.92335
+                      lng: 104.06094
+                      photo_url: null
+                      rating: null
+                      review_count_in_app: 0
+                      estimated_cost_idr: 10000
+                      is_outdoor: true
+                      categories:
+                        -
+                          categories_id: 1
+                          name_id: Pantai
+                          name_en: Beach
+                          slug: pantai
+                        -
+                          categories_id: 2
+                          name_id: 'Wisata Alam'
+                          name_en: Nature
+                          slug: alam
+                    -
+                      places_id: 10
+                      name: 'Infinite Studio Kota Tua'
+                      type: attraction
+                      kecamatan: Nongsa
+                      lat: 1.18677
+                      lng: 104.09755
+                      photo_url: null
+                      rating: null
+                      review_count_in_app: 0
+                      estimated_cost_idr: 150000
+                      is_outdoor: false
+                      categories:
+                        -
+                          categories_id: 6
+                          name_id: 'Spot Foto'
+                          name_en: 'Photo Spots'
+                          slug: spot-foto
+                        -
+                          categories_id: 7
+                          name_id: 'Taman & Rekreasi'
+                          name_en: 'Parks & Recreation'
+                          slug: rekreasi
+                    -
+                      places_id: 11
+                      name: 'Tangga 1000 Taman Habibie'
+                      type: attraction
+                      kecamatan: Sekupang
+                      lat: 1.14504
+                      lng: 103.94751
+                      photo_url: null
+                      rating: null
+                      review_count_in_app: 0
+                      estimated_cost_idr: 0
+                      is_outdoor: true
+                      categories:
+                        -
+                          categories_id: 2
+                          name_id: 'Wisata Alam'
+                          name_en: Nature
+                          slug: alam
+                        -
+                          categories_id: 6
+                          name_id: 'Spot Foto'
+                          name_en: 'Photo Spots'
+                          slug: spot-foto
+                    -
+                      places_id: 13
+                      name: 'Masjid Sultan Mahmud Riayat Syah'
+                      type: attraction
+                      kecamatan: 'Batu Aji'
+                      lat: 1.05113
+                      lng: 103.93511
+                      photo_url: null
+                      rating: null
+                      review_count_in_app: 0
+                      estimated_cost_idr: 0
+                      is_outdoor: false
+                      categories:
+                        -
+                          categories_id: 4
+                          name_id: 'Wisata Religi'
+                          name_en: 'Religious Sites'
+                          slug: religi
+                    -
+                      places_id: 14
+                      name: 'Nagoya Hill Shopping Centre'
+                      type: attraction
+                      kecamatan: 'Lubuk Baja'
+                      lat: 1.14627
+                      lng: 104.01261
+                      photo_url: null
+                      rating: null
+                      review_count_in_app: 0
+                      estimated_cost_idr: 0
+                      is_outdoor: false
+                      categories:
+                        -
+                          categories_id: 8
+                          name_id: Belanja
+                          name_en: Shopping
+                          slug: belanja
+                    -
+                      places_id: 15
+                      name: 'Mega Mall Batam Centre'
+                      type: attraction
+                      kecamatan: 'Batam Kota'
+                      lat: 1.12924
+                      lng: 104.05598
+                      photo_url: null
+                      rating: null
+                      review_count_in_app: 0
+                      estimated_cost_idr: 0
+                      is_outdoor: false
+                      categories:
+                        -
+                          categories_id: 8
+                          name_id: Belanja
+                          name_en: Shopping
+                          slug: belanja
+                    -
+                      places_id: 16
+                      name: 'Golden Prawn Seafood'
+                      type: culinary
+                      kecamatan: Bengkong
+                      lat: 1.1603
+                      lng: 104.03718
+                      photo_url: null
+                      rating: null
+                      review_count_in_app: 0
+                      estimated_cost_idr: 150000
+                      is_outdoor: false
+                      categories:
+                        -
+                          categories_id: 9
+                          name_id: 'Kuliner Seafood'
+                          name_en: Seafood
+                          slug: kuliner-seafood
+                        -
+                          categories_id: 5
+                          name_id: 'Landmark & Ikon Kota'
+                          name_en: Landmarks
+                          slug: landmark
+                        -
+                          categories_id: 1
+                          name_id: Pantai
+                          name_en: Beach
+                          slug: pantai
+                        -
+                          categories_id: 3
+                          name_id: 'Sejarah & Budaya'
+                          name_en: 'History & Culture'
+                          slug: sejarah
+                    -
+                      places_id: 17
+                      name: 'Wey Wey Seafood'
+                      type: culinary
+                      kecamatan: 'Batu Ampar'
+                      lat: 1.15253
+                      lng: 103.99804
+                      photo_url: null
+                      rating: null
+                      review_count_in_app: 0
+                      estimated_cost_idr: 150000
+                      is_outdoor: false
+                      categories:
+                        -
+                          categories_id: 9
+                          name_id: 'Kuliner Seafood'
+                          name_en: Seafood
+                          slug: kuliner-seafood
+                    -
+                      places_id: 18
+                      name: 'Setia Budi Seafood Restaurant'
+                      type: culinary
+                      kecamatan: Nongsa
+                      lat: 1.19538
+                      lng: 104.08562
+                      photo_url: null
+                      rating: null
+                      review_count_in_app: 0
+                      estimated_cost_idr: 150000
+                      is_outdoor: false
+                      categories:
+                        -
+                          categories_id: 9
+                          name_id: 'Kuliner Seafood'
+                          name_en: Seafood
+                          slug: kuliner-seafood
+                    -
+                      places_id: 19
+                      name: 'Ocean Garden Seafood'
+                      type: culinary
+                      kecamatan: 'Batam Kota'
+                      lat: 1.13439
+                      lng: 104.04797
+                      photo_url: null
+                      rating: null
+                      review_count_in_app: 0
+                      estimated_cost_idr: 150000
+                      is_outdoor: false
+                      categories:
+                        -
+                          categories_id: 9
+                          name_id: 'Kuliner Seafood'
+                          name_en: Seafood
+                          slug: kuliner-seafood
+                    -
+                      places_id: 20
+                      name: 'Kedai Kopi Pelangi (Sup Ikan)'
+                      type: culinary
+                      kecamatan: 'Lubuk Baja'
+                      lat: 1.13274
+                      lng: 104.01116
+                      photo_url: null
+                      rating: null
+                      review_count_in_app: 0
+                      estimated_cost_idr: 45000
+                      is_outdoor: false
+                      categories:
+                        -
+                          categories_id: 10
+                          name_id: 'Kuliner Lokal'
+                          name_en: 'Local Food'
+                          slug: kuliner-lokal
+                        -
+                          categories_id: 9
+                          name_id: 'Kuliner Seafood'
+                          name_en: Seafood
+                          slug: kuliner-seafood
+                    -
+                      places_id: 21
+                      name: 'Old Place Frog Porridge'
+                      type: culinary
+                      kecamatan: 'Lubuk Baja'
+                      lat: 1.14301
+                      lng: 104.01179
+                      photo_url: null
+                      rating: null
+                      review_count_in_app: 0
+                      estimated_cost_idr: 75000
+                      is_outdoor: false
+                      categories:
+                        -
+                          categories_id: 10
+                          name_id: 'Kuliner Lokal'
+                          name_en: 'Local Food'
+                          slug: kuliner-lokal
+                  links:
+                    first: 'https://smarttrips.my.id/api/places?page=1'
+                    last: 'https://smarttrips.my.id/api/places?page=5'
+                    prev: null
+                    next: 'https://smarttrips.my.id/api/places?page=2'
+                  meta:
+                    current_page: 1
+                    from: 1
+                    last_page: 5
+                    links:
+                      -
+                        url: null
+                        label: '&laquo; Previous'
+                        page: null
+                        active: false
+                      -
+                        url: 'https://smarttrips.my.id/api/places?page=1'
+                        label: '1'
+                        page: 1
+                        active: true
+                      -
+                        url: 'https://smarttrips.my.id/api/places?page=2'
+                        label: '2'
+                        page: 2
+                        active: false
+                      -
+                        url: 'https://smarttrips.my.id/api/places?page=3'
+                        label: '3'
+                        page: 3
+                        active: false
+                      -
+                        url: 'https://smarttrips.my.id/api/places?page=4'
+                        label: '4'
+                        page: 4
+                        active: false
+                      -
+                        url: 'https://smarttrips.my.id/api/places?page=5'
+                        label: '5'
+                        page: 5
+                        active: false
+                      -
+                        url: 'https://smarttrips.my.id/api/places?page=2'
+                        label: 'Next &raquo;'
+                        page: 2
+                        active: false
+                    path: 'https://smarttrips.my.id/api/places'
+                    per_page: 20
+                    to: 20
+                    total: 81
+                properties:
+                  data:
+                    type: array
+                    example:
+                      -
+                        places_id: 1
+                        name: 'Jembatan Barelang (Raja Haji Fisabilillah)'
+                        type: attraction
+                        kecamatan: null
+                        lat: 0.98154
+                        lng: 104.0416
+                        photo_url: null
+                        rating: null
+                        review_count_in_app: 0
+                        estimated_cost_idr: 0
+                        is_outdoor: true
+                        categories:
+                          -
+                            categories_id: 5
+                            name_id: 'Landmark & Ikon Kota'
+                            name_en: Landmarks
+                            slug: landmark
+                          -
+                            categories_id: 6
+                            name_id: 'Spot Foto'
+                            name_en: 'Photo Spots'
+                            slug: spot-foto
+                      -
+                        places_id: 2
+                        name: 'Monumen Welcome to Batam'
+                        type: attraction
+                        kecamatan: 'Batam Kota'
+                        lat: 1.12216
+                        lng: 104.05434
+                        photo_url: null
+                        rating: null
+                        review_count_in_app: 0
+                        estimated_cost_idr: 0
+                        is_outdoor: true
+                        categories:
+                          -
+                            categories_id: 5
+                            name_id: 'Landmark & Ikon Kota'
+                            name_en: Landmarks
+                            slug: landmark
+                          -
+                            categories_id: 6
+                            name_id: 'Spot Foto'
+                            name_en: 'Photo Spots'
+                            slug: spot-foto
+                      -
+                        places_id: 3
+                        name: 'Masjid Agung Batam'
+                        type: attraction
+                        kecamatan: 'Batam Kota'
+                        lat: 1.1264
+                        lng: 104.05338
+                        photo_url: 'https://smarttrips.my.id/storage/place-photos/3/d965b007-58dd-46d0-95d7-51cd2273ec1f.jpg'
+                        rating: null
+                        review_count_in_app: 0
+                        estimated_cost_idr: 0
+                        is_outdoor: false
+                        categories:
+                          -
+                            categories_id: 4
+                            name_id: 'Wisata Religi'
+                            name_en: 'Religious Sites'
+                            slug: religi
+                          -
+                            categories_id: 3
+                            name_id: 'Sejarah & Budaya'
+                            name_en: 'History & Culture'
+                            slug: sejarah
+                          -
+                            categories_id: 5
+                            name_id: 'Landmark & Ikon Kota'
+                            name_en: Landmarks
+                            slug: landmark
+                      -
+                        places_id: 4
+                        name: 'Dataran Engku Putri'
+                        type: attraction
+                        kecamatan: 'Batam Kota'
+                        lat: 1.12864
+                        lng: 104.05406
+                        photo_url: null
+                        rating: null
+                        review_count_in_app: 0
+                        estimated_cost_idr: 0
+                        is_outdoor: true
+                        categories:
+                          -
+                            categories_id: 7
+                            name_id: 'Taman & Rekreasi'
+                            name_en: 'Parks & Recreation'
+                            slug: rekreasi
+                      -
+                        places_id: 5
+                        name: 'Maha Vihara Duta Maitreya'
+                        type: attraction
+                        kecamatan: 'Batam Kota'
+                        lat: 1.12944
+                        lng: 104.03472
+                        photo_url: null
+                        rating: null
+                        review_count_in_app: 0
+                        estimated_cost_idr: 0
+                        is_outdoor: false
+                        categories:
+                          -
+                            categories_id: 4
+                            name_id: 'Wisata Religi'
+                            name_en: 'Religious Sites'
+                            slug: religi
+                          -
+                            categories_id: 3
+                            name_id: 'Sejarah & Budaya'
+                            name_en: 'History & Culture'
+                            slug: sejarah
+                      -
+                        places_id: 6
+                        name: 'Museum Raja Ali Haji'
+                        type: attraction
+                        kecamatan: 'Batam Kota'
+                        lat: 1.12939
+                        lng: 104.05377
+                        photo_url: null
+                        rating: null
+                        review_count_in_app: 0
+                        estimated_cost_idr: 0
+                        is_outdoor: false
+                        categories:
+                          -
+                            categories_id: 3
+                            name_id: 'Sejarah & Budaya'
+                            name_en: 'History & Culture'
+                            slug: sejarah
+                      -
+                        places_id: 7
+                        name: 'Pantai Ocarina'
+                        type: attraction
+                        kecamatan: Bengkong
+                        lat: 1.15196
+                        lng: 104.05471
+                        photo_url: null
+                        rating: null
+                        review_count_in_app: 0
+                        estimated_cost_idr: 15000
+                        is_outdoor: true
+                        categories:
+                          -
+                            categories_id: 1
+                            name_id: Pantai
+                            name_en: Beach
+                            slug: pantai
+                          -
+                            categories_id: 7
+                            name_id: 'Taman & Rekreasi'
+                            name_en: 'Parks & Recreation'
+                            slug: rekreasi
+                      -
+                        places_id: 8
+                        name: 'Pantai Nongsa'
+                        type: attraction
+                        kecamatan: Nongsa
+                        lat: 1.19468
+                        lng: 104.08896
+                        photo_url: null
+                        rating: null
+                        review_count_in_app: 0
+                        estimated_cost_idr: 10000
+                        is_outdoor: true
+                        categories:
+                          -
+                            categories_id: 1
+                            name_id: Pantai
+                            name_en: Beach
+                            slug: pantai
+                          -
+                            categories_id: 2
+                            name_id: 'Wisata Alam'
+                            name_en: Nature
+                            slug: alam
+                      -
+                        places_id: 9
+                        name: 'Pantai Setokok'
+                        type: attraction
+                        kecamatan: null
+                        lat: 0.92335
+                        lng: 104.06094
+                        photo_url: null
+                        rating: null
+                        review_count_in_app: 0
+                        estimated_cost_idr: 10000
+                        is_outdoor: true
+                        categories:
+                          -
+                            categories_id: 1
+                            name_id: Pantai
+                            name_en: Beach
+                            slug: pantai
+                          -
+                            categories_id: 2
+                            name_id: 'Wisata Alam'
+                            name_en: Nature
+                            slug: alam
+                      -
+                        places_id: 10
+                        name: 'Infinite Studio Kota Tua'
+                        type: attraction
+                        kecamatan: Nongsa
+                        lat: 1.18677
+                        lng: 104.09755
+                        photo_url: null
+                        rating: null
+                        review_count_in_app: 0
+                        estimated_cost_idr: 150000
+                        is_outdoor: false
+                        categories:
+                          -
+                            categories_id: 6
+                            name_id: 'Spot Foto'
+                            name_en: 'Photo Spots'
+                            slug: spot-foto
+                          -
+                            categories_id: 7
+                            name_id: 'Taman & Rekreasi'
+                            name_en: 'Parks & Recreation'
+                            slug: rekreasi
+                      -
+                        places_id: 11
+                        name: 'Tangga 1000 Taman Habibie'
+                        type: attraction
+                        kecamatan: Sekupang
+                        lat: 1.14504
+                        lng: 103.94751
+                        photo_url: null
+                        rating: null
+                        review_count_in_app: 0
+                        estimated_cost_idr: 0
+                        is_outdoor: true
+                        categories:
+                          -
+                            categories_id: 2
+                            name_id: 'Wisata Alam'
+                            name_en: Nature
+                            slug: alam
+                          -
+                            categories_id: 6
+                            name_id: 'Spot Foto'
+                            name_en: 'Photo Spots'
+                            slug: spot-foto
+                      -
+                        places_id: 13
+                        name: 'Masjid Sultan Mahmud Riayat Syah'
+                        type: attraction
+                        kecamatan: 'Batu Aji'
+                        lat: 1.05113
+                        lng: 103.93511
+                        photo_url: null
+                        rating: null
+                        review_count_in_app: 0
+                        estimated_cost_idr: 0
+                        is_outdoor: false
+                        categories:
+                          -
+                            categories_id: 4
+                            name_id: 'Wisata Religi'
+                            name_en: 'Religious Sites'
+                            slug: religi
+                      -
+                        places_id: 14
+                        name: 'Nagoya Hill Shopping Centre'
+                        type: attraction
+                        kecamatan: 'Lubuk Baja'
+                        lat: 1.14627
+                        lng: 104.01261
+                        photo_url: null
+                        rating: null
+                        review_count_in_app: 0
+                        estimated_cost_idr: 0
+                        is_outdoor: false
+                        categories:
+                          -
+                            categories_id: 8
+                            name_id: Belanja
+                            name_en: Shopping
+                            slug: belanja
+                      -
+                        places_id: 15
+                        name: 'Mega Mall Batam Centre'
+                        type: attraction
+                        kecamatan: 'Batam Kota'
+                        lat: 1.12924
+                        lng: 104.05598
+                        photo_url: null
+                        rating: null
+                        review_count_in_app: 0
+                        estimated_cost_idr: 0
+                        is_outdoor: false
+                        categories:
+                          -
+                            categories_id: 8
+                            name_id: Belanja
+                            name_en: Shopping
+                            slug: belanja
+                      -
+                        places_id: 16
+                        name: 'Golden Prawn Seafood'
+                        type: culinary
+                        kecamatan: Bengkong
+                        lat: 1.1603
+                        lng: 104.03718
+                        photo_url: null
+                        rating: null
+                        review_count_in_app: 0
+                        estimated_cost_idr: 150000
+                        is_outdoor: false
+                        categories:
+                          -
+                            categories_id: 9
+                            name_id: 'Kuliner Seafood'
+                            name_en: Seafood
+                            slug: kuliner-seafood
+                          -
+                            categories_id: 5
+                            name_id: 'Landmark & Ikon Kota'
+                            name_en: Landmarks
+                            slug: landmark
+                          -
+                            categories_id: 1
+                            name_id: Pantai
+                            name_en: Beach
+                            slug: pantai
+                          -
+                            categories_id: 3
+                            name_id: 'Sejarah & Budaya'
+                            name_en: 'History & Culture'
+                            slug: sejarah
+                      -
+                        places_id: 17
+                        name: 'Wey Wey Seafood'
+                        type: culinary
+                        kecamatan: 'Batu Ampar'
+                        lat: 1.15253
+                        lng: 103.99804
+                        photo_url: null
+                        rating: null
+                        review_count_in_app: 0
+                        estimated_cost_idr: 150000
+                        is_outdoor: false
+                        categories:
+                          -
+                            categories_id: 9
+                            name_id: 'Kuliner Seafood'
+                            name_en: Seafood
+                            slug: kuliner-seafood
+                      -
+                        places_id: 18
+                        name: 'Setia Budi Seafood Restaurant'
+                        type: culinary
+                        kecamatan: Nongsa
+                        lat: 1.19538
+                        lng: 104.08562
+                        photo_url: null
+                        rating: null
+                        review_count_in_app: 0
+                        estimated_cost_idr: 150000
+                        is_outdoor: false
+                        categories:
+                          -
+                            categories_id: 9
+                            name_id: 'Kuliner Seafood'
+                            name_en: Seafood
+                            slug: kuliner-seafood
+                      -
+                        places_id: 19
+                        name: 'Ocean Garden Seafood'
+                        type: culinary
+                        kecamatan: 'Batam Kota'
+                        lat: 1.13439
+                        lng: 104.04797
+                        photo_url: null
+                        rating: null
+                        review_count_in_app: 0
+                        estimated_cost_idr: 150000
+                        is_outdoor: false
+                        categories:
+                          -
+                            categories_id: 9
+                            name_id: 'Kuliner Seafood'
+                            name_en: Seafood
+                            slug: kuliner-seafood
+                      -
+                        places_id: 20
+                        name: 'Kedai Kopi Pelangi (Sup Ikan)'
+                        type: culinary
+                        kecamatan: 'Lubuk Baja'
+                        lat: 1.13274
+                        lng: 104.01116
+                        photo_url: null
+                        rating: null
+                        review_count_in_app: 0
+                        estimated_cost_idr: 45000
+                        is_outdoor: false
+                        categories:
+                          -
+                            categories_id: 10
+                            name_id: 'Kuliner Lokal'
+                            name_en: 'Local Food'
+                            slug: kuliner-lokal
+                          -
+                            categories_id: 9
+                            name_id: 'Kuliner Seafood'
+                            name_en: Seafood
+                            slug: kuliner-seafood
+                      -
+                        places_id: 21
+                        name: 'Old Place Frog Porridge'
+                        type: culinary
+                        kecamatan: 'Lubuk Baja'
+                        lat: 1.14301
+                        lng: 104.01179
+                        photo_url: null
+                        rating: null
+                        review_count_in_app: 0
+                        estimated_cost_idr: 75000
+                        is_outdoor: false
+                        categories:
+                          -
+                            categories_id: 10
+                            name_id: 'Kuliner Lokal'
+                            name_en: 'Local Food'
+                            slug: kuliner-lokal
+                    items:
+                      type: object
+                      properties:
+                        places_id:
+                          type: integer
+                          example: 1
+                        name:
+                          type: string
+                          example: 'Jembatan Barelang (Raja Haji Fisabilillah)'
+                        type:
+                          type: string
+                          example: attraction
+                        kecamatan:
+                          type: string
+                          example: null
+                          nullable: true
+                        lat:
+                          type: number
+                          example: 0.98154
+                        lng:
+                          type: number
+                          example: 104.0416
+                        photo_url:
+                          type: string
+                          example: null
+                          nullable: true
+                        rating:
+                          type: string
+                          example: null
+                          nullable: true
+                        review_count_in_app:
+                          type: integer
+                          example: 0
+                        estimated_cost_idr:
+                          type: integer
+                          example: 0
+                        is_outdoor:
+                          type: boolean
+                          example: true
+                        categories:
+                          type: array
+                          example:
+                            -
+                              categories_id: 5
+                              name_id: 'Landmark & Ikon Kota'
+                              name_en: Landmarks
+                              slug: landmark
+                            -
+                              categories_id: 6
+                              name_id: 'Spot Foto'
+                              name_en: 'Photo Spots'
+                              slug: spot-foto
+                          items:
+                            type: object
+                            properties:
+                              categories_id:
+                                type: integer
+                                example: 5
+                              name_id:
+                                type: string
+                                example: 'Landmark & Ikon Kota'
+                              name_en:
+                                type: string
+                                example: Landmarks
+                              slug:
+                                type: string
+                                example: landmark
+                  links:
+                    type: object
+                    properties:
+                      first:
+                        type: string
+                        example: 'https://smarttrips.my.id/api/places?page=1'
+                      last:
+                        type: string
+                        example: 'https://smarttrips.my.id/api/places?page=5'
+                      prev:
+                        type: string
+                        example: null
+                        nullable: true
+                      next:
+                        type: string
+                        example: 'https://smarttrips.my.id/api/places?page=2'
+                  meta:
+                    type: object
+                    properties:
+                      current_page:
+                        type: integer
+                        example: 1
+                      from:
+                        type: integer
+                        example: 1
+                      last_page:
+                        type: integer
+                        example: 5
+                      links:
+                        type: array
+                        example:
+                          -
+                            url: null
+                            label: '&laquo; Previous'
+                            page: null
+                            active: false
+                          -
+                            url: 'https://smarttrips.my.id/api/places?page=1'
+                            label: '1'
+                            page: 1
+                            active: true
+                          -
+                            url: 'https://smarttrips.my.id/api/places?page=2'
+                            label: '2'
+                            page: 2
+                            active: false
+                          -
+                            url: 'https://smarttrips.my.id/api/places?page=3'
+                            label: '3'
+                            page: 3
+                            active: false
+                          -
+                            url: 'https://smarttrips.my.id/api/places?page=4'
+                            label: '4'
+                            page: 4
+                            active: false
+                          -
+                            url: 'https://smarttrips.my.id/api/places?page=5'
+                            label: '5'
+                            page: 5
+                            active: false
+                          -
+                            url: 'https://smarttrips.my.id/api/places?page=2'
+                            label: 'Next &raquo;'
+                            page: 2
+                            active: false
+                        items:
+                          type: object
+                          properties:
+                            url:
+                              type: string
+                              example: null
+                              nullable: true
+                            label:
+                              type: string
+                              example: '&laquo; Previous'
+                            page:
+                              type: string
+                              example: null
+                              nullable: true
+                            active:
+                              type: boolean
+                              example: false
+                      path:
+                        type: string
+                        example: 'https://smarttrips.my.id/api/places'
+                      per_page:
+                        type: integer
+                        example: 20
+                      to:
+                        type: integer
+                        example: 20
+                      total:
+                        type: integer
+                        example: 81
+      tags:
+        - 'Katalog Tempat'
+      security: []
+  /api/places/kecamatan:
+    get:
+      summary: 'Daftar kecamatan'
+      operationId: daftarKecamatan
+      description: 'Kecamatan yang punya tempat, untuk pilihan filter katalog.'
+      parameters: []
+      responses:
+        200:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  data:
+                    -
+                      name: 'Batam Kota'
+                      places_count: 18
+                    -
+                      name: 'Batu Aji'
+                      places_count: 1
+                    -
+                      name: 'Batu Ampar'
+                      places_count: 16
+                    -
+                      name: Bengkong
+                      places_count: 4
+                    -
+                      name: Galang
+                      places_count: 6
+                    -
+                      name: 'Lubuk Baja'
+                      places_count: 11
+                    -
+                      name: Nongsa
+                      places_count: 13
+                    -
+                      name: Sekupang
+                      places_count: 6
+                    -
+                      name: 'Sungai Beduk'
+                      places_count: 4
+                properties:
+                  data:
+                    type: array
+                    example:
+                      -
+                        name: 'Batam Kota'
+                        places_count: 18
+                      -
+                        name: 'Batu Aji'
+                        places_count: 1
+                      -
+                        name: 'Batu Ampar'
+                        places_count: 16
+                      -
+                        name: Bengkong
+                        places_count: 4
+                      -
+                        name: Galang
+                        places_count: 6
+                      -
+                        name: 'Lubuk Baja'
+                        places_count: 11
+                      -
+                        name: Nongsa
+                        places_count: 13
+                      -
+                        name: Sekupang
+                        places_count: 6
+                      -
+                        name: 'Sungai Beduk'
+                        places_count: 4
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          example: 'Batam Kota'
+                        places_count:
+                          type: integer
+                          example: 18
+      tags:
+        - 'Katalog Tempat'
+      security: []
+  '/api/places/{place_places_id}':
+    get:
+      summary: 'Detail tempat'
+      operationId: detailTempat
+      description: 'Info lengkap, foto, dan ulasan satu tempat.'
+      parameters: []
+      responses:
+        200:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  data:
+                    places_id: 2
+                    name: 'Monumen Welcome to Batam'
+                    type: attraction
+                    address: 'Bukit Clara, Batam Centre, Batam'
+                    kecamatan: 'Batam Kota'
+                    lat: 1.12216
+                    lng: 104.05434
+                    maps_url: 'https://www.google.com/maps/search/?api=1&query=1.1221600,104.0543400'
+                    photo_url: null
+                    photos: []
+                    description_id: 'Monumen Welcome to Batam adalah landmark ikonik yang terletak di kawasan Batam Centre dan menjadi salah satu simbol kota yang paling populer. Monumen ini menampilkan tulisan raksasa yang sering dijadikan latar belakang foto kenangan oleh para wisatawan yang berkunjung.'
+                    description_en: "The Welcome to Batam Monument is an iconic landmark located in the Batam Centre area and serves as one of the city's most popular symbols. Featuring giant lettering, it is frequently used as a backdrop for memorable photos by visiting tourists."
+                    opening_hours: null
+                    rating: null
+                    review_count_in_app: 0
+                    estimated_cost_idr: 0
+                    is_outdoor: true
+                    estimated_visit_minutes: 30
+                    categories:
+                      -
+                        categories_id: 5
+                        name_id: 'Landmark & Ikon Kota'
+                        name_en: Landmarks
+                        slug: landmark
+                      -
+                        categories_id: 6
+                        name_id: 'Spot Foto'
+                        name_en: 'Photo Spots'
+                        slug: spot-foto
+                    reviews: []
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      places_id:
+                        type: integer
+                        example: 2
+                      name:
+                        type: string
+                        example: 'Monumen Welcome to Batam'
+                      type:
+                        type: string
+                        example: attraction
+                      address:
+                        type: string
+                        example: 'Bukit Clara, Batam Centre, Batam'
+                      kecamatan:
+                        type: string
+                        example: 'Batam Kota'
+                      lat:
+                        type: number
+                        example: 1.12216
+                      lng:
+                        type: number
+                        example: 104.05434
+                      maps_url:
+                        type: string
+                        example: 'https://www.google.com/maps/search/?api=1&query=1.1221600,104.0543400'
+                      photo_url:
+                        type: string
+                        example: null
+                        nullable: true
+                      photos:
+                        type: array
+                        example: []
+                      description_id:
+                        type: string
+                        example: 'Monumen Welcome to Batam adalah landmark ikonik yang terletak di kawasan Batam Centre dan menjadi salah satu simbol kota yang paling populer. Monumen ini menampilkan tulisan raksasa yang sering dijadikan latar belakang foto kenangan oleh para wisatawan yang berkunjung.'
+                      description_en:
+                        type: string
+                        example: "The Welcome to Batam Monument is an iconic landmark located in the Batam Centre area and serves as one of the city's most popular symbols. Featuring giant lettering, it is frequently used as a backdrop for memorable photos by visiting tourists."
+                      opening_hours:
+                        type: string
+                        example: null
+                        nullable: true
+                      rating:
+                        type: string
+                        example: null
+                        nullable: true
+                      review_count_in_app:
+                        type: integer
+                        example: 0
+                      estimated_cost_idr:
+                        type: integer
+                        example: 0
+                      is_outdoor:
+                        type: boolean
+                        example: true
+                      estimated_visit_minutes:
+                        type: integer
+                        example: 30
+                      categories:
+                        type: array
+                        example:
+                          -
+                            categories_id: 5
+                            name_id: 'Landmark & Ikon Kota'
+                            name_en: Landmarks
+                            slug: landmark
+                          -
+                            categories_id: 6
+                            name_id: 'Spot Foto'
+                            name_en: 'Photo Spots'
+                            slug: spot-foto
+                        items:
+                          type: object
+                          properties:
+                            categories_id:
+                              type: integer
+                              example: 5
+                            name_id:
+                              type: string
+                              example: 'Landmark & Ikon Kota'
+                            name_en:
+                              type: string
+                              example: Landmarks
+                            slug:
+                              type: string
+                              example: landmark
+                      reviews:
+                        type: array
+                        example: []
+      tags:
+        - 'Katalog Tempat'
+      security: []
+    parameters:
+      -
+        in: path
+        name: place_places_id
+        description: 'The ID of the place places.'
+        example: 2
+        required: true
+        schema:
+          type: integer
+  '/api/places/{place_places_id}/reviews':
+    post:
+      summary: 'Beri ulasan'
+      operationId: beriUlasan
+      description: 'Rating 1-5 dan komentar opsional. itinerary_items_id boleh diisi kalau ulasan ditulis dari stop trip milik sendiri.'
+      parameters: []
+      responses: {}
+      tags:
+        - 'Ulasan Tempat'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rating:
+                  type: integer
+                  description: 'Must be at least 1. Must not be greater than 5.'
+                  example: 1
+                comment:
+                  type: string
+                  description: 'Must not be greater than 2000 characters.'
+                  example: 'n'
+                  nullable: true
+                itinerary_items_id:
+                  type: integer
+                  description: ''
+                  example: 16
+                  nullable: true
+              required:
+                - rating
+    parameters:
+      -
+        in: path
+        name: place_places_id
+        description: 'The ID of the place places.'
+        example: 2
+        required: true
+        schema:
+          type: integer
+  '/api/reviews/{review_place_reviews_id}':
+    patch:
+      summary: 'Ubah ulasan'
+      operationId: ubahUlasan
+      description: 'Hanya pemilik ulasan.'
+      parameters: []
+      responses: {}
+      tags:
+        - 'Ulasan Tempat'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rating:
+                  type: integer
+                  description: 'Must be at least 1. Must not be greater than 5.'
+                  example: 1
+                comment:
+                  type: string
+                  description: 'Must not be greater than 2000 characters.'
+                  example: 'n'
+                  nullable: true
+              required:
+                - rating
+    delete:
+      summary: 'Hapus ulasan'
+      operationId: hapusUlasan
+      description: 'Hanya pemilik ulasan.'
+      parameters: []
+      responses: {}
+      tags:
+        - 'Ulasan Tempat'
+    parameters:
+      -
+        in: path
+        name: review_place_reviews_id
+        description: 'The ID of the review place reviews.'
+        example: 16
+        required: true
+        schema:
+          type: integer
+  /api/wishlist:
+    get:
+      summary: 'Lihat wishlist pribadi'
+      operationId: lihatWishlistPribadi
+      description: 'Terbaru di atas.'
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - 'Wishlist Pribadi'
+    post:
+      summary: 'Simpan tempat'
+      operationId: simpanTempat
+      description: 'Menyimpan tempat yang sama dua kali tidak dianggap error.'
+      parameters: []
+      responses: {}
+      tags:
+        - 'Wishlist Pribadi'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                places_id:
+                  type: integer
+                  description: ''
+                  example: 16
+              required:
+                - places_id
+  '/api/wishlist/{place_places_id}':
+    delete:
+      summary: 'Hapus tempat'
+      operationId: hapusTempat
+      description: 'Menghapus tempat dari wishlist pribadi.'
+      parameters: []
+      responses: {}
+      tags:
+        - 'Wishlist Pribadi'
+    parameters:
+      -
+        in: path
+        name: place_places_id
+        description: 'The ID of the place places.'
+        example: 2
+        required: true
+        schema:
+          type: integer
+  /api/trips:
+    get:
+      summary: 'Daftar trip saya'
+      operationId: daftarTripSaya
+      description: 'Trip milik pengguna beserta ringkasan status, jumlah stop, dan foto.'
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Trip
+    post:
+      summary: 'Buat trip'
+      operationId: buatTrip
+      description: 'num_days 1 sampai 30.'
+      parameters: []
+      responses: {}
+      tags:
+        - Trip
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  description: 'Must not be greater than 255 characters.'
+                  example: b
+                  nullable: true
+                num_days:
+                  type: integer
+                  description: 'Must be at least 1.'
+                  example: 22
+                budget_total:
+                  type: integer
+                  description: 'Must be at least 1.'
+                  example: 67
+                start_date:
+                  type: string
+                  description: 'Must be a valid date.'
+                  example: '2026-11-25T11:09:03'
+                daily_start_time:
+                  type: string
+                  description: 'Must be a valid date in the format <code>H:i</code>.'
+                  example: '11:09'
+                  nullable: true
+                daily_end_time:
+                  type: string
+                  description: 'Must be a valid date in the format <code>H:i</code>. Must be a date after <code>daily_start_time</code>.'
+                  example: '2052-12-18'
+                  nullable: true
+                has_own_hotel:
+                  type: boolean
+                  description: ''
+                  example: true
+              required:
+                - num_days
+                - budget_total
+                - start_date
+  '/api/trips/{trip_trips_id}':
+    get:
+      summary: 'Detail trip'
+      operationId: detailTrip
+      description: 'Untuk pemilik dan viewer: hari, stop, serta titik awal dan akhir tiap hari.'
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Trip
+    delete:
+      summary: 'Hapus trip'
+      operationId: hapusTrip
+      description: 'Soft delete; trip hilang dari daftar.'
+      parameters: []
+      responses: {}
+      tags:
+        - Trip
+    patch:
+      summary: 'Ubah trip'
+      operationId: ubahTrip
+      description: 'Mengubah jumlah hari, budget, atau jam harian menghapus itinerary yang sudah ada (itinerary_cleared: true); generate ulang setelahnya.'
+      parameters: []
+      responses: {}
+      tags:
+        - Trip
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  description: 'Must not be greater than 255 characters.'
+                  example: b
+                num_days:
+                  type: integer
+                  description: 'Must be at least 1.'
+                  example: 22
+                budget_total:
+                  type: integer
+                  description: 'Must be at least 1.'
+                  example: 67
+                start_date:
+                  type: string
+                  description: 'Must be a valid date.'
+                  example: '2026-11-25T11:09:03'
+                daily_start_time:
+                  type: string
+                  description: 'Must be a valid date in the format <code>H:i</code>.'
+                  example: '11:09'
+                daily_end_time:
+                  type: string
+                  description: 'Must be a valid date in the format <code>H:i</code>.'
+                  example: '11:09'
+    parameters:
+      -
+        in: path
+        name: trip_trips_id
+        description: 'The ID of the trip trips.'
+        example: 2
+        required: true
+        schema:
+          type: integer
+  '/api/trips/{trip_trips_id}/wishlist':
+    get:
+      summary: 'Lihat wishlist trip'
+      operationId: lihatWishlistTrip
+      description: 'Untuk pemilik dan viewer.'
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - 'Wishlist Trip'
+    post:
+      summary: 'Tambah ke wishlist trip'
+      operationId: tambahKeWishlistTrip
+      description: 'Tempat dari katalog (places_id) atau pin sendiri (custom_name, custom_lat, custom_lng, custom_visit_minutes maksimal 720).'
+      parameters: []
+      responses: {}
+      tags:
+        - 'Wishlist Trip'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                places_id:
+                  type: integer
+                  description: ''
+                  example: 16
+                  nullable: true
+                custom_name:
+                  type: string
+                  description: 'This field is required when <code>places_id</code> is not present. Must not be greater than 255 characters.'
+                  example: 'n'
+                custom_lat:
+                  type: number
+                  description: 'This field is required when <code>places_id</code> is not present. Must be between -90 and 90.'
+                  example: -90
+                custom_lng:
+                  type: number
+                  description: 'This field is required when <code>places_id</code> is not present. Must be between -180 and 180.'
+                  example: -179
+                custom_visit_minutes:
+                  type: integer
+                  description: 'This field is required when <code>places_id</code> is not present. Must be at least 1.'
+                  example: 27
+    parameters:
+      -
+        in: path
+        name: trip_trips_id
+        description: 'The ID of the trip trips.'
+        example: 2
+        required: true
+        schema:
+          type: integer
+  '/api/trips/{trip_trips_id}/wishlist/{wishlist_trip_wishlist_places_id}':
+    delete:
+      summary: 'Hapus dari wishlist trip'
+      operationId: hapusDariWishlistTrip
+      description: 'Hanya pemilik trip.'
+      parameters: []
+      responses: {}
+      tags:
+        - 'Wishlist Trip'
+    parameters:
+      -
+        in: path
+        name: trip_trips_id
+        description: 'The ID of the trip trips.'
+        example: 2
+        required: true
+        schema:
+          type: integer
+      -
+        in: path
+        name: wishlist_trip_wishlist_places_id
+        description: 'The ID of the wishlist trip wishlist places.'
+        example: 5
+        required: true
+        schema:
+          type: integer
+  '/api/trips/{trip_trips_id}/weights':
+    post:
+      summary: 'Simpan minat dan bobot'
+      operationId: simpanMinatDanBobot
+      description: 'Langkah 1. Rating 0-10 per kriteria dinormalkan jadi bobot TOPSIS.'
+      parameters: []
+      responses: {}
+      tags:
+        - 'Penyusunan Itinerary'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                category_ids:
+                  type: array
+                  description: ''
+                  example:
+                    - 16
+                  items:
+                    type: integer
+                rating_kategori:
+                  type: number
+                  description: 'Must be at least 0. Must not be greater than 10.'
+                  example: 2
+                rating_jarak:
+                  type: number
+                  description: 'Must be at least 0. Must not be greater than 10.'
+                  example: 7
+                rating_anggaran:
+                  type: number
+                  description: 'Must be at least 0. Must not be greater than 10.'
+                  example: 6
+                rating_rating:
+                  type: number
+                  description: 'Must be at least 0. Must not be greater than 10.'
+                  example: 7
+              required:
+                - rating_kategori
+                - rating_jarak
+                - rating_anggaran
+                - rating_rating
+    parameters:
+      -
+        in: path
+        name: trip_trips_id
+        description: 'The ID of the trip trips.'
+        example: 2
+        required: true
+        schema:
+          type: integer
+  '/api/trips/{trip_trips_id}/hotel':
+    post:
+      summary: 'Atur hotel'
+      operationId: aturHotel
+      description: 'Langkah 2. Hotel dari katalog atau pin sendiri; semua hari mulai dan selesai di sini.'
+      parameters: []
+      responses: {}
+      tags:
+        - 'Penyusunan Itinerary'
+    parameters:
+      -
+        in: path
+        name: trip_trips_id
+        description: 'The ID of the trip trips.'
+        example: 2
+        required: true
+        schema:
+          type: integer
+  '/api/trips/{trip_trips_id}/days/{dayNumber}/points':
+    put:
+      summary: 'Atur titik awal dan akhir hari'
+      operationId: aturTitikAwalDanAkhirHari
+      description: 'Mode detail: titik awal dan akhir satu hari. end: null berarti hari selesai di titik awal.'
+      parameters: []
+      responses: {}
+      tags:
+        - 'Penyusunan Itinerary'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                start:
+                  type: object
+                  description: ''
+                  example: null
+                  properties: {}
+                end:
+                  type: object
+                  description: ''
+                  example: null
+                  properties: {}
+                  nullable: true
+    parameters:
+      -
+        in: path
+        name: trip_trips_id
+        description: 'The ID of the trip trips.'
+        example: 2
+        required: true
+        schema:
+          type: integer
+      -
+        in: path
+        name: dayNumber
+        description: ''
+        example: '564'
+        required: true
+        schema:
+          type: string
+  '/api/trips/{trip_trips_id}/hotel-options':
+    get:
+      summary: 'Rekomendasi hotel'
+      operationId: rekomendasiHotel
+      description: 'Langkah 2. Tiga hotel teratas menurut TOPSIS; kosong kalau trip memakai hotel sendiri.'
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - 'Penyusunan Itinerary'
+    parameters:
+      -
+        in: path
+        name: trip_trips_id
+        description: 'The ID of the trip trips.'
+        example: 2
+        required: true
+        schema:
+          type: integer
+  '/api/trips/{trip_trips_id}/generate':
+    post:
+      summary: 'Buat itinerary'
+      operationId: buatItinerary
+      description: 'Langkah 3. K-Means membagi wishlist per hari, TOPSIS memilih rekomendasi dalam batas budget_total, rute dari OpenRouteService.'
+      parameters: []
+      responses: {}
+      tags:
+        - 'Penyusunan Itinerary'
+    parameters:
+      -
+        in: path
+        name: trip_trips_id
+        description: 'The ID of the trip trips.'
+        example: 2
+        required: true
+        schema:
+          type: integer
+  '/api/itinerary-items/{itineraryItem_itinerary_items_id}/swap-candidates':
+    get:
+      summary: 'Kandidat pengganti stop'
+      operationId: kandidatPenggantiStop
+      description: 'Langkah 4. Tempat sejenis yang belum dipakai di trip, diurutkan skor TOPSIS.'
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - 'Penyusunan Itinerary'
+    parameters:
+      -
+        in: path
+        name: itineraryItem_itinerary_items_id
+        description: 'The ID of the itineraryItem itinerary items.'
+        example: 2
+        required: true
+        schema:
+          type: integer
+  '/api/itinerary-items/{itineraryItem_itinerary_items_id}':
+    patch:
+      summary: 'Tukar stop'
+      operationId: tukarStop
+      description: 'Langkah 4. Mengganti tempat satu stop lalu menyusun ulang rute harinya.'
+      parameters: []
+      responses: {}
+      tags:
+        - 'Penyusunan Itinerary'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                places_id:
+                  type: integer
+                  description: ''
+                  example: 16
+              required:
+                - places_id
+    parameters:
+      -
+        in: path
+        name: itineraryItem_itinerary_items_id
+        description: 'The ID of the itineraryItem itinerary items.'
+        example: 2
+        required: true
+        schema:
+          type: integer
+  '/api/itinerary-items/{itineraryItem_itinerary_items_id}/visit':
+    post:
+      summary: 'Tandai dikunjungi'
+      operationId: tandaiDikunjungi
+      description: 'Langkah 5. Bolak-balik: memanggil lagi membatalkan tanda kunjungan.'
+      parameters: []
+      responses: {}
+      tags:
+        - 'Penyusunan Itinerary'
+    parameters:
+      -
+        in: path
+        name: itineraryItem_itinerary_items_id
+        description: 'The ID of the itineraryItem itinerary items.'
+        example: 2
+        required: true
+        schema:
+          type: integer
+  /api/trips/shared:
+    get:
+      summary: 'Trip yang dibagikan ke saya'
+      operationId: tripYangDibagikanKeSaya
+      description: 'Trip orang lain tempat pengguna menjadi viewer, terbaru diundang di atas.'
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - 'Berbagi Trip'
+  '/api/trips/join-viewer/{viewerInviteToken}':
+    post:
+      summary: 'Gabung lewat link'
+      operationId: gabungLewatLink
+      description: 'Menjadi viewer trip dari token di link undangan.'
+      parameters: []
+      responses: {}
+      tags:
+        - 'Berbagi Trip'
+    parameters:
+      -
+        in: path
+        name: viewerInviteToken
+        description: ''
+        example: architecto
+        required: true
+        schema:
+          type: string
+  '/api/trips/{trip_trips_id}/viewers':
+    get:
+      summary: 'Daftar viewer'
+      operationId: daftarViewer
+      description: 'Hanya pemilik trip.'
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - 'Berbagi Trip'
+    post:
+      summary: 'Undang viewer lewat email'
+      operationId: undangViewerLewatEmail
+      description: 'Email harus milik pengguna terdaftar.'
+      parameters: []
+      responses: {}
+      tags:
+        - 'Berbagi Trip'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  description: 'Must be a valid email address.'
+                  example: gbailey@example.net
+              required:
+                - email
+    parameters:
+      -
+        in: path
+        name: trip_trips_id
+        description: 'The ID of the trip trips.'
+        example: 2
+        required: true
+        schema:
+          type: integer
+  '/api/trips/{trip_trips_id}/viewers/{viewer}':
+    delete:
+      summary: 'Cabut akses viewer'
+      operationId: cabutAksesViewer
+      description: 'Hanya pemilik trip.'
+      parameters: []
+      responses: {}
+      tags:
+        - 'Berbagi Trip'
+    parameters:
+      -
+        in: path
+        name: trip_trips_id
+        description: 'The ID of the trip trips.'
+        example: 2
+        required: true
+        schema:
+          type: integer
+      -
+        in: path
+        name: viewer
+        description: 'The viewer.'
+        example: architecto
+        required: true
+        schema:
+          type: string
+  '/api/trips/{trip_trips_id}/viewer-invite-link':
+    post:
+      summary: 'Buat link undangan'
+      operationId: buatLinkUndangan
+      description: 'Link yang sama dipakai terus sampai dimatikan.'
+      parameters: []
+      responses: {}
+      tags:
+        - 'Berbagi Trip'
+    delete:
+      summary: 'Matikan link undangan'
+      operationId: matikanLinkUndangan
+      description: 'Viewer yang sudah bergabung tetap punya akses.'
+      parameters: []
+      responses: {}
+      tags:
+        - 'Berbagi Trip'
+    parameters:
+      -
+        in: path
+        name: trip_trips_id
+        description: 'The ID of the trip trips.'
+        example: 2
+        required: true
+        schema:
+          type: integer

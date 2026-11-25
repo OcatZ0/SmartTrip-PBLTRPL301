@@ -13,13 +13,17 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Knuckles\Scribe\Attributes\Endpoint;
+use Knuckles\Scribe\Attributes\Group;
 use RuntimeException;
 
 /**
  * F0010 (Swap) - docs/prd design spec Section 7 langkah 7 & Section 12.
  */
+#[Group('Penyusunan Itinerary', 'Langkah menyusun itinerary: minat dan bobot, hotel atau titik awal, generate, lalu tukar atau tandai stop.')]
 class ItineraryItemController extends Controller
 {
+    #[Endpoint('Kandidat pengganti stop', 'Langkah 4. Tempat sejenis yang belum dipakai di trip, diurutkan skor TOPSIS.')]
     public function swapCandidates(Request $request, ItineraryItem $itineraryItem, SwapCandidateFinder $finder)
     {
         $trip = $this->tripOf($itineraryItem);
@@ -51,6 +55,7 @@ class ItineraryItemController extends Controller
         ]);
     }
 
+    #[Endpoint('Tukar stop', 'Langkah 4. Mengganti tempat satu stop lalu menyusun ulang rute harinya.')]
     public function update(Request $request, ItineraryItem $itineraryItem, SwapCandidateFinder $finder, ItineraryGenerator $generator)
     {
         $day = $itineraryItem->day;
@@ -125,6 +130,7 @@ class ItineraryItemController extends Controller
      * verifikasi lokasi device di sisi server (bukan sistem anti-fraud,
      * cuma buat visualisasi progres - lihat Section 8).
      */
+    #[Endpoint('Tandai dikunjungi', 'Langkah 5. Bolak-balik: memanggil lagi membatalkan tanda kunjungan.')]
     public function visit(Request $request, ItineraryItem $itineraryItem)
     {
         $trip = $this->tripOf($itineraryItem);

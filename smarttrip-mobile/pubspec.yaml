@@ -82,6 +82,8 @@ dependencies:
   animations: ^3.0.0
   bootstrap_icons: ^1.13.2
   pdf: ^3.13.1
+  # Shrinks stop photos for the PDF (already a dependency of pdf).
+  image: ^4.12.0
   printing: ^5.15.1
 
 dev_dependencies:
@@ -111,6 +113,10 @@ flutter:
 
   assets:
     - assets/images/
+    # Static instances of the variable font (made with fontTools), for the
+    # itinerary PDF: the pdf package cannot draw a variable font's weights.
+    - assets/fonts/PlusJakartaSans-Regular.ttf
+    - assets/fonts/PlusJakartaSans-Bold.ttf
 
   fonts:
     - family: PlusJakartaSans

@@ -12,6 +12,8 @@ import '../../l10n/app_localizations.dart';
 import '../../models/saved_trip.dart' show TripModel;
 import '../../models/trip.dart';
 import '../../models/weather.dart';
+import '../../services/itinerary_pdf_assets.dart';
+import '../../services/itinerary_pdf_plan.dart';
 import '../../services/itinerary_pdf_service.dart';
 import '../../services/polyline_codec.dart';
 import '../../services/trip_service.dart';
@@ -241,8 +243,14 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
   Future<void> _exportPdf(Trip trip) async {
     final messenger = ScaffoldMessenger.of(context);
     final languageCode = Localizations.localeOf(context).languageCode;
+    messenger.showSnackBar(const SnackBar(content: Text('Menyiapkan PDF: peta, foto, dan cuaca...')));
     try {
-      final bytes = await const ItineraryPdfService().build(trip, languageCode: languageCode);
+      // Map tiles, photos and the forecast are fetched first; whatever fails
+      // (offline) is left out and the PDF still builds.
+      final maps = ItineraryPdfService.mapFrames(ItineraryPdfPlan.of(trip));
+      final assets = await ItineraryPdfAssetsLoader(weather: ref.read(weatherServiceProvider)).load(trip, maps: maps);
+      final bytes = await const ItineraryPdfService().build(trip, languageCode: languageCode, assets: assets);
+      messenger.hideCurrentSnackBar();
       final slug = trip.title.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '-').replaceAll(RegExp(r'^-|-$'), '');
       await Printing.sharePdf(bytes: bytes, filename: 'itinerary-${slug.isEmpty ? trip.tripsId : slug}.pdf');
     } catch (_) {

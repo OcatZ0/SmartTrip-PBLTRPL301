@@ -233,16 +233,18 @@
             let oldHash = new URL(evt.oldURL).hash.slice(1);
             if (oldHash) {
                 let previousItem = window['sidebar'].querySelector(`#toc-item-${oldHash}`);
-                previousItem.classList.remove('sl-bg-primary-tint');
-                previousItem.classList.add('sl-bg-canvas-100');
+                previousItem?.classList.remove('sl-bg-primary-tint');
+                previousItem?.classList.add('sl-bg-canvas-100');
             }
         }
 
         let newHash = location.hash.slice(1);
         if (newHash) {
+            // SmartTrip: a link from the old theme (#endpoints-...) has no sidebar
+            // item; without the ?. this threw and the body editors never loaded.
             let item = window['sidebar'].querySelector(`#toc-item-${newHash}`);
-            item.classList.remove('sl-bg-canvas-100');
-            item.classList.add('sl-bg-primary-tint');
+            item?.classList.remove('sl-bg-canvas-100');
+            item?.classList.add('sl-bg-primary-tint');
         }
     }
 
@@ -9680,7 +9682,7 @@ access-control-allow-origin: *</code></pre>
                 <span>Example:</span> <!-- <span> important for spacing -->
                 <div class="sl-flex sl-flex-1 sl-flex-wrap" style="gap: 4px;">
                     <div class="sl-max-w-full sl-break-all sl-px-1 sl-bg-canvas-tint sl-text-muted sl-rounded sl-border">
-                        2026-11-25T11:09:03
+                        2026-11-25T11:14:52
                     </div>
                 </div>
             </div>
@@ -9705,7 +9707,7 @@ access-control-allow-origin: *</code></pre>
                 <span>Example:</span> <!-- <span> important for spacing -->
                 <div class="sl-flex sl-flex-1 sl-flex-wrap" style="gap: 4px;">
                     <div class="sl-max-w-full sl-break-all sl-px-1 sl-bg-canvas-tint sl-text-muted sl-rounded sl-border">
-                        11:09
+                        11:14
                     </div>
                 </div>
             </div>
@@ -9885,8 +9887,8 @@ access-control-allow-origin: *</code></pre>
     "title": "b",
     "num_days": 22,
     "budget_total": 67,
-    "start_date": "2026-11-25T11:09:03",
-    "daily_start_time": "11:09",
+    "start_date": "2026-11-25T11:14:52",
+    "daily_start_time": "11:14",
     "daily_end_time": "2052-12-18",
     "has_own_hotel": true
 }</div>
@@ -9988,8 +9990,8 @@ You can check the Dev Tools console for debugging information.</p>
     \"title\": \"b\",
     \"num_days\": 22,
     \"budget_total\": 67,
-    \"start_date\": \"2026-11-25T11:09:03\",
-    \"daily_start_time\": \"11:09\",
+    \"start_date\": \"2026-11-25T11:14:52\",
+    \"daily_start_time\": \"11:14\",
     \"daily_end_time\": \"2052-12-18\",
     \"has_own_hotel\": true
 }"
@@ -10014,8 +10016,8 @@ let body = {
     "title": "b",
     "num_days": 22,
     "budget_total": 67,
-    "start_date": "2026-11-25T11:09:03",
-    "daily_start_time": "11:09",
+    "start_date": "2026-11-25T11:14:52",
+    "daily_start_time": "11:14",
     "daily_end_time": "2052-12-18",
     "has_own_hotel": true
 };
@@ -11098,7 +11100,7 @@ fetch(url, {
                 <span>Example:</span> <!-- <span> important for spacing -->
                 <div class="sl-flex sl-flex-1 sl-flex-wrap" style="gap: 4px;">
                     <div class="sl-max-w-full sl-break-all sl-px-1 sl-bg-canvas-tint sl-text-muted sl-rounded sl-border">
-                        2026-11-25T11:09:03
+                        2026-11-25T11:14:52
                     </div>
                 </div>
             </div>
@@ -11123,7 +11125,7 @@ fetch(url, {
                 <span>Example:</span> <!-- <span> important for spacing -->
                 <div class="sl-flex sl-flex-1 sl-flex-wrap" style="gap: 4px;">
                     <div class="sl-max-w-full sl-break-all sl-px-1 sl-bg-canvas-tint sl-text-muted sl-rounded sl-border">
-                        11:09
+                        11:14
                     </div>
                 </div>
             </div>
@@ -11148,7 +11150,7 @@ fetch(url, {
                 <span>Example:</span> <!-- <span> important for spacing -->
                 <div class="sl-flex sl-flex-1 sl-flex-wrap" style="gap: 4px;">
                     <div class="sl-max-w-full sl-break-all sl-px-1 sl-bg-canvas-tint sl-text-muted sl-rounded sl-border">
-                        11:09
+                        11:14
                     </div>
                 </div>
             </div>
@@ -11314,9 +11316,9 @@ fetch(url, {
     "title": "b",
     "num_days": 22,
     "budget_total": 67,
-    "start_date": "2026-11-25T11:09:03",
-    "daily_start_time": "11:09",
-    "daily_end_time": "11:09"
+    "start_date": "2026-11-25T11:14:52",
+    "daily_start_time": "11:14",
+    "daily_end_time": "11:14"
 }</div>
                             </div>
                                             </div>
@@ -11416,9 +11418,9 @@ You can check the Dev Tools console for debugging information.</p>
     \"title\": \"b\",
     \"num_days\": 22,
     \"budget_total\": 67,
-    \"start_date\": \"2026-11-25T11:09:03\",
-    \"daily_start_time\": \"11:09\",
-    \"daily_end_time\": \"11:09\"
+    \"start_date\": \"2026-11-25T11:14:52\",
+    \"daily_start_time\": \"11:14\",
+    \"daily_end_time\": \"11:14\"
 }"
 </code></pre>                                        </div>
                                     </div>
@@ -11441,9 +11443,9 @@ let body = {
     "title": "b",
     "num_days": 22,
     "budget_total": 67,
-    "start_date": "2026-11-25T11:09:03",
-    "daily_start_time": "11:09",
-    "daily_end_time": "11:09"
+    "start_date": "2026-11-25T11:14:52",
+    "daily_start_time": "11:14",
+    "daily_end_time": "11:14"
 };
 
 fetch(url, {

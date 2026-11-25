@@ -107,7 +107,7 @@ endpoints:
         name: start_date
         description: 'Must be a valid date.'
         required: true
-        example: '2026-11-25T11:09:03'
+        example: '2026-11-25T11:14:52'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -118,7 +118,7 @@ endpoints:
         name: daily_start_time
         description: 'Must be a valid date in the format <code>H:i</code>.'
         required: false
-        example: '11:09'
+        example: '11:14'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -150,8 +150,8 @@ endpoints:
       title: b
       num_days: 22
       budget_total: 67
-      start_date: '2026-11-25T11:09:03'
-      daily_start_time: '11:09'
+      start_date: '2026-11-25T11:14:52'
+      daily_start_time: '11:14'
       daily_end_time: '2052-12-18'
       has_own_hotel: true
     fileParameters: []
@@ -341,7 +341,7 @@ endpoints:
         name: start_date
         description: 'Must be a valid date.'
         required: false
-        example: '2026-11-25T11:09:03'
+        example: '2026-11-25T11:14:52'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -352,7 +352,7 @@ endpoints:
         name: daily_start_time
         description: 'Must be a valid date in the format <code>H:i</code>.'
         required: false
-        example: '11:09'
+        example: '11:14'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -363,7 +363,7 @@ endpoints:
         name: daily_end_time
         description: 'Must be a valid date in the format <code>H:i</code>.'
         required: false
-        example: '11:09'
+        example: '11:14'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -373,9 +373,9 @@ endpoints:
       title: b
       num_days: 22
       budget_total: 67
-      start_date: '2026-11-25T11:09:03'
-      daily_start_time: '11:09'
-      daily_end_time: '11:09'
+      start_date: '2026-11-25T11:14:52'
+      daily_start_time: '11:14'
+      daily_end_time: '11:14'
     fileParameters: []
     responses: []
     responseFields: []

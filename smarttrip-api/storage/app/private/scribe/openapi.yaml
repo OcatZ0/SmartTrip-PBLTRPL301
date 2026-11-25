@@ -1974,11 +1974,11 @@ paths:
                 start_date:
                   type: string
                   description: 'Must be a valid date.'
-                  example: '2026-11-25T11:09:03'
+                  example: '2026-11-25T11:14:52'
                 daily_start_time:
                   type: string
                   description: 'Must be a valid date in the format <code>H:i</code>.'
-                  example: '11:09'
+                  example: '11:14'
                   nullable: true
                 daily_end_time:
                   type: string
@@ -2052,15 +2052,15 @@ paths:
                 start_date:
                   type: string
                   description: 'Must be a valid date.'
-                  example: '2026-11-25T11:09:03'
+                  example: '2026-11-25T11:14:52'
                 daily_start_time:
                   type: string
                   description: 'Must be a valid date in the format <code>H:i</code>.'
-                  example: '11:09'
+                  example: '11:14'
                 daily_end_time:
                   type: string
                   description: 'Must be a valid date in the format <code>H:i</code>.'
-                  example: '11:09'
+                  example: '11:14'
     parameters:
       -
         in: path

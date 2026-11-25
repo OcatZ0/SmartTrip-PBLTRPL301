@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:typed_data';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -9,7 +12,7 @@ import '../../helpers/test_doubles.dart';
 
 ProviderContainer _container(
   InMemoryTokenStorage tokenStorage,
-  FakeHttpClientAdapter adapter,
+  HttpClientAdapter adapter,
 ) {
   final container = ProviderContainer(
     overrides: [
@@ -131,4 +134,38 @@ void main() {
     expect(container.read(sessionControllerProvider).value, isNull);
     expect(tokenStorage.stored, isNull);
   });
+
+  test('signOut leaves at once and revokes the token in the background', () async {
+    final tokenStorage = InMemoryTokenStorage();
+    final pending = Completer<ResponseBody>();
+    final adapter = _PendingAdapter(pending.future);
+    final container = _container(tokenStorage, adapter);
+    await container.read(sessionControllerProvider.future);
+    await container.read(sessionControllerProvider.notifier).signIn(testSession, remember: true);
+
+    // The server never answers, yet the session is already gone.
+    await container.read(sessionControllerProvider.notifier).signOut();
+
+    expect(container.read(sessionControllerProvider).value, isNull);
+    expect(tokenStorage.stored, isNull);
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    expect(adapter.requests.single.path, '/auth/logout');
+    expect(adapter.requests.single.headers['Authorization'], 'Bearer token-123');
+  });
+}
+
+class _PendingAdapter implements HttpClientAdapter {
+  _PendingAdapter(this.answer);
+
+  final Future<ResponseBody> answer;
+  final requests = <RequestOptions>[];
+
+  @override
+  Future<ResponseBody> fetch(RequestOptions options, Stream<Uint8List>? requestStream, Future<void>? cancelFuture) {
+    requests.add(options);
+    return answer;
+  }
+
+  @override
+  void close({bool force = false}) {}
 }

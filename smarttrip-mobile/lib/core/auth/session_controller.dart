@@ -49,18 +49,25 @@ class SessionController extends AsyncNotifier<AuthUser?> {
     if (user != null) state = AsyncData(user.withInterests());
   }
 
-  /// Revokes the token on the server when it can; the local login is
-  /// cleared either way, so an offline phone still logs out.
+  /// Leaves at once: the local session is cleared first, so the router shows
+  /// the login screen without waiting for the network. The token is then
+  /// revoked on the server in the background, sent explicitly because the
+  /// storage is already empty; an offline phone still logs out.
   Future<void> signOut() async {
-    try {
-      await ref.read(apiClientProvider).dio.post<Map<String, dynamic>>(
-            '/auth/logout',
-            options: Options(extra: {ApiClient.skipUnauthorizedHandler: true}),
-          );
-    } on DioException {
-      // Nothing to undo: the token is dropped below.
-    }
+    final token = await ref.read(tokenStorageProvider).read();
+    final apiClient = ref.read(apiClientProvider);
     await handleUnauthorized();
+    if (token == null) return;
+
+    apiClient.dio
+        .post<Map<String, dynamic>>(
+          '/auth/logout',
+          options: Options(
+            headers: {'Authorization': 'Bearer $token'},
+            extra: {ApiClient.skipUnauthorizedHandler: true},
+          ),
+        )
+        .then<void>((_) {}, onError: (_) {});
   }
 
   Future<void> handleUnauthorized() async {

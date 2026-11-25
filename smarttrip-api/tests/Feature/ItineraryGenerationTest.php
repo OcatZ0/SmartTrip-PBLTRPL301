@@ -44,7 +44,7 @@ class ItineraryGenerationTest extends TestCase
     private function fakeRoutes(): void
     {
         Http::fake([
-            'api.openrouteservice.org/*' => fn ($request) => Http::response(self::orsRoute(count($request['coordinates']))),
+            'api.heigit.org/openrouteservice/*' => fn ($request) => Http::response(self::orsRoute(count($request['coordinates']))),
         ]);
     }
 

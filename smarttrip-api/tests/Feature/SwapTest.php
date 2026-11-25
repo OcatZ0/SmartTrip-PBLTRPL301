@@ -34,7 +34,7 @@ class SwapTest extends TestCase
     private function fakeRoutes(): void
     {
         Http::fake([
-            'api.openrouteservice.org/*' => fn ($request) => Http::response(self::orsRoute(count($request['coordinates']))),
+            'api.heigit.org/openrouteservice/*' => fn ($request) => Http::response(self::orsRoute(count($request['coordinates']))),
         ]);
     }
 
@@ -369,7 +369,7 @@ class SwapTest extends TestCase
         ['item' => $item, 'category' => $category] = $this->tripWithOneItem($user);
         $alt = $this->makePlace(['name' => 'Alternatif', 'lat' => 1.1311, 'lng' => 104.0311, 'external_place_id' => 'gp-alt']);
         $alt->categories()->attach($category->categories_id);
-        Http::fake(['api.openrouteservice.org/*' => Http::response(['error' => 'boom'], 403)]);
+        Http::fake(['api.heigit.org/openrouteservice/*' => Http::response(['error' => 'boom'], 403)]);
 
         $response = $this->withHeaders($this->authHeader($user))
             ->patchJson("/api/itinerary-items/{$item->itinerary_items_id}", ['places_id' => $alt->places_id]);

@@ -16,7 +16,7 @@ class OpenRouteServiceClientTest extends TestCase
     {
         config(['services.openrouteservice.api_key' => 'ors-test-key']);
         Http::fake([
-            'api.openrouteservice.org/*' => Http::response(['features' => [[
+            'api.heigit.org/openrouteservice/*' => Http::response(['features' => [[
                 'geometry' => ['type' => 'LineString', 'coordinates' => [
                     [104.00, 1.10], [104.01, 1.11], [104.02, 1.12], [104.03, 1.13], [104.00, 1.10],
                 ]],
@@ -49,7 +49,7 @@ class OpenRouteServiceClientTest extends TestCase
 
     public function test_an_error_response_becomes_a_runtime_exception(): void
     {
-        Http::fake(['api.openrouteservice.org/*' => Http::response(['error' => 'quota'], 403)]);
+        Http::fake(['api.heigit.org/openrouteservice/*' => Http::response(['error' => 'quota'], 403)]);
 
         $this->expectException(RuntimeException::class);
 
@@ -58,7 +58,7 @@ class OpenRouteServiceClientTest extends TestCase
 
     public function test_a_timeout_becomes_a_runtime_exception(): void
     {
-        Http::fake(['api.openrouteservice.org/*' => fn () => throw new ConnectionException('timed out')]);
+        Http::fake(['api.heigit.org/openrouteservice/*' => fn () => throw new ConnectionException('timed out')]);
 
         $this->expectException(RuntimeException::class);
 

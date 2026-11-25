@@ -19,7 +19,8 @@ use RuntimeException;
  */
 class OpenRouteServiceClient
 {
-    private const ENDPOINT = 'https://api.openrouteservice.org/v2/directions/driving-car/geojson';
+    // api.openrouteservice.org answers 410 since 2026-11-24 (moved to api.heigit.org).
+    private const ENDPOINT = 'https://api.heigit.org/openrouteservice/v2/directions/driving-car/geojson';
 
     private const TIMEOUT_SECONDS = 30;
 
@@ -34,7 +35,11 @@ class OpenRouteServiceClient
         }
 
         try {
-            $response = Http::withHeaders([
+            // OpenSSL 3.5 sends a post-quantum key share by default; the
+            // larger TLS 1.3 hello is dropped on the path from the VM's
+            // network to Heidelberg, so the handshake times out.
+            // shortcut: classic curves only for this host, drop when that path passes MLKEM hellos.
+            $response = Http::withOptions(['curl' => [CURLOPT_SSL_EC_CURVES => 'X25519:prime256v1']])->withHeaders([
                 'Authorization' => (string) config('services.openrouteservice.api_key'),
                 'Content-Type' => 'application/json',
             ])

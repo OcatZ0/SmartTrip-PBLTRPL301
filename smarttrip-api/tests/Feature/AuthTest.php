@@ -365,4 +365,17 @@ class AuthTest extends TestCase
         $this->app['auth']->forgetGuards();
         $this->withToken($token)->getJson('/api/user')->assertUnauthorized();
     }
+
+    public function test_login_and_the_current_user_carry_only_the_fields_the_app_reads(): void
+    {
+        User::factory()->create(['email' => 'wisatawan@example.com', 'password' => 'password123', 'google_id' => 'google-sub-9']);
+        $fields = ['users_id', 'name', 'email', 'role', 'has_password'];
+
+        $login = $this->postJson('/api/auth/login', ['email' => 'wisatawan@example.com', 'password' => 'password123'])->assertOk();
+        $this->assertEqualsCanonicalizing($fields, array_keys($login->json('user')));
+
+        $this->withToken($login->json('token'))->getJson('/api/user')->assertOk()
+            ->assertJsonMissingPath('google_id')
+            ->assertJsonStructure($fields);
+    }
 }

@@ -234,4 +234,28 @@ class SharedTripsTest extends TestCase
         $this->assertSame('com.smarttrip.batam.smarttrip_mobile', $links[0]['target']['package_name']);
         $this->assertCount(1, $links[0]['target']['sha256_cert_fingerprints']);
     }
+
+    public function test_joining_returns_only_the_trip_id_and_the_viewer_never_gets_the_owners_weights(): void
+    {
+        $owner = User::factory()->create();
+        $viewer = User::factory()->create();
+        $trip = $this->makeTrip($owner, ['viewer_invite_token' => 'link-123', 'weight_kategori' => 0.7]);
+        $trip->syncDays();
+
+        $this->withHeaders($this->authHeader($viewer))->postJson('/api/trips/join-viewer/link-123')
+            ->assertOk()
+            ->assertExactJson(['trips_id' => $trip->trips_id]);
+
+        $detail = $this->withHeaders($this->authHeader($viewer))->getJson("/api/trips/{$trip->trips_id}")->assertOk()->json();
+        foreach (['weight_kategori', 'weight_jarak', 'weight_anggaran', 'weight_rating', 'deleted_at', 'viewer_invite_token'] as $hidden) {
+            $this->assertArrayNotHasKey($hidden, $detail);
+        }
+        $this->assertArrayHasKey('budget_total', $detail);
+        $this->assertNotEmpty($detail['days']);
+        foreach ($detail['days'] as $day) {
+            $this->assertArrayHasKey('start', $day);
+            $this->assertArrayNotHasKey('start_lat', $day);
+            $this->assertArrayNotHasKey('end_places_id', $day);
+        }
+    }
 }

@@ -10,7 +10,7 @@
     ],
     "info": {
         "name": "SmartTrip Batam API",
-        "_postman_id": "3b2c4f12-11c8-4978-8bb5-f8fe7f7ac304",
+        "_postman_id": "4f6d8b7c-4ed4-42df-a602-bb6e1a0d49d6",
         "description": "REST API untuk aplikasi mobile SmartTrip (Flutter) - autentikasi, katalog tempat, wishlist, generate itinerary otomatis, swap, live tracking, review, dan share trip.",
         "schema": "https:\/\/schema.getpostman.com\/json\/collection\/v2.1.0\/collection.json"
     },
@@ -822,7 +822,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\"title\":\"b\",\"num_days\":22,\"budget_total\":67,\"start_date\":\"2026-11-25T11:14:52\",\"daily_start_time\":\"11:14\",\"daily_end_time\":\"2052-12-18\",\"has_own_hotel\":true}"
+                            "raw": "{\"title\":\"b\",\"num_days\":22,\"budget_total\":67,\"start_date\":\"2026-11-25T11:44:05\",\"daily_start_time\":\"11:44\",\"daily_end_time\":\"2052-12-18\",\"has_own_hotel\":false}"
                         },
                         "description": "num_days 1 sampai 30."
                     },
@@ -944,7 +944,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\"title\":\"b\",\"num_days\":22,\"budget_total\":67,\"start_date\":\"2026-11-25T11:14:52\",\"daily_start_time\":\"11:14\",\"daily_end_time\":\"11:14\"}"
+                            "raw": "{\"title\":\"b\",\"num_days\":22,\"budget_total\":67,\"start_date\":\"2026-11-25T11:44:05\",\"daily_start_time\":\"11:44\",\"daily_end_time\":\"11:44\"}"
                         },
                         "description": "Mengubah jumlah hari, budget, atau jam harian menghapus itinerary yang sudah ada (itinerary_cleared: true); generate ulang setelahnya."
                     },

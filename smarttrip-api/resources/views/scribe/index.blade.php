@@ -9682,7 +9682,7 @@ access-control-allow-origin: *</code></pre>
                 <span>Example:</span> <!-- <span> important for spacing -->
                 <div class="sl-flex sl-flex-1 sl-flex-wrap" style="gap: 4px;">
                     <div class="sl-max-w-full sl-break-all sl-px-1 sl-bg-canvas-tint sl-text-muted sl-rounded sl-border">
-                        2026-11-25T11:14:52
+                        2026-11-25T11:44:05
                     </div>
                 </div>
             </div>
@@ -9707,7 +9707,7 @@ access-control-allow-origin: *</code></pre>
                 <span>Example:</span> <!-- <span> important for spacing -->
                 <div class="sl-flex sl-flex-1 sl-flex-wrap" style="gap: 4px;">
                     <div class="sl-max-w-full sl-break-all sl-px-1 sl-bg-canvas-tint sl-text-muted sl-rounded sl-border">
-                        11:14
+                        11:44
                     </div>
                 </div>
             </div>
@@ -9754,7 +9754,7 @@ access-control-allow-origin: *</code></pre>
                 <span>Example:</span> <!-- <span> important for spacing -->
                 <div class="sl-flex sl-flex-1 sl-flex-wrap" style="gap: 4px;">
                     <div class="sl-max-w-full sl-break-all sl-px-1 sl-bg-canvas-tint sl-text-muted sl-rounded sl-border">
-                        true
+                        false
                     </div>
                 </div>
             </div>
@@ -9887,10 +9887,10 @@ access-control-allow-origin: *</code></pre>
     "title": "b",
     "num_days": 22,
     "budget_total": 67,
-    "start_date": "2026-11-25T11:14:52",
-    "daily_start_time": "11:14",
+    "start_date": "2026-11-25T11:44:05",
+    "daily_start_time": "11:44",
     "daily_end_time": "2052-12-18",
-    "has_own_hotel": true
+    "has_own_hotel": false
 }</div>
                             </div>
                                             </div>
@@ -9990,10 +9990,10 @@ You can check the Dev Tools console for debugging information.</p>
     \"title\": \"b\",
     \"num_days\": 22,
     \"budget_total\": 67,
-    \"start_date\": \"2026-11-25T11:14:52\",
-    \"daily_start_time\": \"11:14\",
+    \"start_date\": \"2026-11-25T11:44:05\",
+    \"daily_start_time\": \"11:44\",
     \"daily_end_time\": \"2052-12-18\",
-    \"has_own_hotel\": true
+    \"has_own_hotel\": false
 }"
 </code></pre>                                        </div>
                                     </div>
@@ -10016,10 +10016,10 @@ let body = {
     "title": "b",
     "num_days": 22,
     "budget_total": 67,
-    "start_date": "2026-11-25T11:14:52",
-    "daily_start_time": "11:14",
+    "start_date": "2026-11-25T11:44:05",
+    "daily_start_time": "11:44",
     "daily_end_time": "2052-12-18",
-    "has_own_hotel": true
+    "has_own_hotel": false
 };
 
 fetch(url, {
@@ -11100,7 +11100,7 @@ fetch(url, {
                 <span>Example:</span> <!-- <span> important for spacing -->
                 <div class="sl-flex sl-flex-1 sl-flex-wrap" style="gap: 4px;">
                     <div class="sl-max-w-full sl-break-all sl-px-1 sl-bg-canvas-tint sl-text-muted sl-rounded sl-border">
-                        2026-11-25T11:14:52
+                        2026-11-25T11:44:05
                     </div>
                 </div>
             </div>
@@ -11125,7 +11125,7 @@ fetch(url, {
                 <span>Example:</span> <!-- <span> important for spacing -->
                 <div class="sl-flex sl-flex-1 sl-flex-wrap" style="gap: 4px;">
                     <div class="sl-max-w-full sl-break-all sl-px-1 sl-bg-canvas-tint sl-text-muted sl-rounded sl-border">
-                        11:14
+                        11:44
                     </div>
                 </div>
             </div>
@@ -11150,7 +11150,7 @@ fetch(url, {
                 <span>Example:</span> <!-- <span> important for spacing -->
                 <div class="sl-flex sl-flex-1 sl-flex-wrap" style="gap: 4px;">
                     <div class="sl-max-w-full sl-break-all sl-px-1 sl-bg-canvas-tint sl-text-muted sl-rounded sl-border">
-                        11:14
+                        11:44
                     </div>
                 </div>
             </div>
@@ -11316,9 +11316,9 @@ fetch(url, {
     "title": "b",
     "num_days": 22,
     "budget_total": 67,
-    "start_date": "2026-11-25T11:14:52",
-    "daily_start_time": "11:14",
-    "daily_end_time": "11:14"
+    "start_date": "2026-11-25T11:44:05",
+    "daily_start_time": "11:44",
+    "daily_end_time": "11:44"
 }</div>
                             </div>
                                             </div>
@@ -11418,9 +11418,9 @@ You can check the Dev Tools console for debugging information.</p>
     \"title\": \"b\",
     \"num_days\": 22,
     \"budget_total\": 67,
-    \"start_date\": \"2026-11-25T11:14:52\",
-    \"daily_start_time\": \"11:14\",
-    \"daily_end_time\": \"11:14\"
+    \"start_date\": \"2026-11-25T11:44:05\",
+    \"daily_start_time\": \"11:44\",
+    \"daily_end_time\": \"11:44\"
 }"
 </code></pre>                                        </div>
                                     </div>
@@ -11443,9 +11443,9 @@ let body = {
     "title": "b",
     "num_days": 22,
     "budget_total": 67,
-    "start_date": "2026-11-25T11:14:52",
-    "daily_start_time": "11:14",
-    "daily_end_time": "11:14"
+    "start_date": "2026-11-25T11:44:05",
+    "daily_start_time": "11:44",
+    "daily_end_time": "11:44"
 };
 
 fetch(url, {

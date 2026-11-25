@@ -1974,11 +1974,11 @@ paths:
                 start_date:
                   type: string
                   description: 'Must be a valid date.'
-                  example: '2026-11-25T11:14:52'
+                  example: '2026-11-25T11:44:05'
                 daily_start_time:
                   type: string
                   description: 'Must be a valid date in the format <code>H:i</code>.'
-                  example: '11:14'
+                  example: '11:44'
                   nullable: true
                 daily_end_time:
                   type: string
@@ -1988,7 +1988,7 @@ paths:
                 has_own_hotel:
                   type: boolean
                   description: ''
-                  example: true
+                  example: false
               required:
                 - num_days
                 - budget_total
@@ -2052,15 +2052,15 @@ paths:
                 start_date:
                   type: string
                   description: 'Must be a valid date.'
-                  example: '2026-11-25T11:14:52'
+                  example: '2026-11-25T11:44:05'
                 daily_start_time:
                   type: string
                   description: 'Must be a valid date in the format <code>H:i</code>.'
-                  example: '11:14'
+                  example: '11:44'
                 daily_end_time:
                   type: string
                   description: 'Must be a valid date in the format <code>H:i</code>.'
-                  example: '11:14'
+                  example: '11:44'
     parameters:
       -
         in: path

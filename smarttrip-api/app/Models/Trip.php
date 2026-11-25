@@ -22,7 +22,9 @@ class Trip extends Model
      * leaves the server inside trip JSON (viewers read trips too). The owner
      * gets it from POST /trips/{id}/viewer-invite-link.
      */
-    protected $hidden = ['viewer_invite_token'];
+    // Viewers read trips too: the owner's TOPSIS weights stay out of the JSON
+    // (the app never reads them from a trip).
+    protected $hidden = ['viewer_invite_token', 'weight_kategori', 'weight_jarak', 'weight_anggaran', 'weight_rating', 'deleted_at'];
 
     protected $fillable = [
         'users_id',

@@ -196,7 +196,8 @@ class TripController extends Controller
             $day->setAttribute('start', $day->startPoint());
             $day->setAttribute('end', $day->endPoint());
             $day->setAttribute('has_own_end', $day->hasOwnEnd());
-            $day->makeHidden(['startPlace', 'endPlace']);
+            // start / end above replace the raw point columns.
+            $day->makeHidden([...ItineraryDay::START_COLUMNS, ...ItineraryDay::END_COLUMNS, 'startPlace', 'endPlace']);
         });
 
         return $trip;

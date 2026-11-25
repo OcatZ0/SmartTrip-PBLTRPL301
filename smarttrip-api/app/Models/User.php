@@ -62,6 +62,12 @@ class User extends Authenticatable
     ];
 
     /**
+     * The only fields a user's JSON carries (login, Google login, /api/user):
+     * what the app reads. New columns stay private unless added here.
+     */
+    protected $visible = ['users_id', 'name', 'email', 'role', 'has_password'];
+
+    /**
      * has_password lets the app tell a Google-only account, which sets its
      * first password without a current one.
      *

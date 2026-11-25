@@ -2,6 +2,8 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
+import '../core/router/page_transitions.dart';
+
 enum AppTab { home, wishlist, trips, profile }
 
 class AppBottomBar extends StatelessWidget {
@@ -23,7 +25,6 @@ class AppBottomBar extends StatelessWidget {
   static const fabRise = 20.0;
   static const _fabSize = 62.0;
 
-  static const _navy900 = Color(0xFF0A2440);
   static const _sea600 = Color(0xFF2B6FAB);
   static const _sun400 = Color(0xFFF6B03C);
   static const _ink = Color(0xFF14212F);
@@ -34,6 +35,19 @@ class AppBottomBar extends StatelessWidget {
   final VoidCallback onCreateTrip;
   final Map<AppTab, String> labels;
   final String createLabel;
+
+  /// Moves [step] tabs from [current] (a swipe), sliding the new tab in
+  /// from that side. Does nothing past the first or last tab.
+  static void swipe(AppTab current, int step, ValueChanged<AppTab> onSelect) {
+    final index = current.index + step;
+    if (index < 0 || index >= AppTab.values.length) return;
+    _go(current, AppTab.values[index], onSelect);
+  }
+
+  static void _go(AppTab from, AppTab to, ValueChanged<AppTab> onSelect) {
+    PageTransitions.tabStep = (to.index - from.index).sign;
+    onSelect(to);
+  }
 
   static TextStyle _text(FontWeight weight, Color color) {
     return TextStyle(
@@ -109,7 +123,7 @@ class AppBottomBar extends StatelessWidget {
                       BoxShadow(color: Color(0x730A2440), offset: Offset(0, 10), blurRadius: 22, spreadRadius: -6),
                     ],
                   ),
-                  child: const Icon(Icons.add_rounded, size: 28, color: _navy900),
+                  child: const Icon(Icons.add_rounded, size: 28, color: Colors.white),
                 ),
               ),
             ),
@@ -131,7 +145,7 @@ class AppBottomBar extends StatelessWidget {
         label: label,
         excludeSemantics: true,
         child: InkResponse(
-          onTap: () => onSelect(tab),
+          onTap: () => _go(current, tab, onSelect),
           radius: 32,
           child: Padding(
             padding: const EdgeInsets.only(top: 14),

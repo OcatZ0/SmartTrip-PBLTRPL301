@@ -9,6 +9,7 @@ import '../../l10n/app_localizations.dart';
 import '../../models/saved_trip.dart';
 import '../../services/trip_service.dart';
 import '../../widgets/app_bottom_bar.dart';
+import '../../widgets/horizontal_swipe.dart';
 import '../../widgets/panorama_header.dart';
 import '../../widgets/load_error_view.dart';
 import 'widgets/shared_trips_view.dart';
@@ -76,43 +77,46 @@ class _TripTersimpanScreenState extends ConsumerState<TripTersimpanScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.surface,
-      body: RefreshIndicator(
-        color: AppColors.navy900,
-        onRefresh: () => _sharedTab ? ref.refresh(sharedTripsProvider.future) : ref.refresh(savedTripsProvider.future),
-        child: CustomScrollView(
-          physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-          slivers: [
-            SliverToBoxAdapter(child: PanoramaHeader(eyebrow: 'PERJALANANMU', title: 'Trip Tersimpan', bottom: _buildTabBar(allTrips, activeTab, sharedCount))),
-            const SliverToBoxAdapter(child: SizedBox(height: 18)),
-            if (_sharedTab)
-              SliverPadding(
-                padding: EdgeInsets.only(bottom: bottomSpace),
-                sliver: const SliverToBoxAdapter(child: SharedTripsView()),
-              )
-            else if (tripsState.isLoading && !tripsState.hasValue)
-              const SliverFillRemaining(
-                hasScrollBody: false,
-                child: Center(child: CircularProgressIndicator(color: AppColors.navy900)),
-              )
-            else if (tripsState.hasError && !tripsState.hasValue)
-              SliverFillRemaining(
-                hasScrollBody: false,
-                child: LoadErrorView(
-                  message: tripErrorMessage(tripsState.error!, l10n),
-                  onRetry: () => ref.invalidate(savedTripsProvider),
+      body: HorizontalSwipe(
+        onSwipe: (step) => AppBottomBar.swipe(AppTab.trips, step, _selectTab),
+        child: RefreshIndicator(
+          color: AppColors.navy900,
+          onRefresh: () => _sharedTab ? ref.refresh(sharedTripsProvider.future) : ref.refresh(savedTripsProvider.future),
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+            slivers: [
+              SliverToBoxAdapter(child: PanoramaHeader(eyebrow: 'PERJALANANMU', title: 'Trip Tersimpan', bottom: _buildTabBar(allTrips, activeTab, sharedCount))),
+              const SliverToBoxAdapter(child: SizedBox(height: 18)),
+              if (_sharedTab)
+                SliverPadding(
+                  padding: EdgeInsets.only(bottom: bottomSpace),
+                  sliver: const SliverToBoxAdapter(child: SharedTripsView()),
+                )
+              else if (tripsState.isLoading && !tripsState.hasValue)
+                const SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(child: CircularProgressIndicator(color: AppColors.navy900)),
+                )
+              else if (tripsState.hasError && !tripsState.hasValue)
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: LoadErrorView(
+                    message: tripErrorMessage(tripsState.error!, l10n),
+                    onRetry: () => ref.invalidate(savedTripsProvider),
+                  ),
+                )
+              else if (trips.isEmpty)
+                SliverFillRemaining(hasScrollBody: false, child: _buildEmptyState(activeTab))
+              else
+                SliverPadding(
+                  padding: EdgeInsets.only(bottom: bottomSpace),
+                  sliver: SliverList.builder(
+                    itemCount: trips.length,
+                    itemBuilder: (_, i) => TripCard(trip: trips[i]),
+                  ),
                 ),
-              )
-            else if (trips.isEmpty)
-              SliverFillRemaining(hasScrollBody: false, child: _buildEmptyState(activeTab))
-            else
-              SliverPadding(
-                padding: EdgeInsets.only(bottom: bottomSpace),
-                sliver: SliverList.builder(
-                  itemCount: trips.length,
-                  itemBuilder: (_, i) => TripCard(trip: trips[i]),
-                ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
 

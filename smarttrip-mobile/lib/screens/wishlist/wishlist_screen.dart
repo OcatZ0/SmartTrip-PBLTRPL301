@@ -11,6 +11,7 @@ import '../../models/trip.dart';
 import '../../services/trip_service.dart';
 import '../../services/wishlist_service.dart';
 import '../../widgets/app_bottom_bar.dart';
+import '../../widgets/horizontal_swipe.dart';
 import '../../widgets/category_icons.dart';
 import '../../widgets/load_error_view.dart';
 import '../../widgets/panorama_header.dart';
@@ -178,7 +179,7 @@ class _WishlistScreenState extends ConsumerState<WishlistScreen> {
   String _addedMessage(AppLocalizations l10n, TripSummary trip, {required int added, required int failed}) {
     final parts = [
       if (added > 0)
-        trip.hasItinerary ? l10n.wishlistAddedManyNeedsRegenerate(added, trip.title) : l10n.wishlistAddedMany(added, trip.title)
+        l10n.wishlistAddedMany(added, trip.title)
       else if (failed == 0)
         l10n.detailAlreadyInTrip(trip.title),
       if (failed > 0) l10n.wishlistAddFailed(failed),
@@ -251,42 +252,45 @@ class _WishlistScreenState extends ConsumerState<WishlistScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.surface,
-      body: RefreshIndicator(
-        color: AppColors.navy900,
-        onRefresh: () => ref.refresh(userWishlistPlacesControllerProvider.future),
-        child: CustomScrollView(
-          physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-          slivers: [
-            SliverToBoxAdapter(child: header),
-            const SliverToBoxAdapter(child: SizedBox(height: 14)),
-            if (!isLoggedIn)
-              SliverFillRemaining(
-                hasScrollBody: false,
-                child: _Message(
-                  icon: Icons.lock_outline_rounded,
-                  title: l10n.wishlistGuestTitle,
-                  body: l10n.wishlistGuestBody,
-                  actionLabel: l10n.catalogLogin,
-                  // go, not push: see CatalogScreen._goToLogin.
-                  onAction: () => context.go(AppRoutes.login),
-                ),
-              )
-            else if (placesState.isLoading && !placesState.hasValue)
-              const SliverFillRemaining(
-                hasScrollBody: false,
-                child: Center(child: CircularProgressIndicator(color: AppColors.navy900)),
-              )
-            else if (placesState.hasError && !placesState.hasValue)
-              SliverFillRemaining(
-                hasScrollBody: false,
-                child: LoadErrorView(
-                  message: l10n.wishlistLoadFailed,
-                  onRetry: () => ref.invalidate(userWishlistPlacesControllerProvider),
-                ),
-              )
-            else
-              ..._buildList(l10n, placesState.valueOrNull ?? const [], bottomSpace),
-          ],
+      body: HorizontalSwipe(
+        onSwipe: _isSelecting ? null : (step) => AppBottomBar.swipe(AppTab.wishlist, step, _selectTab),
+        child: RefreshIndicator(
+          color: AppColors.navy900,
+          onRefresh: () => ref.refresh(userWishlistPlacesControllerProvider.future),
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+            slivers: [
+              SliverToBoxAdapter(child: header),
+              const SliverToBoxAdapter(child: SizedBox(height: 14)),
+              if (!isLoggedIn)
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: _Message(
+                    icon: Icons.lock_outline_rounded,
+                    title: l10n.wishlistGuestTitle,
+                    body: l10n.wishlistGuestBody,
+                    actionLabel: l10n.catalogLogin,
+                    // go, not push: see CatalogScreen._goToLogin.
+                    onAction: () => context.go(AppRoutes.login),
+                  ),
+                )
+              else if (placesState.isLoading && !placesState.hasValue)
+                const SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(child: CircularProgressIndicator(color: AppColors.navy900)),
+                )
+              else if (placesState.hasError && !placesState.hasValue)
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: LoadErrorView(
+                    message: l10n.wishlistLoadFailed,
+                    onRetry: () => ref.invalidate(userWishlistPlacesControllerProvider),
+                  ),
+                )
+              else
+                ..._buildList(l10n, placesState.valueOrNull ?? const [], bottomSpace),
+            ],
+          ),
         ),
       ),
       bottomNavigationBar: _isSelecting

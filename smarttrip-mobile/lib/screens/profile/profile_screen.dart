@@ -16,6 +16,7 @@ import '../../l10n/app_localizations.dart';
 import '../../services/auth_service.dart';
 import '../../services/trip_service.dart';
 import '../../widgets/app_bottom_bar.dart';
+import '../../widgets/horizontal_swipe.dart';
 import '../../widgets/category_icons.dart';
 import '../../widgets/load_error_view.dart';
 import '../trip/trip_preferences_screen.dart' show TripPreferencesData, tripPreferencesDataProvider;
@@ -56,49 +57,52 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       child: Scaffold(
         backgroundColor: AppColors.surface,
         extendBody: true,
-        body: CustomScrollView(
-          slivers: [
-            SliverPersistentHeader(
-              pinned: true,
-              delegate: _ProfileHeaderDelegate(
-                name: user?.name ?? '',
-                email: user?.email ?? '',
-                eyebrow: l10n.profileEyebrow,
-                headline: l10n.profileHeadline,
-                topInset: MediaQuery.paddingOf(context).top,
-              ),
-            ),
-            SliverPadding(
-              padding: EdgeInsets.fromLTRB(
-                16,
-                24,
-                16,
-                AppBottomBar.barHeight + AppBottomBar.fabRise + 24 + MediaQuery.paddingOf(context).bottom,
-              ),
-              sliver: SliverToBoxAdapter(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    data.when(
-                      data: (value) => _PreferencesForm(data: value),
-                      loading: () => const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 48),
-                        child: Center(child: CircularProgressIndicator(color: AppColors.sea600)),
-                      ),
-                      error: (error, _) => _Card(
-                        child: LoadErrorView(
-                          message: '${l10n.profileLoadFailed} ${tripErrorMessage(error, l10n)}',
-                          onRetry: () => ref.invalidate(tripPreferencesDataProvider),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 22),
-                    const _AccountSection(),
-                  ],
+        body: HorizontalSwipe(
+          onSwipe: (step) => AppBottomBar.swipe(AppTab.profile, step, _selectTab),
+          child: CustomScrollView(
+            slivers: [
+              SliverPersistentHeader(
+                pinned: true,
+                delegate: _ProfileHeaderDelegate(
+                  name: user?.name ?? '',
+                  email: user?.email ?? '',
+                  eyebrow: l10n.profileEyebrow,
+                  headline: l10n.profileHeadline,
+                  topInset: MediaQuery.paddingOf(context).top,
                 ),
               ),
-            ),
-          ],
+              SliverPadding(
+                padding: EdgeInsets.fromLTRB(
+                  16,
+                  24,
+                  16,
+                  AppBottomBar.barHeight + AppBottomBar.fabRise + 24 + MediaQuery.paddingOf(context).bottom,
+                ),
+                sliver: SliverToBoxAdapter(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      data.when(
+                        data: (value) => _PreferencesForm(data: value),
+                        loading: () => const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 48),
+                          child: Center(child: CircularProgressIndicator(color: AppColors.sea600)),
+                        ),
+                        error: (error, _) => _Card(
+                          child: LoadErrorView(
+                            message: '${l10n.profileLoadFailed} ${tripErrorMessage(error, l10n)}',
+                            onRetry: () => ref.invalidate(tripPreferencesDataProvider),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 22),
+                      const _AccountSection(),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
         bottomNavigationBar: AppBottomBar(
           current: AppTab.profile,

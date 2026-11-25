@@ -509,17 +509,11 @@
     }
   },
   "detailNoTrips": "Kamu belum punya trip. Buat dulu, lalu tempat ini bisa ditambahkan.",
+  "detailTripFinished": "Trip sudah selesai",
+  "detailTripHasItinerary": "Itinerary sudah dibuat",
   "detailNewTrip": "Buat trip baru",
   "detailAddedToTrip": "Ditambahkan ke wishlist {title}.",
   "@detailAddedToTrip": {
-    "placeholders": {
-      "title": {
-        "type": "String"
-      }
-    }
-  },
-  "detailAddedNeedsRegenerate": "Ditambahkan ke wishlist {title}. Buat ulang itinerary-nya supaya tempat ini ikut dihitung.",
-  "@detailAddedNeedsRegenerate": {
     "placeholders": {
       "title": {
         "type": "String"
@@ -755,8 +749,6 @@
   "@wishlistRemoveFailed": {"placeholders": {"count": {"type": "int"}}},
   "wishlistAddedMany": "{count} tempat ditambahkan ke wishlist {title}.",
   "@wishlistAddedMany": {"placeholders": {"count": {"type": "int"}, "title": {"type": "String"}}},
-  "wishlistAddedManyNeedsRegenerate": "{count} tempat ditambahkan ke wishlist {title}. Buat ulang itinerary-nya supaya tempat ini ikut dihitung.",
-  "@wishlistAddedManyNeedsRegenerate": {"placeholders": {"count": {"type": "int"}, "title": {"type": "String"}}},
   "wishlistAddFailed": "{count} tempat gagal ditambahkan.",
   "@wishlistAddFailed": {"placeholders": {"count": {"type": "int"}}},
   "wishlistGuestTitle": "Masuk untuk melihat wishlist",

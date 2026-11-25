@@ -18,6 +18,7 @@ import '../../services/place_service.dart';
 import '../../services/trip_service.dart';
 import '../../services/wishlist_service.dart';
 import '../../widgets/app_bottom_bar.dart';
+import '../../widgets/horizontal_swipe.dart';
 import '../../widgets/category_icons.dart';
 import '../../widgets/load_error_view.dart';
 import 'widgets/featured_place_card.dart';
@@ -148,95 +149,98 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
         backgroundColor: AppColors.surface,
         // The list scrolls behind the raised "Buat Trip" button.
         extendBody: true,
-        body: RefreshIndicator(
-          color: AppColors.sea600,
-          onRefresh: () async {
-            await Future.wait([
-              ref.read(catalogControllerProvider.notifier).refresh(),
-              ref
-                  .refresh(userWishlistControllerProvider.future)
-                  .catchError((_) => const <int>{}),
-            ]);
-          },
-          child: NotificationListener<ScrollNotification>(
-            onNotification: _onScroll,
-            child: CustomScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              slivers: [
-                SliverPersistentHeader(
-                  pinned: true,
-                  delegate: _CatalogHeaderDelegate(
-                    topInset: MediaQuery.paddingOf(context).top,
-                    eyebrow: l10n.catalogEyebrow,
-                    greeting: l10n.catalogGreeting,
-                    loginLabel: isLoggedIn ? null : l10n.catalogLogin,
-                    onLogin: _goToLogin,
-                    search: CatalogSearchField(
-                      controller: _searchController,
-                      onChanged: _onSearchChanged,
-                      onClear: _clearSearch,
+        body: HorizontalSwipe(
+          onSwipe: (step) => AppBottomBar.swipe(AppTab.home, step, _selectTab),
+          child: RefreshIndicator(
+            color: AppColors.sea600,
+            onRefresh: () async {
+              await Future.wait([
+                ref.read(catalogControllerProvider.notifier).refresh(),
+                ref
+                    .refresh(userWishlistControllerProvider.future)
+                    .catchError((_) => const <int>{}),
+              ]);
+            },
+            child: NotificationListener<ScrollNotification>(
+              onNotification: _onScroll,
+              child: CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  SliverPersistentHeader(
+                    pinned: true,
+                    delegate: _CatalogHeaderDelegate(
+                      topInset: MediaQuery.paddingOf(context).top,
+                      eyebrow: l10n.catalogEyebrow,
+                      greeting: l10n.catalogGreeting,
+                      loginLabel: isLoggedIn ? null : l10n.catalogLogin,
+                      onLogin: _goToLogin,
+                      search: CatalogSearchField(
+                        controller: _searchController,
+                        onChanged: _onSearchChanged,
+                        onClear: _clearSearch,
+                      ),
+                      chips: _ChipBar(filter: state.filter),
                     ),
-                    chips: _ChipBar(filter: state.filter),
                   ),
-                ),
-                if (featured.isNotEmpty) ...[
+                  if (featured.isNotEmpty) ...[
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(16, 22, 16, 12),
+                      sliver: SliverToBoxAdapter(
+                        child: _SectionTitle(l10n.catalogSectionTopRated),
+                      ),
+                    ),
+                    SliverToBoxAdapter(
+                      child: SizedBox(
+                        height: FeaturedPlaceCard.height,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          itemCount: featured.length,
+                          separatorBuilder: (_, __) => const SizedBox(width: 12),
+                          itemBuilder: (_, index) {
+                            final place = featured[index];
+                            return PlaceOpenContainer(
+                              key: ValueKey(place.placesId),
+                              placesId: place.placesId,
+                              radius: 20,
+                              builder: (open) => FeaturedPlaceCard(
+                                place: place,
+                                isSaved: savedIds.contains(place.placesId),
+                                onToggleSaved: () => _toggleSaved(place.placesId),
+                                onTap: open,
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
                   SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(16, 22, 16, 12),
-                    sliver: SliverToBoxAdapter(
-                      child: _SectionTitle(l10n.catalogSectionTopRated),
+                    padding: EdgeInsets.fromLTRB(
+                      16,
+                      featured.isEmpty ? 20 : 24,
+                      16,
+                      10,
                     ),
-                  ),
-                  SliverToBoxAdapter(
-                    child: SizedBox(
-                      height: FeaturedPlaceCard.height,
-                      child: ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        itemCount: featured.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: 12),
-                        itemBuilder: (_, index) {
-                          final place = featured[index];
-                          return PlaceOpenContainer(
-                            key: ValueKey(place.placesId),
-                            placesId: place.placesId,
-                            radius: 20,
-                            builder: (open) => FeaturedPlaceCard(
-                              place: place,
-                              isSaved: savedIds.contains(place.placesId),
-                              onToggleSaved: () => _toggleSaved(place.placesId),
-                              onTap: open,
-                            ),
-                          );
-                        },
+                    sliver: SliverToBoxAdapter(
+                      child: _SectionHeader(
+                        filter: state.filter,
+                        savedCount: isLoggedIn ? savedIds.length : 0,
                       ),
                     ),
                   ),
-                ],
-                SliverPadding(
-                  padding: EdgeInsets.fromLTRB(
-                    16,
-                    featured.isEmpty ? 20 : 24,
-                    16,
-                    10,
-                  ),
-                  sliver: SliverToBoxAdapter(
-                    child: _SectionHeader(
-                      filter: state.filter,
-                      savedCount: isLoggedIn ? savedIds.length : 0,
+                  ..._content(context, state, rest, savedIds),
+                  SliverPadding(
+                    padding: EdgeInsets.only(
+                      bottom:
+                          AppBottomBar.barHeight +
+                          AppBottomBar.fabRise +
+                          16 +
+                          MediaQuery.paddingOf(context).bottom,
                     ),
                   ),
-                ),
-                ..._content(context, state, rest, savedIds),
-                SliverPadding(
-                  padding: EdgeInsets.only(
-                    bottom:
-                        AppBottomBar.barHeight +
-                        AppBottomBar.fabRise +
-                        16 +
-                        MediaQuery.paddingOf(context).bottom,
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

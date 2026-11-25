@@ -976,16 +976,17 @@ class AppLocalizationsId extends AppLocalizations {
       'Kamu belum punya trip. Buat dulu, lalu tempat ini bisa ditambahkan.';
 
   @override
+  String get detailTripFinished => 'Trip sudah selesai';
+
+  @override
+  String get detailTripHasItinerary => 'Itinerary sudah dibuat';
+
+  @override
   String get detailNewTrip => 'Buat trip baru';
 
   @override
   String detailAddedToTrip(String title) {
     return 'Ditambahkan ke wishlist $title.';
-  }
-
-  @override
-  String detailAddedNeedsRegenerate(String title) {
-    return 'Ditambahkan ke wishlist $title. Buat ulang itinerary-nya supaya tempat ini ikut dihitung.';
   }
 
   @override
@@ -1554,11 +1555,6 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String wishlistAddedMany(int count, String title) {
     return '$count tempat ditambahkan ke wishlist $title.';
-  }
-
-  @override
-  String wishlistAddedManyNeedsRegenerate(int count, String title) {
-    return '$count tempat ditambahkan ke wishlist $title. Buat ulang itinerary-nya supaya tempat ini ikut dihitung.';
   }
 
   @override

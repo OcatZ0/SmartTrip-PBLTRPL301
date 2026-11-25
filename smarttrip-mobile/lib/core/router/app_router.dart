@@ -82,7 +82,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.catalog,
         pageBuilder: (context, state) =>
-            PageTransitions.fadeThrough(state, const CatalogScreen()),
+            PageTransitions.tab(state, const CatalogScreen()),
       ),
       GoRoute(
         path: '/places/:placesId',
@@ -93,12 +93,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.trips,
         pageBuilder: (context, state) =>
-            PageTransitions.fadeThrough(state, const TripTersimpanScreen()),
+            PageTransitions.tab(state, const TripTersimpanScreen()),
       ),
       GoRoute(
         path: AppRoutes.wishlist,
         pageBuilder: (context, state) =>
-            PageTransitions.fadeThrough(state, const WishlistScreen()),
+            PageTransitions.tab(state, const WishlistScreen()),
       ),
       GoRoute(
         path: '/undangan/:token',
@@ -195,7 +195,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.profile,
         pageBuilder: (context, state) =>
-            PageTransitions.fadeThrough(state, const ProfileScreen()),
+            PageTransitions.tab(state, const ProfileScreen()),
       ),
     ],
   );

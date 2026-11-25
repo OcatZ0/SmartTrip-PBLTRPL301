@@ -1012,16 +1012,17 @@ class AppLocalizationsEn extends AppLocalizations {
       'You don\'t have a trip yet. Create one first, then add this place.';
 
   @override
+  String get detailTripFinished => 'This trip is over';
+
+  @override
+  String get detailTripHasItinerary => 'Itinerary already generated';
+
+  @override
   String get detailNewTrip => 'Create a new trip';
 
   @override
   String detailAddedToTrip(String title) {
     return 'Added to $title\'s wishlist.';
-  }
-
-  @override
-  String detailAddedNeedsRegenerate(String title) {
-    return 'Added to $title\'s wishlist. Generate its itinerary again to include this place.';
   }
 
   @override
@@ -1585,11 +1586,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String wishlistAddedMany(int count, String title) {
     return '$count places added to the $title wishlist.';
-  }
-
-  @override
-  String wishlistAddedManyNeedsRegenerate(int count, String title) {
-    return '$count places added to the $title wishlist. Generate its itinerary again so they are counted.';
   }
 
   @override

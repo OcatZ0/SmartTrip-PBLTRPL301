@@ -60,6 +60,7 @@ class TripSummary {
     required this.numDays,
     this.startDate,
     this.hasItinerary = false,
+    this.isFinished = false,
   });
 
   factory TripSummary.fromJson(Map<String, dynamic> json) {
@@ -69,6 +70,7 @@ class TripSummary {
       numDays: (json['num_days'] as num?)?.toInt() ?? 0,
       startDate: _toDate(json['start_date']),
       hasItinerary: ((json['days_count'] as num?) ?? 0) > 0,
+      isFinished: (json['summary'] as Map?)?['status'] == 'selesai',
     );
   }
 
@@ -80,6 +82,9 @@ class TripSummary {
   /// A place added after generating only counts once the itinerary is
   /// generated again.
   final bool hasItinerary;
+
+  /// Its last day is over (server status "selesai"): no new places go in.
+  final bool isFinished;
 }
 
 /// Profile defaults (`GET /api/profile/preferences`) used to pre-fill step 3.

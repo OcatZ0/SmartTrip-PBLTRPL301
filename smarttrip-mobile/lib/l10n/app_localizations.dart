@@ -1826,6 +1826,18 @@ abstract class AppLocalizations {
   /// **'Kamu belum punya trip. Buat dulu, lalu tempat ini bisa ditambahkan.'**
   String get detailNoTrips;
 
+  /// No description provided for @detailTripFinished.
+  ///
+  /// In id, this message translates to:
+  /// **'Trip sudah selesai'**
+  String get detailTripFinished;
+
+  /// No description provided for @detailTripHasItinerary.
+  ///
+  /// In id, this message translates to:
+  /// **'Itinerary sudah dibuat'**
+  String get detailTripHasItinerary;
+
   /// No description provided for @detailNewTrip.
   ///
   /// In id, this message translates to:
@@ -1837,12 +1849,6 @@ abstract class AppLocalizations {
   /// In id, this message translates to:
   /// **'Ditambahkan ke wishlist {title}.'**
   String detailAddedToTrip(String title);
-
-  /// No description provided for @detailAddedNeedsRegenerate.
-  ///
-  /// In id, this message translates to:
-  /// **'Ditambahkan ke wishlist {title}. Buat ulang itinerary-nya supaya tempat ini ikut dihitung.'**
-  String detailAddedNeedsRegenerate(String title);
 
   /// No description provided for @detailAlreadyInTrip.
   ///
@@ -2797,12 +2803,6 @@ abstract class AppLocalizations {
   /// In id, this message translates to:
   /// **'{count} tempat ditambahkan ke wishlist {title}.'**
   String wishlistAddedMany(int count, String title);
-
-  /// No description provided for @wishlistAddedManyNeedsRegenerate.
-  ///
-  /// In id, this message translates to:
-  /// **'{count} tempat ditambahkan ke wishlist {title}. Buat ulang itinerary-nya supaya tempat ini ikut dihitung.'**
-  String wishlistAddedManyNeedsRegenerate(int count, String title);
 
   /// No description provided for @wishlistAddFailed.
   ///

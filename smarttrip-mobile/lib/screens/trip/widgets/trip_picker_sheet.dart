@@ -88,19 +88,34 @@ class TripPickerSheet extends ConsumerWidget {
                           itemBuilder: (context, index) {
                             final trip = list[index];
                             final date = trip.startDate;
+                            // Shown but not pickable: a new place would not reach the itinerary.
+                            final blockedReason = trip.isFinished
+                                ? l10n.detailTripFinished
+                                : trip.hasItinerary
+                                ? l10n.detailTripHasItinerary
+                                : null;
+                            final enabled = blockedReason == null;
+                            final dim = Colors.white.withValues(alpha: 0.4);
                             return ListTile(
                               contentPadding: EdgeInsets.zero,
-                              onTap: () => Navigator.of(context).pop(trip),
-                              leading: const Icon(Icons.luggage_outlined, color: AppColors.sun400),
-                              title: Text(trip.title, style: appText(15, FontWeight.w700, Colors.white)),
-                              subtitle: Text(
-                                l10n.detailTripMeta(
-                                  trip.numDays,
-                                  date == null ? '-' : DateFormat.yMMMd(languageCode).format(date),
-                                ),
-                                style: appText(12, FontWeight.w500, muted),
+                              enabled: enabled,
+                              onTap: enabled ? () => Navigator.of(context).pop(trip) : null,
+                              leading: Icon(
+                                enabled ? Icons.luggage_outlined : Icons.lock_outline_rounded,
+                                color: enabled ? AppColors.sun400 : dim,
                               ),
-                              trailing: Icon(Icons.chevron_right, color: muted),
+                              title: Text(trip.title, style: appText(15, FontWeight.w700, enabled ? Colors.white : dim)),
+                              subtitle: Text(
+                                [
+                                  l10n.detailTripMeta(
+                                    trip.numDays,
+                                    date == null ? '-' : DateFormat.yMMMd(languageCode).format(date),
+                                  ),
+                                  ?blockedReason,
+                                ].join(' · '),
+                                style: appText(12, FontWeight.w500, enabled ? muted : dim),
+                              ),
+                              trailing: enabled ? Icon(Icons.chevron_right, color: muted) : null,
                             );
                           },
                         ),

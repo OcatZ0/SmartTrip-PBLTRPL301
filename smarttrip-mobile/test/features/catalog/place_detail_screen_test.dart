@@ -19,6 +19,7 @@ const _detailTitle = 'Detail Destinasi';
 final _trips = [
   TripSummary(tripsId: 11, title: 'Liburan Batam', numDays: 3, startDate: DateTime(2026, 10, 20)),
   TripSummary(tripsId: 12, title: 'Trip Kantor', numDays: 2, startDate: DateTime(2026, 11, 2), hasItinerary: true),
+  TripSummary(tripsId: 13, title: 'Trip Lama', numDays: 1, startDate: DateTime(2026, 1, 5), hasItinerary: true, isFinished: true),
 ];
 
 /// Opens the catalog, then the detail of "Tempat 2" (no rating, so it is
@@ -150,6 +151,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Tambah ke trip mana?'), findsOneWidget);
     expect(find.text('Trip Kantor'), findsOneWidget);
+    // Trips that cannot take a new place are listed but locked, with the reason.
+    expect(find.text('Trip Lama'), findsOneWidget);
+    expect(find.textContaining('Trip sudah selesai'), findsOneWidget);
+    expect(find.textContaining('Itinerary sudah dibuat'), findsOneWidget);
 
     await tester.tap(find.text('Liburan Batam'));
     await tester.pumpAndSettle();
@@ -158,22 +163,19 @@ void main() {
     expect(find.text('Ditambahkan ke wishlist Liburan Batam.'), findsOneWidget);
   });
 
-  testWidgets('adding to a generated trip asks to generate again, a duplicate says so', (tester) async {
+  testWidgets('a generated or finished trip cannot be picked, a duplicate says so', (tester) async {
     final trips = FakeTripService(trips: _trips);
     await _openDetail(tester, trips: trips);
 
     await tester.tap(find.text('Tambah ke Trip'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Trip Kantor'));
+    await tester.tap(find.text('Trip Lama'));
     await tester.pumpAndSettle();
-    expect(
-      find.text('Ditambahkan ke wishlist Trip Kantor. Buat ulang itinerary-nya supaya tempat ini ikut dihitung.'),
-      findsOneWidget,
-    );
+    expect(trips.added, isEmpty);
+    expect(find.text('Tambah ke trip mana?'), findsOneWidget);
 
     trips.alreadyIn.add(11);
-    await tester.tap(find.text('Tambah ke Trip'));
-    await tester.pumpAndSettle();
     await tester.tap(find.text('Liburan Batam'));
     await tester.pumpAndSettle();
     expect(find.text('Sudah ada di wishlist Liburan Batam.'), findsOneWidget);

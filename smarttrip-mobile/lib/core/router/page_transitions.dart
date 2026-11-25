@@ -9,16 +9,34 @@ class PageTransitions {
 
   static const _duration = Duration(milliseconds: 300);
 
-  /// Fade through, for switching between top-level destinations (bottom
-  /// bar tabs, splash to login).
-  static Page<void> fadeThrough(GoRouterState state, Widget child) {
+  /// Direction of the last bottom bar move: 1 to a tab on the right, -1 to
+  /// the left, 0 when it did not come from the bar (fade only).
+  static int tabStep = 0;
+
+  /// Bottom bar tabs: the new tab slides in from the side it sits on, a tab
+  /// pushed over another moves that one out the other way.
+  static Page<void> tab(GoRouterState state, Widget child) {
     return CustomTransitionPage<void>(
       key: state.pageKey,
       child: child,
       transitionDuration: _duration,
       reverseTransitionDuration: _duration,
-      transitionsBuilder: (context, animation, secondaryAnimation, child) =>
-          FadeThroughTransition(animation: animation, secondaryAnimation: secondaryAnimation, child: child),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) => AnimatedBuilder(
+        animation: Listenable.merge([animation, secondaryAnimation]),
+        child: child,
+        builder: (context, child) {
+          final shift = 0.3 * tabStep;
+          final inT = Curves.easeOutCubic.transform(animation.value);
+          final outT = Curves.easeInCubic.transform(secondaryAnimation.value);
+          // A page leaving through its own animation only fades: it may be
+          // popped (back) or replaced (go), which move in opposite ways.
+          final entering = animation.status != AnimationStatus.reverse;
+          return FractionalTranslation(
+            translation: Offset((entering ? (1 - inT) * shift : 0) - outT * shift, 0),
+            child: Opacity(opacity: (inT * (1 - outT)).clamp(0.0, 1.0), child: child),
+          );
+        },
+      ),
     );
   }
 

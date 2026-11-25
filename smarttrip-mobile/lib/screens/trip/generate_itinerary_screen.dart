@@ -93,62 +93,75 @@ class _GenerateItineraryScreenState extends ConsumerState<GenerateItineraryScree
             ),
           ),
           child: SafeArea(
-            child: ListView(
+            child: Padding(
               padding: const EdgeInsets.all(20),
-              children: [
-                const SizedBox(height: 24),
-                Center(child: _LogoSpinner(spin: _spinController, pulse: _pulseController)),
-                const SizedBox(height: 24),
-                Text.rich(
-                  TextSpan(
-                    text: error == null ? l10n.generateTitle : l10n.generateFailedTitle,
-                    children: [
-                      if (error == null)
-                        const TextSpan(text: '...', style: TextStyle(color: Color(0xFFFFB956))),
-                    ],
-                  ),
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.headlineSmall?.copyWith(color: Colors.white),
-                ),
-                const SizedBox(height: 24),
-                if (error != null)
-                  _GenerateError(
-                    message: tripErrorMessage(error, l10n),
-                    onRetry: () => ref.invalidate(generateItineraryProvider(widget.tripsId)),
-                    onBack: () => context.pop(),
-                  )
-                else ...[
-                  for (var i = 0; i < steps.length; i++) ...[
-                    _ChecklistStep(
-                      title: steps[i].$1,
-                      subtitle: steps[i].$2,
-                      state: i < _activeStep
-                          ? _StepState.done
-                          : i == _activeStep
-                              ? _StepState.active
-                              : _StepState.pending,
+              // Only the middle part scrolls when it does not fit; the logo,
+              // title and progress bar stay put.
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SizedBox(height: 24),
+                  Center(child: _LogoSpinner(spin: _spinController, pulse: _pulseController)),
+                  const SizedBox(height: 24),
+                  Text.rich(
+                    TextSpan(
+                      text: error == null ? l10n.generateTitle : l10n.generateFailedTitle,
+                      children: [
+                        if (error == null)
+                          const TextSpan(text: '...', style: TextStyle(color: Color(0xFFFFB956))),
+                      ],
                     ),
-                    const SizedBox(height: 10),
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.headlineSmall?.copyWith(color: Colors.white),
+                  ),
+                  const SizedBox(height: 24),
+                  if (error != null)
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: _GenerateError(
+                          message: tripErrorMessage(error, l10n),
+                          onRetry: () => ref.invalidate(generateItineraryProvider(widget.tripsId)),
+                          onBack: () => context.pop(),
+                        ),
+                      ),
+                    )
+                  else ...[
+                    Expanded(
+                      child: ListView.separated(
+                        padding: EdgeInsets.zero,
+                        itemCount: steps.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 10),
+                        itemBuilder: (context, i) => _ChecklistStep(
+                          title: steps[i].$1,
+                          subtitle: steps[i].$2,
+                          state: i < _activeStep
+                              ? _StepState.done
+                              : i == _activeStep
+                                  ? _StepState.active
+                                  : _StepState.pending,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      l10n.generateStage,
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        color: const Color(0xCCD3E4FE),
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(9999),
+                      child: LinearProgressIndicator(
+                        minHeight: 12,
+                        color: tokens.amberFill,
+                        backgroundColor: const Color(0x66213145),
+                      ),
+                    ),
                   ],
-                  const SizedBox(height: 40),
-                  Text(
-                    l10n.generateStage,
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      color: const Color(0xCCD3E4FE),
-                      letterSpacing: 0.8,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(9999),
-                    child: LinearProgressIndicator(
-                      minHeight: 12,
-                      color: tokens.amberFill,
-                      backgroundColor: const Color(0x66213145),
-                    ),
-                  ),
                 ],
-              ],
+              ),
             ),
           ),
         ),

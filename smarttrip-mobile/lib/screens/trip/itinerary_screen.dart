@@ -29,6 +29,7 @@ import 'widgets/invite_viewer_sheet.dart';
 import 'widgets/trip_actions.dart';
 import 'widgets/source_badge.dart';
 import 'widgets/stop_detail_sheet.dart';
+import '../../widgets/horizontal_swipe.dart';
 
 /// Rain colours shared by the weather card, the rain badge and the notices.
 const _rainFill = Color(0xFFFFF4E5);
@@ -53,6 +54,13 @@ class ItineraryScreen extends ConsumerStatefulWidget {
 
 class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
   int _selectedDayNumber = 1;
+  // 1 when the day after was picked, -1 for the day before: the slide side.
+  int _dayStep = 0;
+
+  void _selectDay(int dayNumber) => setState(() {
+        _dayStep = (dayNumber - _selectedDayNumber).sign;
+        _selectedDayNumber = dayNumber;
+      });
   bool _reminderScheduled = false;
 
   @override
@@ -364,94 +372,125 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
     return RefreshIndicator(
       color: AppColors.sea600,
       onRefresh: () => ref.read(tripDetailProvider(widget.tripsId).notifier).refresh(),
-      child: ListView(
-        padding: const EdgeInsets.only(bottom: 28),
-        children: [
-          if (widget.readOnly)
-            const Padding(
-              padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
-              child: _NoticeBanner(text: 'Trip ini dibagikan kepadamu. Kamu hanya dapat melihatnya.'),
+      child: HorizontalSwipe(
+        onSwipe: (step) {
+          if (trip.days.any((other) => other.dayNumber == day.dayNumber + step)) _selectDay(day.dayNumber + step);
+        },
+        child: ListView(
+          padding: const EdgeInsets.only(bottom: 28),
+          children: [
+            if (widget.readOnly)
+              const Padding(
+                padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
+                child: _NoticeBanner(text: 'Trip ini dibagikan kepadamu. Kamu hanya dapat melihatnya.'),
+              ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              child: _TripSummaryCard(trip: trip, languageCode: languageCode),
             ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-            child: _TripSummaryCard(trip: trip, languageCode: languageCode),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 64,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: trip.days.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
-              itemBuilder: (context, index) {
-                final tabDay = trip.days[index];
-                return _DayTab(
-                  label: l10n.itineraryDayShort(tabDay.dayNumber),
-                  date: DateFormat('EEE, d MMM', languageCode).format(trip.dateOfDay(tabDay.dayNumber)),
-                  semanticsLabel: l10n.itineraryDayTab(
-                    tabDay.dayNumber,
-                    DateFormat('d MMM', languageCode).format(trip.dateOfDay(tabDay.dayNumber)),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 64,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: trip.days.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                itemBuilder: (context, index) {
+                  final tabDay = trip.days[index];
+                  return _DayTab(
+                    label: l10n.itineraryDayShort(tabDay.dayNumber),
+                    date: DateFormat('EEE, d MMM', languageCode).format(trip.dateOfDay(tabDay.dayNumber)),
+                    semanticsLabel: l10n.itineraryDayTab(
+                      tabDay.dayNumber,
+                      DateFormat('d MMM', languageCode).format(trip.dateOfDay(tabDay.dayNumber)),
+                    ),
+                    selected: tabDay.dayNumber == day.dayNumber,
+                    onTap: () => _selectDay(tabDay.dayNumber),
+                  );
+                },
+              ),
+            ),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 280),
+              layoutBuilder: (current, previous) => Stack(
+                alignment: Alignment.topCenter,
+                children: [...previous, if (current != null) current],
+              ),
+              transitionBuilder: (child, animation) {
+                // The new day comes in from the swipe side, the old one leaves the other way.
+                final incoming = child.key == ValueKey(day.dayNumber);
+                final shift = 0.3 * _dayStep * (incoming ? 1 : -1);
+                return FadeTransition(
+                  opacity: animation,
+                  child: SlideTransition(
+                    position: Tween(begin: Offset(shift, 0), end: Offset.zero)
+                        .animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
+                    child: child,
                   ),
-                  selected: tabDay.dayNumber == day.dayNumber,
-                  onTap: () => setState(() => _selectedDayNumber = tabDay.dayNumber),
                 );
               },
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 18, 16, 0),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Expanded(
-                  child: Text(
-                    DateFormat('EEEE, d MMMM', languageCode).format(trip.dateOfDay(day.dayNumber)),
-                    style: appText(17, FontWeight.w800, AppColors.ink, height: 22),
+              child: Column(
+                key: ValueKey(day.dayNumber),
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 18, 16, 0),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          DateFormat('EEEE, d MMMM', languageCode).format(trip.dateOfDay(day.dayNumber)),
+                          style: appText(17, FontWeight.w800, AppColors.ink, height: 22),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        [
+                          l10n.itineraryStopsCount(day.items.length),
+                          if (dayMinutes > 0) l10n.tripWishlistHours(_hours(dayMinutes)),
+                        ].join(' · '),
+                        style: appText(12, FontWeight.w600, AppColors.inkMuted, height: 18),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  [
-                    l10n.itineraryStopsCount(day.items.length),
-                    if (dayMinutes > 0) l10n.tripWishlistHours(_hours(dayMinutes)),
-                  ].join(' · '),
-                  style: appText(12, FontWeight.w600, AppColors.inkMuted, height: 18),
-                ),
-              ],
-            ),
-          ),
-          if (forecast != null)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-              child: _WeatherCard(forecast: forecast, outdoorStops: rainy ? outdoorStops.length : 0),
-            ),
-          for (final notice in notices)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-              child: _NoticeBanner(text: notice),
-            ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 18, 16, 0),
-            child: day.items.isEmpty
-                ? SetupCard(
-                    child: Text(
-                      l10n.itineraryDayEmpty,
-                      textAlign: TextAlign.center,
-                      style: appText(13, FontWeight.w600, AppColors.inkMuted, height: 18),
-                    ),
-                  )
-                : _Timeline(
-                    day: day,
-                    onChangeStart: widget.readOnly ? null : () => _changeDayPoint(day, isStart: true),
-                    onChangeEnd: widget.readOnly ? null : () => _changeDayPoint(day, isStart: false),
-                    onOpenStop: widget.readOnly ? null : (item) => _openStop(day, item, rainy: rainy),
-                    onSwapForRain: rainy && !widget.readOnly
-                        ? (item) => _swapPlace(item, dayNumber: day.dayNumber, preferIndoor: true)
-                        : null,
+                if (forecast != null)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                    child: _WeatherCard(forecast: forecast, outdoorStops: rainy ? outdoorStops.length : 0),
                   ),
-          ),
-        ],
+                for (final notice in notices)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+                    child: _NoticeBanner(text: notice),
+                  ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 18, 16, 0),
+                  child: day.items.isEmpty
+                      ? SetupCard(
+                          child: Text(
+                            l10n.itineraryDayEmpty,
+                            textAlign: TextAlign.center,
+                            style: appText(13, FontWeight.w600, AppColors.inkMuted, height: 18),
+                          ),
+                        )
+                      : _Timeline(
+                          day: day,
+                          onChangeStart: widget.readOnly ? null : () => _changeDayPoint(day, isStart: true),
+                          onChangeEnd: widget.readOnly ? null : () => _changeDayPoint(day, isStart: false),
+                          onOpenStop: widget.readOnly ? null : (item) => _openStop(day, item, rainy: rainy),
+                          onSwapForRain: rainy && !widget.readOnly
+                              ? (item) => _swapPlace(item, dayNumber: day.dayNumber, preferIndoor: true)
+                              : null,
+                        ),
+                ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -764,8 +764,6 @@ class _ActionBar extends ConsumerWidget {
         context,
         !added
             ? l10n.detailAlreadyInTrip(trip.title)
-            : trip.hasItinerary
-            ? l10n.detailAddedNeedsRegenerate(trip.title)
             : l10n.detailAddedToTrip(trip.title),
       );
     } catch (error) {

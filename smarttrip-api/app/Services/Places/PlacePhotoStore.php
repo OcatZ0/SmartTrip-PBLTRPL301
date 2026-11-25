@@ -17,7 +17,8 @@ use RuntimeException;
  * Place photos live on this server's public disk (PRD Section 2: local
  * files, no hotlinking). Every photo is re-encoded as a JPEG at most 1600 px
  * on its longest side, enough for the app's hero, and the first photo by
- * sort_order is mirrored into places.photo_url for the catalog cards.
+ * sort_order is mirrored into places.photo_url for the catalog cards. Both
+ * columns hold the public-disk path; the models turn it into a URL.
  */
 class PlacePhotoStore
 {
@@ -101,10 +102,11 @@ class PlacePhotoStore
     public function delete(PlacePhoto $photo): void
     {
         $place = $photo->place;
-        $path = $this->pathOf($photo->photo_url);
+        $path = $photo->getRawOriginal('photo_url');
 
         $photo->delete();
-        if ($path !== null) {
+        // Links to other sites (seeded rows) have no file here.
+        if (PlacePhoto::isStoredHere($path)) {
             Storage::disk(self::DISK)->delete($path);
         }
 
@@ -118,7 +120,7 @@ class PlacePhotoStore
         Storage::disk(self::DISK)->put($path, $jpeg);
 
         $photo = $place->photos()->create([
-            'photo_url' => Storage::disk(self::DISK)->url($path),
+            'photo_url' => $path,
             'sort_order' => ((int) $place->photos()->max('sort_order')) + ($place->photos()->exists() ? 1 : 0),
         ]);
 
@@ -178,21 +180,11 @@ class PlacePhotoStore
 
     private function syncThumbnail(Place $place): void
     {
-        $first = $place->photos()->orderBy('sort_order')->value('photo_url');
+        // toBase(): the raw path, not the URL the model accessor builds.
+        $first = $place->photos()->orderBy('sort_order')->toBase()->value('photo_url');
 
-        if ($place->photo_url !== $first) {
+        if ($place->getRawOriginal('photo_url') !== $first) {
             $place->update(['photo_url' => $first]);
         }
-    }
-
-    /**
-     * Storage path of a photo saved by [save]; null for URLs from elsewhere
-     * (e.g. seeded rows), which are left untouched on disk.
-     */
-    private function pathOf(string $url): ?string
-    {
-        $prefix = rtrim(Storage::disk(self::DISK)->url(''), '/').'/';
-
-        return str_starts_with($url, $prefix) ? substr($url, strlen($prefix)) : null;
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Services\Itinerary\Topsis;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -34,17 +35,11 @@ class ProfileController extends Controller
             'rating_rating' => ['required', 'numeric', 'min:0', 'max:10'],
         ]);
 
-        $sum = $data['rating_kategori'] + $data['rating_jarak'] + $data['rating_anggaran'] + $data['rating_rating'];
-
-        $weights = $sum > 0 ? [
-            'default_weight_kategori' => $data['rating_kategori'] / $sum,
-            'default_weight_jarak' => $data['rating_jarak'] / $sum,
-            'default_weight_anggaran' => $data['rating_anggaran'] / $sum,
-            'default_weight_rating' => $data['rating_rating'] / $sum,
-        ] : [
-            'default_weight_kategori' => 0.25, 'default_weight_jarak' => 0.25,
-            'default_weight_anggaran' => 0.25, 'default_weight_rating' => 0.25,
-        ];
+        $weights = collect(Topsis::normalizeWeights([
+            'kategori' => $data['rating_kategori'], 'jarak' => $data['rating_jarak'],
+            'anggaran' => $data['rating_anggaran'], 'rating' => $data['rating_rating'],
+        ]))
+            ->mapWithKeys(fn ($weight, $criterion) => ["default_weight_{$criterion}" => $weight])->all();
 
         $user = $request->user();
 

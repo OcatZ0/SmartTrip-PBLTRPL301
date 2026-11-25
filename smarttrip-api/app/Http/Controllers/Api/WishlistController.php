@@ -19,6 +19,18 @@ use Illuminate\Validation\Rules\ProhibitedIf;
  */
 class WishlistController extends Controller
 {
+    /**
+     * Generation orders every wishlist item against every candidate, so an
+     * unbounded list lets one trip tie up the server; the app's own picks
+     * stay far below this.
+     */
+    private const MAX_ITEMS = 100;
+
+    /**
+     * 12 hours; the app offers 30 to 180 minutes.
+     */
+    private const MAX_VISIT_MINUTES = 720;
+
     public function index(Request $request, Trip $trip)
     {
         if (! $trip->isReadableBy($request->user())) {
@@ -48,8 +60,18 @@ class WishlistController extends Controller
             'custom_name' => ['required_without:places_id', new ProhibitedIf($hasPlacesId), 'string', 'max:255'],
             'custom_lat' => ['required_without:places_id', new ProhibitedIf($hasPlacesId), 'numeric', 'between:-90,90'],
             'custom_lng' => ['required_without:places_id', new ProhibitedIf($hasPlacesId), 'numeric', 'between:-180,180'],
-            'custom_visit_minutes' => ['required_without:places_id', new ProhibitedIf($hasPlacesId), 'integer', 'min:1'],
+            'custom_visit_minutes' => ['required_without:places_id', new ProhibitedIf($hasPlacesId), 'integer', 'min:1', 'max:'.self::MAX_VISIT_MINUTES],
         ]);
+
+        $alreadyListed = ! empty($data['places_id'])
+            && $trip->wishlistPlaces()->where('places_id', $data['places_id'])->exists();
+
+        if (! $alreadyListed && $trip->wishlistPlaces()->count() >= self::MAX_ITEMS) {
+            return response()->json([
+                'message' => 'Wishlist trip ini sudah berisi '.self::MAX_ITEMS.' tempat, hapus beberapa dulu.',
+                'errors' => ['places_id' => ['Wishlist trip ini sudah berisi '.self::MAX_ITEMS.' tempat, hapus beberapa dulu.']],
+            ], 422);
+        }
 
         if (! empty($data['places_id'])) {
             // US3: menambah tempat yang sama dua kali = no-op, bukan error.

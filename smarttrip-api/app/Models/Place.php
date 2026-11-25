@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Services\Places\OpeningHours;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -47,6 +48,14 @@ class Place extends Model
         'description_en',
         'search_keywords',
     ];
+
+    /**
+     * Same rule as PlacePhoto: a stored path becomes a URL on the current domain.
+     */
+    protected function photoUrl(): Attribute
+    {
+        return Attribute::get(fn (?string $value) => PlacePhoto::publicUrl($value));
+    }
 
     protected function casts(): array
     {

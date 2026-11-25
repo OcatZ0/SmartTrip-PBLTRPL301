@@ -400,4 +400,24 @@ class AdminPlacePhotoTest extends TestCase
             ->assertSee('id="photoStatus"', false)
             ->assertSee('id="google-pick" method="POST" action="'.route('admin.places.photos.google.store', $this->place).'" class="mb-3" data-photo-ajax', false);
     }
+
+    public function test_an_uploaded_photo_is_stored_as_a_path_and_follows_the_current_domain(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $this->actingAs($admin)->post("/admin/places/{$this->place->places_id}/photos", [
+            'photos' => [UploadedFile::fake()->image('pantai.jpg', 800, 600)],
+        ])->assertRedirect();
+
+        $photo = $this->place->photos()->first();
+        $this->assertStringStartsWith("place-photos/{$this->place->places_id}/", $photo->getRawOriginal('photo_url'));
+        $this->assertSame($photo->getRawOriginal('photo_url'), $this->place->fresh()->getRawOriginal('photo_url'));
+
+        // A new domain only changes the config, not the rows.
+        config(['filesystems.disks.public.url' => 'https://domain-baru.test/storage']);
+        Storage::forgetDisk('public');
+        $this->assertSame('https://domain-baru.test/storage/'.$photo->getRawOriginal('photo_url'), $photo->fresh()->photo_url);
+
+        $external = $this->place->photos()->create(['photo_url' => 'https://upload.wikimedia.org/x.jpg', 'sort_order' => 5]);
+        $this->assertSame('https://upload.wikimedia.org/x.jpg', $external->fresh()->photo_url);
+    }
 }

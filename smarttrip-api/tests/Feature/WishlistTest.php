@@ -253,4 +253,35 @@ class WishlistTest extends TestCase
 
         $response->assertNotFound();
     }
+
+    public function test_a_trip_wishlist_holds_at_most_one_hundred_items(): void
+    {
+        $user = User::factory()->create();
+        $trip = $this->makeTrip($user);
+        $listed = $this->makePlace(['name' => 'Sudah Ada']);
+        $trip->wishlistPlaces()->create(['places_id' => $listed->places_id]);
+        for ($index = 1; $index < 100; $index++) {
+            $trip->wishlistPlaces()->create(['custom_name' => "Pin {$index}", 'custom_lat' => 1.1, 'custom_lng' => 104.0, 'custom_visit_minutes' => 60]);
+        }
+
+        $this->withHeaders($this->authHeader($user))
+            ->postJson("/api/trips/{$trip->trips_id}/wishlist", ['places_id' => $this->makePlace(['name' => 'Baru'])->places_id])
+            ->assertUnprocessable()
+            ->assertJsonPath('errors.places_id.0', 'Wishlist trip ini sudah berisi 100 tempat, hapus beberapa dulu.');
+
+        // Adding a place that is already listed stays a no-op, not an error.
+        $this->withHeaders($this->authHeader($user))
+            ->postJson("/api/trips/{$trip->trips_id}/wishlist", ['places_id' => $listed->places_id])
+            ->assertOk();
+    }
+
+    public function test_a_custom_pin_visit_is_at_most_twelve_hours(): void
+    {
+        $user = User::factory()->create();
+        $trip = $this->makeTrip($user);
+
+        $this->withHeaders($this->authHeader($user))->postJson("/api/trips/{$trip->trips_id}/wishlist", [
+            'custom_name' => 'Rumah Saudara', 'custom_lat' => 1.1, 'custom_lng' => 104.0, 'custom_visit_minutes' => 721,
+        ])->assertUnprocessable()->assertJsonValidationErrors('custom_visit_minutes');
+    }
 }

@@ -8,6 +8,7 @@ use App\Models\ItineraryItem;
 use App\Models\Trip;
 use App\Services\Itinerary\HotelRecommender;
 use App\Services\Itinerary\ItineraryGenerator;
+use App\Services\Itinerary\Topsis;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -215,20 +216,11 @@ class TripController extends Controller
             'rating_rating' => ['required', 'numeric', 'min:0', 'max:10'],
         ]);
 
-        $sum = $data['rating_kategori'] + $data['rating_jarak'] + $data['rating_anggaran'] + $data['rating_rating'];
-
-        if ($sum > 0) {
-            $weights = [
-                'weight_kategori' => $data['rating_kategori'] / $sum,
-                'weight_jarak' => $data['rating_jarak'] / $sum,
-                'weight_anggaran' => $data['rating_anggaran'] / $sum,
-                'weight_rating' => $data['rating_rating'] / $sum,
-            ];
-        } else {
-            $weights = [
-                'weight_kategori' => 0.25, 'weight_jarak' => 0.25, 'weight_anggaran' => 0.25, 'weight_rating' => 0.25,
-            ];
-        }
+        $weights = collect(Topsis::normalizeWeights([
+            'kategori' => $data['rating_kategori'], 'jarak' => $data['rating_jarak'],
+            'anggaran' => $data['rating_anggaran'], 'rating' => $data['rating_rating'],
+        ]))
+            ->mapWithKeys(fn ($weight, $criterion) => ["weight_{$criterion}" => $weight])->all();
 
         DB::transaction(function () use ($trip, $data, $weights) {
             $trip->interestCategories()->sync($data['category_ids']);

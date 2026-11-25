@@ -265,10 +265,10 @@ class PlaceController extends Controller
             'primary_photo_id' => ['nullable', 'integer', Rule::exists('place_photos', 'place_photos_id')->where('places_id', $place->places_id)],
         ]);
 
-        $photoUrl = $place->photo_url;
+        // Raw value: the accessor's full URL must not be written back.
+        $photoUrl = $place->getRawOriginal('photo_url');
         if ($request->hasFile('photo_file')) {
-            $path = $request->file('photo_file')->store('places', 'public');
-            $photoUrl = asset('storage/'.$path);
+            $photoUrl = $request->file('photo_file')->store('places', 'public');
         } elseif (! empty($data['photo_url'])) {
             $photoUrl = $data['photo_url'];
         }

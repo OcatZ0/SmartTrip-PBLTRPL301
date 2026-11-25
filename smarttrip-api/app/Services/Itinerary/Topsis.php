@@ -10,6 +10,20 @@ namespace App\Services\Itinerary;
 class Topsis
 {
     /**
+     * Four 0-10 slider ratings to weights that add up to 1; all zero means
+     * equal weights (US1: an untouched screen still submits).
+     *
+     * @param  array{kategori: float|int, jarak: float|int, anggaran: float|int, rating: float|int}  $ratings
+     * @return array{kategori: float, jarak: float, anggaran: float, rating: float}
+     */
+    public static function normalizeWeights(array $ratings): array
+    {
+        $sum = array_sum($ratings);
+
+        return array_map(fn ($rating) => $sum > 0 ? $rating / $sum : 0.25, $ratings);
+    }
+
+    /**
      * @param  array<int, array<string, float>>  $matrix  baris = alternatif (keyed apa saja, mis. places_id), kolom = kriteria
      * @param  array<string, float>  $weights  bobot per kriteria, jumlah idealnya 1
      * @param  array<string, bool>  $isBenefit  true = benefit (maksimalkan), false = cost (minimalkan)

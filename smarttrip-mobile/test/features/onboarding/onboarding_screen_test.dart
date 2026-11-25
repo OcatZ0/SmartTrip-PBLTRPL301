@@ -60,19 +60,36 @@ void main() {
     expect(trips.categoryRequests.first, isTrue, reason: 'asks for the onboarding categories');
 
     // Nothing picked yet: the button does nothing.
-    await tester.tap(find.text('Mulai Jelajahi'));
+    await tester.tap(find.text('Lanjut'));
     await tester.pumpAndSettle();
-    expect(trips.saved, isEmpty);
+    expect(find.text('Atur prioritasmu'), findsNothing);
 
     await tester.tap(find.text('Pantai'));
     await tester.pumpAndSettle();
-    expect(find.text('1 minat dipilih'), findsOneWidget);
+    expect(find.textContaining('1 minat dipilih'), findsOneWidget);
 
-    await tester.tap(find.text('Mulai Jelajahi'));
+    await tester.tap(find.text('Lanjut'));
+    await tester.pumpAndSettle();
+    expect(find.text('Atur prioritasmu'), findsOneWidget);
+    expect(trips.saved, isEmpty, reason: 'nothing is saved before step 2 is finished');
+
+    // Back keeps the picked interest.
+    await tester.tap(find.text('Kembali'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('1 minat dipilih'), findsOneWidget);
+    await tester.tap(find.text('Lanjut'));
+    await tester.pumpAndSettle();
+
+    // Budget slider (third) to 10.
+    final budget = find.byType(Slider).at(2);
+    await tester.drag(budget, const Offset(600, 0));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Selesai & Mulai Jelajahi'));
     await tester.pumpAndSettle();
 
     expect(trips.saved.single.categoryIds, {pantai.categoriesId});
-    expect(trips.saved.single.ratings, [5, 5, 5, 5]);
+    expect(trips.saved.single.ratings, [5, 5, 10, 5]);
     expect(find.text('Hai Dian, apa yang kamu suka?'), findsNothing);
     expect(find.text('Halo, mau ke mana hari ini?'), findsOneWidget);
   });

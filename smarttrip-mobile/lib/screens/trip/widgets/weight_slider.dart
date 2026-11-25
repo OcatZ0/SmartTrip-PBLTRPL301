@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../l10n/app_localizations.dart';
 
 /// One of the four route weights (0-10; the backend turns them into TOPSIS
 /// weights), used by the profile defaults and trip step 3.
@@ -92,6 +93,51 @@ class WeightSlider extends StatelessWidget {
               Flexible(child: Text(maxLabel ?? '', style: captionStyle, textAlign: TextAlign.end)),
             ],
           ),
+      ],
+    );
+  }
+}
+
+/// The four route weights with icons, end labels and a level pill, as on
+/// trip step 3 and the onboarding Atur Prioritas step.
+class PrioritySliders extends StatelessWidget {
+  const PrioritySliders({super.key, required this.ratings, required this.onChanged});
+
+  final List<double> ratings;
+  final void Function(int index, double value) onChanged;
+
+  static String _levelLabel(double value, AppLocalizations l10n) {
+    if (value >= 9) return l10n.tripPriorityLevelVeryHigh;
+    if (value >= 7) return l10n.tripPriorityLevelHigh;
+    if (value >= 4) return l10n.tripPriorityLevelMedium;
+    return l10n.tripPriorityLevelLow;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final criteria = [
+      (Icons.interests_outlined, l10n.tripPriorityInterest, l10n.tripPriorityInterestMin, l10n.tripPriorityInterestMax),
+      (Icons.near_me_outlined, l10n.tripPriorityDistance, l10n.tripPriorityDistanceMin, l10n.tripPriorityDistanceMax),
+      (Icons.account_balance_wallet_outlined, l10n.tripPriorityBudget, l10n.tripPriorityBudgetMin, l10n.tripPriorityBudgetMax),
+      (Icons.star_outline_rounded, l10n.tripPriorityRating, l10n.tripPriorityRatingMin, l10n.tripPriorityRatingMax),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (final (i, (icon, label, minLabel, maxLabel)) in criteria.indexed) ...[
+          if (i > 0) const SizedBox(height: 18),
+          WeightSlider(
+            icon: icon,
+            label: label,
+            minLabel: minLabel,
+            maxLabel: maxLabel,
+            value: ratings[i],
+            valueLabel: l10n.tripPriorityValue(ratings[i].round(), _levelLabel(ratings[i], l10n)),
+            onChanged: (value) => onChanged(i, value),
+          ),
+        ],
       ],
     );
   }

@@ -36,6 +36,8 @@ class CategoryController extends Controller
                 'name_en' => $category->name_en,
                 'slug' => $category->slug,
                 'icon_symbol' => $category->iconMeta()['key'],
+                // Colour family of the icon, as the admin panel shows it.
+                'icon_tone' => $category->iconMeta()['tone'],
                 'show_in_onboarding' => $category->show_in_onboarding,
             ]);
 

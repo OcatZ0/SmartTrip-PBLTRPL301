@@ -2921,20 +2921,50 @@ abstract class AppLocalizations {
   /// No description provided for @onboardingSelectedCount.
   ///
   /// In id, this message translates to:
-  /// **'{count} minat dipilih'**
+  /// **'{count} minat dipilih. Bisa diubah kapan saja di Profil.'**
   String onboardingSelectedCount(int count);
 
   /// No description provided for @onboardingContinue.
   ///
   /// In id, this message translates to:
-  /// **'Mulai Jelajahi'**
+  /// **'Selesai & Mulai Jelajahi'**
   String get onboardingContinue;
 
-  /// No description provided for @onboardingLaterHint.
+  /// No description provided for @onboardingStep.
   ///
   /// In id, this message translates to:
-  /// **'Minat dan prioritas bisa diubah kapan saja di Profil.'**
-  String get onboardingLaterHint;
+  /// **'LANGKAH {step} DARI 2'**
+  String onboardingStep(int step);
+
+  /// No description provided for @onboardingNext.
+  ///
+  /// In id, this message translates to:
+  /// **'Lanjut'**
+  String get onboardingNext;
+
+  /// No description provided for @onboardingBack.
+  ///
+  /// In id, this message translates to:
+  /// **'Kembali'**
+  String get onboardingBack;
+
+  /// No description provided for @onboardingPriorityTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Atur prioritasmu'**
+  String get onboardingPriorityTitle;
+
+  /// No description provided for @onboardingPrioritySubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Geser 0 (tidak penting) sampai 10 (paling penting). Sistem memakai nilai ini untuk menghitung rekomendasi tempat dan rute itinerary-mu.'**
+  String get onboardingPrioritySubtitle;
+
+  /// No description provided for @onboardingPriorityHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Nilai awal 5 berarti semua faktor sama penting. Bisa diubah kapan saja di Profil.'**
+  String get onboardingPriorityHint;
 }
 
 class _AppLocalizationsDelegate

@@ -143,6 +143,7 @@ class PlaceCatalogTest extends TestCase
         $this->getJson('/api/categories')
             ->assertOk()
             ->assertJsonPath('data.0.icon_symbol', 'ombak')
+            ->assertJsonPath('data.0.icon_tone', 'blue')
             ->assertJsonPath('data.1.icon_symbol', 'ombak');
     }
 

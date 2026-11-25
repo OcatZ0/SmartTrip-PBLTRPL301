@@ -26,6 +26,7 @@ class TripCategory {
     required this.nameEn,
     this.slug = '',
     this.iconSymbol,
+    this.iconTone,
   });
 
   factory TripCategory.fromJson(Map<String, dynamic> json) {
@@ -35,6 +36,7 @@ class TripCategory {
       nameEn: json['name_en'] as String? ?? json['name_id'] as String,
       slug: json['slug'] as String? ?? '',
       iconSymbol: json['icon_symbol'] as String?,
+      iconTone: json['icon_tone'] as String?,
     );
   }
 
@@ -45,6 +47,9 @@ class TripCategory {
   /// Admin-set icon key, drawn with [categoryIcon]. Only sent by
   /// `GET /api/categories`, not inside catalog places.
   final String? iconSymbol;
+
+  /// Colour family of the icon (blue, green, ...), drawn with [categoryTone].
+  final String? iconTone;
 
   /// The `GET /api/places?category=` filter value.
   final String slug;

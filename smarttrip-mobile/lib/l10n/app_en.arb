@@ -481,8 +481,14 @@
   "@onboardingGreeting": {"placeholders": {"name": {"type": "String"}}},
   "onboardingSubtitle": "Pick at least one interest. Place recommendations and itineraries follow your choice.",
   "onboardingPickHint": "Pick at least one interest to continue",
-  "onboardingSelectedCount": "{count} interests picked",
+  "onboardingSelectedCount": "{count} interests picked. You can change them anytime in Profile.",
   "@onboardingSelectedCount": {"placeholders": {"count": {"type": "int"}}},
-  "onboardingContinue": "Start Exploring",
-  "onboardingLaterHint": "You can change interests and priorities anytime in Profile."
+  "onboardingContinue": "Finish & Start Exploring",
+  "onboardingStep": "STEP {step} OF 2",
+  "onboardingNext": "Next",
+  "onboardingBack": "Back",
+  "onboardingPriorityTitle": "Set your priorities",
+  "onboardingPrioritySubtitle": "Slide from 0 (not important) to 10 (most important). The system uses these values to rank places and plan your itinerary routes.",
+  "onboardingPriorityHint": "The starting value 5 weighs every factor equally. You can change them anytime in Profile.",
+  "@onboardingStep": {"placeholders": {"step": {"type": "int"}}}
 }

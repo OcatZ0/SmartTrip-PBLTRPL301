@@ -1658,13 +1658,31 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String onboardingSelectedCount(int count) {
-    return '$count interests picked';
+    return '$count interests picked. You can change them anytime in Profile.';
   }
 
   @override
-  String get onboardingContinue => 'Start Exploring';
+  String get onboardingContinue => 'Finish & Start Exploring';
 
   @override
-  String get onboardingLaterHint =>
-      'You can change interests and priorities anytime in Profile.';
+  String onboardingStep(int step) {
+    return 'STEP $step OF 2';
+  }
+
+  @override
+  String get onboardingNext => 'Next';
+
+  @override
+  String get onboardingBack => 'Back';
+
+  @override
+  String get onboardingPriorityTitle => 'Set your priorities';
+
+  @override
+  String get onboardingPrioritySubtitle =>
+      'Slide from 0 (not important) to 10 (most important). The system uses these values to rank places and plan your itinerary routes.';
+
+  @override
+  String get onboardingPriorityHint =>
+      'The starting value 5 weighs every factor equally. You can change them anytime in Profile.';
 }

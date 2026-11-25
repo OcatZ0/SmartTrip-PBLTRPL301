@@ -1626,13 +1626,31 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String onboardingSelectedCount(int count) {
-    return '$count minat dipilih';
+    return '$count minat dipilih. Bisa diubah kapan saja di Profil.';
   }
 
   @override
-  String get onboardingContinue => 'Mulai Jelajahi';
+  String get onboardingContinue => 'Selesai & Mulai Jelajahi';
 
   @override
-  String get onboardingLaterHint =>
-      'Minat dan prioritas bisa diubah kapan saja di Profil.';
+  String onboardingStep(int step) {
+    return 'LANGKAH $step DARI 2';
+  }
+
+  @override
+  String get onboardingNext => 'Lanjut';
+
+  @override
+  String get onboardingBack => 'Kembali';
+
+  @override
+  String get onboardingPriorityTitle => 'Atur prioritasmu';
+
+  @override
+  String get onboardingPrioritySubtitle =>
+      'Geser 0 (tidak penting) sampai 10 (paling penting). Sistem memakai nilai ini untuk menghitung rekomendasi tempat dan rute itinerary-mu.';
+
+  @override
+  String get onboardingPriorityHint =>
+      'Nilai awal 5 berarti semua faktor sama penting. Bisa diubah kapan saja di Profil.';
 }

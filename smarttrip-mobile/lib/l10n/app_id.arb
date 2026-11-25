@@ -770,8 +770,14 @@
   "@onboardingGreeting": {"placeholders": {"name": {"type": "String"}}},
   "onboardingSubtitle": "Pilih minimal satu minat. Rekomendasi tempat dan itinerary akan menyesuaikan pilihanmu.",
   "onboardingPickHint": "Pilih minimal satu minat untuk lanjut",
-  "onboardingSelectedCount": "{count} minat dipilih",
+  "onboardingSelectedCount": "{count} minat dipilih. Bisa diubah kapan saja di Profil.",
   "@onboardingSelectedCount": {"placeholders": {"count": {"type": "int"}}},
-  "onboardingContinue": "Mulai Jelajahi",
-  "onboardingLaterHint": "Minat dan prioritas bisa diubah kapan saja di Profil."
+  "onboardingContinue": "Selesai & Mulai Jelajahi",
+  "onboardingStep": "LANGKAH {step} DARI 2",
+  "onboardingNext": "Lanjut",
+  "onboardingBack": "Kembali",
+  "onboardingPriorityTitle": "Atur prioritasmu",
+  "onboardingPrioritySubtitle": "Geser 0 (tidak penting) sampai 10 (paling penting). Sistem memakai nilai ini untuk menghitung rekomendasi tempat dan rute itinerary-mu.",
+  "onboardingPriorityHint": "Nilai awal 5 berarti semua faktor sama penting. Bisa diubah kapan saja di Profil.",
+  "@onboardingStep": {"placeholders": {"step": {"type": "int"}}}
 }

@@ -98,13 +98,6 @@ class _TripPreferencesFormState extends ConsumerState<_TripPreferencesForm> {
         );
   }
 
-  String _levelLabel(double value, AppLocalizations l10n) {
-    if (value >= 9) return l10n.tripPriorityLevelVeryHigh;
-    if (value >= 7) return l10n.tripPriorityLevelHigh;
-    if (value >= 4) return l10n.tripPriorityLevelMedium;
-    return l10n.tripPriorityLevelLow;
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -123,13 +116,6 @@ class _TripPreferencesFormState extends ConsumerState<_TripPreferencesForm> {
 
       if (next.valueOrNull == true) context.push(AppRoutes.tripHotel(widget.tripsId));
     });
-
-    final criteria = [
-      (Icons.interests_outlined, l10n.tripPriorityInterest, l10n.tripPriorityInterestMin, l10n.tripPriorityInterestMax),
-      (Icons.near_me_outlined, l10n.tripPriorityDistance, l10n.tripPriorityDistanceMin, l10n.tripPriorityDistanceMax),
-      (Icons.account_balance_wallet_outlined, l10n.tripPriorityBudget, l10n.tripPriorityBudgetMin, l10n.tripPriorityBudgetMax),
-      (Icons.star_outline_rounded, l10n.tripPriorityRating, l10n.tripPriorityRatingMin, l10n.tripPriorityRatingMax),
-    ];
 
     return Scaffold(
       backgroundColor: AppColors.surface,
@@ -200,18 +186,11 @@ class _TripPreferencesFormState extends ConsumerState<_TripPreferencesForm> {
                   title: l10n.tripPriorityTitle,
                   caption: l10n.tripPriorityHint,
                 ),
-                for (var i = 0; i < criteria.length; i++) ...[
-                  const SizedBox(height: 18),
-                  WeightSlider(
-                    icon: criteria[i].$1,
-                    label: criteria[i].$2,
-                    minLabel: criteria[i].$3,
-                    maxLabel: criteria[i].$4,
-                    value: _ratings[i],
-                    valueLabel: l10n.tripPriorityValue(_ratings[i].round(), _levelLabel(_ratings[i], l10n)),
-                    onChanged: (value) => setState(() => _ratings[i] = value),
-                  ),
-                ],
+                const SizedBox(height: 18),
+                PrioritySliders(
+                  ratings: _ratings,
+                  onChanged: (i, value) => setState(() => _ratings[i] = value),
+                ),
               ],
             ),
           ),

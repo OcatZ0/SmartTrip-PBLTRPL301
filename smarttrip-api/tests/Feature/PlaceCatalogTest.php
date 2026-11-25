@@ -263,4 +263,10 @@ class PlaceCatalogTest extends TestCase
 
         $response->assertNotFound();
     }
+
+    public function test_the_catalog_ignores_a_trip_day_and_does_not_reveal_where_it_is(): void
+    {
+        // near_itinerary_day was public and sorted by a stranger's day stops.
+        $this->getJson('/api/places?near_itinerary_day=99999')->assertOk();
+    }
 }

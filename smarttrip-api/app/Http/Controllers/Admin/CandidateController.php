@@ -24,6 +24,8 @@ class CandidateController extends Controller
      */
     private const STALE_AFTER_MINUTES = 15;
 
+    public const BULK_APPROVE_LIMIT = 10;
+
     public function index(Request $request)
     {
         $search = $request->string('search')->trim()->toString();
@@ -177,7 +179,16 @@ class CandidateController extends Controller
 
     public function bulkApprove(Request $request, PlaceCandidateReviewService $service)
     {
-        $data = $request->validate(['ids' => ['required', 'array'], 'ids.*' => ['integer']]);
+        // Each approval calls Geoapify, Google and Gemini in this request; more
+        // than this outlasts nginx's 120 s and the admin gets a 504 instead of
+        // the summary.
+        $data = $request->validate(
+            ['ids' => ['required', 'array', 'max:'.self::BULK_APPROVE_LIMIT], 'ids.*' => ['integer']],
+            [
+                'ids.required' => 'Pilih minimal satu kandidat dulu.',
+                'ids.max' => 'Setujui maksimal '.self::BULK_APPROVE_LIMIT.' kandidat sekaligus.',
+            ]
+        );
 
         $approved = 0;
         $closed = 0;
@@ -198,7 +209,10 @@ class CandidateController extends Controller
 
     public function bulkReject(Request $request, PlaceCandidateReviewService $service)
     {
-        $data = $request->validate(['ids' => ['required', 'array'], 'ids.*' => ['integer']]);
+        $data = $request->validate(
+            ['ids' => ['required', 'array'], 'ids.*' => ['integer']],
+            ['ids.required' => 'Pilih minimal satu kandidat dulu.']
+        );
 
         $rejected = 0;
         $skipped = 0;

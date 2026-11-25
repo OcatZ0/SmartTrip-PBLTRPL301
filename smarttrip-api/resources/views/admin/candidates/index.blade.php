@@ -196,7 +196,7 @@
         <p class="cd-alert is-error" role="alert"><i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>{{ session('error') }}</p>
     @endif
     @if ($errors->any())
-        <p class="cd-alert is-error" role="alert"><i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>Pilih minimal satu kandidat dulu.</p>
+        <p class="cd-alert is-error" role="alert"><i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>{{ $errors->first() }}</p>
     @endif
 
     <div class="cd-toolbar">
@@ -248,7 +248,7 @@
                     <i class="bi bi-check2-all" aria-hidden="true"></i>Pilih semua
                 </button>
                 <button type="submit" formaction="{{ route('admin.candidates.bulk-approve') }}" class="cd-btn is-approve" data-bulk-button
-                    data-busy-label="Menyetujui..." disabled>
+                    data-bulk-max="{{ \App\Http\Controllers\Admin\CandidateController::BULK_APPROVE_LIMIT }}" data-busy-label="Menyetujui..." disabled>
                     <i class="bi bi-check-lg" aria-hidden="true"></i>Setujui terpilih
                 </button>
                 @if ($selectedStatus === 'pending')
@@ -445,8 +445,16 @@
         function updateSelection() {
             var picked = checks.filter(function (check) { return check.checked; }).length;
             checks.forEach(function (check) { check.closest('tr').classList.toggle('is-selected', check.checked); });
-            bulkButtons.forEach(function (button) { button.disabled = picked === 0; });
-            if (countLabel) countLabel.textContent = picked === 0 ? 'Belum ada yang dipilih' : picked + ' kandidat dipilih';
+            var approveMax = 0;
+            bulkButtons.forEach(function (button) {
+                var max = Number(button.dataset.bulkMax || 0);
+                if (max) approveMax = max;
+                button.disabled = picked === 0 || (max > 0 && picked > max);
+            });
+            if (countLabel) {
+                countLabel.textContent = picked === 0 ? 'Belum ada yang dipilih' : picked + ' kandidat dipilih';
+                if (approveMax && picked > approveMax) countLabel.textContent += ' (setujui maksimal ' + approveMax + ' sekaligus)';
+            }
             if (checkAll) {
                 checkAll.checked = picked > 0 && picked === checks.length;
                 checkAll.indeterminate = picked > 0 && picked < checks.length;

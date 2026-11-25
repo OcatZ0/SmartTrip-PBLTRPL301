@@ -586,4 +586,20 @@ class CandidateReviewTest extends TestCase
         $this->assertSame('rejected', $copy->fresh()->status);
         $this->assertSame('pending', $unrelated->fresh()->status);
     }
+
+    public function test_bulk_approve_refuses_more_than_ten_candidates_at_once(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $ids = collect(range(1, 11))->map(fn ($index) => $this->makeCandidate([
+            'external_place_id' => "osm:n30{$index}", 'name' => "Kandidat {$index}",
+        ])->place_candidates_id)->all();
+        Http::fake();
+
+        $this->actingAs($admin)->from('/admin/candidates')->post('/admin/candidates/bulk-approve', ['ids' => $ids])
+            ->assertRedirect('/admin/candidates')
+            ->assertSessionHasErrors(['ids' => 'Setujui maksimal 10 kandidat sekaligus.']);
+
+        $this->assertSame(0, PlaceCandidate::where('status', 'approved')->count());
+        Http::assertNothingSent();
+    }
 }

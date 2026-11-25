@@ -380,32 +380,6 @@ class SwapTest extends TestCase
         $this->assertSame('Tempat Asli', $item->fresh()->place->name);
     }
 
-    // --- manual search via near_itinerary_day ---
-
-    public function test_places_can_be_searched_near_an_itinerary_day(): void
-    {
-        $user = User::factory()->create();
-        ['day' => $day] = $this->tripWithOneItem($user);
-
-        $near = $this->makePlace(['name' => 'Dekat', 'lat' => 1.1311, 'lng' => 104.0311, 'external_place_id' => 'gp-near']);
-        $far = $this->makePlace(['name' => 'Jauh', 'lat' => 1.9000, 'lng' => 104.9000, 'external_place_id' => 'gp-far']);
-
-        $response = $this->getJson("/api/places?near_itinerary_day={$day->itinerary_days_id}");
-
-        $response->assertOk();
-        $names = collect($response->json('data'))->pluck('name')->all();
-        $this->assertContains('Dekat', $names);
-        $this->assertContains('Jauh', $names);
-        $this->assertLessThan(array_search('Jauh', $names), array_search('Dekat', $names));
-    }
-
-    public function test_searching_near_a_missing_day_404s(): void
-    {
-        $response = $this->getJson('/api/places?near_itinerary_day=99999');
-
-        $response->assertNotFound();
-    }
-
     public function test_swap_candidates_leave_out_places_closed_on_that_day(): void
     {
         $user = User::factory()->create();

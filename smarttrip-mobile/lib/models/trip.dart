@@ -149,6 +149,7 @@ class TripPlace {
     this.rating,
     this.estimatedCostIdr,
     this.topsisScore,
+    this.openingHours,
   });
 
   factory TripPlace.fromJson(Map<String, dynamic> json) {
@@ -166,6 +167,7 @@ class TripPlace {
       rating: _toDouble(json['rating']),
       estimatedCostIdr: (json['estimated_cost_idr'] as num?)?.toInt(),
       topsisScore: _toDouble(json['topsis_score']),
+      openingHours: json['opening_hours'] as Map<String, dynamic>?,
     );
   }
 
@@ -186,6 +188,10 @@ class TripPlace {
 
   /// 0-1, only on a swap candidate (D2): how well it fits the trip.
   final double? topsisScore;
+
+  /// Stored hours per day, Monday first: {"mon": [["09:00", "19:00"]], "sat": []};
+  /// a day left out is unknown. Null when unknown or not sent.
+  final Map<String, dynamic>? openingHours;
 }
 
 /// One of the top-3 hotels from `GET /api/trips/{id}/hotel-options`.

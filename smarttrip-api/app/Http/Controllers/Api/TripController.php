@@ -182,7 +182,8 @@ class TripController extends Controller
      */
     private function withDays(Trip $trip): Trip
     {
-        $placeColumns = 'places_id,name,type,lat,lng,address,kecamatan,photo_url,estimated_visit_minutes,is_outdoor';
+        // opening_hours: the PDF replays the generator's clock, which waits for a place to open.
+        $placeColumns = 'places_id,name,type,lat,lng,address,kecamatan,photo_url,estimated_visit_minutes,is_outdoor,opening_hours';
 
         $trip->load([
             'days' => fn ($dayQuery) => $dayQuery->orderBy('day_number'),

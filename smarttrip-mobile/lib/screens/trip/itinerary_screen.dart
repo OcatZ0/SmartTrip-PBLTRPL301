@@ -263,6 +263,26 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
     if (deleted && mounted) context.go(AppRoutes.trips);
   }
 
+  /// Back to the wishlist step to add or drop must-visit places, then through
+  /// the setup steps to generate again; the current itinerary stays until then.
+  Future<void> _regenerate(Trip trip) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Buat ulang itinerary?'),
+        content: const Text(
+          'Ubah tempat wajib di wishlist, lalu lanjutkan langkahnya sampai Buat Itinerary. '
+          'Itinerary sekarang tetap ada sampai yang baru selesai dibuat, lalu diganti bersama tanda sudah dikunjungi.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('Batal')),
+          TextButton(onPressed: () => Navigator.of(dialogContext).pop(true), child: const Text('Lanjut')),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted) context.push(AppRoutes.tripWishlist(trip.tripsId));
+  }
+
   void _showInviteSheet() {
     showModalBottomSheet(
       context: context,
@@ -292,6 +312,7 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
                 onExport: trip.hasStops ? () => _exportPdf(trip) : null,
                 onInvite: widget.readOnly ? null : _showInviteSheet,
                 onEdit: widget.readOnly ? null : () => context.push(AppRoutes.tripEdit(trip.tripsId)),
+                onRegenerate: widget.readOnly || trip.days.isEmpty ? null : () => _regenerate(trip),
                 onDelete: widget.readOnly ? null : () => _deleteTrip(trip),
               ),
       ),
@@ -513,14 +534,15 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
 }
 
 /// The ⋮ menu in the navy header: export the itinerary to PDF, and for the
-/// owner invite someone, edit or delete the trip. Export is hidden until the
+/// owner invite someone, edit the trip, generate again or delete it. Export is hidden until the
 /// itinerary has stops.
 class _TripMenu extends StatelessWidget {
-  const _TripMenu({required this.onExport, required this.onInvite, this.onEdit, this.onDelete});
+  const _TripMenu({required this.onExport, required this.onInvite, this.onEdit, this.onRegenerate, this.onDelete});
 
   final VoidCallback? onExport;
   final VoidCallback? onInvite;
   final VoidCallback? onEdit;
+  final VoidCallback? onRegenerate;
   final VoidCallback? onDelete;
 
   @override
@@ -546,12 +568,14 @@ class _TripMenu extends StatelessWidget {
         if (value == 'export') onExport?.call();
         if (value == 'invite') onInvite?.call();
         if (value == 'edit') onEdit?.call();
+        if (value == 'regenerate') onRegenerate?.call();
         if (value == 'delete') onDelete?.call();
       },
       itemBuilder: (_) => [
         if (onExport != null) item('export', Icons.picture_as_pdf_outlined, 'Ekspor PDF'),
         if (onInvite != null) item('invite', Icons.person_add_alt_outlined, 'Undang ke Itinerary'),
         if (onEdit != null) item('edit', Icons.edit_outlined, 'Ubah Trip'),
+        if (onRegenerate != null) item('regenerate', Icons.autorenew_rounded, 'Buat Ulang Itinerary'),
         if (onDelete != null) item('delete', Icons.delete_outline_rounded, 'Hapus Trip'),
       ],
     );

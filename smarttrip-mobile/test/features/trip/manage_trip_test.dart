@@ -6,9 +6,12 @@ import 'package:smarttrip_mobile/core/theme/app_theme.dart';
 import 'package:smarttrip_mobile/l10n/app_localizations.dart';
 import 'package:smarttrip_mobile/models/saved_trip.dart';
 import 'package:smarttrip_mobile/models/trip.dart';
+import 'package:smarttrip_mobile/core/notifications/local_notification_service.dart';
 import 'package:smarttrip_mobile/screens/saved_trip/widgets/trip_card.dart';
+import 'package:smarttrip_mobile/screens/trip/itinerary_screen.dart';
 import 'package:smarttrip_mobile/screens/trip/trip_setup_screen.dart';
 import 'package:smarttrip_mobile/services/trip_service.dart';
+import 'package:smarttrip_mobile/services/weather_service.dart';
 
 import '../../helpers/catalog_doubles.dart';
 import '../../helpers/test_doubles.dart';
@@ -36,6 +39,26 @@ class _ManageTripService extends FakeTripService {
 }
 
 /// tripJson(): 2 days, 1.500.000, stops on day 1 (so it has an itinerary).
+class _QuietNotifications extends LocalNotificationService {
+  @override
+  Future<void> scheduleDayReminders({
+    required int tripsId,
+    required List<({DateTime at, String title, String body})> days,
+    required String channelName,
+    required String channelDescription,
+  }) async {}
+
+  @override
+  Future<void> scheduleWeatherReminder({
+    required int tripsId,
+    required DateTime startDate,
+    required String title,
+    required String body,
+    required String channelName,
+    required String channelDescription,
+  }) async {}
+}
+
 class _FixedTrip extends TripDetailController {
   @override
   Future<Trip> build(int tripsId) async => Trip.fromJson(tripJson());
@@ -52,6 +75,8 @@ Future<_ManageTripService> _pump(WidgetTester tester, Widget home) async {
       overrides: [
         tripServiceProvider.overrideWithValue(trips),
         tripDetailProvider.overrideWith(_FixedTrip.new),
+        tripForecastProvider.overrideWith((ref, tripsId) async => null),
+        localNotificationServiceProvider.overrideWithValue(_QuietNotifications()),
       ],
       child: MaterialApp.router(
         theme: AppTheme.light(),
@@ -63,6 +88,7 @@ Future<_ManageTripService> _pump(WidgetTester tester, Widget home) async {
             GoRoute(path: 'form', builder: (_, __) => home),
           ]),
           GoRoute(path: '/trips/:id/edit', builder: (_, __) => const Text('form ubah')),
+          GoRoute(path: '/trips/:id/wishlist', builder: (_, state) => Text('wishlist ${state.pathParameters['id']}')),
         ], initialLocation: '/form'),
       ),
     ),
@@ -127,5 +153,27 @@ void main() {
     await tester.pumpAndSettle();
     expect(trips.deleted, [9]);
     expect(find.text('Trip "Trip Lama" dihapus'), findsOneWidget);
+  });
+
+  testWidgets('Buat Ulang Itinerary asks first, then opens the wishlist step', (tester) async {
+    await _pump(tester, const ItineraryScreen(tripsId: 5));
+
+    await tester.tap(find.byType(PopupMenuButton<String>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Buat Ulang Itinerary'));
+    await tester.pumpAndSettle();
+    expect(find.text('Buat ulang itinerary?'), findsOneWidget);
+
+    await tester.tap(find.text('Batal'));
+    await tester.pumpAndSettle();
+    expect(find.text('wishlist 5'), findsNothing);
+
+    await tester.tap(find.byType(PopupMenuButton<String>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Buat Ulang Itinerary'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Lanjut'));
+    await tester.pumpAndSettle();
+    expect(find.text('wishlist 5'), findsOneWidget);
   });
 }

@@ -46,7 +46,7 @@ Trip _trip({
 }
 
 Map<String, dynamic> _stop(int id, String name, double lat, double lng,
-        {int minutes = 60, int? cost, bool outdoor = false, String source = 'algorithm', String? polyline, String? photo}) =>
+        {int minutes = 60, int? cost, bool outdoor = false, String source = 'algorithm', String? polyline, String? photo, Map<String, dynamic>? hours}) =>
     {
       'itinerary_items_id': id,
       'visit_order': id,
@@ -64,6 +64,7 @@ Map<String, dynamic> _stop(int id, String name, double lat, double lng,
         'is_outdoor': outdoor,
         'rating': 4.6,
         'photo_url': photo,
+        'opening_hours': hours,
       },
     };
 
@@ -83,11 +84,22 @@ void main() {
       expect(day.stops[0].leg!.isRoad, isFalse);
       expect(day.stops[0].arriveMinute, 8 * 60 + day.stops[0].leg!.minutes);
       expect(day.stops[0].departMinute, day.stops[0].arriveMinute + 90);
-      // The same spot: no travel before the second stop.
-      expect(day.stops[1].arriveMinute, day.stops[0].departMinute);
+      // The same spot: no travel before the second stop, only the server's 10-minute gap.
+      expect(day.stops[1].arriveMinute, day.stops[0].departMinute + 10);
       expect(day.costIdr, 35000);
       expect(day.endMinute, day.stops[1].departMinute + day.legToEnd!.minutes);
       expect(ItineraryPdfPlan.clock(day.stops[0].departMinute), matches(RegExp(r'^\d\d:\d\d$')));
+    });
+
+    test('a stop reached before it opens starts at opening time, like the generator plans it', () {
+      // 2026-12-01 is a Tuesday.
+      final plan = ItineraryPdfPlan.of(_trip(title: 'T', items: [
+        _stop(1, 'Mal', 1.13, 104.031, minutes: 60, hours: {
+          'tue': [['10:00', '21:00']],
+        }),
+      ]));
+
+      expect(plan.days.first.stops.first.arriveMinute, 10 * 60);
     });
 
     test('a leg with a route uses the road length, not the straight line', () {

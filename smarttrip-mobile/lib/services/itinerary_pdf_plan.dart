@@ -11,6 +11,11 @@ const _detourFactor = 1.35;
 /// Visit length for a stop without one, the server's default too.
 const _defaultVisitMinutes = 60;
 
+/// The gap the server's DaySchedule leaves between two visits.
+const _gapMinutes = 10;
+
+const _dayKeys = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+
 /// One leg of a day: the road from the previous point to the next one.
 class PlannedLeg {
   const PlannedLeg({required this.path, required this.km, required this.minutes, required this.isRoad});
@@ -146,16 +151,39 @@ class ItineraryPdfPlan {
     return '${(wrapped ~/ 60).toString().padLeft(2, '0')}:${(wrapped % 60).toString().padLeft(2, '0')}';
   }
 
+  /// Like the server's DaySchedule: start on arrival, or at opening time when
+  /// early, in the first range of that day the whole visit fits in.
+  static int _startAt(int arrive, int visitMinutes, Map<String, dynamic>? hours, int weekday) {
+    final ranges = hours?[_dayKeys[weekday - 1]];
+    if (ranges is! List) return arrive;
+    for (final range in ranges) {
+      if (range is! List || range.length != 2) continue;
+      final open = minutesOf(range[0].toString());
+      var close = minutesOf(range[1].toString());
+      if (close <= open) close += 24 * 60;
+      final begin = arrive > open ? arrive : open;
+      if (begin + visitMinutes <= close) return begin;
+    }
+    return arrive;
+  }
+
   static PlannedDay _planDay(Trip trip, ItineraryDay day, int startMinute, int dayEndMinute) {
     final stops = <PlannedStop>[];
+    final weekday = trip.dateOfDay(day.dayNumber).weekday;
     var clock = startMinute;
     LatLng? previous = day.start == null ? null : LatLng(day.start!.lat, day.start!.lng);
 
     for (final (index, item) in day.items.indexed) {
       final here = LatLng(item.place?.lat ?? 0, item.place?.lng ?? 0);
       final leg = previous == null ? null : PlannedLeg.between(previous, here, item.polylineToHere);
-      final arrive = clock + (leg?.minutes ?? 0);
-      final depart = arrive + (item.place?.estimatedVisitMinutes ?? _defaultVisitMinutes);
+      final visitMinutes = item.place?.estimatedVisitMinutes ?? _defaultVisitMinutes;
+      final arrive = _startAt(
+        clock + (index > 0 ? _gapMinutes : 0) + (leg?.minutes ?? 0),
+        visitMinutes,
+        item.place?.openingHours,
+        weekday,
+      );
+      final depart = arrive + visitMinutes;
       stops.add(PlannedStop(number: index + 1, item: item, leg: leg, arriveMinute: arrive, departMinute: depart));
       clock = depart;
       previous = here;

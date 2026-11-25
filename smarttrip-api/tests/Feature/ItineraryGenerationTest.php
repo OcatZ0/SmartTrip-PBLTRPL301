@@ -7,6 +7,8 @@ use App\Models\Place;
 use App\Models\PlaceReview;
 use App\Models\Trip;
 use App\Models\User;
+use App\Services\Places\OpeningHours;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
@@ -433,18 +435,18 @@ class ItineraryGenerationTest extends TestCase
     private static function hoursClosedOn(array $isoWeekdays): array
     {
         $rows = [];
-        foreach (array_keys(\App\Services\Places\OpeningHours::DAYS) as $index => $day) {
+        foreach (array_keys(OpeningHours::DAYS) as $index => $day) {
             $rows[$day] = in_array($index + 1, $isoWeekdays, true)
                 ? ['state' => 'closed']
                 : ['state' => 'open', 'open' => '09:00', 'close' => '17:00'];
         }
 
-        return \App\Services\Places\OpeningHours::fromForm($rows);
+        return OpeningHours::fromForm($rows);
     }
 
     private function nextSaturday(): string
     {
-        return now()->next(\Carbon\Carbon::SATURDAY)->toDateString();
+        return now()->next(Carbon::SATURDAY)->toDateString();
     }
 
     public function test_a_place_closed_on_the_trip_day_is_not_recommended(): void
@@ -470,6 +472,30 @@ class ItineraryGenerationTest extends TestCase
         $this->assertContains($open->places_id, $placeIds);
         // Unknown hours count as open.
         $this->assertContains($unknown->places_id, $placeIds);
+    }
+
+    public function test_a_place_is_used_only_when_the_day_reaches_it_inside_its_hours_and_lunch_is_kept(): void
+    {
+        $user = User::factory()->create();
+        $trip = $this->readyTrip($user, 1);
+        $category = $trip->interestCategories()->first();
+        $everyDay = fn (string $open, string $close) => array_fill_keys(array_keys(OpeningHours::DAYS), [[$open, $close]]);
+
+        $evening = $this->makePlace(['name' => 'Kafe Malam', 'type' => 'culinary', 'lat' => 1.1301, 'lng' => 104.0301, 'opening_hours' => $everyDay('20:00', '24:00')]);
+        $lunch = $this->makePlace(['name' => 'Warung Siang', 'type' => 'culinary', 'lat' => 1.1302, 'lng' => 104.0302, 'opening_hours' => $everyDay('11:00', '15:00')]);
+        $afternoon = $this->makePlace(['name' => 'Buka Sore', 'lat' => 1.1303, 'lng' => 104.0303, 'opening_hours' => $everyDay('15:00', '22:00')]);
+        $morning = $this->makePlace(['name' => 'Pantai Pagi', 'lat' => 1.1304, 'lng' => 104.0304, 'estimated_visit_minutes' => 120]);
+        foreach ([$evening, $lunch, $afternoon, $morning] as $place) {
+            $place->categories()->attach($category->categories_id);
+        }
+        $this->fakeRoutes();
+
+        $response = $this->withHeaders($this->authHeader($user))->postJson("/api/trips/{$trip->trips_id}/generate");
+
+        $response->assertOk();
+        // The day runs 09:00-19:00: the evening cafe would only open after it ends.
+        $order = collect($response->json('days.0.items'))->sortBy('visit_order')->pluck('places_id')->values()->all();
+        $this->assertSame([$morning->places_id, $lunch->places_id, $afternoon->places_id], $order);
     }
 
     public function test_a_wishlist_place_moves_off_its_closed_day(): void

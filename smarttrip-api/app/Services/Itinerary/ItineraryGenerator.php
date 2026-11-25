@@ -27,10 +27,6 @@ class ItineraryGenerator
      */
     private const OVERBUDGET_THRESHOLD = 1.15;
 
-    private const DETOUR_FACTOR = 1.35;
-
-    private const AVERAGE_SPEED_KMH = 27.5;
-
     /**
      * Recommended places this close to a day's centre come first (still in
      * TOPSIS order), so the user's weights pick the places without the day
@@ -41,11 +37,13 @@ class ItineraryGenerator
     public function __construct(private readonly OpenRouteServiceClient $routesClient) {}
 
     /**
-     * Opening hours (tingkat 1, by weekday only): a recommended place is
-     * never put on a day it is closed, a wishlist place on its closed day
-     * moves to another trip day it is open, and one closed on every trip day
-     * is left out and reported in closed_wishlist_places. Unknown hours count
-     * as open.
+     * Opening hours: a recommended place is only used when the day's
+     * schedule (DaySchedule) reaches it inside its hours, a wishlist place on
+     * its closed day moves to another trip day it is open, and one closed on
+     * every trip day is left out and reported in closed_wishlist_places. A
+     * wishlist place whose hours the day cannot meet moves on like one that
+     * does not fit. Unknown hours count as open. When the daily hours cover
+     * midday, one culinary stop is kept for lunch.
      *
      * @return array{days: array<int, array{day: ItineraryDay, tidak_muat: bool, padat: bool}>, dropped_wishlist_places: array<int, string>, closed_wishlist_places: array<int, string>}
      */
@@ -67,7 +65,7 @@ class ItineraryGenerator
         // Candidates are scored against where the trip starts; each day then
         // fills its slots near its own start and end.
         $start = $starts[0];
-        $windowMinutes = $this->windowMinutes($trip);
+        [$startMinute, $endMinute] = $this->dayMinutes($trip);
         $tripCategoryIds = $trip->interestCategories()->pluck('categories.categories_id')->all();
 
         $wishlistStops = $this->normalizedWishlist($trip);
@@ -107,7 +105,8 @@ class ItineraryGenerator
             $dayEnd = $ends[$dayNumber];
             $centroid = $bucket['centroid'] ?? $this->midpoint($dayStart, $dayEnd);
 
-            [$stops, $overflow] = $this->fitWithinBudget($stops, $dayStart, $dayEnd, $windowMinutes, $centroid);
+            $clock = [$weekdays[$dayNumber], $startMinute, $endMinute];
+            [$stops, $overflow] = $this->fitWithinBudget($stops, $dayStart, $dayEnd, $clock, $centroid);
 
             // Overflow cascades to the next day; the last day has nowhere
             // to push to, so those items are dropped and the day is
@@ -133,7 +132,7 @@ class ItineraryGenerator
             }
 
             $openCandidates = $candidatePool->reject(fn ($candidate) => in_array($weekdays[$dayNumber], $candidate['closed_weekdays'], true));
-            $stops = $this->fillEmptySlots($stops, $centroid, $dayStart, $dayEnd, $windowMinutes, $openCandidates, $usedPlaceIds, $remainingBudget);
+            $stops = $this->fillEmptySlots($stops, $centroid, $dayStart, $dayEnd, $clock, $openCandidates, $usedPlaceIds, $remainingBudget);
 
             foreach ($stops as $stop) {
                 if ($stop['places_id'] !== null) {
@@ -150,6 +149,7 @@ class ItineraryGenerator
 
             $days[$dayNumber] = [
                 'stops' => $stops,
+                'clock' => $clock,
                 'centroid' => $centroid,
                 'tidak_muat' => $tidakMuat,
             ];
@@ -165,6 +165,17 @@ class ItineraryGenerator
 
             return ['days' => $result, 'dropped_wishlist_places' => $droppedLabels, 'closed_wishlist_places' => $closedLabels];
         });
+    }
+
+    /**
+     * @return array{0: int, 1: int} the daily start and end time in minutes after midnight
+     */
+    private function dayMinutes(Trip $trip): array
+    {
+        $start = Carbon::parse($trip->daily_start_time);
+        $end = Carbon::parse($trip->daily_end_time);
+
+        return [$start->hour * 60 + $start->minute, $end->hour * 60 + $end->minute];
     }
 
     private function windowMinutes(Trip $trip): int
@@ -189,32 +200,36 @@ class ItineraryGenerator
             ->reject(fn ($item) => $item->places_id !== null && $item->place->trashed())
             ->values()
             ->map(function ($item) {
-            if ($item->places_id !== null) {
+                if ($item->places_id !== null) {
+                    return [
+                        'wishlist_id' => $item->trip_wishlist_places_id,
+                        'places_id' => $item->places_id,
+                        'lat' => (float) $item->place->lat,
+                        'lng' => (float) $item->place->lng,
+                        'visit_minutes' => (int) ($item->place->estimated_visit_minutes ?? 60),
+                        'source' => 'wishlist',
+                        'label' => $item->place->name,
+                        'topsis_score' => null,
+                        'closed_weekdays' => OpeningHours::closedWeekdays($item->place->opening_hours),
+                        'opening_hours' => $item->place->opening_hours,
+                        'type' => $item->place->type,
+                    ];
+                }
+
                 return [
                     'wishlist_id' => $item->trip_wishlist_places_id,
-                    'places_id' => $item->places_id,
-                    'lat' => (float) $item->place->lat,
-                    'lng' => (float) $item->place->lng,
-                    'visit_minutes' => (int) ($item->place->estimated_visit_minutes ?? 60),
+                    'places_id' => null,
+                    'lat' => (float) $item->custom_lat,
+                    'lng' => (float) $item->custom_lng,
+                    'visit_minutes' => (int) $item->custom_visit_minutes,
                     'source' => 'wishlist',
-                    'label' => $item->place->name,
+                    'label' => $item->custom_name,
                     'topsis_score' => null,
-                    'closed_weekdays' => OpeningHours::closedWeekdays($item->place->opening_hours),
+                    'closed_weekdays' => [],
+                    'opening_hours' => null,
+                    'type' => null,
                 ];
-            }
-
-            return [
-                'wishlist_id' => $item->trip_wishlist_places_id,
-                'places_id' => null,
-                'lat' => (float) $item->custom_lat,
-                'lng' => (float) $item->custom_lng,
-                'visit_minutes' => (int) $item->custom_visit_minutes,
-                'source' => 'wishlist',
-                'label' => $item->custom_name,
-                'topsis_score' => null,
-                'closed_weekdays' => [],
-            ];
-        });
+            });
     }
 
     /**
@@ -274,6 +289,8 @@ class ItineraryGenerator
             'label' => $place->name,
             'topsis_score' => $scores[$place->places_id],
             'closed_weekdays' => OpeningHours::closedWeekdays($place->opening_hours),
+            'opening_hours' => $place->opening_hours,
+            'type' => $place->type,
         ])->sortByDesc('topsis_score')->values();
 
         return [$pool, $wishlistCost];
@@ -340,34 +357,6 @@ class ItineraryGenerator
     private function midpoint(array $start, array $end): array
     {
         return ['lat' => ($start['lat'] + $end['lat']) / 2, 'lng' => ($start['lng'] + $end['lng']) / 2];
-    }
-
-    /**
-     * Nearest neighbour from the start; when the day ends somewhere else, the
-     * stop closest to that end goes last so the day heads that way.
-     *
-     * @param  array<int|string, array{lat: float, lng: float}>  $stops
-     * @return array<int, int|string>
-     */
-    private function routeOrder(array $start, array $end, array $stops): array
-    {
-        if ($stops === []) {
-            return [];
-        }
-
-        $endsElsewhere = Haversine::km($start['lat'], $start['lng'], $end['lat'], $end['lng']) > 0.05;
-        if (! $endsElsewhere || count($stops) < 2) {
-            return NearestNeighborRoute::order($start, $stops);
-        }
-
-        $lastKey = collect($stops)
-            ->sortBy(fn ($stop) => Haversine::km($end['lat'], $end['lng'], $stop['lat'], $stop['lng']))
-            ->keys()
-            ->first();
-        $rest = $stops;
-        unset($rest[$lastKey]);
-
-        return [...NearestNeighborRoute::order($start, $rest), $lastKey];
     }
 
     private function clusterIntoDays(int $numDays, Collection $wishlistStops): array
@@ -461,17 +450,30 @@ class ItineraryGenerator
     }
 
     /**
-     * Langkah 6b: buang stop terjauh dari centroid (prioritas terendah)
-     * selama proyeksi waktu (visit + estimasi tempuh kasar, termasuk leg
-     * hotel di kedua ujung) melebihi window harian.
+     * Langkah 6b: while the day's schedule does not work, move a stop out: the
+     * one whose hours cannot be met, else the one farthest from the centroid.
      *
+     * @param  array{0: int, 1: int, 2: int}  $clock  ISO weekday, start and end minute of the day
      * @return array{0: array<int, array<string, mixed>>, 1: array<int, array<string, mixed>>} [stops tersisa, stops yang di-overflow]
      */
-    private function fitWithinBudget(array $stops, array $start, array $end, int $windowMinutes, ?array $centroid): array
+    private function fitWithinBudget(array $stops, array $start, array $end, array $clock, ?array $centroid): array
     {
         $overflow = [];
 
-        while ($stops !== [] && $this->projectedMinutes($stops, $start, $end) > $windowMinutes) {
+        while ($stops !== []) {
+            $plan = $this->plan($stops, $start, $end, $clock);
+            if ($plan['feasible']) {
+                break;
+            }
+
+            if ($plan['failed'] !== null) {
+                $overflow[] = $stops[$plan['failed']];
+                unset($stops[$plan['failed']]);
+                $stops = array_values($stops);
+
+                continue;
+            }
+
             $reference = $centroid ?? $start;
             usort($stops, fn ($left, $right) => Haversine::km($reference['lat'], $reference['lng'], $left['lat'], $left['lng'])
                 <=> Haversine::km($reference['lat'], $reference['lng'], $right['lat'], $right['lng']));
@@ -481,7 +483,12 @@ class ItineraryGenerator
         return [$stops, $overflow];
     }
 
-    private function fillEmptySlots(array $stops, ?array $centroid, array $start, array $end, int $windowMinutes, Collection $candidatePool, Collection $usedPlaceIds, int &$remainingBudget): array
+    /**
+     * Lunch first (a culinary stop already in the day, else the best fitting
+     * culinary recommendation), then recommendations in TOPSIS order, nearby
+     * first, as long as the schedule still works and the budget allows.
+     */
+    private function fillEmptySlots(array $stops, ?array $centroid, array $start, array $end, array $clock, Collection $candidatePool, Collection $usedPlaceIds, int &$remainingBudget): array
     {
         $reference = $centroid ?? $start;
 
@@ -489,60 +496,87 @@ class ItineraryGenerator
         [$nearby, $farther] = $candidatePool
             ->filter(fn ($candidate) => ! $usedPlaceIds->has($candidate['places_id']))
             ->partition(fn ($candidate) => Haversine::km($reference['lat'], $reference['lng'], $candidate['lat'], $candidate['lng']) <= self::NEARBY_KM);
+        $candidates = $nearby->concat($farther);
 
-        foreach ($nearby->concat($farther) as $candidate) {
-            if ($candidate['cost'] > $remainingBudget) {
-                continue;
+        $stops = $this->withLunch($stops, $start, $end, $clock);
+        if ($this->coversLunch($clock) && ! collect($stops)->contains('lunch', true)) {
+            foreach ($candidates->where('type', 'culinary') as $candidate) {
+                if ($this->tryAdd($stops, $candidate + ['lunch' => true], $start, $end, $clock, $usedPlaceIds, $remainingBudget)) {
+                    break;
+                }
             }
+        }
 
+        foreach ($candidates as $candidate) {
             // A higher-ranked place may not fit while a lower-ranked one
             // still does, so keep looking instead of stopping here.
-            $projected = array_merge($stops, [$candidate]);
-            if ($this->projectedMinutes($projected, $start, $end) > $windowMinutes) {
+            $this->tryAdd($stops, $candidate, $start, $end, $clock, $usedPlaceIds, $remainingBudget);
+        }
+
+        return $stops;
+    }
+
+    private function tryAdd(array &$stops, array $candidate, array $start, array $end, array $clock, Collection $usedPlaceIds, int &$remainingBudget): bool
+    {
+        if ($usedPlaceIds->has($candidate['places_id']) || $candidate['cost'] > $remainingBudget) {
+            return false;
+        }
+
+        $projected = [...$stops, array_merge($candidate, ['wishlist_id' => null, 'source' => 'recommended'])];
+        if (! $this->plan($projected, $start, $end, $clock)['feasible']) {
+            return false;
+        }
+
+        $stops = $projected;
+        $usedPlaceIds[$candidate['places_id']] = true;
+        $remainingBudget -= $candidate['cost'];
+
+        return true;
+    }
+
+    /**
+     * @param  array{0: int, 1: int, 2: int}  $clock
+     */
+    private function coversLunch(array $clock): bool
+    {
+        return $clock[1] <= 12 * 60 && $clock[2] >= 13 * 60;
+    }
+
+    /**
+     * Marks the first culinary stop the schedule can reach at lunch time as
+     * the lunch stop. Stops are keyed 0..n-1 or by any key.
+     *
+     * @param  array{0: int, 1: int, 2: int}  $clock
+     */
+    private function withLunch(array $stops, array $start, array $end, array $clock): array
+    {
+        foreach ($stops as $key => $stop) {
+            unset($stops[$key]['lunch']);
+        }
+        if (! $this->coversLunch($clock)) {
+            return $stops;
+        }
+
+        foreach ($stops as $key => $stop) {
+            if (($stop['type'] ?? null) !== 'culinary') {
                 continue;
             }
-
-            $stops[] = array_merge($candidate, ['wishlist_id' => null, 'source' => 'recommended']);
-            $usedPlaceIds[$candidate['places_id']] = true;
-            $remainingBudget -= $candidate['cost'];
+            $stops[$key]['lunch'] = true;
+            if ($this->plan($stops, $start, $end, $clock)['feasible']) {
+                return $stops;
+            }
+            unset($stops[$key]['lunch']);
         }
 
         return $stops;
     }
 
     /**
-     * Estimasi kasar: visit duration semua stop + waktu tempuh Haversine
-     * (detour x kecepatan kota) berurutan lewat rute NN sementara,
-     * termasuk leg titik awal->stop pertama dan stop terakhir->titik akhir.
+     * @param  array{0: int, 1: int, 2: int}  $clock
      */
-    private function projectedMinutes(array $stops, array $start, array $end): float
+    private function plan(array $stops, array $start, array $end, array $clock): array
     {
-        if ($stops === []) {
-            return 0.0;
-        }
-
-        $keyed = [];
-        foreach ($stops as $stopIndex => $stop) {
-            $keyed[$stopIndex] = ['lat' => $stop['lat'], 'lng' => $stop['lng']];
-        }
-        $order = $this->routeOrder($start, $end, $keyed);
-
-        $visitMinutes = array_sum(array_column($stops, 'visit_minutes'));
-
-        $travelMinutes = 0.0;
-        $current = $start;
-        foreach ($order as $key) {
-            $travelMinutes += $this->legMinutes($current, $keyed[$key]);
-            $current = $keyed[$key];
-        }
-        $travelMinutes += $this->legMinutes($current, $end);
-
-        return $visitMinutes + $travelMinutes;
-    }
-
-    private function legMinutes(array $from, array $to): float
-    {
-        return Haversine::estimatedTravelMinutes($from['lat'], $from['lng'], $to['lat'], $to['lng'], self::DETOUR_FACTOR, self::AVERAGE_SPEED_KMH);
+        return DaySchedule::plan($start, $end, $stops, $clock[0], $clock[1], $clock[2]);
     }
 
     /**
@@ -563,10 +597,20 @@ class ItineraryGenerator
         $items = $day->items()->with('place')->get();
 
         $keyed = $items->mapWithKeys(fn (ItineraryItem $item) => [
-            $item->itinerary_items_id => $item->coordinates(),
+            $item->itinerary_items_id => [
+                ...$item->coordinates(),
+                'visit_minutes' => $item->visitMinutes(),
+                'opening_hours' => $item->place?->opening_hours,
+                'type' => $item->place?->type,
+            ],
         ])->all();
 
-        $order = $keyed === [] || $start === null ? [] : $this->routeOrder($start, $end, $keyed);
+        $order = [];
+        if ($keyed !== [] && $start !== null) {
+            [$startMinute, $endMinute] = $this->dayMinutes($trip);
+            $clock = [Carbon::parse($trip->start_date)->addDays($day->day_number - 1)->dayOfWeekIso, $startMinute, $endMinute];
+            $order = $this->plan($this->withLunch($keyed, $start, $end, $clock), $start, $end, $clock)['order'];
+        }
 
         $waypoints = $order === [] ? [] : array_merge([$start], array_map(fn ($key) => $keyed[$key], $order), [$end]);
         $legs = $order === [] ? [] : $this->routesClient->computeRoute($waypoints);
@@ -595,11 +639,7 @@ class ItineraryGenerator
     {
         $stops = $day['stops'];
 
-        $order = $this->routeOrder(
-            $start,
-            $end,
-            collect($stops)->mapWithKeys(fn ($stop, $stopIndex) => [$stopIndex => ['lat' => $stop['lat'], 'lng' => $stop['lng']]])->all()
-        );
+        $order = $this->plan($stops, $start, $end, $day['clock'])['order'];
 
         $orderedStops = array_map(fn ($key) => $stops[$key], $order);
 

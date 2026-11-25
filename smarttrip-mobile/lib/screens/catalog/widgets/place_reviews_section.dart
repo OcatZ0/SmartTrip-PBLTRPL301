@@ -1,14 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/auth/session_controller.dart';
+import '../../../core/router/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../models/place.dart';
+import '../../place_review/review_sheet.dart';
 
 /// B2 "Ulasan": rating summary with a 5-1 star breakdown, then the reviews.
 /// The breakdown counts in-app reviews only; the headline rating is the
 /// blended one from the API.
-class PlaceReviewsSection extends StatefulWidget {
+class PlaceReviewsSection extends ConsumerStatefulWidget {
   const PlaceReviewsSection({super.key, required this.detail});
 
   /// Reviews shown before "Lihat semua".
@@ -17,10 +22,10 @@ class PlaceReviewsSection extends StatefulWidget {
   final PlaceDetail detail;
 
   @override
-  State<PlaceReviewsSection> createState() => _PlaceReviewsSectionState();
+  ConsumerState<PlaceReviewsSection> createState() => _PlaceReviewsSectionState();
 }
 
-class _PlaceReviewsSectionState extends State<PlaceReviewsSection> {
+class _PlaceReviewsSectionState extends ConsumerState<PlaceReviewsSection> {
   bool _showAll = false;
 
   @override
@@ -29,6 +34,9 @@ class _PlaceReviewsSectionState extends State<PlaceReviewsSection> {
     final reviews = widget.detail.reviews;
     final visible = _showAll ? reviews : reviews.take(PlaceReviewsSection.previewCount).toList();
     final canExpand = reviews.length > PlaceReviewsSection.previewCount;
+    // F014: a guest is sent to login first.
+    final usersId = ref.watch(sessionControllerProvider).valueOrNull?.usersId;
+    final hasOwnReview = usersId != null && reviews.any((review) => review.usersId == usersId);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -48,6 +56,31 @@ class _PlaceReviewsSectionState extends State<PlaceReviewsSection> {
                 ),
               ),
           ],
+        ),
+        const SizedBox(height: 8),
+        Material(
+          color: Colors.white.withValues(alpha: 0.06),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+            side: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
+          ),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(14),
+            onTap: () => usersId == null
+                ? context.push(AppRoutes.login)
+                : ReviewSheet.show(context, placesId: widget.detail.summary.placesId),
+            child: SizedBox(
+              height: 48,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(hasOwnReview ? Icons.edit_outlined : Icons.star_rounded, size: 20, color: AppColors.sun400),
+                  const SizedBox(width: 8),
+                  Text(hasOwnReview ? 'Ubah Ulasanmu' : 'Beri Ulasan', style: appText(14, FontWeight.w700, Colors.white)),
+                ],
+              ),
+            ),
+          ),
         ),
         const SizedBox(height: 12),
         if (widget.detail.summary.rating == null && reviews.isEmpty)

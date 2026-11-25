@@ -10,6 +10,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../models/trip.dart';
 import '../../../widgets/place_photo.dart';
+import '../../place_review/review_sheet.dart';
 import '../../catalog/place_detail_screen.dart' show placeDetailProvider, userPositionProvider;
 import '../../catalog/widgets/place_bits.dart';
 import 'source_badge.dart';
@@ -79,6 +80,9 @@ class StopDetailSheet extends ConsumerWidget {
         mode: LaunchMode.externalApplication,
       );
     }
+
+    // Stacks on this sheet; closing it comes back here.
+    void openReview() => ReviewSheet.show(context, placesId: placesId!, itineraryItemsId: item.itineraryItemsId);
 
     void openDetail() {
       final router = GoRouter.of(context);
@@ -166,6 +170,15 @@ class StopDetailSheet extends ConsumerWidget {
                 tint: AppColors.field,
                 iconColor: AppColors.sea600,
                 onTap: openDetail,
+              ),
+            if (placesId != null)
+              _ActionRow(
+                icon: Icons.star_outline_rounded,
+                title: 'Beri Ulasan',
+                subtitle: 'Nilai tempat ini setelah berkunjung',
+                tint: const Color(0xFFFEF3C7),
+                iconColor: const Color(0xFFB45309),
+                onTap: openReview,
               ),
             _ActionRow(
               icon: Icons.swap_horiz_rounded,

@@ -436,7 +436,7 @@ class _Footer extends StatelessWidget {
           AppRoutes.liveMap(trip.id, trip.currentDay),
         ),
       TripStatus.akanDatang => ('Anggaran', trip.budgetTotalLabel, null, 'Lihat detail', AppRoutes.trip(trip.id)),
-      TripStatus.selesai => ('Terpakai', trip.budgetSpentLabel, null, 'Beri ulasan', AppRoutes.review),
+      TripStatus.selesai => ('Terpakai', trip.budgetSpentLabel, null, 'Beri ulasan', AppRoutes.trip(trip.id)),
       TripStatus.draft => ('Langkah berikutnya', 'Atur preferensi', null, 'Lanjutkan', AppRoutes.tripPreferences(trip.id)),
     };
 

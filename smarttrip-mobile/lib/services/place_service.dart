@@ -59,6 +59,35 @@ class PlaceService {
       throw ApiFailure.fromDioException(error);
     }
   }
+  /// F014 / UC-016: one active review per user and place. [itineraryItemsId]
+  /// links it to the trip stop it was written from (A3).
+  Future<void> createReview(int placesId, {required int rating, String? comment, int? itineraryItemsId}) async {
+    try {
+      await _apiClient.dio.post<Map<String, dynamic>>('/places/$placesId/reviews', data: {
+        'rating': rating,
+        'comment': comment,
+        if (itineraryItemsId != null) 'itinerary_items_id': itineraryItemsId,
+      });
+    } on DioException catch (error) {
+      throw ApiFailure.fromDioException(error);
+    }
+  }
+
+  Future<void> updateReview(int placeReviewsId, {required int rating, String? comment}) async {
+    try {
+      await _apiClient.dio.patch<Map<String, dynamic>>('/reviews/$placeReviewsId', data: {'rating': rating, 'comment': comment});
+    } on DioException catch (error) {
+      throw ApiFailure.fromDioException(error);
+    }
+  }
+
+  Future<void> deleteReview(int placeReviewsId) async {
+    try {
+      await _apiClient.dio.delete<Map<String, dynamic>>('/reviews/$placeReviewsId');
+    } on DioException catch (error) {
+      throw ApiFailure.fromDioException(error);
+    }
+  }
 }
 
 final placeServiceProvider = Provider<PlaceService>((ref) {

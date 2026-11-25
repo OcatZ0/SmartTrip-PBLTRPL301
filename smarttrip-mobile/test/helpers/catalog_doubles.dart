@@ -99,6 +99,27 @@ class FakePlaceService implements PlaceService {
     if (error != null) throw error;
     return details[placesId] ?? placeDetail(placesId);
   }
+
+  /// F014 calls, e.g. 'create 2 rating=4 item=null'.
+  final reviewCalls = <String>[];
+  Object? reviewFailWith;
+
+  Future<void> _review(String call) async {
+    reviewCalls.add(call);
+    final error = reviewFailWith;
+    if (error != null) throw error;
+  }
+
+  @override
+  Future<void> createReview(int placesId, {required int rating, String? comment, int? itineraryItemsId}) =>
+      _review('create $placesId rating=$rating comment=$comment item=$itineraryItemsId');
+
+  @override
+  Future<void> updateReview(int placeReviewsId, {required int rating, String? comment}) =>
+      _review('update $placeReviewsId rating=$rating comment=$comment');
+
+  @override
+  Future<void> deleteReview(int placeReviewsId) => _review('delete $placeReviewsId');
 }
 
 /// Detail for place number [placesId] (see [catalogPlace]): free entry,

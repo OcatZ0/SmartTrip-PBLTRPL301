@@ -10,7 +10,6 @@ import '../../screens/catalog/catalog_screen.dart';
 import '../../screens/catalog/place_detail_screen.dart';
 import '../../screens/live_trip/live_map_screen.dart';
 import '../../screens/onboarding/onboarding_screen.dart';
-import '../../screens/place_review/review_form_screen.dart';
 import '../../screens/profile/profile_screen.dart';
 import '../../screens/saved_trip/join_invite_screen.dart';
 import '../../screens/saved_trip/trip_tersimpan_screen.dart';
@@ -100,10 +99,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.wishlist,
         pageBuilder: (context, state) =>
             PageTransitions.fadeThrough(state, const WishlistScreen()),
-      ),
-      GoRoute(
-        path: AppRoutes.review,
-        builder: (context, state) => const ReviewFormScreen(),
       ),
       GoRoute(
         path: '/undangan/:token',
